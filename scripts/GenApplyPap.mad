@@ -54,17 +54,26 @@ static void failUnsupportedPAPArity(int32_t arity, int32_t argc) {
 }
 
 static bool papAtomicEnvEnabled() {
-  const char *value = getenv("MADLIB_PAP_ATOMIC_ENV");
-  if (value == NULL || value[0] == '\0') {
-    return false;
+  static int8_t cachedEnabled = -1;
+  if (cachedEnabled != -1) {
+    return cachedEnabled == 1;
   }
 
-  return
+  const char *value = getenv("MADLIB_PAP_ATOMIC_ENV");
+  const bool enabled =
+    value != NULL
+    && value[0] != '\0'
+    &&
+    (
     strcmp(value, "1") == 0
     || strcmp(value, "true") == 0
     || strcmp(value, "TRUE") == 0
     || strcmp(value, "yes") == 0
-    || strcmp(value, "YES") == 0;
+    || strcmp(value, "YES") == 0
+    );
+
+  cachedEnabled = enabled ? 1 : 0;
+  return enabled;
 }
 
 void *__applyPAP1__(PAP_t *pap, void *arg1) {
@@ -229,11 +238,10 @@ UNDERLOAD =
     void **newEnv = useAtomicEnv
       ? (void**) GC_MALLOC_ATOMIC(sizeof(void*) * NEXT_ENV_SIZE)
       : (void**) GC_MALLOC(sizeof(void*) * NEXT_ENV_SIZE);
-    int i = 0;
-    for (i = 0; i<ENV_SIZE; i++) {
-      newEnv[i] = env[i];
+    if (ENV_SIZE > 0) {
+      memcpy(newEnv, env, sizeof(void*) * ENV_SIZE);
     }
-    for (; i<NEXT_ENV_SIZE; i++) {
+    for (int i = ENV_SIZE; i<NEXT_ENV_SIZE; i++) {
       void *arg = va_arg(argv, void*);
       newEnv[i] = arg;
     }
@@ -318,7 +326,10 @@ generateKnownCallCase = (arity) => {
   allArgs = makeIndexedArgNames(arity)
   case = `        void* args[${show(arity)}];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = ${makeFunctionCall("fn", allArgs)};
         break;

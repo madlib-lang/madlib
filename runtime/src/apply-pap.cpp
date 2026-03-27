@@ -1,4 +1,4 @@
-// generated automatically on the 2026-03-27 at 15:04:29 UTC
+// generated automatically on the 2026-03-27 at 15:19:09 UTC
 #include <gc.h>
 #include "apply-pap.hpp"
 #include <cstdarg>
@@ -27,17 +27,26 @@ static void failUnsupportedPAPArity(int32_t arity, int32_t argc) {
 }
 
 static bool papAtomicEnvEnabled() {
-  const char *value = getenv("MADLIB_PAP_ATOMIC_ENV");
-  if (value == NULL || value[0] == '\0') {
-    return false;
+  static int8_t cachedEnabled = -1;
+  if (cachedEnabled != -1) {
+    return cachedEnabled == 1;
   }
 
-  return
+  const char *value = getenv("MADLIB_PAP_ATOMIC_ENV");
+  const bool enabled =
+    value != NULL
+    && value[0] != '\0'
+    &&
+    (
     strcmp(value, "1") == 0
     || strcmp(value, "true") == 0
     || strcmp(value, "TRUE") == 0
     || strcmp(value, "yes") == 0
-    || strcmp(value, "YES") == 0;
+    || strcmp(value, "YES") == 0
+    );
+
+  cachedEnabled = enabled ? 1 : 0;
+  return enabled;
 }
 
 void *__applyPAP1__(PAP_t *pap, void *arg1) {
@@ -163,7 +172,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *) = (void*(*)(void *))unwrappedPAP->fn;
         void* args[1];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0]);
         break;
@@ -172,7 +184,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *) = (void*(*)(void *, void *))unwrappedPAP->fn;
         void* args[2];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1]);
         break;
@@ -181,7 +196,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *) = (void*(*)(void *, void *, void *))unwrappedPAP->fn;
         void* args[3];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2]);
         break;
@@ -190,7 +208,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[4];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3]);
         break;
@@ -199,7 +220,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[5];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4]);
         break;
@@ -208,7 +232,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[6];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5]);
         break;
@@ -217,7 +244,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[7];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
         break;
@@ -226,7 +256,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[8];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
         break;
@@ -235,7 +268,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[9];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
         break;
@@ -244,7 +280,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[10];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9]);
         break;
@@ -253,7 +292,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[11];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10]);
         break;
@@ -262,7 +304,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[12];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11]);
         break;
@@ -271,7 +316,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[13];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12]);
         break;
@@ -280,7 +328,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[14];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13]);
         break;
@@ -289,7 +340,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[15];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14]);
         break;
@@ -298,7 +352,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[16];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15]);
         break;
@@ -307,7 +364,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[17];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16]);
         break;
@@ -316,7 +376,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[18];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17]);
         break;
@@ -325,7 +388,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[19];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18]);
         break;
@@ -334,7 +400,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[20];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19]);
         break;
@@ -343,7 +412,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[21];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20]);
         break;
@@ -352,7 +424,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[22];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21]);
         break;
@@ -361,7 +436,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[23];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22]);
         break;
@@ -370,7 +448,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[24];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23]);
         break;
@@ -379,7 +460,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[25];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24]);
         break;
@@ -388,7 +472,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[26];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25]);
         break;
@@ -397,7 +484,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[27];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26]);
         break;
@@ -406,7 +496,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[28];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27]);
         break;
@@ -415,7 +508,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[29];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28]);
         break;
@@ -424,7 +520,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
         void *(*fn)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *))unwrappedPAP->fn;
         void* args[30];
         int i = 0;
-        for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
+        if (ENV_SIZE > 0) {
+          memcpy(args, env, sizeof(void*) * ENV_SIZE);
+          i = ENV_SIZE;
+        }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = fn(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8], args[9], args[10], args[11], args[12], args[13], args[14], args[15], args[16], args[17], args[18], args[19], args[20], args[21], args[22], args[23], args[24], args[25], args[26], args[27], args[28], args[29]);
         break;
@@ -639,11 +738,10 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     void **newEnv = useAtomicEnv
       ? (void**) GC_MALLOC_ATOMIC(sizeof(void*) * NEXT_ENV_SIZE)
       : (void**) GC_MALLOC(sizeof(void*) * NEXT_ENV_SIZE);
-    int i = 0;
-    for (i = 0; i<ENV_SIZE; i++) {
-      newEnv[i] = env[i];
+    if (ENV_SIZE > 0) {
+      memcpy(newEnv, env, sizeof(void*) * ENV_SIZE);
     }
-    for (; i<NEXT_ENV_SIZE; i++) {
+    for (int i = ENV_SIZE; i<NEXT_ENV_SIZE; i++) {
       void *arg = va_arg(argv, void*);
       newEnv[i] = arg;
     }
