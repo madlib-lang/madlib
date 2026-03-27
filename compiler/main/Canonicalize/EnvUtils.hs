@@ -13,6 +13,7 @@ import           Infer.Type
 import           Control.Monad.Except
 import           Error.Error
 import           Error.Context
+import           Utils.EditDistance      ( findSimilar )
 
 
 addADT :: Env -> String -> Type -> Env
@@ -72,7 +73,8 @@ lookupADT env name = do
       return t
 
     Nothing ->
-      throwError $ CompilationError (UnknownType name) NoContext
+      let suggestions = findSimilar name (Map.keys (envTypeDecls env))
+      in  throwError $ CompilationError (UnknownType name suggestions) NoContext
 
 
 lookupADT' :: Rock.MonadFetch Query.Query m => Env -> String -> m (Maybe Type)

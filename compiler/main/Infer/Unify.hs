@@ -111,8 +111,10 @@ instance Unify Type where
     _ -> do
       let extraFields  = M.keys $ M.difference (fields <> optionalFields) (fields' <> optionalFields')
           extraFields' = M.keys $ M.difference (fields' <> optionalFields') (fields <> optionalFields)
+          availableFields  = M.keys (fields <> optionalFields)
+          availableFields' = M.keys (fields' <> optionalFields')
       if not (null extraFields') then
-        throwError $ CompilationError (RecordExtraFields extraFields') NoContext
+        throwError $ CompilationError (RecordExtraFields extraFields' availableFields) NoContext
       else if not (null extraFields) then
         throwError $ CompilationError (RecordMissingFields extraFields) NoContext
       else

@@ -24,6 +24,7 @@ import           Control.Monad.Except (throwError, MonadError (catchError))
 import           Error.Error
 import           Error.Context
 import           Canonicalize.EnvUtils (lookupADT)
+import           Utils.EditDistance (findSimilar)
 import qualified Data.Hashable as Hashable
 
 
@@ -412,7 +413,8 @@ deriveInstances env localTypeDecls derived = case derived of
             throwError $ CompilationError (DerivingAliasNotAllowed adtName) (Context (Can.envCurrentPath env) area)
 
       Nothing ->
-        throwError $ CompilationError (UnboundType adtName) (Context (Can.envCurrentPath env) area)
+        let suggestions = findSimilar adtName (map getTypeDeclName localTypeDecls ++ Map.keys (Can.envTypeDecls env))
+        in  throwError $ CompilationError (UnboundType adtName suggestions) (Context (Can.envCurrentPath env) area)
 
   Src.Source _ _ (Src.DerivedRecord _ fieldNames) : next -> do
     let (instPreds, recordType) = generateRecordPredsAndType (Can.envCurrentPath env) "Comparable" fieldNames

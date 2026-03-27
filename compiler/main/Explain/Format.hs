@@ -30,6 +30,7 @@ import qualified Prettyprinter as Pretty
 import qualified Data.List as List
 import qualified Prettyprinter.Internal.Type as Pretty
 import Debug.Trace
+import           Utils.EditDistance (findSimilar)
 
 
 letters :: [Char]
@@ -657,7 +658,11 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     let (vars, hkVars, printedT) = prettyPrintType' True (mempty, mempty) t
         (_, _, printedN)         = prettyPrintType' True (vars, hkVars) (TVar tv)
     in  "Infinite type\n\n"
-        <> "Infinite type " <> printedN <> " -> " <> printedT
+        <> "I can't construct this type because it would be infinite.\n"
+        <> "The type variable '" <> printedN <> "' appears in its own definition: "
+        <> printedN <> " = " <> printedT <> "\n\n"
+        <> "Hint: This usually happens when a function is applied to itself\n"
+        <> "or when a recursive type needs an explicit type alias."
 
   IllegalSkipAccess ->
     "Illegal skip access\n\n"
@@ -690,11 +695,13 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "'" <> adtname <> "' is capitalized. Type parameters can't be capitalized."
     <> "Hint: Either remove it if you don't need the type variable, or\nmake its first letter lowercase."
 
-  UnboundType n ->
+  UnboundType n suggestions ->
     "Unbound Type\n\n"
     <> "The type '" <> n <> "' has not been declared\n\n"
-    <> "Hint: Maybe you forgot to import it?\n"
-    <> "Hint: Maybe you have a typo?"
+    <> case suggestions of
+         []  -> "Hint: Maybe you forgot to import it?\nHint: Maybe you have a typo?"
+         [s] -> "Hint: Did you mean '" <> s <> "'?"
+         _   -> "Hint: Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
 
   DerivingAliasNotAllowed n ->
     "Deriving Alias Not Allowed\n\n"
@@ -804,10 +811,13 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     "Negated byte\n\n"
     <> "Bytes can't be negated"
 
-  UnknownType t ->
+  UnknownType t suggestions ->
     "Unknown type\n\n"
     <> "The type '" <> t <> "' was not found\n\n"
-    <> "Hint: Verify that you imported it"
+    <> case suggestions of
+         []  -> "Hint: Verify that you imported it"
+         [s] -> "Hint: Did you mean '" <> s <> "'?"
+         _   -> "Hint: Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
 
   NameAlreadyDefined name ->
     "Illegal shadowing\n\n"
@@ -832,13 +842,16 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "name '" <> name <> "' but it\n"
     <> "appears that you have already exported it."
 
-  NotExported name path ->
+  NotExported name path suggestions ->
     "Not exported\n\n"
     <> "You are trying to import '" <> name <> "' from\n"
     <> "the module located here:\n"
     <> "'" <> path <> "'\n"
     <> "Unfortunately, that module does not export '" <> name <> "'\n\n"
-    <> "Hint: Verify that you spelled it correctly or add the export to the module if you can."
+    <> case suggestions of
+         []  -> "Hint: Verify that you spelled it correctly or add the export to the module if you can."
+         [s] -> "Hint: Did you mean '" <> s <> "'?"
+         _   -> "Hint: Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
 
   RecursiveVarAccess _ ->
     "Recursive variable access\n\n"
@@ -956,7 +969,7 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "The record is missing the following fields: " <> intercalate ", " (map (\f -> "'" <> f <> "'") fs) <> "\n\n"
     <> "Hint: Add the missing fields to the record."
 
-  RecordExtraFields fs ->
+  RecordExtraFields fs _ ->
     "Record extra fields\n\n"
     <> "The record has unexpected fields: " <> intercalate ", " (map (\f -> "'" <> f <> "'") fs) <> "\n\n"
     <> "Hint: Remove the extra fields or check for a typo."
@@ -1052,6 +1065,7 @@ createErrorDiagnostic color context typeError = case typeError of
           FromOperator op           -> [Diagnose.Hint $ "Both sides of '" <> op <> "' must have the same type"]
           FromIfCondition           -> [Diagnose.Hint "The condition of an 'if' expression must be Boolean"]
           FromIfBranches            -> [Diagnose.Hint "The 'then' and 'else' branches must have the same type"]
+          FromWhileCondition        -> [Diagnose.Hint "The condition of a 'while' loop must be Boolean"]
           FromListElement           -> [Diagnose.Hint "All elements of a list must have the same type"]
           FromTypeAnnotation        -> [Diagnose.Hint "The expression doesn't match its type annotation"]
           FromPatternMatch          -> [Diagnose.Hint "All branches of a pattern match must have the same type"]
@@ -1078,29 +1092,12 @@ createErrorDiagnostic color context typeError = case typeError of
   TestNotValid t ->
     let prettyType = renderType t
         prettyType' = unlines $ ("  "<>) <$> lines prettyType
-    in  case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Test not valid"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The test has type\n" <> prettyType'
-              <> "\nIt should be one of the following:\n"
-              <> "- Wish TestResult TestResult\n"
-              <> "- List (Wish TestResult TestResult)"
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          ("Test not valid\n\n" <> "The test has type\n" <> prettyType'
-              <> "\nIt should be one of the following:\n"
-              <> "- Wish TestResult TestResult\n"
-              <> "- List (Wish TestResult TestResult)"
+    in  mkError "Test not valid" context
+          (    "The test has type\n" <> prettyType'
+            <> "\nIt should be one of the following:\n"
+            <> "- Wish TestResult TestResult\n"
+            <> "- List (Wish TestResult TestResult)"
           )
-          []
           []
 
   TypingHasWrongKind t expectedKind actualKind ->
@@ -1179,23 +1176,15 @@ createErrorDiagnostic color context typeError = case typeError of
   InfiniteType tv t ->
     let (vars, hkVars, printedT) = prettyPrintType' True (mempty, mempty) t
         (_, _, printedN)         = prettyPrintType' True (vars, hkVars) (TVar tv)
-    in  case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Infinite type"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "Infinite type " <> printedN <> " -> " <> printedT
-            )
+    in  mkError "Infinite type" context
+          (    "I can't construct this type because it would be infinite.\n"
+            <> "The type variable '" <> printedN <> "' appears in its own definition: "
+            <> printedN <> " = " <> printedT
+          )
+          [ Diagnose.Hint $
+              "This usually happens when a function is applied to itself\n"
+              <> "or when a recursive type needs an explicit type alias."
           ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          ("Infinite type\n\n" <> "Infinite type " <> printedN <> " -> " <> printedT)
-          []
-          []
 
   IllegalSkipAccess ->
     mkError "Illegal skip access" context
@@ -1228,9 +1217,12 @@ createErrorDiagnostic color context typeError = case typeError of
       )
       [Diagnose.Hint "Either remove it if you don't need the type variable, or\nmake its first letter lowercase."]
 
-  UnboundType n ->
-    mkError "Unbound Type" context ("The type '" <> n <> "' has not been declared")
-      [Diagnose.Hint "Maybe you forgot to import it?", Diagnose.Hint "Maybe you have a typo?"]
+  UnboundType n suggestions ->
+    let hint = case suggestions of
+                 []  -> [Diagnose.Hint "Maybe you forgot to import it?", Diagnose.Hint "Maybe you have a typo?"]
+                 [s] -> [Diagnose.Hint $ "Did you mean '" <> s <> "'?"]
+                 _   -> [Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"]
+    in  mkError "Unbound Type" context ("The type '" <> n <> "' has not been declared") hint
 
   ByteOutOfBounds n ->
     mkError "Byte out of bounds" context
@@ -1406,9 +1398,12 @@ createErrorDiagnostic color context typeError = case typeError of
       [ Diagnose.Note "Characters can't be empty"
       ]
 
-  UnknownType t ->
-    mkError "Unknown type" context ("The type '" <> t <> "' was not found")
-      [Diagnose.Hint "Verify that you imported it"]
+  UnknownType t suggestions ->
+    let hint = case suggestions of
+                 []  -> [Diagnose.Hint "Verify that you imported it"]
+                 [s] -> [Diagnose.Hint $ "Did you mean '" <> s <> "'?"]
+                 _   -> [Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"]
+    in  mkError "Unknown type" context ("The type '" <> t <> "' was not found") hint
 
   NameAlreadyDefined name ->
     mkError "Illegal shadowing" context ("The variable '" <> name <> "' is already defined")
@@ -1420,23 +1415,9 @@ createErrorDiagnostic color context typeError = case typeError of
       ]
 
   ImportCollision name ->
-    case context of
-      Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
-        Diagnose.Err
-          Nothing
-          "Import collision"
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ "The imported name '" <> name <> "' is already used"
-            )
-          ]
-          []
-
-      NoContext ->
-        Diagnose.Err
-          Nothing
-          "Import collision"
-          []
-          []
+    mkError "Import collision" context
+      ("The imported name '" <> name <> "' is already used")
+      [Diagnose.Hint "Use a qualified import or rename one of the conflicting names."]
 
   TypeAlreadyDefined name ->
     mkError "Type already defined" context ("The type '" <> name <> "' is already defined")
@@ -1450,14 +1431,18 @@ createErrorDiagnostic color context typeError = case typeError of
       )
       []
 
-  NotExported name path ->
-    mkError "Not exported" context
-      (    "You are trying to import '" <> name <> "' from\n"
-        <> "the module located here:\n"
-        <> "'" <> path <> "'\n"
-        <> "Unfortunately, that module does not export '" <> name <> "'"
-      )
-      [Diagnose.Hint "Verify that you spelled it correctly or add the export to the module if you can."]
+  NotExported name path suggestions ->
+    let hint = case suggestions of
+                 []  -> [Diagnose.Hint "Verify that you spelled it correctly or add the export to the module if you can."]
+                 [s] -> [Diagnose.Hint $ "Did you mean '" <> s <> "'?"]
+                 _   -> [Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"]
+    in  mkError "Not exported" context
+          (    "You are trying to import '" <> name <> "' from\n"
+            <> "the module located here:\n"
+            <> "'" <> path <> "'\n"
+            <> "Unfortunately, that module does not export '" <> name <> "'"
+          )
+          hint
 
   RecursiveVarAccess _ ->
     mkError "Recursive variable access" context
@@ -1640,11 +1625,21 @@ createErrorDiagnostic color context typeError = case typeError of
           ("The record is missing the following fields: " <> fieldList)
           [Diagnose.Hint "Add the missing fields to the record."]
 
-  RecordExtraFields fs ->
+  RecordExtraFields fs availableFields ->
     let fieldList = intercalate ", " (map (\f -> "'" <> f <> "'") fs)
+        suggestions = concatMap (\f ->
+          let similar = findSimilar f availableFields
+          in  case similar of
+                []  -> []
+                [s] -> [f <> " -> " <> s]
+                _   -> [f <> " -> one of: " <> intercalate ", " similar]
+          ) fs
+        hint = case suggestions of
+                 [] -> [Diagnose.Hint "Remove the extra fields or check for a typo in a field name."]
+                 _  -> [Diagnose.Hint $ "Did you mean: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"]
     in  mkError "Record extra fields" context
           ("The record has unexpected fields: " <> fieldList)
-          [Diagnose.Hint "Remove the extra fields or check for a typo in a field name."]
+          hint
 
   WrongSpreadType t ->
     Diagnose.Err

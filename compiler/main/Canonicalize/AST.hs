@@ -28,6 +28,7 @@ import           Explain.Location
 import           Text.Regex.TDFA
 import           AST.Solved (Import_(NamedImport))
 import           Canonicalize.Derive
+import           Utils.EditDistance (findSimilar)
 import           Data.List
 import           Utils.List
 import           AST.Canonical (Import_(TypeImport))
@@ -117,8 +118,11 @@ validateImport originAstPath imp = do
 
   unless
     (null allNotExported)
-    (throwError $ CompilationError (NotExported (Src.getSourceContent $ head allNotExported) path)
-                                   (Context originAstPath (Src.getArea $ head allNotExported))
+    (let notExportedName = Src.getSourceContent $ head allNotExported
+         allAvailable    = allExportNames ++ allExportTypes
+         suggestions     = findSimilar notExportedName allAvailable
+     in  throwError $ CompilationError (NotExported notExportedName path suggestions)
+                                       (Context originAstPath (Src.getArea $ head allNotExported))
     )
 
 

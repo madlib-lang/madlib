@@ -10947,7 +10947,7 @@
             (fromList []))
          (TApp
             (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star)))
-         NoOrigin)
+         (FromFunctionArgument "slice" 3))
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 1055 49 41) (Loc 1060 49 46)

@@ -26,7 +26,8 @@ editDistance xs ys = last $ List.foldl' step [0..length ys] xs
 findSimilar :: String -> [String] -> [String]
 findSimilar query candidates =
   let threshold = length query `div` 3 + 1
-      scored    = [(editDistance query c, c) | c <- candidates]
+      unique    = List.nub candidates
+      scored    = [(editDistance query c, c) | c <- unique]
       close     = filter (\(d, _) -> d <= threshold) scored
       sorted    = List.sortOn fst close
   in  take 3 (map snd sorted)

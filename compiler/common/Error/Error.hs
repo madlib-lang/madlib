@@ -20,6 +20,7 @@ data ErrorOrigin
   | FromListElement                    -- ^ list elements must have the same type
   | FromTypeAnnotation                 -- ^ user-provided type annotation
   | FromPatternMatch                   -- ^ pattern match branches
+  | FromWhileCondition                 -- ^ while condition must be Boolean
   | FromAssignment String              -- ^ assigning to a typed variable
   | NoOrigin
   deriving (Show, Eq, Ord)
@@ -30,7 +31,7 @@ data TypeError
   | UnboundVariable String [String]
   | UnboundUnknownTypeVariable
   | UnboundVariableFromNamespace String String
-  | UnboundType String
+  | UnboundType String [String]
   | UnificationError Type Type ErrorOrigin
   | BadEscapeSequence
   | EmptyChar
@@ -52,10 +53,10 @@ data TypeError
   | NotCapitalizedConstructorName String
   | TypingHasWrongKind Type Kind Kind
   | WrongAliasArgCount String Int Int
-  | UnknownType String
+  | UnknownType String [String]
   | WrongSpreadType String
   | ImportNotFound String
-  | NotExported String String
+  | NotExported String String [String]  -- ^ name, path, similar exported names
   | GrammarError FilePath String
   | NameAlreadyDefined String
   | TypesHaveDifferentOrigin String String String
@@ -91,7 +92,7 @@ data TypeError
   | RecordDuplicateFields [String]
   | RecordDuplicateRestPattern
   | RecordMissingFields [String]
-  | RecordExtraFields [String]
+  | RecordExtraFields [String] [String]  -- ^ extra fields, available fields in expected record
   | TestNotValid Type
   | ByteOutOfBounds String
   | ShortOutOfBounds String

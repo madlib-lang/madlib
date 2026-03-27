@@ -42,6 +42,27 @@ import           AST.Solved (getType)
 import qualified Data.Set as Set
 import           Run.Options
 import qualified Data.List as List
+import           Data.Char (isAlphaNum)
+
+
+-- | Extract an ErrorOrigin from a function application expression.
+-- For operators like +, &&, etc., returns FromOperator.
+-- For named functions, returns FromFunctionArgument with name and arg index.
+getAppOrigin :: Can.Exp -> ErrorOrigin
+getAppOrigin (Can.Canonical _ expr) = case expr of
+  Can.Var name
+    | isOperatorName name -> FromOperator name
+    | otherwise           -> FromFunctionArgument name 1
+  Can.App (Can.Canonical _ (Can.Var name)) _ _
+    | isOperatorName name -> FromOperator name
+    | otherwise           -> FromFunctionArgument name 2
+  Can.App (Can.Canonical _ (Can.App (Can.Canonical _ (Can.Var name)) _ _)) _ _
+    | isOperatorName name -> FromOperator name
+    | otherwise           -> FromFunctionArgument name 3
+  _ -> NoOrigin
+  where
+    isOperatorName []    = False
+    isOperatorName (c:_) = not (isAlphaNum c) && c /= '_' && c /= '.'
 
 
 mutationInterface :: String
@@ -317,7 +338,8 @@ inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonica
         else
           arg
 
-  s3 <- contextualUnify' env discardError expForContext (apply s2 t1) (apply s1 t2 `fn` tv)
+  let origin = getAppOrigin abs
+  s3 <- contextualUnifyWithOrigin (if discardError then Discard else Strict) origin env expForContext (apply s2 t1) (apply s1 t2 `fn` tv)
 
   let t = apply s3 tv
   let s = s3 `compose` s2 `compose` s1
@@ -720,7 +742,7 @@ inferWhile discardError options env (Can.Canonical area (Can.While cond body)) =
 
   let s3 = s2 `compose` s1
 
-  s4 <- contextualUnify' env discardError cond tBool (apply s3 tcond)
+  s4 <- contextualUnifyWithOrigin (if discardError then Discard else Strict) FromWhileCondition env cond tBool (apply s3 tcond)
   s5 <- contextualUnify' env discardError body tUnit (apply s3 tbody)
 
   let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1

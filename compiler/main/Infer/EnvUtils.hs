@@ -72,7 +72,7 @@ lookupVar env name = do
       return sc
 
     Nothing ->
-      let candidates = M.keys (envVars env) ++ M.keys (envMethods env) ++ Set.toList (envNamesInScope env)
+      let candidates = List.nub $ M.keys (envVars env) ++ M.keys (envMethods env) ++ Set.toList (envNamesInScope env)
           suggestions = findSimilar name candidates
       in  throwError $ CompilationError (UnboundVariable name suggestions) NoContext
 
