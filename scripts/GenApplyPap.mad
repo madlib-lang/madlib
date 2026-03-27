@@ -22,6 +22,9 @@ CPP_FILE_HEADER =
 #include "apply-pap.hpp"
 #include <cstdarg>
 #include <iostream>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 
 // Partial application
@@ -38,6 +41,32 @@ CPP_FILE_FOOTER =
 `
 
 CPP_SPECIFIC_FUNCTIONS = `
+static const int32_t MADLIB_MAX_SUPPORTED_PAP_ARITY = 30;
+
+static void failUnsupportedPAPArity(int32_t arity, int32_t argc) {
+  fprintf(
+      stderr,
+      "Unsupported PAP arity: %d (argc=%d). runtime/src/apply-pap.* currently supports up to %d arguments.\\n",
+      arity,
+      argc,
+      MADLIB_MAX_SUPPORTED_PAP_ARITY);
+  abort();
+}
+
+static bool papAtomicEnvEnabled() {
+  const char *value = getenv("MADLIB_PAP_ATOMIC_ENV");
+  if (value == NULL || value[0] == '\0') {
+    return false;
+  }
+
+  return
+    strcmp(value, "1") == 0
+    || strcmp(value, "true") == 0
+    || strcmp(value, "TRUE") == 0
+    || strcmp(value, "yes") == 0
+    || strcmp(value, "YES") == 0;
+}
+
 void *__applyPAP1__(PAP_t *pap, void *arg1) {
   int32_t arity = pap->arity;
   if (arity == 1) {
@@ -92,6 +121,56 @@ void *__applyPAP2__(PAP_t *pap, void *arg1, void *arg2) {
   return __applyPAP__(pap, 2, arg1, arg2);
 }
 
+void *__applyPAP3__(PAP_t *pap, void *arg1, void *arg2, void *arg3) {
+  int32_t arity = pap->arity;
+  int32_t missingArgs = pap->missingArgCount;
+  if (missingArgs <= 3) {
+    if (arity == 1) {
+      void *(*fn)(void *) = (void*(*)(void *))pap->fn;
+      return __applyPAP2__((PAP_t*) fn(arg1), arg2, arg3);
+    }
+
+    int32_t ENV_SIZE = arity - missingArgs;
+    if (ENV_SIZE == 0 && arity == 3) {
+      void *(*fn)(void *, void *, void *) = (void*(*)(void *, void *, void *))pap->fn;
+      return fn(arg1, arg2, arg3);
+    }
+
+    if (ENV_SIZE == 1 && arity == 4) {
+      void *(*fn)(void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *))pap->fn;
+      void **env = (void **)pap->env;
+      return fn(env[0], arg1, arg2, arg3);
+    }
+  }
+
+  return __applyPAP__(pap, 3, arg1, arg2, arg3);
+}
+
+void *__applyPAP4__(PAP_t *pap, void *arg1, void *arg2, void *arg3, void *arg4) {
+  int32_t arity = pap->arity;
+  int32_t missingArgs = pap->missingArgCount;
+  if (missingArgs <= 4) {
+    if (arity == 1) {
+      void *(*fn)(void *) = (void*(*)(void *))pap->fn;
+      return __applyPAP3__((PAP_t*) fn(arg1), arg2, arg3, arg4);
+    }
+
+    int32_t ENV_SIZE = arity - missingArgs;
+    if (ENV_SIZE == 0 && arity == 4) {
+      void *(*fn)(void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *))pap->fn;
+      return fn(arg1, arg2, arg3, arg4);
+    }
+
+    if (ENV_SIZE == 1 && arity == 5) {
+      void *(*fn)(void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *))pap->fn;
+      void **env = (void **)pap->env;
+      return fn(env[0], arg1, arg2, arg3, arg4);
+    }
+  }
+
+  return __applyPAP__(pap, 4, arg1, arg2, arg3, arg4);
+}
+
 `
 
 FUNCTION_START =
@@ -102,10 +181,13 @@ FUNCTION_START =
   PAP_t *unwrappedPAP = (PAP_t *)pap;
   int32_t ENV_SIZE = unwrappedPAP->arity - unwrappedPAP->missingArgCount;
   int32_t ARITY = unwrappedPAP->arity;
+  if (ARITY > MADLIB_MAX_SUPPORTED_PAP_ARITY) {
+    failUnsupportedPAPArity(ARITY, argc);
+  }
 `
 
 FUNCTION_END =
-`  printf("__applyPAP__ case not handled, argc: %d, ENV_SIZE: %d, ARITY: %d\\n", argc, ENV_SIZE, ARITY);
+`  printf("__applyPAP__ case not handled, argc: %d, ENV_SIZE: %d, ARITY: %d\n", argc, ENV_SIZE, ARITY);
 
   return NULL;
 }
@@ -129,7 +211,8 @@ OVERLOAD_START =
       int argsLeft = argc - unwrappedPAP->missingArgCount;
 `
 
-OVERLOAD_END = "    }\n"
+OVERLOAD_END = `    }
+`
 
 UNDERLOAD =
 `else {
@@ -139,9 +222,14 @@ UNDERLOAD =
     newPAP->fn = unwrappedPAP->fn;
     newPAP->arity = unwrappedPAP->arity;
     newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
+    newPAP->env_size = NEXT_ENV_SIZE;
+    newPAP->env_is_atomic = unwrappedPAP->env_is_atomic;
 
     void **env = (void **)unwrappedPAP->env;
-    void **newEnv = (void**) GC_MALLOC(sizeof(void*) * NEXT_ENV_SIZE);
+    bool useAtomicEnv = papAtomicEnvEnabled() && unwrappedPAP->env_is_atomic;
+    void **newEnv = useAtomicEnv
+      ? (void**) GC_MALLOC_ATOMIC(sizeof(void*) * NEXT_ENV_SIZE)
+      : (void**) GC_MALLOC(sizeof(void*) * NEXT_ENV_SIZE);
     int i = 0;
     for (i = 0; i<ENV_SIZE; i++) {
       newEnv[i] = env[i];
@@ -175,6 +263,8 @@ typedef struct PAP {
   int32_t arity;
   int32_t missingArgCount;
   void *env;
+  int32_t env_size;
+  int8_t env_is_atomic;
 } PAP_t;
 
 
@@ -183,6 +273,10 @@ extern "C" {
 #endif
 
 void *__applyPAP__(void *pap, int32_t argc, ...);
+void *__applyPAP1__(PAP_t *pap, void *arg1);
+void *__applyPAP2__(PAP_t *pap, void *arg1, void *arg2);
+void *__applyPAP3__(PAP_t *pap, void *arg1, void *arg2, void *arg3);
+void *__applyPAP4__(PAP_t *pap, void *arg1, void *arg2, void *arg3, void *arg4);
 
 #ifdef __cplusplus
 }
@@ -219,16 +313,20 @@ makeFunctionCall = (functionName, argNames) => pipe(
 
 generateKnownCallCase :: Integer -> String
 generateKnownCallCase = (arity) => {
-  caseStart = `      case ${show(arity)}: {\n`
-  fnAssignment = `        ${generateFnAssignment(arity)}\n`
+  caseStart = `      case ${show(arity)}: {
+`
+  fnAssignment = `        ${generateFnAssignment(arity)}
+`
   allArgs = makeIndexedArgNames(arity)
   case = `        void* args[${show(arity)}];
         int i = 0;
         for (; i < ENV_SIZE; i++) { args[i] = env[i]; }
         for (; i < ARITY; i++) { args[i] = va_arg(argv, void*); }
         result = ${makeFunctionCall("fn", allArgs)};
-        break;\n`
-  caseEnd = `        break;\n      }\n`
+        break;
+`
+  caseEnd = `      }
+`
 
   return caseStart ++ fnAssignment ++ case ++ caseEnd
 }
@@ -238,10 +336,16 @@ generateKnownCallCases = (maxArity) => {
   cases = pipe(
     List.range(1),
     map(generateKnownCallCase),
-    List.reduce(mconcat, "")
+    List.reduce((acc, x) => acc ++ x, "")
   )(maxArity + 1)
 
-  return `    switch (ARITY) {\n${cases}    }\n`
+  return `    switch (ARITY) {
+${cases}      default: {
+        failUnsupportedPAPArity(ARITY, argc);
+        break;
+      }
+    }
+`
 }
 
 
@@ -257,11 +361,16 @@ generateOverloadCase = (argsLeft) => {
   argNames = makeIndexedArgNames(argsLeft)
   allArgs = ["result", "argsLeft", ...argNames]
   argsRead = `          void *args[${show(argsLeft)}];
-          for (int i = 0; i < ${show(argsLeft)}; i++) { args[i] = va_arg(argv, void*); }\n`
+          for (int i = 0; i < ${show(argsLeft)}; i++) { args[i] = va_arg(argv, void*); }
+`
   fnCall = makeFunctionCall("__applyPAP__", allArgs)
 
 
-  return `        case ${show(argsLeft)}: {\n${argsRead}          result = ${fnCall};\n          break;\n        }\n`
+  return `        case ${show(argsLeft)}: {
+${argsRead}          result = ${fnCall};
+          break;
+        }
+`
 }
 
 
@@ -270,10 +379,16 @@ generateOverloadCases = (maxArity) => {
   cases = pipe(
     List.range(1),
     map(generateOverloadCase),
-    List.reduce(mconcat, "")
+    List.reduce((acc, x) => acc ++ x, "")
   )(maxArity + 1)
 
-  return `      switch (argsLeft) {\n${cases}      }\n`
+  return `      switch (argsLeft) {
+${cases}        default: {
+          failUnsupportedPAPArity(argsLeft, argc);
+          break;
+        }
+      }
+`
 }
 
 
@@ -299,9 +414,13 @@ generateCppFile = (maxArity) => {
 generatePAPTypeDefinition :: Integer -> String
 generatePAPTypeDefinition = (arity) => pipe(
   makeArgNamesWithStart(0),
-  map((argName) => `  void *${argName};\n`),
-  List.reduce(mconcat, ""),
-  (fields) => `typedef struct PAPEnv_${show(arity)} {\n${fields}} PAPEnv_${show(arity)}_t;\n\n`
+  map((argName) => `  void *${argName};
+`),
+  List.reduce((acc, x) => acc ++ x, ""),
+  (fields) => `typedef struct PAPEnv_${show(arity)} {
+${fields}} PAPEnv_${show(arity)}_t;
+
+`
 )(arity)
 
 
@@ -309,7 +428,7 @@ generatePAPTypeDefinitions :: Integer -> String
 generatePAPTypeDefinitions = (maxArity) => pipe(
   List.range(1),
   map(generatePAPTypeDefinition),
-  List.reduce(mconcat, "")
+  List.reduce((acc, x) => acc ++ x, "")
 )(maxArity + 1)
 
 
@@ -354,4 +473,3 @@ main = (args) => {
     }
   }
 }
-

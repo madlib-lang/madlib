@@ -63,7 +63,7 @@ stringType :: Type.Type
 stringType = Type.PointerType Type.i8 (AddrSpace 1)
 
 papType :: Type.Type
-papType = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+papType = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType, Type.i32, Type.i8]
 
 recordType :: Type.Type
 recordType = Type.ptr $ Type.StructureType False [Type.i32, boxType]

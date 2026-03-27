@@ -969,37 +969,36 @@ pTupleItems = do
 
 pTemplateString :: Parser Src.Exp
 pTemplateString = do
-  (startArea, _) <- withArea (void $ lexeme $ C.char 96)  -- '`'
+  startLoc <- getLoc
+  void $ C.char 96  -- '`'
+  let startArea = Area startLoc startLoc
   target <- pSourceTarget
-  -- Collect alternating: string-part, expression, string-part, expression, ..., final-string
-  parts <- collectParts
-  (endArea, endStr) <- withArea pTemplateEnd
-  let lastPart = Src.Source endArea target (Src.LStr endStr)
-  return $ Src.Source (mergeAreas startArea endArea) target (Src.TemplateString (parts ++ [lastPart]))
+  parts <- collectSegments target
+  let endArea = case reverse parts of
+        (lastPart : _) -> Src.getArea lastPart
+        []             -> startArea
+  return $ Src.Source (mergeAreas startArea endArea) target (Src.TemplateString parts)
   where
-    -- Collect all parts: each iteration produces a string LStr + an expression
-    collectParts :: Parser [Src.Exp]
-    collectParts = do
-      sections <- many $ try $ do
-        strStart <- getLoc
-        rawParts <- manyTill pTemplateRawChunk (lookAhead (C.string "${"))
-        str <- processEscapesInTemplate (concat rawParts)
-        strEnd <- getLoc
-        let strArea = Area strStart strEnd
-        void $ C.string "${"
-        scn
-        target' <- pSourceTarget
-        expr <- pExp
-        scn
-        void $ satisfy (== 125)  -- '}'
-        let strPart = Src.Source strArea target' (Src.LStr str)
-        return [strPart, expr]
-      return $ concat sections
+    collectSegments :: Src.SourceTarget -> Parser [Src.Exp]
+    collectSegments tgt = do
+      strStart <- getLoc
+      rawParts <- manyTill pTemplateRawChunk (lookAhead (void (C.string "${") <|> void (satisfy (== 96))))
+      str <- processEscapesInTemplate (concat rawParts)
+      strEnd <- getLoc
+      let strPart = Src.Source (Area strStart strEnd) tgt (Src.LStr str)
 
-    pTemplateEnd :: Parser String
-    pTemplateEnd = do
-      raw <- manyTill pTemplateRawChunk (satisfy (== 96))  -- '`'
-      processEscapesInTemplate (concat raw)
+      next <- lookAhead anySingle
+      if next == 96 then do
+        void $ satisfy (== 96) -- consume closing '`'
+        return [strPart]
+      else do
+        void $ C.string "${"
+        void $ optional scn
+        expr <- pExp
+        void $ optional scn
+        void $ satisfy (== 125) -- '}'
+        rest <- collectSegments tgt
+        return (strPart : expr : rest)
 
     pTemplateRawChunk :: Parser String
     pTemplateRawChunk = choice

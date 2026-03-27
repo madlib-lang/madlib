@@ -459,7 +459,7 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
 
   Core.Typed qt@(_ IT.:=> t) _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) _) ->
     if IT.isFunctionType t then
-      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType, Type.i32, Type.i8]
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       in  Map.insert name (topLevelSymbol globalRef) symbolTable
     else

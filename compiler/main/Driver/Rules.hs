@@ -75,6 +75,7 @@ import qualified AST.Core as Core
 import qualified Optimize.SimplifyCalls as SimplifyCalls
 import qualified Optimize.FoldCalls as FoldCalls
 import qualified Optimize.EscapeAnalysis as EscapeAnalysis
+import qualified Optimize.AllocationSinking as AllocationSinking
 import qualified Canonicalize.Rewrite as Rewrite
 import qualified Optimize.HigherOrderCopyPropagation as HigherOrderCopyPropagation
 import Run.OptimizationLevel
@@ -436,7 +437,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
           return renamedAst
 
         let reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST inlinedAst else inlinedAst
-            tceResolved      = if optLevel > O0 then TCE.resolveAST reducedAst else reducedAst
+            allocationSunk   = if optLevel > O2 then AllocationSinking.sinkAST reducedAst else reducedAst
+            tceResolved      = if optLevel > O0 then TCE.resolveAST allocationSunk else allocationSunk
             closureConverted = ClosureConvert.convertAST tceResolved
             folded           = if optLevel > O1 then FoldCalls.foldAST closureConverted else closureConverted
         return (folded, (mempty, mempty))

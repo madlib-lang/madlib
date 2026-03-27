@@ -94,6 +94,20 @@ static size_t parseSizeEnvOrDefault(const char *rawValue, size_t fallbackValue) 
   return (size_t)parsed;
 }
 
+static int parseIntEnvOrDefault(const char *rawValue, int fallbackValue) {
+  if (rawValue == NULL || rawValue[0] == '\0') {
+    return fallbackValue;
+  }
+
+  char *endPtr = NULL;
+  long parsed = strtol(rawValue, &endPtr, 10);
+  if (endPtr == rawValue || (endPtr != NULL && *endPtr != '\0') || parsed <= 0) {
+    return fallbackValue;
+  }
+
+  return (int)parsed;
+}
+
 static void appendOutputChunk(char **output, size_t *size, size_t *capacity, const char *chunk, size_t chunkSize) {
   size_t required = *size + chunkSize + 1;
   if (*capacity < required) {
@@ -125,10 +139,15 @@ void __main__init__(int argc, char **argv) {
   const uint64_t physicalMemory = getPhysicalMemoryBytes();
   const size_t defaultMinAlloc = clampSize((size_t)(physicalMemory / 128ULL), 32ULL * 1024ULL * 1024ULL, 512ULL * 1024ULL * 1024ULL);
   const size_t defaultInitialHeap = clampSize((size_t)(physicalMemory / 4ULL), 256ULL * 1024ULL * 1024ULL, 6ULL * 1024ULL * 1024ULL * 1024ULL);
+  const int defaultFreeSpaceDivisor =
+    physicalMemory >= (24ULL * 1024ULL * 1024ULL * 1024ULL) ? 4 :
+    physicalMemory >= (12ULL * 1024ULL * 1024ULL * 1024ULL) ? 3 :
+    2;
 
   // Runtime override for testing/tuning GC allocation cadence.
   const size_t minAlloc = parseSizeEnvOrDefault(getenv("MADLIB_GC_MIN_ALLOC_BYTES"), defaultMinAlloc);
   const char *gcInitialHeapEnv = getenv("GC_INITIAL_HEAP_SIZE");
+  const int freeSpaceDivisor = parseIntEnvOrDefault(getenv("MADLIB_GC_FREE_SPACE_DIVISOR"), defaultFreeSpaceDivisor);
 
   GC_set_min_bytes_allocd(minAlloc);
 
@@ -136,15 +155,16 @@ void __main__init__(int argc, char **argv) {
   if (gcInitialHeapEnv == NULL || gcInitialHeapEnv[0] == '\0') {
     GC_expand_hp(defaultInitialHeap);
   }
-  GC_set_free_space_divisor(1);
+  GC_set_free_space_divisor(freeSpaceDivisor);
 
   if (gcDiag) {
     fprintf(
       stderr,
-      "[madlib-gc] init: phys=%llu min_alloc=%zu initial_heap=%s free_space_divisor=1\n",
+      "[madlib-gc] init: phys=%llu min_alloc=%zu initial_heap=%s free_space_divisor=%d\n",
       (unsigned long long)physicalMemory,
       minAlloc,
-      (gcInitialHeapEnv == NULL || gcInitialHeapEnv[0] == '\0') ? "auto" : "env"
+      (gcInitialHeapEnv == NULL || gcInitialHeapEnv[0] == '\0') ? "auto" : "env",
+      freeSpaceDivisor
     );
   }
 
@@ -694,11 +714,17 @@ void runThread(uv_work_t *req) {
   goodCallbackArg->fn = (void*)goodCallbackFn;
   goodCallbackArg->arity = 2;
   goodCallbackArg->missingArgCount = 2;
+  goodCallbackArg->env = NULL;
+  goodCallbackArg->env_size = 0;
+  goodCallbackArg->env_is_atomic = 0;
 
   PAP_t *badCallbackArg = (PAP_t*) GC_MALLOC(sizeof(PAP_t));
   badCallbackArg->fn = (void*)badCallbackFn;
   badCallbackArg->arity = 2;
   badCallbackArg->missingArgCount = 2;
+  badCallbackArg->env = NULL;
+  badCallbackArg->env_size = 0;
+  badCallbackArg->env_is_atomic = 0;
 
   PAP_t *goodCallbackArgWithData = (PAP_t*) __applyPAP__(goodCallbackArg, 1, req);
   PAP_t *badCallbackArgWithData = (PAP_t*) __applyPAP__(badCallbackArg, 1, req);

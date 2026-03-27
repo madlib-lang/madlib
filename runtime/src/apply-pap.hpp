@@ -1,4 +1,4 @@
-// generated automatically on the 2023-07-07 at 08:50:26 UTC
+// generated automatically on the 2026-03-27 at 14:33:42 UTC
 #ifndef APPLY_PAP_H
 #define APPLY_PAP_H
 
@@ -600,6 +600,8 @@ typedef struct PAP {
   int32_t arity;
   int32_t missingArgCount;
   void *env;
+  int32_t env_size;
+  int8_t env_is_atomic;
 } PAP_t;
 
 
@@ -607,11 +609,11 @@ typedef struct PAP {
 extern "C" {
 #endif
 
-void *__applyPAP1__(PAP_t *pap, void *arg1);
-
-void *__applyPAP2__(PAP_t *pap, void *arg1, void *arg2);
-
 void *__applyPAP__(void *pap, int32_t argc, ...);
+void *__applyPAP1__(PAP_t *pap, void *arg1);
+void *__applyPAP2__(PAP_t *pap, void *arg1, void *arg2);
+void *__applyPAP3__(PAP_t *pap, void *arg1, void *arg2, void *arg3);
+void *__applyPAP4__(PAP_t *pap, void *arg1, void *arg2, void *arg3, void *arg4);
 
 #ifdef __cplusplus
 }

@@ -1,10 +1,11 @@
-// generated automatically on the 2023-07-07 at 08:50:26 UTC
+// generated automatically on the 2026-03-27 at 14:33:41 UTC
 #include <gc.h>
 #include "apply-pap.hpp"
 #include <cstdarg>
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 
 // Partial application
@@ -18,12 +19,25 @@ static const int32_t MADLIB_MAX_SUPPORTED_PAP_ARITY = 30;
 static void failUnsupportedPAPArity(int32_t arity, int32_t argc) {
   fprintf(
       stderr,
-      "Unsupported PAP arity: %d (argc=%d). "
-      "runtime/src/apply-pap.* currently supports up to %d arguments.\n",
+      "Unsupported PAP arity: %d (argc=%d). runtime/src/apply-pap.* currently supports up to %d arguments.\\n",
       arity,
       argc,
       MADLIB_MAX_SUPPORTED_PAP_ARITY);
   abort();
+}
+
+static bool papAtomicEnvEnabled() {
+  const char *value = getenv("MADLIB_PAP_ATOMIC_ENV");
+  if (value == NULL || value[0] == '\0') {
+    return false;
+  }
+
+  return
+    strcmp(value, "1") == 0
+    || strcmp(value, "true") == 0
+    || strcmp(value, "TRUE") == 0
+    || strcmp(value, "yes") == 0
+    || strcmp(value, "YES") == 0;
 }
 
 void *__applyPAP1__(PAP_t *pap, void *arg1) {
@@ -78,6 +92,56 @@ void *__applyPAP2__(PAP_t *pap, void *arg1, void *arg2) {
   }
 
   return __applyPAP__(pap, 2, arg1, arg2);
+}
+
+void *__applyPAP3__(PAP_t *pap, void *arg1, void *arg2, void *arg3) {
+  int32_t arity = pap->arity;
+  int32_t missingArgs = pap->missingArgCount;
+  if (missingArgs <= 3) {
+    if (arity == 1) {
+      void *(*fn)(void *) = (void*(*)(void *))pap->fn;
+      return __applyPAP2__((PAP_t*) fn(arg1), arg2, arg3);
+    }
+
+    int32_t ENV_SIZE = arity - missingArgs;
+    if (ENV_SIZE == 0 && arity == 3) {
+      void *(*fn)(void *, void *, void *) = (void*(*)(void *, void *, void *))pap->fn;
+      return fn(arg1, arg2, arg3);
+    }
+
+    if (ENV_SIZE == 1 && arity == 4) {
+      void *(*fn)(void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *))pap->fn;
+      void **env = (void **)pap->env;
+      return fn(env[0], arg1, arg2, arg3);
+    }
+  }
+
+  return __applyPAP__(pap, 3, arg1, arg2, arg3);
+}
+
+void *__applyPAP4__(PAP_t *pap, void *arg1, void *arg2, void *arg3, void *arg4) {
+  int32_t arity = pap->arity;
+  int32_t missingArgs = pap->missingArgCount;
+  if (missingArgs <= 4) {
+    if (arity == 1) {
+      void *(*fn)(void *) = (void*(*)(void *))pap->fn;
+      return __applyPAP3__((PAP_t*) fn(arg1), arg2, arg3, arg4);
+    }
+
+    int32_t ENV_SIZE = arity - missingArgs;
+    if (ENV_SIZE == 0 && arity == 4) {
+      void *(*fn)(void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *))pap->fn;
+      return fn(arg1, arg2, arg3, arg4);
+    }
+
+    if (ENV_SIZE == 1 && arity == 5) {
+      void *(*fn)(void *, void *, void *, void *, void *) = (void*(*)(void *, void *, void *, void *, void *))pap->fn;
+      void **env = (void **)pap->env;
+      return fn(env[0], arg1, arg2, arg3, arg4);
+    }
+  }
+
+  return __applyPAP__(pap, 4, arg1, arg2, arg3, arg4);
 }
 
 void *__applyPAP__(void *pap, int32_t argc, ...) {
@@ -372,9 +436,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     }
     if (argc > unwrappedPAP->missingArgCount) {
       int argsLeft = argc - unwrappedPAP->missingArgCount;
-      if (argsLeft > MADLIB_MAX_SUPPORTED_PAP_ARITY) {
-        failUnsupportedPAPArity(argsLeft, argc);
-      }
       switch (argsLeft) {
         case 1: {
           void *args[1];
@@ -571,9 +632,14 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     newPAP->fn = unwrappedPAP->fn;
     newPAP->arity = unwrappedPAP->arity;
     newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
+    newPAP->env_size = NEXT_ENV_SIZE;
+    newPAP->env_is_atomic = unwrappedPAP->env_is_atomic;
 
     void **env = (void **)unwrappedPAP->env;
-    void **newEnv = (void**) GC_MALLOC(sizeof(void*) * NEXT_ENV_SIZE);
+    bool useAtomicEnv = papAtomicEnvEnabled() && unwrappedPAP->env_is_atomic;
+    void **newEnv = useAtomicEnv
+      ? (void**) GC_MALLOC_ATOMIC(sizeof(void*) * NEXT_ENV_SIZE)
+      : (void**) GC_MALLOC(sizeof(void*) * NEXT_ENV_SIZE);
     int i = 0;
     for (i = 0; i<ENV_SIZE; i++) {
       newEnv[i] = env[i];
@@ -587,6 +653,9 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     newPAP->env = newEnv;
     return newPAP;
   }
+  printf("__applyPAP__ case not handled, argc: %d, ENV_SIZE: %d, ARITY: %d\n", argc, ENV_SIZE, ARITY);
+
+  return NULL;
 }
 
 #ifdef __cplusplus

@@ -6,7 +6,7 @@ import System.IO (readFile)
 import Prelude hiding (readFile)
 
 preludeDir :: FilePath
-preludeDir = "/Users/arnaudboeglin/Code/madlib/prelude/__internal__"
+preludeDir = "prelude/__internal__"
 
 parseFile :: FilePath -> IO ()
 parseFile path = do
@@ -158,12 +158,6 @@ spec = describe "Megaparsec parser" $ do
       , "g :: Integer -> Integer"
       , "g = (x) => x"
       ]) `shouldSatisfy` isRight
-
-  it "parses Barbarian.mad" $
-    parseFile "/Users/arnaudboeglin/Code/mmorpg/src/client/Barbarian.mad"
-
-  it "parses Pathfinding.mad" $
-    parseFile "/Users/arnaudboeglin/Code/mmorpg/src/common/Pathfinding.mad"
 
   mapM_ (\name -> it ("parses " ++ name) $ parseFile (preludeDir ++ "/" ++ name))
     [ "Wish.mad"

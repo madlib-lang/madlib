@@ -323,6 +323,10 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
           callWithMetadata (makeDILocation env area) applyPAP1 $ (pap, []) : remainingArgs'''
         else if List.length remainingArgs''' == 2 then
           callWithMetadata (makeDILocation env area) applyPAP2 $ (pap, []) : remainingArgs'''
+        else if List.length remainingArgs''' == 3 then
+          callWithMetadata (makeDILocation env area) applyPAP3 $ (pap, []) : remainingArgs'''
+        else if List.length remainingArgs''' == 4 then
+          callWithMetadata (makeDILocation env area) applyPAP4 $ (pap, []) : remainingArgs'''
         else
           callWithMetadata (makeDILocation env area) applyPAP $ [(pap, []), (argc, [])] ++ remainingArgs'''
 
@@ -331,10 +335,11 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       return (symbolTable, unboxed, Just ret)
   | otherwise = do
       -- We don't have enough args, so we create a new PAP
-      let papStructType           = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+      let papStructType           = Type.StructureType False [boxType, Type.i32, Type.i32, boxType, Type.i32, Type.i8]
       let arity'                  = i32ConstOp (fromIntegral arity)
       let argCount                = List.length args
       let amountOfArgsToBeApplied = i32ConstOp (fromIntegral (arity - argCount))
+      let envSize                 = i32ConstOp (fromIntegral argCount)
       let envType                 = Type.StructureType False (List.replicate argCount boxType)
 
       boxedFn  <- box fnOperand
@@ -342,19 +347,20 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       args'     <- mapM (generateExp env symbolTable) args
       boxedArgs <- retrieveArgs (Core.getMetadata <$> args) args args'
 
-      -- Use atomic malloc when all captured values are primitive (no GC scanning needed).
-      -- If any captured variable is a mutation reference (ReferenceArgument), the
-      -- environment contains heap pointers that the GC must scan, so we must use GC_malloc.
+      -- We compute capture atomicity metadata at compile-time. Actual runtime atomic
+      -- allocation for PAP envs is guarded by MADLIB_PAP_ATOMIC_ENV and defaults off.
       let hasMutationRef = any (Core.isReferenceArgument . Core.getMetadata) args
       let envArgTypes = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
-      let envMallocFn = if hasMutationRef then gcMalloc else chooseMalloc envArgTypes
+      let hasAtomicEnv = not hasMutationRef && all isAtomicType envArgTypes
+      let envIsAtomic = i8ConstOp (if hasAtomicEnv then 1 else 0)
+      let envMallocFn = gcMalloc
       envPtr  <- callMallocWithMetadata (makeDILocation env area) envMallocFn [(Operand.ConstantOperand $ sizeof' envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
 
       Monad.foldM_
         (\_ (boxed, index, argType, unboxed) ->
           case typeOf unboxed of
-            Type.PointerType (Type.StructureType _ [Type.PointerType _ _, Type.IntegerType 32, Type.IntegerType 32, Type.PointerType _ _]) _ | IT.isFunctionType argType && Maybe.isJust (recursionData env) -> do
+            Type.PointerType (Type.StructureType _ [Type.PointerType _ _, Type.IntegerType 32, Type.IntegerType 32, Type.PointerType _ _, Type.IntegerType 32, Type.IntegerType 8]) _ | IT.isFunctionType argType && Maybe.isJust (recursionData env) -> do
               unboxed' <- load unboxed 0
               newPAP <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
               newPAP' <- bitcast newPAP papType
@@ -369,7 +375,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
 
       papPtr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
       papPtr' <- safeBitcast papPtr (Type.ptr papStructType)
-      Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3)]
+      Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3), (envSize, 4), (envIsAtomic, 5)]
 
       return (symbolTable, papPtr', Just papPtr)
 
@@ -379,7 +385,7 @@ buildReferencePAP symbolTable env area arity fn = do
   -- Emit a global constant PAP instead of runtime GC_MALLOC allocation.
   -- Reference PAPs have no environment (missingArgCount == arity), so they
   -- are identical every time and can be hoisted to a global constant.
-  let papStructType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+  let papStructType = Type.StructureType False [boxType, Type.i32, Type.i32, boxType, Type.i32, Type.i8]
 
   -- Get the function's constant reference for the global initializer
   let fnConstant = case fn of
@@ -388,11 +394,13 @@ buildReferencePAP symbolTable env area arity fn = do
 
   case fnConstant of
     Just fnConst -> do
-      -- Build a global constant PAP: { bitcast(fn, i8*), arity, arity, null }
+      -- Build a global constant PAP with empty env metadata.
       let fnBitcast = Constant.BitCast fnConst boxType
       let arityConst = Constant.Int 32 (fromIntegral arity)
       let nullEnv = Constant.Null boxType
-      let papInit = Constant.Struct Nothing False [fnBitcast, arityConst, arityConst, nullEnv]
+      let envSizeConst = Constant.Int 32 0
+      let envAtomicConst = Constant.Int 8 0
+      let papInit = Constant.Struct Nothing False [fnBitcast, arityConst, arityConst, nullEnv, envSizeConst, envAtomicConst]
 
       r <- liftIO randomIO
       nm <- freshName (stringToShortByteString $ "pap_" ++ show (r :: Int))
@@ -412,10 +420,13 @@ buildReferencePAP symbolTable env area arity fn = do
     Nothing -> do
       -- Fallback: dynamic PAP allocation for non-constant function operands
       let arity'  = i32ConstOp (fromIntegral arity)
+      let envSize = i32ConstOp 0
+      let envIsAtomic = i8ConstOp 0
+      let nullEnv = Operand.ConstantOperand (Constant.Null boxType)
       boxedFn  <- box fn
       papPtr   <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
       papPtr'  <- safeBitcast papPtr (Type.ptr papStructType)
-      Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2)]
+      Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2), (nullEnv, 3), (envSize, 4), (envIsAtomic, 5)]
       return (symbolTable, papPtr', Just papPtr)
 
 -- | Unwrap Do blocks in function position of Call nodes.
@@ -1104,6 +1115,10 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             callWithMetadata (makeDILocation env area) applyPAP1 $ [(pap'', [])] ++ ((,[]) <$> boxedArgs)
           else if argsApplied == 2 then
             callWithMetadata (makeDILocation env area) applyPAP2 $ [(pap'', [])] ++ ((,[]) <$> boxedArgs)
+          else if argsApplied == 3 then
+            callWithMetadata (makeDILocation env area) applyPAP3 $ [(pap'', [])] ++ ((,[]) <$> boxedArgs)
+          else if argsApplied == 4 then
+            callWithMetadata (makeDILocation env area) applyPAP4 $ [(pap'', [])] ++ ((,[]) <$> boxedArgs)
           else
             callWithMetadata (makeDILocation env area) applyPAP $ [(pap'', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
         unboxed   <- unbox env symbolTable qt ret
@@ -1126,6 +1141,10 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             callWithMetadata (makeDILocation env area) applyPAP1 $ [(pap', [])] ++ ((,[]) <$> boxedArgs)
         else if List.length args == 2 then
             callWithMetadata (makeDILocation env area) applyPAP2 $ [(pap', [])] ++ ((,[]) <$> boxedArgs)
+        else if List.length args == 3 then
+            callWithMetadata (makeDILocation env area) applyPAP3 $ [(pap', [])] ++ ((,[]) <$> boxedArgs)
+        else if List.length args == 4 then
+            callWithMetadata (makeDILocation env area) applyPAP4 $ [(pap', [])] ++ ((,[]) <$> boxedArgs)
         else
           callWithMetadata (makeDILocation env area) applyPAP $ [(pap', []), (argc, [])] ++ ((,[]) <$> boxedArgs)
       unboxed <- unbox env symbolTable qt ret

@@ -457,13 +457,27 @@ isAllocation :: Exp -> Bool
 isAllocation exp = case exp of
   -- Constructor call: Var with isConstructor=True applied to args
   Typed _ _ _ (Call (Typed _ _ _ (Var _ True)) _) -> True
+  -- Constructor call wrapped in Do blocks
+  Typed _ _ _ (Call fn _) ->
+    case unwrapDo fn of
+      Typed _ _ _ (Var _ True) -> True
+      _                        -> False
   -- Zero-arity constructor reference
   Typed _ _ _ (Var _ True) -> True
   -- Tuple allocation
   Typed _ _ _ (TupleConstructor _) -> True
   -- Record allocation
   Typed _ _ _ (Record _) -> True
+  -- List allocation
+  Typed _ _ _ (ListConstructor _) -> True
   _ -> False
+
+unwrapDo :: Exp -> Exp
+unwrapDo e = case e of
+  Typed _ _ _ (Do exps) | not (null exps) ->
+    unwrapDo (last exps)
+  _ ->
+    e
 
 
 -- | Add StackAllocatable metadata to an allocation expression.

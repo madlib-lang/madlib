@@ -166,7 +166,7 @@ buildSymbolTableFromImportInfo :: (Rock.MonadFetch Query.Query m, MonadIO m) => 
 buildSymbolTableFromImportInfo importInfo = case importInfo of
   Typed qt@(_ IT.:=> t) _ _ (ImportInfo name ExpressionImport) ->
     if IT.isFunctionType t then do
-      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType]
+      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType, Type.i32, Type.i8]
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       return $ Map.singleton name (topLevelSymbol globalRef)
     else do
@@ -334,6 +334,8 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
 
   externVarArgs (AST.mkName "__applyPAP__")                          [Type.ptr Type.i8, Type.i32] (Type.ptr Type.i8)
   externVarArgs (AST.mkName "madlib__record__internal__buildRecord") [Type.i32, boxType] recordType
+  extern (AST.mkName "__applyPAP4__")                                [boxType, boxType, boxType, boxType, boxType] boxType
+  extern (AST.mkName "__applyPAP3__")                                [boxType, boxType, boxType, boxType] boxType
   extern (AST.mkName "__applyPAP2__")                                [boxType, boxType, boxType] boxType
   extern (AST.mkName "__applyPAP1__")                                [boxType, boxType] boxType
   extern (AST.mkName "madlib__process__internal__typedHoleReached")  [] Type.void

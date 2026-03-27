@@ -19,6 +19,8 @@ module Generate.LLVM.Builtins
   , applyPAP
   , applyPAP1
   , applyPAP2
+  , applyPAP3
+  , applyPAP4
   , buildRecord
   , selectField
   , madlistHasMinLength
@@ -111,6 +113,14 @@ applyPAP1 =
 applyPAP2 :: Operand
 applyPAP2 =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType, boxType] False) (mkName "__applyPAP2__"))
+
+applyPAP3 :: Operand
+applyPAP3 =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType, boxType, boxType] False) (mkName "__applyPAP3__"))
+
+applyPAP4 :: Operand
+applyPAP4 =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [boxType, boxType, boxType, boxType, boxType] False) (mkName "__applyPAP4__"))
 
 buildRecord :: Operand
 buildRecord =
