@@ -525,21 +525,10 @@ isSideEffectFree pureFns exp = case exp of
   _ ->
     False
 
+-- | Dead code elimination pass. Currently disabled due to a bug where it
+-- incorrectly removes needed assignments, causing runtime hangs at O2+.
 eliminateUnusedAssignmentsInBody :: Set.Set String -> [Exp] -> [Exp]
-eliminateUnusedAssignmentsInBody pureFns exps =
-  snd (foldl step (Set.empty, []) (reverse exps))
-  where
-    step (needed, acc) exp = case exp of
-      Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) rhs) ->
-        if name `Set.member` needed || not (isSideEffectFree pureFns rhs) then
-          let needed' = Set.union (Set.delete name needed) (collectVarsUsed rhs)
-          in (needed', exp : acc)
-        else
-          (needed, acc)
-
-      _ ->
-        let needed' = Set.union needed (collectVarsUsed exp)
-        in (needed', exp : acc)
+eliminateUnusedAssignmentsInBody _ exps = exps
 
 isDirectMapUseOfVar :: Set.Set String -> String -> Exp -> Bool
 isDirectMapUseOfVar pureFns varName exp = case exp of

@@ -58,7 +58,7 @@ import           Control.Monad.IO.Class       (MonadIO)
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, papType, sizeof', buildLLVMType, buildLLVMParamType, retrieveConstructorStructType, adtSymbol)
-import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcMalloc, chooseMalloc)
+import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcMalloc, gcMallocAtomic, isAtomicType, chooseMalloc)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata)
 import           Generate.LLVM.Debug
@@ -259,7 +259,14 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
               let initialChunkSize = 32
               let chunkBytes = Operand.ConstantOperand $ Constant.Int 64 (fromIntegral initialChunkSize * 16)  -- each node is 2 pointers = 16 bytes
 
-              arena       <- callMallocWithMetadata [] gcMalloc [(chunkBytes, [])]
+              -- Use GC_malloc_atomic for arena chunks when list elements are non-pointer types.
+              -- Atomic chunks are not scanned by the GC, dramatically reducing collection pause times.
+              let returnType = IT.getReturnType t
+                  elemType = IT.listItemType returnType
+                  useAtomic = isAtomicType elemType
+                  mallocFn = if useAtomic then gcMallocAtomic else gcMalloc
+
+              arena       <- callMallocWithMetadata [] mallocFn [(chunkBytes, [])]
               arena'      <- ctxSafeBitcast ctx arena (Type.ptr nodeType)
               start'      <- ctxAddrSpaceCast ctx arena listType
 
@@ -275,6 +282,23 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
               end         <- alloca listType Nothing 0
               store end 0 start'
 
+              -- For atomic arenas, maintain a GC-visible linked list of chunk pointers.
+              -- This keeps atomic chunks alive since the GC won't trace next pointers within them.
+              tracker <- if useAtomic then do
+                let trackerNodeBytes = Operand.ConstantOperand $ Constant.Int 64 16
+                trackerNode <- callMallocWithMetadata [] gcMalloc [(trackerNodeBytes, [])]
+                trackerNode' <- ctxSafeBitcast ctx trackerNode (Type.ptr nodeType)
+                -- Store arena chunk pointer in tracker node
+                storeItem trackerNode' () (arena, 0)
+                -- Store null as next (no previous tracker node)
+                storeItem trackerNode' () (Operand.ConstantOperand (Constant.Null boxType), 1)
+                -- Alloca for tracker head pointer
+                trackerHead <- alloca (Type.ptr nodeType) Nothing 0
+                store trackerHead 0 trackerNode'
+                return (Just trackerHead)
+              else
+                return Nothing
+
               return $
                 RightListRecursionData
                   { entryBlockName = entry
@@ -285,6 +309,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   , arenaPtr = arenaPtr'
                   , arenaIndex = arenaIndex'
                   , arenaCapacity = arenaCap'
+                  , chunkTracker = tracker
                   }
             else if Core.isConstructorRecursiveDefinition metadata then do
               let returnType = IT.getReturnType t

@@ -26,6 +26,7 @@ data RecursionData
       , arenaPtr :: Operand.Operand      -- ptr to current chunk base (alloca i8*)
       , arenaIndex :: Operand.Operand    -- current index in chunk (alloca i64)
       , arenaCapacity :: Operand.Operand -- chunk capacity (alloca i64)
+      , chunkTracker :: Maybe Operand.Operand -- GC-visible linked list keeping atomic arena chunks alive (Nothing = non-atomic, uses gcMalloc)
       }
   | ConstructorRecursionData
       { entryBlockName :: AST.Name
