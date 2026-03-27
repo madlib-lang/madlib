@@ -11,6 +11,8 @@
 #include <time.h>
 #include <thread>
 #include <cstdio>
+#include <cstdlib>
+#include <cstdint>
 
 #ifndef __MINGW32__
   #include <glob.h>
@@ -45,6 +47,53 @@ static madlib__list__Node_t *__args__;
 static int ARGC = 0;
 static char **ARGV = NULL;
 
+static bool isTruthyEnvValue(const char *value) {
+  if (value == NULL || value[0] == '\0') {
+    return false;
+  }
+
+  return
+    strcmp(value, "1") == 0
+    || strcmp(value, "true") == 0
+    || strcmp(value, "TRUE") == 0
+    || strcmp(value, "yes") == 0
+    || strcmp(value, "YES") == 0;
+}
+
+static uint64_t getPhysicalMemoryBytes() {
+  long pages = sysconf(_SC_PHYS_PAGES);
+  long pageSize = sysconf(_SC_PAGESIZE);
+  if (pages <= 0 || pageSize <= 0) {
+    return 8ULL * 1024ULL * 1024ULL * 1024ULL;
+  }
+
+  return (uint64_t)pages * (uint64_t)pageSize;
+}
+
+static size_t clampSize(size_t value, size_t minValue, size_t maxValue) {
+  if (value < minValue) {
+    return minValue;
+  }
+  if (value > maxValue) {
+    return maxValue;
+  }
+  return value;
+}
+
+static size_t parseSizeEnvOrDefault(const char *rawValue, size_t fallbackValue) {
+  if (rawValue == NULL || rawValue[0] == '\0') {
+    return fallbackValue;
+  }
+
+  char *endPtr = NULL;
+  unsigned long long parsed = strtoull(rawValue, &endPtr, 10);
+  if (endPtr == rawValue || (endPtr != NULL && *endPtr != '\0') || parsed == 0) {
+    return fallbackValue;
+  }
+
+  return (size_t)parsed;
+}
+
 static void appendOutputChunk(char **output, size_t *size, size_t *capacity, const char *chunk, size_t chunkSize) {
   size_t required = *size + chunkSize + 1;
   if (*capacity < required) {
@@ -72,11 +121,32 @@ void __main__init__(int argc, char **argv) {
   // GC_use_threads_discovery();
   GC_set_dont_precollect(1);
 
-  // TODO: make min alloc and initial heap size available as compilation options
-  size_t minAlloc = 50 * 1024 * 1024; // 50MB
+  const bool gcDiag = isTruthyEnvValue(getenv("MADLIB_GC_DIAG"));
+  const uint64_t physicalMemory = getPhysicalMemoryBytes();
+  const size_t defaultMinAlloc = clampSize((size_t)(physicalMemory / 128ULL), 32ULL * 1024ULL * 1024ULL, 512ULL * 1024ULL * 1024ULL);
+  const size_t defaultInitialHeap = clampSize((size_t)(physicalMemory / 4ULL), 256ULL * 1024ULL * 1024ULL, 6ULL * 1024ULL * 1024ULL * 1024ULL);
+
+  // Runtime override for testing/tuning GC allocation cadence.
+  const size_t minAlloc = parseSizeEnvOrDefault(getenv("MADLIB_GC_MIN_ALLOC_BYTES"), defaultMinAlloc);
+  const char *gcInitialHeapEnv = getenv("GC_INITIAL_HEAP_SIZE");
+
   GC_set_min_bytes_allocd(minAlloc);
-  GC_expand_hp(64 * 1024 * 1024); // 64MB
+
+  // Respect GC_INITIAL_HEAP_SIZE when provided; otherwise use adaptive defaults.
+  if (gcInitialHeapEnv == NULL || gcInitialHeapEnv[0] == '\0') {
+    GC_expand_hp(defaultInitialHeap);
+  }
   GC_set_free_space_divisor(1);
+
+  if (gcDiag) {
+    fprintf(
+      stderr,
+      "[madlib-gc] init: phys=%llu min_alloc=%zu initial_heap=%s free_space_divisor=1\n",
+      (unsigned long long)physicalMemory,
+      minAlloc,
+      (gcInitialHeapEnv == NULL || gcInitialHeapEnv[0] == '\0') ? "auto" : "env"
+    );
+  }
 
   ARGC = argc;
   ARGV = argv;

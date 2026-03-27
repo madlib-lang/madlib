@@ -127,8 +127,6 @@ allocateArenaNode env area = mdo
   let Just arenaPtr'    = arenaPtr <$> recursionData env
   let Just arenaIndex'  = arenaIndex <$> recursionData env
   let Just arenaCap'    = arenaCapacity <$> recursionData env
-  let trackerHead       = chunkTracker =<< recursionData env
-  let mallocFn          = case trackerHead of { Just _ -> gcMallocAtomic; Nothing -> gcMalloc }
 
   idx <- load arenaIndex' 0
   cap <- load arenaCap' 0
@@ -144,29 +142,11 @@ allocateArenaNode env area = mdo
   -- Allocate new chunk: newCap * sizeof(Node)
   nodeSize <- Instruction.ptrtoint (Operand.ConstantOperand $ sizeof' nodeType) Type.i64
   chunkBytes <- mul newCap nodeSize
-  newArena <- callMallocWithMetadata (makeDILocation env area) mallocFn [(chunkBytes, [])]
+  newArena <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(chunkBytes, [])]
   newArena' <- safeBitcast newArena (Type.ptr nodeType)
   store arenaPtr' 0 newArena'
   store arenaCap' 0 newCap
   store arenaIndex' 0 (i64ConstOp 0)
-
-  -- For atomic arenas, add the new chunk to the GC-visible tracker linked list
-  case trackerHead of
-    Just trackerHeadPtr -> do
-      let trackerNodeBytes = Operand.ConstantOperand $ Constant.Int 64 16
-      trackerNode <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(trackerNodeBytes, [])]
-      trackerNode' <- safeBitcast trackerNode (Type.ptr nodeType)
-      -- Store new chunk pointer
-      Fn.storeItem trackerNode' () (newArena, 0)
-      -- Link to previous tracker head
-      prevTracker <- load trackerHeadPtr 0
-      prevTracker' <- safeBitcast prevTracker (Type.ptr Type.i8)
-      Fn.storeItem trackerNode' () (prevTracker', 1)
-      -- Update tracker head
-      store trackerHeadPtr 0 trackerNode'
-
-    Nothing ->
-      return ()
 
   br continueBlock
 
