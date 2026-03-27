@@ -116,11 +116,17 @@ export split = extern "madlib__string__split"
  * join(" and ", ["cats", "dogs"])   // "cats and dogs"
  * join("", ["one", "two", "three"]) // "onetwothree"
  */
+#iftarget js
 join :: String -> List String -> String
 export join = (a, xs) => pipe(
   List.intersperse(a),
   List.reduce(mappend, ""),
 )(xs)
+
+#elseif llvm
+join :: String -> List String -> String
+export join = extern "madlib__string__join"
+#endif
 
 /**
  * Split a string by newlines

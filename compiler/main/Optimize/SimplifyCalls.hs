@@ -76,10 +76,10 @@ replaceVarWith n replaceWith exp = case exp of
     exp
 
 
-reduceIsWithPureFns :: Set.Set String -> Is -> Is
-reduceIsWithPureFns pureFns is = case is of
+reduceIsWithPureFns :: Set.Set String -> Map.Map String Integer -> Is -> Is
+reduceIsWithPureFns pureFns knownIntegers is = case is of
   Typed qt area metadata (Is pat exp) ->
-    Typed qt area metadata (Is pat (reduceWithPureFns pureFns exp))
+    Typed qt area metadata (Is pat (reduceWithPureFns pureFns knownIntegers exp))
 
   _ ->
     is
@@ -558,12 +558,12 @@ isDirectMapUseOfVar pureFns varName exp = case exp of
   _ ->
     False
 
-rewriteMapRepeatWithEnv :: Set.Set String -> Map.Map String (Exp, Exp, Exp) -> Exp -> Exp
-rewriteMapRepeatWithEnv pureFns knownRepeats exp = case exp of
+rewriteMapRepeatWithEnv :: Set.Set String -> Map.Map String (Exp, Exp, Exp) -> Map.Map String Integer -> Exp -> Exp
+rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers exp = case exp of
   Typed qt area metadata (Call lengthFn@(Typed _ _ _ (Var lengthName _)) [listArg])
     | isLengthFnName lengthName ->
-        let listArg' = rewriteMapRepeatWithEnv pureFns knownRepeats listArg
-            fromRepeat (_, _, count) = rewriteMapRepeatWithEnv pureFns knownRepeats count
+        let listArg' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers listArg
+            fromRepeat (_, _, count) = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers count
         in case extractRepeatCall listArg' of
             Just repeatData ->
               fromRepeat repeatData
@@ -583,11 +583,11 @@ rewriteMapRepeatWithEnv pureFns knownRepeats exp = case exp of
 
   Typed qt area metadata (Call nthFn@(Typed _ _ _ (Var nthName _)) [indexArg, listArg])
     | isNthFnName nthName ->
-        let indexArg' = rewriteMapRepeatWithEnv pureFns knownRepeats indexArg
-            listArg' = rewriteMapRepeatWithEnv pureFns knownRepeats listArg
+        let indexArg' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers indexArg
+            listArg' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers listArg
             fallback = Typed qt area metadata (Call nthFn [indexArg', listArg'])
             foldNthWithRepeat item count =
-              case (extractIntegerLiteral indexArg', extractIntegerLiteral count) of
+              case (resolveIntegerLiteral knownIntegers indexArg', resolveIntegerLiteral knownIntegers count) of
                 (Just i, Just c)
                   | i >= 0 && i < c ->
                       let zeroIndex = mkNumberLiteralLike indexArg' 0
@@ -621,10 +621,10 @@ rewriteMapRepeatWithEnv pureFns knownRepeats exp = case exp of
   Typed qt area metadata (Call mapFn@(Typed _ _ _ (Var mapName _)) [fArg@(Typed _ _ _ (Var fName _)), listArg])
     | isMapFnName mapName
       , fName `Set.member` pureFns ->
-        let listArg' = rewriteMapRepeatWithEnv pureFns knownRepeats listArg
+        let listArg' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers listArg
             fusedFrom (repeatFn, item, count) =
-              let item' = rewriteMapRepeatWithEnv pureFns knownRepeats item
-                  count' = rewriteMapRepeatWithEnv pureFns knownRepeats count
+              let item' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers item
+                  count' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers count
                   fAppliedType = [] IT.:=> IT.dropFirstParamType (getType fArg)
                   fApplied = Typed fAppliedType area metadata (Call fArg [item'])
               in Typed qt area metadata (Call repeatFn [fApplied, count'])
@@ -646,49 +646,62 @@ rewriteMapRepeatWithEnv pureFns knownRepeats exp = case exp of
                    Typed qt area metadata (Call mapFn [fArg, listArg'])
 
   Typed qt area metadata (Assignment lhs rhs) ->
-    Typed qt area metadata (Assignment lhs (rewriteMapRepeatWithEnv pureFns knownRepeats rhs))
+    Typed qt area metadata (Assignment lhs (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers rhs))
 
   Typed qt area metadata (Export e) ->
-    Typed qt area metadata (Export (rewriteMapRepeatWithEnv pureFns knownRepeats e))
+    Typed qt area metadata (Export (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers e))
 
   Typed qt area metadata (Call fn args) ->
-    Typed qt area metadata (Call (rewriteMapRepeatWithEnv pureFns knownRepeats fn) (map (rewriteMapRepeatWithEnv pureFns knownRepeats) args))
+    Typed qt area metadata (Call (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers fn) (map (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers) args))
 
   Typed qt area metadata (Definition params body) ->
-    Typed qt area metadata (Definition params (map (rewriteMapRepeatWithEnv pureFns knownRepeats) body))
+    Typed qt area metadata (Definition params (map (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers) body))
 
   Typed qt area metadata (ListConstructor items) ->
-    Typed qt area metadata (ListConstructor (mapListItem (rewriteMapRepeatWithEnv pureFns knownRepeats) <$> items))
+    Typed qt area metadata (ListConstructor (mapListItem (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers) <$> items))
 
   Typed qt area metadata (TupleConstructor items) ->
-    Typed qt area metadata (TupleConstructor (map (rewriteMapRepeatWithEnv pureFns knownRepeats) items))
+    Typed qt area metadata (TupleConstructor (map (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers) items))
 
   Typed qt area metadata (Access rec field) ->
-    Typed qt area metadata (Access (rewriteMapRepeatWithEnv pureFns knownRepeats rec) (rewriteMapRepeatWithEnv pureFns knownRepeats field))
+    Typed qt area metadata (Access (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers rec) (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers field))
 
   Typed qt area metadata (ArrayAccess arr index) ->
-    Typed qt area metadata (ArrayAccess (rewriteMapRepeatWithEnv pureFns knownRepeats arr) (rewriteMapRepeatWithEnv pureFns knownRepeats index))
+    Typed qt area metadata (ArrayAccess (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers arr) (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers index))
 
   Typed qt area metadata (Record fields) ->
-    Typed qt area metadata (Record (mapRecordField (rewriteMapRepeatWithEnv pureFns knownRepeats) <$> fields))
+    Typed qt area metadata (Record (mapRecordField (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers) <$> fields))
 
   Typed qt area metadata (If cond truthy falsy) ->
-    Typed qt area metadata (If (rewriteMapRepeatWithEnv pureFns knownRepeats cond) (rewriteMapRepeatWithEnv pureFns knownRepeats truthy) (rewriteMapRepeatWithEnv pureFns knownRepeats falsy))
+    Typed qt area metadata (If (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers cond) (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers truthy) (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers falsy))
 
   Typed qt area metadata (While cond body) ->
-    Typed qt area metadata (While (rewriteMapRepeatWithEnv pureFns knownRepeats cond) (rewriteMapRepeatWithEnv pureFns knownRepeats body))
+    Typed qt area metadata (While (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers cond) (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers body))
 
   Typed qt area metadata (Do exps) ->
-    Typed qt area metadata (Do (map (rewriteMapRepeatWithEnv pureFns knownRepeats) exps))
+    Typed qt area metadata (Do (map (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers) exps))
 
   Typed qt area metadata (Where e iss) ->
-    Typed qt area metadata (Where (rewriteMapRepeatWithEnv pureFns knownRepeats e) (map (mapIs (rewriteMapRepeatWithEnv pureFns knownRepeats)) iss))
+    Typed qt area metadata (Where (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers e) (map (mapIs (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers)) iss))
 
   _ ->
     exp
 
-fuseMapRepeatInBody :: Set.Set String -> [Exp] -> [Exp]
-fuseMapRepeatInBody pureFns exps = reverse $ go Map.empty Nothing [] exps
+resolveIntegerLiteral :: Map.Map String Integer -> Exp -> Maybe Integer
+resolveIntegerLiteral knownIntegers exp = case extractIntegerLiteral exp of
+  Just n ->
+    Just n
+
+  Nothing ->
+    case exp of
+      Typed _ _ _ (Var n _) ->
+        Map.lookup n knownIntegers
+
+      _ ->
+        Nothing
+
+fuseMapRepeatInBody :: Set.Set String -> Map.Map String Integer -> [Exp] -> [Exp]
+fuseMapRepeatInBody pureFns initialIntegers exps = reverse $ go Map.empty initialIntegers Nothing [] exps
   where
     flushPending pending acc = case pending of
       Nothing ->
@@ -697,30 +710,41 @@ fuseMapRepeatInBody pureFns exps = reverse $ go Map.empty Nothing [] exps
       Just (_, pendingExp) ->
         pendingExp : acc
 
-    go knownRepeats pending acc body = case body of
+    go knownRepeats knownIntegers pending acc body = case body of
       exp : rest ->
-        let exp' = rewriteMapRepeatWithEnv pureFns knownRepeats exp
+        let exp' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers exp
+            knownIntegers' = case exp' of
+              Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) rhs) ->
+                case extractIntegerLiteral rhs of
+                  Just i ->
+                    Map.insert n i knownIntegers
+
+                  Nothing ->
+                    Map.delete n knownIntegers
+
+              _ ->
+                knownIntegers
         in case exp' of
             Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) rhs)
               | Just repeatData <- extractRepeatCall rhs ->
                   let acc' = flushPending pending acc
                       knownRepeats' = Map.insert n repeatData knownRepeats
-                  in go knownRepeats' (Just (n, exp')) acc' rest
+                  in go knownRepeats' knownIntegers' (Just (n, exp')) acc' rest
 
             _ ->
               case pending of
                 Just (pendingName, _) | isDirectMapUseOfVar pureFns pendingName exp ->
-                  go knownRepeats Nothing (exp' : acc) rest
+                  go knownRepeats knownIntegers' Nothing (exp' : acc) rest
 
                 _ ->
                   let acc' = flushPending pending acc
-                  in go knownRepeats Nothing (exp' : acc') rest
+                  in go knownRepeats knownIntegers' Nothing (exp' : acc') rest
 
       [] ->
         flushPending pending acc
 
-reduceWithPureFns :: Set.Set String -> Exp -> Exp
-reduceWithPureFns pureFns exp = case exp of
+reduceWithPureFns :: Set.Set String -> Map.Map String Integer -> Exp -> Exp
+reduceWithPureFns pureFns knownIntegers exp = case exp of
   Typed qt area metadata (Call (Typed qt' area' metadata' (Definition [param@(Typed _ _ _ pName)] [body])) [arg@(Typed _ _ _ (Var aName _))])
     | "__$PH" `List.isPrefixOf` pName ||
       "__P__" `List.isPrefixOf` pName ||
@@ -731,68 +755,103 @@ reduceWithPureFns pureFns exp = case exp of
       "__M__" `List.isPrefixOf` aName ||
       "__W__" `List.isPrefixOf` aName ->
         if isEligible body && (isLiteralOrVar arg || occurencesOf pName body == 1) then
-          reduceWithPureFns pureFns $ replaceVarWith (getValue param) (reduceWithPureFns pureFns arg) (reduceWithPureFns pureFns body)
+          reduceWithPureFns pureFns knownIntegers $ replaceVarWith (getValue param) (reduceWithPureFns pureFns knownIntegers arg) (reduceWithPureFns pureFns knownIntegers body)
         else
-          Typed qt area metadata (Call (Typed qt' area' metadata' (Definition [param] [reduceWithPureFns pureFns body])) [reduceWithPureFns pureFns arg])
+          Typed qt area metadata (Call (Typed qt' area' metadata' (Definition [param] [reduceWithPureFns pureFns knownIntegers body])) [reduceWithPureFns pureFns knownIntegers arg])
 
   Typed qt area metadata (Call (Typed qt' area' metadata' (Definition [param@(Typed _ _ _ pName)] [body])) [arg])
     | "__$PH" `List.isPrefixOf` pName || "__P__" `List.isPrefixOf` pName || "__M__" `List.isPrefixOf` pName || "__W__" `List.isPrefixOf` pName ->
       if isEligible body && (isLiteralOrVar arg || occurencesOf pName body == 1) then
-        reduceWithPureFns pureFns $ replaceVarWith (getValue param) (reduceWithPureFns pureFns arg) (reduceWithPureFns pureFns body)
+        reduceWithPureFns pureFns knownIntegers $ replaceVarWith (getValue param) (reduceWithPureFns pureFns knownIntegers arg) (reduceWithPureFns pureFns knownIntegers body)
       else
-        Typed qt area metadata (Call (Typed qt' area' metadata' (Definition [param] [reduceWithPureFns pureFns body])) [reduceWithPureFns pureFns arg])
+        Typed qt area metadata (Call (Typed qt' area' metadata' (Definition [param] [reduceWithPureFns pureFns knownIntegers body])) [reduceWithPureFns pureFns knownIntegers arg])
 
   Typed qt area metadata (Assignment name e) ->
-    Typed qt area metadata (Assignment name (reduceWithPureFns pureFns e))
+    Typed qt area metadata (Assignment name (reduceWithPureFns pureFns knownIntegers e))
 
   Typed qt area metadata (Export e) ->
-    Typed qt area metadata (Export (reduceWithPureFns pureFns e))
+    Typed qt area metadata (Export (reduceWithPureFns pureFns knownIntegers e))
 
   Typed qt area metadata (Call fn args) ->
-    Typed qt area metadata (Call (reduceWithPureFns pureFns fn) (reduceWithPureFns pureFns <$> args))
+    Typed qt area metadata (Call (reduceWithPureFns pureFns knownIntegers fn) (reduceWithPureFns pureFns knownIntegers <$> args))
 
   Typed qt area metadata (Definition params body) ->
-    let reducedBody = reduceWithPureFns pureFns <$> body
-        fusedBody = fuseMapRepeatInBody pureFns reducedBody
+    let shadowedNames = getValue <$> params
+        knownIntegers' = foldr Map.delete knownIntegers shadowedNames
+        reducedBody = reduceWithPureFns pureFns knownIntegers' <$> body
+        fusedBody = fuseMapRepeatInBody pureFns knownIntegers' reducedBody
         cleanedBody = eliminateUnusedAssignmentsInBody pureFns fusedBody
     in Typed qt area metadata (Definition params cleanedBody)
 
   Typed qt area metadata (ListConstructor items) ->
-    Typed qt area metadata (ListConstructor (mapListItem (reduceWithPureFns pureFns) <$> items))
+    Typed qt area metadata (ListConstructor (mapListItem (reduceWithPureFns pureFns knownIntegers) <$> items))
 
   Typed qt area metadata (TupleConstructor items) ->
-    Typed qt area metadata (TupleConstructor (reduceWithPureFns pureFns <$> items))
+    Typed qt area metadata (TupleConstructor (reduceWithPureFns pureFns knownIntegers <$> items))
 
   Typed qt area metadata (Access rec field) ->
-    Typed qt area metadata (Access (reduceWithPureFns pureFns rec) (reduceWithPureFns pureFns field))
+    Typed qt area metadata (Access (reduceWithPureFns pureFns knownIntegers rec) (reduceWithPureFns pureFns knownIntegers field))
 
   Typed qt area metadata (ArrayAccess arr index) ->
-    Typed qt area metadata (ArrayAccess (reduceWithPureFns pureFns arr) (reduceWithPureFns pureFns index))
+    Typed qt area metadata (ArrayAccess (reduceWithPureFns pureFns knownIntegers arr) (reduceWithPureFns pureFns knownIntegers index))
 
   Typed qt area metadata (Record fields) ->
-    Typed qt area metadata (Record (mapRecordField (reduceWithPureFns pureFns) <$> fields))
+    Typed qt area metadata (Record (mapRecordField (reduceWithPureFns pureFns knownIntegers) <$> fields))
 
   Typed qt area metadata (If cond truthy falsy) ->
-    Typed qt area metadata (If (reduceWithPureFns pureFns cond) (reduceWithPureFns pureFns truthy) (reduceWithPureFns pureFns falsy))
+    Typed qt area metadata (If (reduceWithPureFns pureFns knownIntegers cond) (reduceWithPureFns pureFns knownIntegers truthy) (reduceWithPureFns pureFns knownIntegers falsy))
 
   Typed qt area metadata (While cond body) ->
-    Typed qt area metadata (While (reduceWithPureFns pureFns cond) (reduceWithPureFns pureFns body))
+    Typed qt area metadata (While (reduceWithPureFns pureFns knownIntegers cond) (reduceWithPureFns pureFns knownIntegers body))
 
   Typed qt area metadata (Do exps) ->
-    let reducedExps = reduceWithPureFns pureFns <$> exps
-        fusedExps = fuseMapRepeatInBody pureFns reducedExps
+    let reducedExps = reduceWithPureFns pureFns knownIntegers <$> exps
+        fusedExps = fuseMapRepeatInBody pureFns knownIntegers reducedExps
         cleanedExps = eliminateUnusedAssignmentsInBody pureFns fusedExps
     in Typed qt area metadata (Do cleanedExps)
 
   Typed qt area metadata (Where exp iss) ->
-    Typed qt area metadata (Where (reduceWithPureFns pureFns exp) (reduceIsWithPureFns pureFns <$> iss))
+    Typed qt area metadata (Where (reduceWithPureFns pureFns knownIntegers exp) (reduceIsWithPureFns pureFns knownIntegers <$> iss))
 
   _ ->
     exp
 
 
+collectTopLevelIntegerBindings :: [Exp] -> Map.Map String Integer
+collectTopLevelIntegerBindings exps =
+  foldr
+    (\exp found ->
+      case exp of
+        Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) rhs) ->
+          case extractIntegerLiteral rhs of
+            Just i ->
+              Map.insert n i found
+
+            Nothing ->
+              found
+
+        Typed _ _ _ (Export inner) ->
+          case inner of
+            Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) rhs) ->
+              case extractIntegerLiteral rhs of
+                Just i ->
+                  Map.insert n i found
+
+                Nothing ->
+                  found
+
+            _ ->
+              found
+
+        _ ->
+          found
+    )
+    Map.empty
+    exps
+
 reduceAST :: AST -> AST
 reduceAST ast =
   let pureFns = collectPureUnaryTopLevelFns (aexps ast)
-      reducedExps = reduceWithPureFns pureFns <$> aexps ast
+      topLevelIntegers = collectTopLevelIntegerBindings (aexps ast)
+      reducedExps = reduceWithPureFns pureFns topLevelIntegers <$> aexps ast
   in  ast { aexps = reducedExps }

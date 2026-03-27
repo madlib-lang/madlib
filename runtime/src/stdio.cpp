@@ -286,19 +286,16 @@ void madlib__stdio__cancelGet(StdinData_t *handle) {
 
 void madlib__stdio__put(char *str) {
   fputs(str, stdout);
-  fflush(stdout);
 }
 
 
 void madlib__stdio__putLine(char *str) {
   puts(str);
-  fflush(stdout);
 }
 
 
 void madlib__stdio__err(char *str) {
   fputs(str, stderr);
-  fflush(stderr);
 } 
 
 #ifdef __cplusplus

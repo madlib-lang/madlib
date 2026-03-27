@@ -444,6 +444,53 @@ char *madlib__string__concat(char *s1, char *s2) {
   return madlib__string__internal__concat(s1, s2);
 }
 
+char *madlib__string__join(char *separator, madlib__list__Node_t *items) {
+  size_t separatorLength = strlen(separator);
+  size_t itemCount = 0;
+  size_t totalLength = 0;
+
+  madlib__list__Node_t *current = items;
+  while (current != NULL && current->value != NULL) {
+    char *item = (char *)current->value;
+    totalLength += strlen(item);
+    itemCount += 1;
+    current = current->next;
+  }
+
+  if (itemCount == 0) {
+    char *empty = (char *)GC_MALLOC_ATOMIC(sizeof(char));
+    empty[0] = '\0';
+    return empty;
+  }
+
+  if (itemCount > 1) {
+    totalLength += separatorLength * (itemCount - 1);
+  }
+
+  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (totalLength + 1));
+  size_t offset = 0;
+  size_t index = 0;
+
+  current = items;
+  while (current != NULL && current->value != NULL) {
+    char *item = (char *)current->value;
+    size_t itemLength = strlen(item);
+    memcpy(result + offset, item, itemLength);
+    offset += itemLength;
+
+    if (index + 1 < itemCount && separatorLength > 0) {
+      memcpy(result + offset, separator, separatorLength);
+      offset += separatorLength;
+    }
+
+    index += 1;
+    current = current->next;
+  }
+
+  result[offset] = '\0';
+  return result;
+}
+
 char *stripTrailingZeros(char *number) {
   int length = strlen(number);
   char *end = number + strlen(number) - 1;

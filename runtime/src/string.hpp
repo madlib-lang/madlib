@@ -46,6 +46,8 @@ char *madlib__string__fromList(madlib__list__Node_t *list);
 
 madlib__list__Node_t *madlib__string__split(char *str, char *separator);
 
+char *madlib__string__join(char *separator, madlib__list__Node_t *items);
+
 char *madlib__string__replace(char *regex, char *replace, char *str);
 bool madlib__string__match(char *regex, char *str);
 

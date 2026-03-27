@@ -429,7 +429,13 @@ generateModule mkCtx safeBitcastFn options ast@Core.AST{ apath = Just modulePath
   importModulePaths <-
     if isMain then do
       allPaths <- Rock.fetch $ Query.ModulePathsToBuild modulePath
-      return $ List.filter (/= modulePath) allPaths
+      let importedPaths = List.filter (/= modulePath) allPaths
+      Monad.filterM
+        (\path -> do
+          coreAst <- Rock.fetch $ Query.CoreAST path
+          return $ not $ List.null $ expsForMain $ Core.aexps coreAst
+        )
+        importedPaths
     else
       return []
 
