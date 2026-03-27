@@ -254,6 +254,8 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   }
             else if Core.isRightListRecursiveDefinition metadata then do
               let nodeType = Type.StructureType False [boxType, boxType]
+              -- Start with a slightly larger chunk to reduce allocator churn
+              -- in large right-recursive list builders.
               let initialChunkSize = 32
               let chunkBytes = Operand.ConstantOperand $ Constant.Int 64 (fromIntegral initialChunkSize * 16)  -- each node is 2 pointers = 16 bytes
 

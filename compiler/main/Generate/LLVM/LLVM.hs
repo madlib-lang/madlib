@@ -135,8 +135,10 @@ allocateArenaNode env area = mdo
   condBr needsNewChunk newChunkBlock continueBlock
 
   newChunkBlock <- block `named` "arena.newchunk"
-  -- Double the capacity
-  newCap <- mul cap (i64ConstOp 2)
+  -- Grow geometrically, but cap chunk size to avoid giant single allocations.
+  doubledCap <- mul cap (i64ConstOp 2)
+  capAtLeastHalfMax <- icmp IntegerPredicate.UGE cap (i64ConstOp 131072)
+  newCap <- Instruction.select capAtLeastHalfMax (i64ConstOp 262144) doubledCap
   -- Allocate new chunk: newCap * sizeof(Node)
   nodeSize <- Instruction.ptrtoint (Operand.ConstantOperand $ sizeof' nodeType) Type.i64
   chunkBytes <- mul newCap nodeSize
@@ -1234,8 +1236,6 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
 
       newNode <- allocateArenaNode env area
       newNode' <- addrspacecast newNode listType
-      storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 0)
-      storeItem newNode' () (Operand.ConstantOperand (Constant.Null boxType), 1)
       storeItem endValue () (item', 0)
       storeItem endValue () (newNode, 1)
 
@@ -1282,15 +1282,11 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
 
       newNode1 <- allocateArenaNode env area1
       newNode1' <- addrspacecast newNode1 listType
-      storeItem newNode1' () (Operand.ConstantOperand (Constant.Null boxType), 0)
-      storeItem newNode1' () (Operand.ConstantOperand (Constant.Null boxType), 1)
       storeItem endValue () (item1', 0)
       storeItem endValue () (newNode1, 1)
 
       newNode2 <- allocateArenaNode env area2
       newNode2' <- addrspacecast newNode2 listType
-      storeItem newNode2' () (Operand.ConstantOperand (Constant.Null boxType), 0)
-      storeItem newNode2' () (Operand.ConstantOperand (Constant.Null boxType), 1)
       storeItem newNode1' () (item2', 0)
       storeItem newNode1' () (newNode2, 1)
 
