@@ -222,7 +222,6 @@ UNDERLOAD =
     newPAP->fn = unwrappedPAP->fn;
     newPAP->arity = unwrappedPAP->arity;
     newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
-    newPAP->env_size = NEXT_ENV_SIZE;
     newPAP->env_is_atomic = unwrappedPAP->env_is_atomic;
 
     void **env = (void **)unwrappedPAP->env;
@@ -263,7 +262,6 @@ typedef struct PAP {
   int32_t arity;
   int32_t missingArgCount;
   void *env;
-  int32_t env_size;
   int8_t env_is_atomic;
 } PAP_t;
 

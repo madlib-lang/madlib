@@ -1,4 +1,4 @@
-// generated automatically on the 2026-03-27 at 14:33:41 UTC
+// generated automatically on the 2026-03-27 at 15:04:29 UTC
 #include <gc.h>
 #include "apply-pap.hpp"
 #include <cstdarg>
@@ -632,7 +632,6 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     newPAP->fn = unwrappedPAP->fn;
     newPAP->arity = unwrappedPAP->arity;
     newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
-    newPAP->env_size = NEXT_ENV_SIZE;
     newPAP->env_is_atomic = unwrappedPAP->env_is_atomic;
 
     void **env = (void **)unwrappedPAP->env;

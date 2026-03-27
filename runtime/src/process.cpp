@@ -715,7 +715,6 @@ void runThread(uv_work_t *req) {
   goodCallbackArg->arity = 2;
   goodCallbackArg->missingArgCount = 2;
   goodCallbackArg->env = NULL;
-  goodCallbackArg->env_size = 0;
   goodCallbackArg->env_is_atomic = 0;
 
   PAP_t *badCallbackArg = (PAP_t*) GC_MALLOC(sizeof(PAP_t));
@@ -723,7 +722,6 @@ void runThread(uv_work_t *req) {
   badCallbackArg->arity = 2;
   badCallbackArg->missingArgCount = 2;
   badCallbackArg->env = NULL;
-  badCallbackArg->env_size = 0;
   badCallbackArg->env_is_atomic = 0;
 
   PAP_t *goodCallbackArgWithData = (PAP_t*) __applyPAP__(goodCallbackArg, 1, req);

@@ -166,7 +166,7 @@ buildSymbolTableFromImportInfo :: (Rock.MonadFetch Query.Query m, MonadIO m) => 
 buildSymbolTableFromImportInfo importInfo = case importInfo of
   Typed qt@(_ IT.:=> t) _ _ (ImportInfo name ExpressionImport) ->
     if IT.isFunctionType t then do
-      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType, Type.i32, Type.i8]
+      let expType   = Type.ptr $ Type.StructureType False [boxType, Type.i32, Type.i32, boxType, Type.i8]
           globalRef = Operand.ConstantOperand (Constant.GlobalReference (Type.ptr expType) (AST.mkName name))
       return $ Map.singleton name (topLevelSymbol globalRef)
     else do

@@ -1,4 +1,4 @@
-// generated automatically on the 2026-03-27 at 14:33:42 UTC
+// generated automatically on the 2026-03-27 at 15:04:29 UTC
 #ifndef APPLY_PAP_H
 #define APPLY_PAP_H
 
@@ -600,7 +600,6 @@ typedef struct PAP {
   int32_t arity;
   int32_t missingArgCount;
   void *env;
-  int32_t env_size;
   int8_t env_is_atomic;
 } PAP_t;
 
