@@ -101,6 +101,14 @@ topLevelSymbol :: Operand -> Symbol
 topLevelSymbol =
   Symbol TopLevelAssignment
 
+-- | Conservative linearity check for in-place TRMC dispatch.
+-- Returns True if the expression is provably a temporary (not aliased).
+-- Variable references are considered potentially aliased.
+isLinearListArg :: Core.Exp -> Bool
+isLinearListArg exp = case exp of
+  Core.Typed _ _ _ (Core.Var _ _) -> False  -- variable reference, might be aliased
+  _ -> True  -- function call result, literal, constructor — freshly created
+
 constructorSymbol :: Operand -> Int -> Int -> Symbol
 constructorSymbol ctor id arity =
   Symbol (ConstructorSymbol id arity) ctor
@@ -533,6 +541,32 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
           add holeValue endValue
     store holePtr' 0 updatedHole
     return (symbolTable, updatedHole, Nothing)
+
+  Core.Typed qt area metadata e | Core.isInPlaceListRecursionEnd metadata -> mdo
+    -- In-place end: link the base-case expression to the last processed node's next field.
+    -- For map (base case []), this is a no-op (stores null into an already-null next).
+    -- For ++ (base case b), this links the second list to the last node.
+    -- Special case: if the input list was empty (prevEnd is null), return the end expression
+    -- directly — no nodes were processed so there's nothing to link.
+    (_, endList, _) <- generateExp env symbolTable (Core.Typed qt area [] e)
+    let Just startOperand = start <$> recursionData env
+    let Just prevEndPtr   = prevEnd =<< recursionData env
+    prevEnd' <- load prevEndPtr 0
+
+    isNull <- icmp IntegerPredicate.EQ prevEnd' (Operand.ConstantOperand (Constant.Null listType))
+    condBr isNull emptyBlock linkBlock
+
+    linkBlock <- block `named` "inplace.link"
+    endListRaw <- addrspacecast endList boxType
+    storeItem prevEnd' () (endListRaw, 1)
+    br mergeBlock
+
+    emptyBlock <- block `named` "inplace.empty"
+    br mergeBlock
+
+    mergeBlock <- block `named` "inplace.merge"
+    result <- phi [(startOperand, linkBlock), (endList, emptyBlock)]
+    return (symbolTable, result, Nothing)
 
   Core.Typed qt area metadata e | Core.isRightListRecursionEnd metadata -> do
     -- TODO: generate exp without the metadata and append its result to the end
@@ -1070,7 +1104,15 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
           generateApplicationForKnownFunction env symbolTable area qt arity fnOperand args
 
       Just (Symbol (FunctionSymbol arity) fnOperand) ->
-        generateApplicationForKnownFunction env symbolTable area qt arity fnOperand args
+        -- Check for in-place TRMC variant: if the list argument is a temporary
+        -- (not a variable reference), dispatch to the in-place version
+        case Map.lookup (functionName ++ "__inplace") symbolTable of
+          Just (Symbol (InPlaceFunctionSymbol _ listParamIdx) inplaceOp)
+            | listParamIdx < List.length args
+            , isLinearListArg (args !! listParamIdx) ->
+              generateApplicationForKnownFunction env symbolTable area qt arity inplaceOp args
+          _ ->
+            generateApplicationForKnownFunction env symbolTable area qt arity fnOperand args
 
       Just (Symbol symbolType pap) -> do
         -- We apply a partial application
@@ -1213,6 +1255,48 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     -- an empty list is { value: null, next: null }
     emptyList' <- emptyList env area
     return (symbolTable, emptyList', Nothing)
+
+  Core.Typed _ _ metadata (Core.ListConstructor [
+      Core.Typed _ area _ (Core.ListItem li),
+      Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
+    ]) | Core.isInPlaceListRecursiveCall metadata -> do
+      -- In-place: overwrite the current input node's value field; advance via its original next ptr.
+      let Just continue   = continueRef <$> recursionData env
+      let Just params     = boxedParams <$> recursionData env
+      let Just endPtr     = end <$> recursionData env
+      let Just prevEndPtr = prevEnd =<< recursionData env
+      endValue <- load endPtr 0   -- current input node (listType, addrspace 1)
+
+      store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+
+      -- Save current node as prevEnd (for RecursionEnd to link the base-case expression)
+      store prevEndPtr 0 endValue
+
+      args'  <- mapM (generateExp env symbolTable) args
+      let unboxedArgs = (\(_, x, _) -> x) <$> args'
+
+      (_, item, maybeBoxedItem) <- generateExp env symbolTable li
+      item' <- case maybeBoxedItem of
+        Just boxed ->
+          return boxed
+
+        Nothing ->
+          box item
+
+      -- Overwrite the value field; keep the original next pointer untouched
+      storeItem endValue () (item', 0)
+
+      -- Advance end to the original next node
+      nextField <- gep endValue [i32ConstOp 0, i32ConstOp 1]
+      nextRaw   <- load nextField 0          -- i8* (boxType)
+      nextNode  <- addrspacecast nextRaw listType
+      store endPtr 0 nextNode
+
+      -- We need to reverse because we may have some closured variables in the params and these need not be updated
+      let paramUpdateData = List.reverse $ List.zip3 (List.reverse $ Core.getQualType <$> args) (List.reverse params) (List.reverse unboxedArgs)
+      mapM_ (\(qt, ptr, exp) -> Fn.updateTCOArg symbolTable qt ptr exp) paramUpdateData
+
+      return (symbolTable, Operand.ConstantOperand (Constant.Undef (typeOf endValue)), Nothing)
 
   Core.Typed _ _ metadata (Core.ListConstructor [
       Core.Typed _ area _ (Core.ListItem li),

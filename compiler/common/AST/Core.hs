@@ -14,6 +14,11 @@ import           GHC.Generics hiding(Constructor)
 data RecursionDirection
   = LeftRecursion
   | RightRecursion
+  | InPlaceRightRecursion
+  -- ^ Like RightRecursion but every branch produces exactly one output
+  -- element per input element. This allows the TRMC codegen to reuse the
+  -- input list nodes in-place (overwrite value, keep next chain intact)
+  -- instead of allocating a new parallel result list in arenas.
   | BothRecursion
   | AnyRecursion
   deriving(Eq, Show, Ord, Generic, Hashable)
@@ -499,6 +504,54 @@ isRightListRecursiveDefinition = elem (RecursiveDefinition (ListRecursion RightR
 
 isRightListRecursionEnd :: [Metadata] -> Bool
 isRightListRecursionEnd = elem (RecursionEnd (ListRecursion RightRecursion))
+
+isInPlaceListRecursiveCall :: [Metadata] -> Bool
+isInPlaceListRecursiveCall = elem (RecursiveCall (ListRecursion InPlaceRightRecursion))
+
+isInPlaceListRecursiveDefinition :: [Metadata] -> Bool
+isInPlaceListRecursiveDefinition = elem (RecursiveDefinition (ListRecursion InPlaceRightRecursion))
+
+isInPlaceListRecursionEnd :: [Metadata] -> Bool
+isInPlaceListRecursionEnd = elem (RecursionEnd (ListRecursion InPlaceRightRecursion))
+
+-- | Rewrite a single metadata tag from RightRecursion to InPlaceRightRecursion
+rewriteMetadataToInPlace :: Metadata -> Metadata
+rewriteMetadataToInPlace m = case m of
+  RecursiveDefinition (ListRecursion RightRecursion) -> RecursiveDefinition (ListRecursion InPlaceRightRecursion)
+  RecursiveCall (ListRecursion RightRecursion) -> RecursiveCall (ListRecursion InPlaceRightRecursion)
+  RecursionEnd (ListRecursion RightRecursion) -> RecursionEnd (ListRecursion InPlaceRightRecursion)
+  _ -> m
+
+-- | Rewrite an expression tree's metadata from RightRecursion to InPlaceRightRecursion
+rewriteExpToInPlace :: Exp -> Exp
+rewriteExpToInPlace exp = case exp of
+  Typed qt area metadata e ->
+    Typed qt area (map rewriteMetadataToInPlace metadata) (rewriteExpContentToInPlace e)
+  _ -> exp
+
+rewriteExpContentToInPlace :: Exp_ -> Exp_
+rewriteExpContentToInPlace e = case e of
+  If cond truthy falsy -> If cond (rewriteExpToInPlace truthy) (rewriteExpToInPlace falsy)
+  Where scrutinee iss -> Where scrutinee (map rewriteIsToInPlace iss)
+  Do exps -> Do (map rewriteExpToInPlace exps)
+  ListConstructor items -> ListConstructor (map rewriteListItemToInPlace items)
+  Call fn args -> Call fn (map rewriteExpToInPlace args)
+  Definition params body -> Definition params (map rewriteExpToInPlace body)
+  _ -> e
+
+rewriteListItemToInPlace :: ListItem -> ListItem
+rewriteListItemToInPlace li = case li of
+  Typed qt area metadata (ListItem item) ->
+    Typed qt area (map rewriteMetadataToInPlace metadata) (ListItem (rewriteExpToInPlace item))
+  Typed qt area metadata (ListSpread spread) ->
+    Typed qt area (map rewriteMetadataToInPlace metadata) (ListSpread (rewriteExpToInPlace spread))
+  _ -> li
+
+rewriteIsToInPlace :: Is -> Is
+rewriteIsToInPlace is = case is of
+  Typed qt area metadata (Is pat exp) ->
+    Typed qt area (map rewriteMetadataToInPlace metadata) (Is pat (rewriteExpToInPlace exp))
+  _ -> is
 
 isConstructorRecursiveDefinition :: [Metadata] -> Bool
 isConstructorRecursiveDefinition = elem (RecursiveDefinition (ConstructorRecursion Nothing))

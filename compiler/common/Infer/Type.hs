@@ -170,6 +170,11 @@ listItemType t = case t of
   TApp (TCon (TC "List" (Kfun Star Star)) "prelude" _) itemType ->
     itemType
 
+isListType :: Type -> Bool
+isListType t = case t of
+  TApp (TCon (TC "List" _) _ _) _ -> True
+  _ -> False
+
 
 
 tArrayOf :: Type -> Type

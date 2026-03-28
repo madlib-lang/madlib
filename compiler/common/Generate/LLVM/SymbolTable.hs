@@ -26,6 +26,8 @@ data SymbolType
   -- ^ operand is a ptr to the value for mutation
   | FunctionSymbol Int
   -- ^ arity
+  | InPlaceFunctionSymbol Int Int
+  -- ^ arity, listParamIndex (index of the list param to check for linearity at call sites)
   | ConstructorSymbol Int Int
   -- ^ unique id ( index ) | arity
   | ADTSymbol Int Int

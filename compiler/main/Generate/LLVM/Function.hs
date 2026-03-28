@@ -79,6 +79,28 @@ mkPAPArityError name arity =
   <> "Raise runtime/src/apply-pap.* max arity before compiling this function."
 
 
+-- | Determine if a right-list recursive function is eligible for an in-place clone.
+-- Returns Just listParamIndex if the function destructures a list parameter via a where clause,
+-- Nothing for list-building functions (repeat, range) that don't take a list input.
+findListParamForInPlace :: [Core.Metadata] -> [Core String] -> [Core.Exp] -> Maybe Int
+findListParamForInPlace metadata params body
+  | Core.isRightListRecursiveDefinition metadata =
+      let dictCount = List.length $ List.filter ("$" `List.isPrefixOf`) (Core.getValue <$> params)
+          nonDictParamNames = Core.getValue <$> List.drop dictCount params
+          maybeScrutinee = case last body of
+            Core.Typed _ _ _ (Core.Where (Core.Typed _ _ _ (Core.Var name _)) _) -> Just name
+            Core.Typed _ _ _ (Core.Do exps) -> case last exps of
+              Core.Typed _ _ _ (Core.Where (Core.Typed _ _ _ (Core.Var name _)) _) -> Just name
+              _ -> Nothing
+            _ -> Nothing
+      in  case maybeScrutinee of
+            Just name -> case List.elemIndex name nonDictParamNames of
+              Just idx -> Just (dictCount + idx)
+              Nothing  -> Nothing
+            Nothing -> Nothing
+  | otherwise = Nothing
+
+
 -- | Callback context to break the circular dependency with LLVM.hs (generateExp lives there).
 data FunctionCtx m = FunctionCtx
   { ctxGenerateExp  :: Env -> SymbolTable -> Core.Exp -> m (SymbolTable, Operand, Maybe Operand)
@@ -252,6 +274,57 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   , continueRef = continue
                   , boxedParams = List.drop dictCount allocatedParams
                   }
+            else if Core.isInPlaceListRecursiveDefinition metadata then do
+              -- In-place list recursion: reuse input list nodes instead of arena allocation.
+              -- Every branch produces exactly one output per input element, so we overwrite
+              -- the value field of each input node and keep next pointers unchanged.
+              -- NOTE: this assumes the input list is not aliased elsewhere.
+              let nodeType = Type.StructureType False [boxType, boxType]
+              let nonDictParams = List.drop dictCount allocatedParams
+              -- Find the param that the where clause destructures (the input list).
+              -- For map(f, list) it's list; for concat(a, b) it's a.
+              let nonDictCoreParams = List.drop dictCount coreParams
+                  nonDictParamNames = Core.getValue <$> nonDictCoreParams
+                  scrutineeParamName = case last body of
+                    Core.Typed _ _ _ (Core.Where (Core.Typed _ _ _ (Core.Var name _)) _) -> name
+                    Core.Typed _ _ _ (Core.Do exps) -> case last exps of
+                      Core.Typed _ _ _ (Core.Where (Core.Typed _ _ _ (Core.Var name _)) _) -> name
+                      _ -> last nonDictParamNames
+                    _ -> last nonDictParamNames
+                  inputListParamPtr = case List.elemIndex scrutineeParamName nonDictParamNames of
+                    Just idx -> nonDictParams !! idx
+                    Nothing  -> last nonDictParams
+
+              -- Load the head of the input list (listType = addrspace(1) ptr)
+              start' <- load inputListParamPtr 0
+
+              -- end tracks current write position; starts at head of input list
+              end <- alloca listType Nothing 0
+              store end 0 start'
+
+              -- Dummy arena fields (unused in in-place path, satisfy the record)
+              arenaPtr'   <- alloca (Type.ptr nodeType) Nothing 0
+              arenaIndex' <- alloca Type.i64 Nothing 0
+              arenaCap'   <- alloca Type.i64 Nothing 0
+
+              -- prevEnd tracks the last processed node so RecursionEnd can link
+              -- the base-case expression (e.g. [] or the second arg of ++)
+              prevEndPtr  <- alloca listType Nothing 0
+              store prevEndPtr 0 start'
+
+              return $
+                RightListRecursionData
+                  { entryBlockName = entry
+                  , continueRef = continue
+                  , boxedParams = nonDictParams
+                  , start = start'
+                  , end = end
+                  , arenaPtr = arenaPtr'
+                  , arenaIndex = arenaIndex'
+                  , arenaCapacity = arenaCap'
+                  , chunkTracker = Nothing
+                  , prevEnd = Just prevEndPtr
+                  }
             else if Core.isRightListRecursiveDefinition metadata then do
               let nodeType = Type.StructureType False [boxType, boxType]
               -- Start with a slightly larger chunk to reduce allocator churn
@@ -290,6 +363,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   , arenaIndex = arenaIndex'
                   , arenaCapacity = arenaCap'
                   , chunkTracker = Nothing
+                  , prevEnd = Nothing
                   }
             else if Core.isConstructorRecursiveDefinition metadata then do
               let returnType = IT.getReturnType t
@@ -425,7 +499,23 @@ generateTopLevelFunction :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.
                          => FunctionCtx (IRBuilderT m) -> Env -> SymbolTable -> Core.Exp -> m SymbolTable
 generateTopLevelFunction ctx env symbolTable topLevelFunction = case topLevelFunction of
   Core.Typed _ area _ (Core.Assignment (Core.Typed _ _ _ (Core.Var functionName _)) (Core.Typed qt _ metadata (Core.Definition params body))) -> do
-    generateFunction ctx env symbolTable metadata qt area functionName params body
+    symbolTable' <- generateFunction ctx env symbolTable metadata qt area functionName params body
+    -- Generate in-place TRMC clone for eligible list-recursive functions.
+    let maybeListParamIdx = findListParamForInPlace metadata params body
+    case maybeListParamIdx of
+      Just listParamIdx -> do
+        let inPlaceMetadata = map Core.rewriteMetadataToInPlace metadata
+            inPlaceBody = map Core.rewriteExpToInPlace body
+            inPlaceName = functionName ++ "__inplace"
+            totalArity = List.length params
+        symbolTable'' <- generateFunction ctx env symbolTable' inPlaceMetadata qt area inPlaceName params inPlaceBody
+        let fnType = Type.ptr $ Type.FunctionType boxType (List.replicate totalArity boxType) False
+            fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName inPlaceName))
+            inPlaceSymbol = Symbol (InPlaceFunctionSymbol totalArity listParamIdx) fnRef
+        Writer.tell $ Map.singleton inPlaceName inPlaceSymbol
+        return $ Map.insert inPlaceName inPlaceSymbol symbolTable''
+      Nothing ->
+        return symbolTable'
 
   Core.Typed _ _ _ (Core.Extern (ps IT.:=> t) name originalName) -> do
     let paramTypes  = IT.getParamTypes t
@@ -443,12 +533,18 @@ generateTopLevelFunction ctx env symbolTable topLevelFunction = case topLevelFun
 
 addTopLevelFnToSymbolTable :: Env -> SymbolTable -> Core.Exp -> SymbolTable
 addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunction of
-  Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var functionName _)) (Core.Typed _ _ _ (Core.Definition params _))) ->
+  Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var functionName _)) (Core.Typed _ _ metadata (Core.Definition params body))) ->
     let arity  = List.length params
         _ = if arity > maxSupportedPAPArity then error (mkPAPArityError functionName arity) else ()
         fnType = Type.ptr $ Type.FunctionType boxType (List.replicate arity boxType) False
         fnRef  = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName functionName))
-    in  Map.insert functionName (fnSymbol arity fnRef) symbolTable
+        base   = Map.insert functionName (fnSymbol arity fnRef) symbolTable
+    in  case findListParamForInPlace metadata params body of
+          Just listParamIdx ->
+            let inPlaceName = functionName ++ "__inplace"
+                inPlaceFnRef = Operand.ConstantOperand (Constant.GlobalReference fnType (AST.mkName inPlaceName))
+            in  Map.insert inPlaceName (Symbol (InPlaceFunctionSymbol arity listParamIdx) inPlaceFnRef) base
+          Nothing -> base
 
   Core.Typed _ _ _ (Core.Extern (_ IT.:=> t) functionName _) ->
     let arity  = List.length $ IT.getParamTypes t

@@ -169,7 +169,7 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
   Typed qt area metadata (ListConstructor [Typed qtLi areaLi metadataLi (ListItem li), Typed qtSpread areaSpread metadataSpread (ListSpread spread)]) ->
     -- we probably need to mark this node as being ListRecursion
     if containsRecursion True fnType fnName spread then
-      Typed qt area (RecursiveCall (ListRecursion RightRecursion) : metadata) (ListConstructor [
+      Typed qt area (RecursiveCall recursionKind : metadata) (ListConstructor [
         Typed qtLi areaLi metadataLi (ListItem li),
         Typed qtSpread areaSpread metadataSpread (ListSpread (markTRCCalls recursionKind fnType fnName spread))
       ])
@@ -215,6 +215,20 @@ combineRecursionKinds kinds = case kinds of
   (Just BooleanOrRecursion : _) ->
     Just BooleanOrRecursion
 
+  (Just (ListRecursion InPlaceRightRecursion) : more) ->
+    -- In-place is only safe when all other branches are also in-place or base cases.
+    -- If any branch emits plain recursion (e.g. filter's else arm), downgrade to regular
+    -- right-list recursion so arena allocation is used instead.
+    case combineRecursionKinds more of
+      Nothing ->
+        Just (ListRecursion InPlaceRightRecursion)
+
+      Just (ListRecursion InPlaceRightRecursion) ->
+        Just (ListRecursion InPlaceRightRecursion)
+
+      Just _ ->
+        Just (ListRecursion RightRecursion)
+
   (Just (ListRecursion side) : _) ->
     Just (ListRecursion side)
 
@@ -225,6 +239,11 @@ combineRecursionKinds kinds = case kinds of
     case combineRecursionKinds more of
       Nothing ->
         Just PlainRecursion
+
+      Just (ListRecursion InPlaceRightRecursion) ->
+        -- A plain-recursion branch means some paths skip producing a list element,
+        -- so the overall function is not 1-to-1; fall back to regular right-list.
+        Just (ListRecursion RightRecursion)
 
       or ->
         or
@@ -333,6 +352,12 @@ findRecursionKind fnType fnName params exps = case exps of
 
     Typed _ _ _ (ListConstructor [Typed _ _ _ (ListItem li), Typed _ _ _ (ListSpread spread)]) ->
       if not (containsRecursion False fnType fnName li) && containsRecursion True fnType fnName spread then
+        -- NOTE: The InPlaceRightRecursion codegen path is fully implemented in the LLVM
+        -- backend (Function.hs, LLVM.hs) but disabled here because it requires the input
+        -- list to not be aliased. Without linearity/escape analysis, in-place modification
+        -- breaks referential transparency (e.g., nums = [1..5]; doubled = map(f, nums);
+        -- subsequent uses of nums see the doubled values). To enable for specific cases,
+        -- change RightRecursion to InPlaceRightRecursion below.
         Just (ListRecursion RightRecursion)
       else
         Nothing
