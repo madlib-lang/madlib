@@ -258,6 +258,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/short-overflow-parity"
         , "compiler/test/Blackbox/test-cases/inplace-trmc"
         , "compiler/test/Blackbox/test-cases/maybe-operators"
+        , "compiler/test/Blackbox/test-cases/jsx-maybe-props"
         ]
 
   forM_ cases $ \casePath -> do

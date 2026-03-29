@@ -168,6 +168,11 @@ getAllImportedTypes imports =
   (\n -> (Can.getCanonicalContent n, Can.getArea n)) <$> concat (Can.getImportTypeNames <$> imports)
 
 
+-- | Check if a name is from a compiler-generated auto-import (emptyArea = synthetic)
+isAutoImportedMaybe :: String -> Area -> Bool
+isAutoImportedMaybe name area =
+  area == emptyArea && name `elem` ["Just", "Nothing", "Maybe"]
+
 checkUnusedImports :: Env -> [Can.Import] -> CanonicalM ()
 checkUnusedImports env imports = do
   let importedNames      = getAllImportedNames imports
@@ -190,7 +195,7 @@ checkUnusedImports env imports = do
       return $ filter (not . (allJS =~) . fst) allUnused
   mapM_
     (\(name, area) ->
-      when (name /= "__BUILTINS__" && name /= "Dictionary") $
+      when (name `notElem` ["__BUILTINS__", "Dictionary"] && not (isAutoImportedMaybe name area)) $
         pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area))
     )
     (withJSCheck ++ unusedTypes)

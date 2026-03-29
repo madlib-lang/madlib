@@ -46,6 +46,7 @@ toSolved (Can.Canonical area exp) = case exp of
   Can.TypedExp exp typing sc -> Slv.Typed ([] :=> tSubst) area (Slv.TypedExp (toSolved exp) (updateTyping typing) sc)
 
   Can.Record fields          -> Slv.Typed ([] :=> tSubst) area (Slv.Record (fieldToSolved <$> fields))
+  Can.JsxRecord fields       -> Slv.Typed ([] :=> tSubst) area (Slv.Record (fieldToSolved <$> fields))
 
   Can.If cond truthy falsy   -> Slv.Typed ([] :=> tSubst) area (Slv.If (toSolved cond) (toSolved truthy) (toSolved falsy))
 

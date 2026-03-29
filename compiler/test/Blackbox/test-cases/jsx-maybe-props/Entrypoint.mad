@@ -1,0 +1,28 @@
+import IO from "IO"
+
+// Component with required + optional (Maybe) props
+MyComponent = (props, _) => {
+  return props.required ++ (props.optional ?? "") ++ show(props.optional2 ?? 0)
+}
+
+// Component with only Maybe props
+AllOptional = (props, _) => {
+  return (props.a ?? "none") ++ show(props.b ?? -1)
+}
+
+main = () => {
+  // Only required prop — optionals auto-filled with Nothing
+  IO.log(<MyComponent required="hello" />)
+
+  // All props explicitly provided
+  IO.log(<MyComponent required="hi" optional={Just(" world")} optional2={Just(42)} />)
+
+  // Some optional provided
+  IO.log(<MyComponent required="hey" optional={Just("!")} />)
+
+  // No props at all (all are Maybe)
+  IO.log(<AllOptional />)
+
+  // All optional props provided
+  IO.log(<AllOptional a={Just("yes")} b={Just(99)} />)
+}

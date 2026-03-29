@@ -154,6 +154,7 @@ data Exp_ = LNum String
           | Assignment Name Exp
           | Mutate Exp Exp
           | Record [Field]
+          | JsxRecord [Field]  -- Like Record but allows missing Maybe-typed fields to be auto-filled with Nothing
           | While Exp Exp
           | If Exp Exp Exp
           | Do [Exp]

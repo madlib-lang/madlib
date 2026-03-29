@@ -1,6 +1,5 @@
 import IO from "IO"
 
-getName :: Maybe { name :: String } -> Maybe String
 getName = (m) => m?.name
 
 main = () => {

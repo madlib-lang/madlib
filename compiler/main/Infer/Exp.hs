@@ -65,6 +65,12 @@ getAppOrigin (Can.Canonical _ expr) = case expr of
     isOperatorName (c:_) = not (isAlphaNum c) && c /= '_' && c /= '.'
 
 
+-- | Check if a type is Maybe a (for JSX optional prop defaulting)
+isMaybeType :: Type -> Bool
+isMaybeType (TApp (TCon (TC "Maybe" _) _ _) _) = True
+isMaybeType _ = False
+
+
 mutationInterface :: String
 mutationInterface = "__MUTATION__"
 
@@ -102,6 +108,7 @@ infer discardError options env lexp = do
     Can.Do _                  -> inferDo discardError options env lexp
     Can.Where      _ _        -> inferWhere discardError options env lexp
     Can.Record _              -> inferRecord discardError options env lexp
+    Can.JsxRecord _           -> inferJsxRecord discardError options env lexp
     Can.Access   _ _          -> inferAccess discardError options env lexp
     Can.ArrayAccess   _ _     -> inferArrayAccess discardError options env lexp
     Can.TypedExp{}            -> inferTypedExp discardError options env lexp
@@ -327,7 +334,7 @@ postProcessBody discardError options env s expType es = do
 -- INFER APP
 
 inferApp :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
-inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea _) final)) = do
+inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea argContent) final)) = do
   tv                  <- newTVar Star
   (s1, ps1, t1, eabs) <- infer discardError options env abs
   (s2, ps2, t2, earg) <- infer discardError options (apply s1 env) arg
@@ -344,7 +351,31 @@ inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonica
   let t = apply s3 tv
   let s = s3 `compose` s2 `compose` s1
 
-  let solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs (updateQualType earg $ apply s (ps1 ++ ps2) :=> apply s t2) final
+  -- For JSX records: fill missing Maybe-typed fields with Nothing
+  earg' <- case argContent of
+    Can.JsxRecord jsxFields -> do
+      let explicitNames = S.fromList [ n | Can.Canonical _ (Can.Field (n, _)) <- jsxFields ]
+      let resolvedArgType = apply s t2
+      case resolvedArgType of
+        TRecord allFields _ _ -> do
+          let missingFields = M.filterWithKey (\k _ -> k `S.notMember` explicitNames) allFields
+          let allMaybe = all isMaybeType (M.elems missingFields)
+          if M.null missingFields || not allMaybe then
+            return earg
+          else do
+            -- Synthesize Nothing fields for missing Maybe-typed props
+            let nothingFields = map (\(name, fieldType) ->
+                  Slv.Typed ([] :=> fieldType) argArea
+                    (Slv.Field (name, Slv.Typed ([] :=> fieldType) argArea (Slv.Var "Nothing" True)))
+                  ) (M.toList missingFields)
+            case earg of
+              Slv.Typed qt a (Slv.Record existingFields) ->
+                return $ Slv.Typed qt a (Slv.Record (existingFields ++ nothingFields))
+              _ -> return earg
+        _ -> return earg
+    _ -> return earg
+
+  let solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs (updateQualType earg' $ apply s (ps1 ++ ps2) :=> apply s t2) final
 
   return (s, ps1 ++ ps2, t, solved)
 
@@ -601,6 +632,58 @@ inferRecord discardError options env exp = do
       -- No spread - create a closed record (no row variable)
       -- This allows the record to be used in contexts that don't require extensibility
       return (TRecord (M.fromList fieldTypes') Nothing mempty, mempty)
+
+  let allPS = concat fieldPS
+  let finalSubst = subst `compose` extraSubst
+
+  return (finalSubst, allPS, apply finalSubst recordType, Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS))
+
+
+-- | Like inferRecord but creates an extensible record (with a base type variable)
+-- so that missing Maybe-typed fields can be filled with Nothing after unification.
+inferJsxRecord :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+inferJsxRecord discardError options env exp = do
+  let Can.Canonical area (Can.JsxRecord fields) = exp
+
+  (subst, inferredFields) <- foldM (
+        \(fieldSubst, result) field -> do
+          (s, ps, ts, e) <- inferRecordField discardError options (apply fieldSubst env) field
+          let nextSubst = s `compose` fieldSubst
+          return (nextSubst, result ++ [(ps, (\(n, t) -> (n, apply nextSubst t)) <$> ts, e)])
+      ) (mempty, []) fields
+  let fieldPS     = (\(ps, _, _) -> ps) <$> inferredFields
+  let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
+  let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
+
+  let fieldTypes' = filter (\(k, _) -> k /= "...") (concat fieldTypes)
+  let spreads     = snd <$> filter (\(k, _) -> k == "...") (concat fieldTypes)
+
+  let base = case spreads of
+        (x : _) -> Just x
+        _       -> Nothing
+
+  (recordType, extraSubst) <- case apply subst <$> base of
+    Just (TRecord spreadFields baseBase optionalFields) -> do
+      let mergedFields = M.fromList fieldTypes' `M.union` spreadFields
+      return (TRecord mergedFields (apply subst <$> baseBase) optionalFields, mempty)
+
+    Just tBase -> do
+      baseVar <- newTVar Star
+      let recordWithBase = TRecord (M.fromList fieldTypes') (Just baseVar) mempty
+      s <- contextualUnify' env discardError exp (apply subst tBase) recordWithBase
+      let unifiedBase = apply s tBase
+      case unifiedBase of
+        TRecord unifiedFields unifiedBase' unifiedOptionalFields ->
+          return (TRecord unifiedFields unifiedBase' unifiedOptionalFields, s)
+        _ ->
+          return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
+
+    Nothing -> do
+      -- JSX record without spread: create an EXTENSIBLE record with a base type variable.
+      -- This allows unification to absorb missing fields into the base, which we later
+      -- check are all Maybe-typed and fill with Nothing.
+      baseVar <- newTVar Star
+      return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, mempty)
 
   let allPS = concat fieldPS
   let finalSubst = subst `compose` extraSubst

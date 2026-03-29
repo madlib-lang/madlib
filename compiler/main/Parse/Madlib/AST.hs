@@ -70,7 +70,8 @@ generateJsonAssignments pathUtils ((Source area sourceTarget (DefaultImport (Sou
   return $ assignment : next
 
 
--- | Check if an AST uses ?? (MaybeDefault) or ?. (OptionalAccess) operators
+-- | Check if an AST uses ?? (MaybeDefault), ?. (OptionalAccess), or JSX tags
+-- (which may need Nothing for missing Maybe-typed props)
 usesMaybeOperators :: AST -> Bool
 usesMaybeOperators ast = any expUsesMaybe (aexps ast)
   where
@@ -81,6 +82,8 @@ usesMaybeOperators ast = any expUsesMaybe (aexps ast)
     expContentUsesMaybe e = case e of
       MaybeDefault _ _    -> True
       OptionalAccess _ _  -> True
+      JsxTag _ _ _        -> True
+      JsxAutoClosedTag _ _ -> True
       App fn args         -> expUsesMaybe fn || any expUsesMaybe args
       BinOp l op r        -> expUsesMaybe l || expUsesMaybe op || expUsesMaybe r
       UnOp op arg         -> expUsesMaybe op || expUsesMaybe arg
@@ -166,17 +169,21 @@ buildAST options path code = case parseWithStructuredError code of
         let isBuiltinsFile = "__BUILTINS__.mad" `isSuffixOf` path
         let isPreludeFile = "/__internal__/" `isInfixOf` path
         let hasBuiltinsImport = any ((== "__BUILTINS__") . snd . getImportPath) (aimports astWithProcessedMacros)
-        let hasMaybeImport = any ((== "Maybe") . snd . getImportPath) (aimports astWithProcessedMacros)
+        -- Check if Just/Nothing are already imported (not just the Maybe type)
+        let hasJustImport = any (importsJustConstructor . getSourceContent) (aimports astWithProcessedMacros)
+            importsJustConstructor (NamedImport names _ _) = any ((== "Just") . getSourceContent) names
+            importsJustConstructor (DefaultImport _ _ alias) = alias == "Maybe"
+            importsJustConstructor _ = False
         let withBuiltins =
               if isBuiltinsFile || hasBuiltinsImport then
                 astWithProcessedMacros
               else
                 astWithProcessedMacros { aimports = builtinsDictTypeImport : builtinsImport : aimports astWithProcessedMacros }
         -- Auto-import Maybe type only when ?? or ?. operators are used
-        let needsMaybeImport = not isPreludeFile && not hasMaybeImport && usesMaybeOperators withBuiltins
+        let needsMaybeImport = not isPreludeFile && not hasJustImport && usesMaybeOperators withBuiltins
         let astWithAllImports =
               if needsMaybeImport then
-                withBuiltins { aimports = maybeNameImport : maybeTypeImport : aimports withBuiltins }
+                withBuiltins { aimports = maybeNameImport : aimports withBuiltins }
               else
                 withBuiltins
         astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithAllImports
@@ -216,17 +223,21 @@ buildASTFromBS options path bs = case parseWithStructuredErrorBS bs of
         let isBuiltinsFile = "__BUILTINS__.mad" `isSuffixOf` path
         let isPreludeFile = "/__internal__/" `isInfixOf` path
         let hasBuiltinsImport = any ((== "__BUILTINS__") . snd . getImportPath) (aimports astWithProcessedMacros)
-        let hasMaybeImport = any ((== "Maybe") . snd . getImportPath) (aimports astWithProcessedMacros)
+        -- Check if Just/Nothing are already imported (not just the Maybe type)
+        let hasJustImport = any (importsJustConstructor . getSourceContent) (aimports astWithProcessedMacros)
+            importsJustConstructor (NamedImport names _ _) = any ((== "Just") . getSourceContent) names
+            importsJustConstructor (DefaultImport _ _ alias) = alias == "Maybe"
+            importsJustConstructor _ = False
         let withBuiltins =
               if isBuiltinsFile || hasBuiltinsImport then
                 astWithProcessedMacros
               else
                 astWithProcessedMacros { aimports = builtinsDictTypeImport : builtinsImport : aimports astWithProcessedMacros }
         -- Auto-import Maybe type only when ?? or ?. operators are used
-        let needsMaybeImport = not isPreludeFile && not hasMaybeImport && usesMaybeOperators withBuiltins
+        let needsMaybeImport = not isPreludeFile && not hasJustImport && usesMaybeOperators withBuiltins
         let astWithAllImports =
               if needsMaybeImport then
-                withBuiltins { aimports = maybeNameImport : maybeTypeImport : aimports withBuiltins }
+                withBuiltins { aimports = maybeNameImport : aimports withBuiltins }
               else
                 withBuiltins
         astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithAllImports
