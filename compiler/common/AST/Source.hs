@@ -174,6 +174,8 @@ data Exp_
   | While Exp Exp
   | If Exp Exp Exp
   | Ternary Exp Exp Exp
+  | MaybeDefault Exp Exp       -- ?? operator: maybeVal ?? default
+  | OptionalAccess Exp Exp     -- ?. operator: maybeVal?.field
   | Where Exp [Is]
   | WhereAbs [Is]
   | Do [Exp]

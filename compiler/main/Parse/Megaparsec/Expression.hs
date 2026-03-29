@@ -248,6 +248,17 @@ operatorTable =
           124 -> do (area, _) <- withArea pDoublePipe; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "||"
           _   -> empty
     ]
+  , -- ?? (maybe default)
+    [ InfixL $ try $ do
+        b <- lookAhead anySingle
+        case b of
+          63 -> do  -- '?'
+            (area, _) <- withArea pDoubleQuestionMark
+            target <- pSourceTarget
+            maybeRet
+            return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.MaybeDefault l r)
+          _ -> empty
+    ]
   , -- |>
     [ InfixL $ try $ do
         b <- lookAhead anySingle
@@ -306,6 +317,16 @@ pTermWithPostfix = do
                   return $ \e -> Src.Source (mergeAreas (Src.getArea e) endArea) (Src.getSourceTarget e) (Src.App e [])
               ]
           applyPostfix (f expr)
+        Just '?' -> do
+          mf <- optional $ try $ do
+            pQuestionDot
+            (nameArea, name) <- withArea pNameStr
+            target <- pSourceTarget
+            return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) target
+              (Src.OptionalAccess e (Src.Source nameArea target (Src.Var $ '.' : name)))
+          case mf of
+            Just f  -> applyPostfix (f expr)
+            Nothing -> return expr  -- not ?., let pExp handle ? as ternary
         Just '.' -> do
           f <- try $ do
             pDot

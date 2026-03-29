@@ -291,6 +291,29 @@ instance Canonicalizable Src.Exp Can.Exp where
       falsy'  <- canonicalize env target falsy
       return $ Can.Canonical area (Can.If cond' truthy' falsy')
 
+    Src.MaybeDefault maybeExp defaultExp -> do
+      maybeExp'   <- canonicalize env target maybeExp
+      defaultExp' <- canonicalize env target defaultExp
+      let vName = "__maybeDefault__"
+          justBranch = Can.Canonical area $
+            Can.Is (Can.Canonical area $ Can.PCon "Just" [Can.Canonical area $ Can.PVar vName])
+                   (Can.Canonical area $ Can.Var vName)
+          defaultBranch = Can.Canonical area $
+            Can.Is (Can.Canonical area Can.PAny) defaultExp'
+      return $ Can.Canonical area (Can.Where maybeExp' [justBranch, defaultBranch])
+
+    Src.OptionalAccess maybeExp field -> do
+      maybeExp' <- canonicalize env target maybeExp
+      field'    <- canonicalize env target field
+      let vName = "__optChain__"
+          accessExp = Can.Canonical area $ Can.Access (Can.Canonical area $ Can.Var vName) field'
+          justResult = Can.Canonical area $ Can.App (Can.Canonical area $ Can.Var "Just") accessExp True
+          justBranch = Can.Canonical area $
+            Can.Is (Can.Canonical area $ Can.PCon "Just" [Can.Canonical area $ Can.PVar vName]) justResult
+          nothingBranch = Can.Canonical area $
+            Can.Is (Can.Canonical area Can.PAny) (Can.Canonical area $ Can.Var "Nothing")
+      return $ Can.Canonical area (Can.Where maybeExp' [justBranch, nothingBranch])
+
     Src.Do exps -> do
       -- TODO: merge the logic with the one in processAbs
       allAccessesBeforeAbs <- getAllAccesses

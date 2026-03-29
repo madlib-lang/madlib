@@ -1,0 +1,30 @@
+import IO from "IO"
+
+getName :: Maybe { name :: String } -> Maybe String
+getName = (m) => m?.name
+
+main = () => {
+  // ?? with Just
+  IO.log(Just(42) ?? 0)
+  // ?? with Nothing
+  IO.log(Nothing ?? 0)
+  // ?? with strings
+  IO.log(Just("hello") ?? "world")
+  IO.log(Nothing ?? "world")
+
+  // ?. with Just record
+  IO.log(Just({ name: "Alice" })?.name)
+  // ?. with Nothing
+  IO.log(getName(Nothing))
+
+  // Chained ?. then ??
+  IO.log(Just({ value: 5 })?.value ?? 0)
+  IO.log(getName(Nothing) ?? "default")
+
+  // ?? in map
+  xs = map((x) => x ?? 0, [Just(1), Nothing, Just(3)])
+  IO.log(xs)
+
+  // Ternary still works alongside ?? and ?.
+  IO.log(true ? "yes" : "no")
+}

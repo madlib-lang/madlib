@@ -65,6 +65,8 @@ module Parse.Megaparsec.Lexeme
   , pSharp
   , pDollar
   , pQuestionMark
+  , pDoubleQuestionMark
+  , pQuestionDot
   , pTypedHole
   -- Arithmetic
   , pPlus
@@ -458,6 +460,14 @@ pDollar = void $ lexeme $ try $ C.char 36 <* notFollowedBy (C.char 123)  -- '$' 
 -- | Parse ?
 pQuestionMark :: Parser ()
 pQuestionMark = void $ lexeme $ try $ C.char 63 <* notFollowedBy (C.char 63)  -- '?' not '?'
+
+-- | Parse ?? (not followed by ?)
+pDoubleQuestionMark :: Parser ()
+pDoubleQuestionMark = void $ lexeme $ try $ C.string "??" <* notFollowedBy (C.char 63)
+
+-- | Parse ?.
+pQuestionDot :: Parser ()
+pQuestionDot = void $ lexeme $ C.string "?."
 
 -- | Parse ???
 -- C.string auto-backtracks
