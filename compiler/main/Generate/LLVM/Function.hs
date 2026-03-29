@@ -37,6 +37,7 @@ import qualified Control.Monad.State          as State
 
 import           LLVM.AST                     as AST hiding (function)
 import           LLVM.AST.Type                as Type
+import qualified LLVM.AST.Global              as Global
 import           LLVM.AST.ParameterAttribute  as ParameterAttribute
 import qualified LLVM.AST.Constant            as Constant
 import qualified LLVM.AST.Operand             as Operand
@@ -58,7 +59,7 @@ import           Control.Monad.IO.Class       (MonadIO)
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, papType, sizeof', buildLLVMType, buildLLVMParamType, retrieveConstructorStructType, adtSymbol)
-import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcMalloc, chooseMalloc)
+import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcMalloc, chooseMalloc, gcDisable, gcEnable)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata)
 import           Generate.LLVM.Debug
@@ -423,6 +424,15 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   }
             else
               error "Unreachable: unrecognized TCO recursion kind"
+      -- Disable GC during right-list TRMC loops: the arena allocator only adds
+      -- live data (all nodes are reachable via the list chain), so GC scans
+      -- during the loop are pure overhead. Re-enabled after the loop exits.
+      let isListRecursive = Core.isRightListRecursiveDefinition metadata
+                         || Core.isInPlaceListRecursiveDefinition metadata
+      Monad.when isListRecursive $ do
+        _ <- call gcDisable []
+        return ()
+
       br loop
 
       loop <- block `named` "loop"
@@ -454,6 +464,11 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
       condBr shouldLoop loop afterLoop
 
       afterLoop <- block `named` "loopExit"
+
+      -- Re-enable GC after right-list TRMC loop
+      Monad.when isListRecursive $ do
+        _ <- call gcEnable []
+        return ()
 
       case maybeBoxed of
         Just boxed ->
@@ -569,7 +584,12 @@ addTopLevelFnToSymbolTable env symbolTable topLevelFunction = case topLevelFunct
 
 generateTopLevelFunctions :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadModuleBuilder m)
                           => FunctionCtx (IRBuilderT m) -> Env -> SymbolTable -> [Core.Exp] -> m SymbolTable
-generateTopLevelFunctions ctx env symbolTable0 topLevelFunctions' =
+generateTopLevelFunctions ctx env symbolTable0 topLevelFunctions' = do
+  -- Declare GC_disable/GC_enable once for the module (used by TRMC loop optimization)
+  emitDefn $ AST.GlobalDefinition Global.functionDefaults
+    { Global.name = AST.mkName "GC_disable", Global.parameters = ([], False), Global.returnType = Type.void }
+  emitDefn $ AST.GlobalDefinition Global.functionDefaults
+    { Global.name = AST.mkName "GC_enable", Global.parameters = ([], False), Global.returnType = Type.void }
   Monad.foldM step symbolTable0 topLevelFunctions'
  where
   step symbolTable fn = do

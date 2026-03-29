@@ -1,0 +1,37 @@
+import List from "List"
+import IO from "IO"
+
+f = (x) => x + 1
+
+main = () => {
+  // In-place: inline expression (List.repeat result is consumed by map)
+  r1 = map(f, List.repeat(1, 10))
+  IO.log(r1)
+
+  // Arena: variable reference (nums is aliased — used again below)
+  nums = [1, 2, 3, 4, 5]
+  doubled = map(f, nums)
+  IO.log(doubled)
+  IO.log(nums)
+
+  // Arena: ++ with aliased first arg
+  a = [1, 2, 3]
+  b = a ++ [4, 5, 6]
+  IO.log(b)
+  IO.log(a)
+
+  // In-place: chained map (inner map result is temporary)
+  r2 = map(f, map(f, [10, 20, 30]))
+  IO.log(r2)
+
+  // In-place: ++ with inline first arg
+  c = List.repeat(1, 3) ++ [4, 5]
+  IO.log(c)
+
+  // Arena: map with variable, verify original preserved
+  xs = [10, 20, 30]
+  ys = map((x) => x * 2, xs)
+  zs = map((x) => x + 1, xs)
+  IO.log(ys)
+  IO.log(zs)
+}

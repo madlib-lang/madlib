@@ -256,6 +256,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/byte-scan-hex-parity"
         , "compiler/test/Blackbox/test-cases/scan-strict-parity"
         , "compiler/test/Blackbox/test-cases/short-overflow-parity"
+        , "compiler/test/Blackbox/test-cases/inplace-trmc"
         ]
 
   forM_ cases $ \casePath -> do

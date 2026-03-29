@@ -16,6 +16,8 @@ module Generate.LLVM.Builtins
   , startEventLoop
   , gcMalloc
   , gcMallocAtomic
+  , gcDisable
+  , gcEnable
   , applyPAP
   , applyPAP1
   , applyPAP2
@@ -101,6 +103,14 @@ gcMalloc =
 gcMallocAtomic :: Operand
 gcMallocAtomic =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False) (mkName "GC_malloc_atomic"))
+
+gcDisable :: Operand
+gcDisable =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (mkName "GC_disable"))
+
+gcEnable :: Operand
+gcEnable =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (mkName "GC_enable"))
 
 applyPAP :: Operand
 applyPAP =
