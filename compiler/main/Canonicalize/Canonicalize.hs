@@ -594,12 +594,13 @@ canonicalizeJsxTag env target exp = case exp of
     let propArea     = composeArea (length name) area propFields
     let childrenArea = composeArea 0 area children'
 
-    let props'       = Can.Canonical propArea (Can.JsxRecord propFields)
-    let children''   = Can.Canonical childrenArea (Can.ListConstructor children')
+    -- Children are included as a `children` field in the props record
+    let childrenExp  = Can.Canonical childrenArea (Can.ListConstructor children')
+    let childrenField = Can.Canonical childrenArea (Can.Field ("children", childrenExp))
+    let allPropFields = propFields ++ [childrenField]
+    let props'       = Can.Canonical propArea (Can.JsxRecord allPropFields)
 
-    return $ Can.Canonical
-      area
-      (Can.App (Can.Canonical (mergeAreas tagFnArea propArea) (Can.App tagFnVar props' False)) children'' True)
+    return $ Can.Canonical area (Can.App tagFnVar props' True)
     where
     composeArea :: Int -> Area -> [Can.Canonical a] -> Area
     composeArea offset (Area (Loc _ l c) _) cans = if not (null cans)

@@ -1,0 +1,36 @@
+import IO from "IO"
+import List from "List"
+import String from "String"
+
+// Component that uses children
+Wrapper = (props) => {
+  return "(" ++ String.join(", ", props.children) ++ ")"
+}
+
+// Component with props AND children
+Card = (props) => {
+  return "[" ++ props.title ++ ": " ++ String.join(", ", props.children) ++ "]"
+}
+
+// Component that ignores children (self-closing usage)
+Badge = (props) => {
+  return "<" ++ props.label ++ ">"
+}
+
+main = () => {
+  // Children as text
+  IO.log(<Wrapper>{"hello"}{"world"}</Wrapper>)
+
+  // Children with expressions
+  x = "dynamic"
+  IO.log(<Wrapper>{x}{"static"}</Wrapper>)
+
+  // Props + children together
+  IO.log(<Card title="MyCard">{"item1"}{"item2"}{"item3"}</Card>)
+
+  // Self-closing tag (children = [])
+  IO.log(<Badge label="new" />)
+
+  // Empty children with opening/closing tags
+  IO.log(<Wrapper></Wrapper>)
+}

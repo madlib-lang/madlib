@@ -1,12 +1,12 @@
 import IO from "IO"
 
 // Component with required + optional (Maybe) props
-MyComponent = (props, _) => {
+MyComponent = (props) => {
   return props.required ++ (props.optional ?? "") ++ show(props.optional2 ?? 0)
 }
 
 // Component with only Maybe props
-AllOptional = (props, _) => {
+AllOptional = (props) => {
   return (props.a ?? "none") ++ show(props.b ?? -1)
 }
 

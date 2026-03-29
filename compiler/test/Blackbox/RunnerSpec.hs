@@ -259,6 +259,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/inplace-trmc"
         , "compiler/test/Blackbox/test-cases/maybe-operators"
         , "compiler/test/Blackbox/test-cases/jsx-maybe-props"
+        , "compiler/test/Blackbox/test-cases/jsx-children"
         ]
 
   forM_ cases $ \casePath -> do
