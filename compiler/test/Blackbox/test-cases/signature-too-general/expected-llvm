@@ -1,0 +1,13 @@
+     ╭──▶ compiler/test/Blackbox/test-cases/signature-too-general/Entrypoint.mad@4:1-5:26
+     │
+   4 │ ╭┤ f :: String -> a -> String
+   5 │ ├┤ f = (s, x) => s ++ x.name
+     • │ 
+     • ╰╸ Type signature given:
+     •        String -> a -> String
+     •    
+     •    Type inferred:
+     •        String -> { ...base, name :: String } -> String
+     •    
+─────╯
+

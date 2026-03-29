@@ -71,6 +71,23 @@ isMaybeType (TApp (TCon (TC "Maybe" _) _ _) _) = True
 isMaybeType _ = False
 
 
+-- | Collect type variables that appear directly as function parameter types.
+-- For `String -> a -> b -> Element`, returns {a, b} (not String or Element which are TCon).
+-- For `{ ...r } -> Element`, returns {} (the record is compound, not a plain TVar).
+collectTopLevelParamVars :: Type -> S.Set TVar
+collectTopLevelParamVars (TApp (TApp _ paramType) returnType) =
+  case paramType of
+    TVar tv -> S.insert tv (collectTopLevelParamVars returnType)
+    _       -> collectTopLevelParamVars returnType
+collectTopLevelParamVars _ = S.empty
+
+-- | Check if a type is compound (record or type application, not a plain variable or constructor).
+isCompoundBinding :: Type -> Bool
+isCompoundBinding (TRecord _ _ _) = True
+isCompoundBinding (TApp _ _) = True
+isCompoundBinding _ = False
+
+
 mutationInterface :: String
 mutationInterface = "__MUTATION__"
 
@@ -1243,15 +1260,23 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
       scCheck  = quantify (ftvList (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
   sigCheckResult <- if sc /= scCheck then
     -- The inferred scheme differs from the declared scheme.
-    -- Before reporting an error, check if the declared type subsumes the inferred type.
+    -- Check if the declared type subsumes the inferred type.
     -- This handles cases like record spreads where the inference over-constrains
     -- the input type (e.g., { ...input, time: now() } makes input :: { time: ..., ...r }
     -- but the declared type correctly says input :: { ...r }).
+    -- However, we reject annotations where a plain type variable is bound to a
+    -- compound type (record, applied type), indicating the annotation is too general.
     catchError (do
       (ps1 :=> t1) <- instantiate sc
+      let annotationVars = ftv t1
       (ps2 :=> t2) <- instantiate scCheck
-      _ <- unify t1 t2
-      return True
+      s <- unify t1 t2
+      -- Check that no top-level annotation type variable was bound to a compound type.
+      -- This catches e.g. `f :: a -> b` where the inferred type is `{ name :: String } -> String`.
+      -- But allows row variables in records (e.g. `{ ...r }` annotation where r absorbs extra fields).
+      let topLevelVars = collectTopLevelParamVars t1
+      let tooGeneral = any (\tv -> isCompoundBinding (apply s (TVar tv))) (S.toList topLevelVars)
+      return (not tooGeneral)
     ) (const $ return False)
   else
     return True

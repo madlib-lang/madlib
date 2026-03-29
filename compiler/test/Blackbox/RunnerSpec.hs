@@ -260,6 +260,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/maybe-operators"
         , "compiler/test/Blackbox/test-cases/jsx-maybe-props"
         , "compiler/test/Blackbox/test-cases/jsx-children"
+        , "compiler/test/Blackbox/test-cases/signature-too-general"
         ]
 
   forM_ cases $ \casePath -> do

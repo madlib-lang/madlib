@@ -1,0 +1,9 @@
+import IO from "IO"
+
+// This should fail: annotation uses plain `a` but inferred type is a record
+f :: String -> a -> String
+f = (s, x) => s ++ x.name
+
+main = () => {
+  IO.log(f("hello", { name: " world" }))
+}
