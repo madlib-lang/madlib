@@ -30,13 +30,13 @@ getErrors = gets errors
 pushError :: CompilationError -> Infer ()
 pushError err = do
   s <- get
-  put s { errors = errors s ++ [err] }
+  put s { errors = err : errors s }
 
 
 pushWarning :: CompilationWarning -> Infer ()
 pushWarning warning = do
   s <- get
-  put s { warnings = warnings s <> [warning] }
+  put s { warnings = warning : warnings s }
 
 
 pushExtensibleRecordToDerive :: [String] -> Infer ()

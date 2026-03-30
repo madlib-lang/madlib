@@ -58,21 +58,24 @@ findAllExportedTypeNames ast =
 findAllNotExportedTopLevelDeclarationNames :: Can.AST -> [Can.Canonical Can.Name]
 findAllNotExportedTopLevelDeclarationNames ast =
   let exportedVarNames      = mapMaybe Can.getExportName (Can.aexps ast)
+      exportedVarSet        = S.fromList exportedVarNames  -- O(log n) membership instead of O(n)
       notExportedVarNames   = mapMaybe Can.getNotExportedExpName (Can.aexps ast)
-      notExportedVarNames'  = filter ((\n -> n `notElem` exportedVarNames && n /= "main") . Can.getCanonicalContent) notExportedVarNames
+      notExportedVarNames'  = filter ((\n -> n `S.notMember` exportedVarSet && n /= "main") . Can.getCanonicalContent) notExportedVarNames
   in  notExportedVarNames'
 
 
 findAllNotExportedConstructorNames :: Can.AST -> [Can.Canonical Can.Name]
 findAllNotExportedConstructorNames ast =
   let typeExportNames       = Can.getTypeExportName <$> filter Can.isTypeExport (Can.aexps ast)
-      exportedADTs          = filter (\td -> Can.isTypeDeclExported td || (Can.getTypeDeclName td `elem` typeExportNames)) (Can.atypedecls ast)
+      typeExportSet         = S.fromList typeExportNames  -- O(log n) membership
+      exportedADTs          = filter (\td -> Can.isTypeDeclExported td || (Can.getTypeDeclName td `S.member` typeExportSet)) (Can.atypedecls ast)
       exportedCtors         = concat $ Can.getCtors <$> exportedADTs
       exportedCtorNames     = Can.getCtorName <$> exportedCtors
+      exportedCtorSet       = S.fromList exportedCtorNames  -- O(log n) membership
       notExportedADTs       = filter (not . Can.isTypeDeclExported) (Can.atypedecls ast)
       notExportedCtors      = concat $ Can.getCtors <$> notExportedADTs
       notExportedCtorNames  = Can.getCanonicalCtorName <$> notExportedCtors
-      notExportedCtorNames' = filter ((`notElem` exportedCtorNames) . Can.getCanonicalContent) notExportedCtorNames
+      notExportedCtorNames' = filter ((`S.notMember` exportedCtorSet) . Can.getCanonicalContent) notExportedCtorNames
   in  notExportedCtorNames'
 
 
@@ -81,6 +84,7 @@ findAllNotExportedTypeNames ast =
   let notExportedADTs  = filter (not . Can.isTypeDeclExported) (Can.atypedecls ast)
       typeExportNames  = Can.getTypeExportName <$> filter Can.isTypeExport (Can.aexps ast)
       exportedVarNames = mapMaybe Can.getExportName (Can.aexps ast)
+      exportedVarSet   = S.fromList exportedVarNames  -- O(log n) membership
       typeNames =
         mapMaybe
           (\case
@@ -89,7 +93,7 @@ findAllNotExportedTypeNames ast =
 
               Can.Canonical area Can.ADT{ Can.adtname, Can.adtconstructors, Can.adtexported = False } ->
                 let ctorNames = Can.getCtorName <$> adtconstructors
-                in  if any (`elem` exportedVarNames) ctorNames then
+                in  if any (`S.member` exportedVarSet) ctorNames then
                       Nothing
                     else
                       Just (Can.Canonical area adtname, ctorNames)

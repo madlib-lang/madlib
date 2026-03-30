@@ -102,7 +102,7 @@ isLineTracked line = do
 pushWarning :: CompilationWarning -> CanonicalM ()
 pushWarning warning = do
   s <- get
-  put s { warnings = warnings s <> [warning] }
+  put s { warnings = warning : warnings s }
 
 pushJS :: String -> CanonicalM ()
 pushJS js = do
@@ -170,16 +170,16 @@ pushTypeDeclToDerive env td@(Canonical _ td') = do
   let typeName = adtname td'
   when (typeName /= "Dictionary" && (typeName /= "Set" || not ("prelude/__internal__" `List.isInfixOf` envCurrentPath env))) $ do
     s <- get
-    put s { typesToDerive = typesToDerive s <> [TypeDeclToDerive td] }
+    put s { typesToDerive = TypeDeclToDerive td : typesToDerive s }
 
 pushRecordToDerive :: [String] -> CanonicalM ()
 pushRecordToDerive fieldNames = do
   s <- get
-  put s { typesToDerive = typesToDerive s <> [RecordToDerive (Set.fromList fieldNames)] }
+  put s { typesToDerive = RecordToDerive (Set.fromList fieldNames) : typesToDerive s }
 
 getTypeDeclarationsToDerive :: CanonicalM [InstanceToDerive]
 getTypeDeclarationsToDerive =
-  gets typesToDerive
+  gets (reverse . typesToDerive)
 
 resetToDerive :: CanonicalM ()
 resetToDerive = do

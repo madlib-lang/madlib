@@ -414,17 +414,17 @@ monomorphizeGlobalDefinition target isMain env@Env{ envCurrentModulePath } fnNam
           return fnName
 
 
-blackList :: [String]
+blackList :: Set.Set String
 blackList =
-  ["&&", "||", "+", "-", "*", "/", "!=", "!", "%", ">>", ">>>", "<<", "~", "^", "unary-minus"]
+  Set.fromList ["&&", "||", "+", "-", "*", "/", "!=", "!", "%", ">>", ">>>", "<<", "~", "^", "unary-minus"]
 
-eqExcludeTypes :: [Type]
+eqExcludeTypes :: Set.Set Type
 eqExcludeTypes =
-  [tInteger, tShort, tByte, tFloat, tStr, tBool, tUnit, tChar]
+  Set.fromList [tInteger, tShort, tByte, tFloat, tStr, tBool, tUnit, tChar]
 
-comparableExcludeTypes :: [Type]
+comparableExcludeTypes :: Set.Set Type
 comparableExcludeTypes =
-  [tInteger, tShort, tByte, tFloat, tBool, tUnit, tChar]
+  Set.fromList [tInteger, tShort, tByte, tFloat, tBool, tUnit, tChar]
 
 monomorphizeApp :: Target -> Env -> Exp -> Monomorphize Exp
 monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
@@ -473,10 +473,10 @@ monomorphizeApp target env@Env{ envSubstitution } exp = case exp of
 
   Typed qt area (Var fnName False) -> do
     if
-      fnName `List.elem` blackList
+      fnName `Set.member` blackList
       || fnName `Set.member` envLocalBindingsToExclude env
-      || (fnName == "==" && head (getParamTypes $ apply envSubstitution $ getQualified qt) `List.elem` eqExcludeTypes)
-      || (fnName `List.elem` [">", "<", ">=", "<="] && head (getParamTypes $ apply envSubstitution $ getQualified qt) `List.elem` comparableExcludeTypes)
+      || (fnName == "==" && head (getParamTypes $ apply envSubstitution $ getQualified qt) `Set.member` eqExcludeTypes)
+      || ((fnName == ">" || fnName == "<" || fnName == ">=" || fnName == "<=") && head (getParamTypes $ apply envSubstitution $ getQualified qt) `Set.member` comparableExcludeTypes)
     then
       return $ Typed (applyAndCleanQt envSubstitution qt) area (Var fnName False)
     else if fnName == ">" then

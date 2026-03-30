@@ -178,10 +178,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     case can of
       Right (ast, env, instancesToDerive) ->
-        return ((ast, env, instancesToDerive), (warnings, mempty))
+        return ((ast, env, instancesToDerive), (reverse warnings, mempty))
 
       Left err ->
-        return ((Can.emptyAST, CanEnv.initialEnv, mempty), (warnings, [err]))
+        return ((Can.emptyAST, CanEnv.initialEnv, mempty), (reverse warnings, [err]))
 
   ForeignCanTypeDeclaration modulePath typeName -> nonInput $ do
     (Can.AST { Can.atypedecls }, _, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
@@ -233,10 +233,10 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
     case res of
       Right (astAndEnv, InferState _ _ [] warnings) -> do
-        return (astAndEnv, (warnings, mempty))
+        return (astAndEnv, (reverse warnings, mempty))
 
       Right ((ast, env), InferState _ _ errors warnings) ->
-        return ((ast { Slv.apath = Just path }, env), (warnings, errors))
+        return ((ast { Slv.apath = Just path }, env), (reverse warnings, reverse errors))
 
       Left error ->
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv'), (mempty, [error]))

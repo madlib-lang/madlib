@@ -546,8 +546,8 @@ buildApp env target area f args = do
             ) $ reverse args'
   let canDrop = length droppable
 
-  let args'' = (reverse . drop canDrop . reverse) args'
-      wrapperPlaceholderParams' = (reverse . drop canDrop . reverse) wrapperPlaceholderParams
+  let args'' = take (length args' - canDrop) args'
+      wrapperPlaceholderParams' = take (length wrapperPlaceholderParams - canDrop) wrapperPlaceholderParams
 
   if null args'' then
     canonicalize env target f
@@ -559,17 +559,23 @@ buildApp env target area f args = do
 
 
 buildApp' :: Env.Env -> Target -> Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
-buildApp' env target total nth area f@Src.Source{} args = case args of
+buildApp' env target total nth area f args =
+  buildApp'Rev env target total nth area f (reverse args)
+
+buildApp'Rev :: Env.Env -> Target -> Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
+buildApp'Rev env target total nth area f@Src.Source{} args = case args of
   [arg] -> do
     arg' <- canonicalize env target arg
     f'   <- canonicalize env target f
     return $ Can.Canonical area (Can.App f' arg' (total == nth))
 
-  _ -> do
-    let arg@(Src.Source area' _ _) = last args
+  (arg@(Src.Source area' _ _) : rest) -> do
     arg'   <- canonicalize env target arg
-    subApp <- buildApp' env target total (nth - 1) area f (init args)
+    subApp <- buildApp'Rev env target total (nth - 1) area f rest
     return $ Can.Canonical (mergeAreas area area') (Can.App subApp arg' (total == nth))
+
+  [] ->
+    error "buildApp'Rev: empty args list"
 
 
 canonicalizeJsxTag :: Env.Env -> Target -> Src.Exp -> CanonicalM Can.Exp

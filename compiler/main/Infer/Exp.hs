@@ -286,8 +286,9 @@ inferBody discardError options env (e : es) = do
 -- TODO: find out and comment why we need this
 postProcessBody :: Bool -> Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
 postProcessBody discardError options env s expType es = do
-  (es', s', _) <- foldM
-    (\(results, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
+  -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
+  (esRev, s', _) <- foldM
+    (\(resultsRev, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
       let fsSet = ftv (apply accSubst env'') `S.union` ftv (apply accSubst expType) `S.union` ftvForLetGenSet (apply accSubst t')
           fs = S.toList fsSet
       let ps'' = apply accSubst ps'
@@ -340,12 +341,12 @@ postProcessBody discardError options env s expType es = do
       let sFinal = substFromDefaulting `compose` accSubst
       e' <- updateExpTypes options env False sFinal (Slv.Typed (apply sFinal $ ps''' :=> t') area e)
 
-      return (results ++ [e'], sFinal, apply sFinal env'')
+      return (e' : resultsRev, sFinal, apply sFinal env'')
     )
     (mempty, s, env)
     es
 
-  return (s', es')
+  return (s', reverse esRev)
 
 
 -- INFER APP
@@ -523,7 +524,9 @@ inferListConstructor discardError options env listExp@(Can.Canonical area (Can.L
   elems -> do
     tv               <- newTVar Star
 
-    (s', ps, t', es) <- foldlM
+    -- Accumulate list items reversed (cons O(1)) then reverse — avoids O(n²) for es.
+    -- Predicates still use ++ to preserve order (deduplication is order-sensitive).
+    (s', ps, t', esRev) <- foldlM
       (\(s, pss, t, lis) elem -> do
         (s', ps', t'', li) <- inferListItem discardError options (apply s env) (fromMaybe tv t) elem
         (s'', tr) <- case t of
@@ -535,12 +538,13 @@ inferListConstructor discardError options env listExp@(Can.Canonical area (Can.L
             return (s'''', pickJSXChild t''' t'')
 
         let s''' = s'' `compose` s' `compose` s
-        return (s''', pss ++ ps', Just $ apply s''' tr, lis ++ [li])
+        return (s''', pss ++ ps', Just $ apply s''' tr, li : lis)
       )
       (mempty, [], Nothing, [])
       elems
 
     let (Just t'') = t'
+    let es = reverse esRev
 
     s'' <- contextualUnify' env discardError listExp tv t''
     let s''' = s'' `compose` s'
@@ -580,20 +584,19 @@ pickJSXChild t1 t2 = case (t1, t2) of
 
 inferTupleConstructor :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferTupleConstructor discardError options env (Can.Canonical area (Can.TupleConstructor elems)) = do
-  inferredElems <-
+  -- Accumulate types/exps reversed (cons O(1)) then reverse — avoids O(n²) for those.
+  -- Predicates still use ++ to preserve order (deduplication is order-sensitive).
+  (s, ps, tsRev, esRev) <-
     foldM
       (\(s, ps, ts, es) e -> do
           (s', ps', t', e') <- infer discardError options (apply s env) e
-          return (s' `compose` s, ps ++ ps', ts ++ [t'], es ++ [e'])
+          return (s' `compose` s, ps ++ ps', t' : ts, e' : es)
       ) (M.empty, [], [], []) elems
 
-  let s         = (\(s, _, _, _) -> s) inferredElems
-  let elemTypes = (\(_, _, t, _) -> t) inferredElems
-  let elemEXPS  = (\(_, _, _, es) -> es) inferredElems
-  let ps        = (\(_, ps, _, _) -> ps) inferredElems
+  let elemTypes = reverse tsRev
+  let elemEXPS  = reverse esRev
   let tupleT    = getTupleCtor (length elems)
   let t         = foldl' TApp tupleT elemTypes
-
 
   return (s, ps, apply s t, Slv.Typed (ps :=> apply s t) area (Slv.TupleConstructor elemEXPS))
 
@@ -605,12 +608,14 @@ inferRecord :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred],
 inferRecord discardError options env exp = do
   let Can.Canonical area (Can.Record fields) = exp
 
-  (subst, inferredFields) <- foldM (
+  -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
+  (subst, inferredFieldsRev) <- foldM (
         \(fieldSubst, result) field -> do
           (s, ps, ts, e) <- inferRecordField discardError options (apply fieldSubst env) field
           let nextSubst = s `compose` fieldSubst
-          return (nextSubst, result ++ [(ps, (\(n, t) -> (n, apply nextSubst t)) <$> ts, e)])
+          return (nextSubst, (ps, (\(n, t) -> (n, apply nextSubst t)) <$> ts, e) : result)
       ) (mempty, []) fields
+  let inferredFields = reverse inferredFieldsRev
   let fieldPS     = (\(ps, _, _) -> ps) <$> inferredFields
   let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
   let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
@@ -662,12 +667,14 @@ inferJsxRecord :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pre
 inferJsxRecord discardError options env exp = do
   let Can.Canonical area (Can.JsxRecord fields) = exp
 
-  (subst, inferredFields) <- foldM (
+  -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
+  (subst, inferredFieldsRev) <- foldM (
         \(fieldSubst, result) field -> do
           (s, ps, ts, e) <- inferRecordField discardError options (apply fieldSubst env) field
           let nextSubst = s `compose` fieldSubst
-          return (nextSubst, result ++ [(ps, (\(n, t) -> (n, apply nextSubst t)) <$> ts, e)])
+          return (nextSubst, (ps, (\(n, t) -> (n, apply nextSubst t)) <$> ts, e) : result)
       ) (mempty, []) fields
+  let inferredFields = reverse inferredFieldsRev
   let fieldPS     = (\(ps, _, _) -> ps) <$> inferredFields
   let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
   let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
@@ -869,13 +876,14 @@ inferWhere :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], 
 inferWhere discardError options env (Can.Canonical area (Can.Where exp iss)) = do
   (s, ps, t, e)          <- infer discardError options env exp
   tv                     <- newTVar Star
-  (pss, issSubstitution) <- foldM
+  (pssRev, issSubstitution) <- foldM
     (\(res, currSubst) is -> do
       r@(subst, _, _) <- inferBranch discardError options (apply currSubst env) (apply currSubst tv) (apply currSubst t) is
-      return (res <> [r], subst `compose` currSubst)
+      return (r : res, subst `compose` currSubst)
     )
     ([], s)
     iss
+  let pss = reverse pssRev
 
   let ps' = concat $ T.mid <$> pss
   -- move this within the foldM
