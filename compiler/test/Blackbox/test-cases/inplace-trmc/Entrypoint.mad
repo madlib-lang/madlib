@@ -1,5 +1,6 @@
 import List from "List"
 import IO from "IO"
+import { liftA2 } from "Applicative"
 
 f = (x) => x + 1
 
@@ -34,4 +35,9 @@ main = () => {
   zs = map((x) => x + 1, xs)
   IO.log(ys)
   IO.log(zs)
+
+  // flatten must NOT use __inplace: liftA2 passes [xs, ...vs] as recursive arg
+  // Regression test for commit 5fa6b91e (flatten__inplace caused EXC_BAD_ACCESS)
+  r3 = liftA2((x, y) => x + y, [1, 2], [10, 20])
+  IO.log(r3)
 }

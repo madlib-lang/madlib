@@ -96,10 +96,77 @@ findListParamForInPlace metadata params body
             _ -> Nothing
       in  case maybeScrutinee of
             Just name -> case List.elemIndex name nonDictParamNames of
-              Just idx -> Just (dictCount + idx)
+              Just idx ->
+                -- Only generate in-place version when the recursive call passes the
+                -- scrutinee's tail directly (a Var), not a reconstructed list.
+                -- Functions like 'flatten' that pass [xs, ...vs] (a ListConstructor)
+                -- to the recursive call are NOT safe for in-place mutation.
+                if hasListConstructorInRecursiveArg dictCount (List.elemIndex name nonDictParamNames) body
+                  then Nothing
+                  else Just (dictCount + idx)
               Nothing  -> Nothing
             Nothing -> Nothing
   | otherwise = Nothing
+
+-- | Returns True if any recursive cons cell in the body has a recursive call
+-- that passes a ListConstructor as the list argument (at the scrutinee position).
+-- Such functions (like 'flatten') are NOT safe for in-place mutation because
+-- they reconstruct a new list for the recursive call rather than passing a tail.
+-- Functions like 'map' pass the tail variable directly and ARE safe.
+hasListConstructorInRecursiveArg :: Int -> Maybe Int -> [Core.Exp] -> Bool
+hasListConstructorInRecursiveArg dictCount maybeIdx body = case maybeIdx of
+  Nothing  -> False
+  Just idx ->
+    let listArgIdx = dictCount + idx
+    in  any (checkExp listArgIdx) body
+  where
+    -- The TCE pass marks the ListConstructor node (e.g. [x, ...rec(...)]) with
+    -- RecursiveCall metadata when the spread contains a recursive call.
+    -- We check if that spread's recursive call receives a ListConstructor argument.
+    checkExp listArgIdx exp = case exp of
+      Core.Typed _ _ meta (Core.ListConstructor items)
+        | Core.isRightListRecursiveCall meta ->
+            -- The spread is the last item; check if the recursive call inside it
+            -- has a ListConstructor at the list-argument position.
+            case lastMaybe items of
+              Just (Core.Typed _ _ _ (Core.ListSpread spread)) ->
+                spreadHasListConstructorArg listArgIdx spread
+              _ -> False
+      Core.Typed _ _ _ e ->
+        checkExpContent listArgIdx e
+      _ ->
+        False
+
+    -- Walk into the spread expression to find the recursive Call and check its args.
+    spreadHasListConstructorArg listArgIdx exp = case exp of
+      Core.Typed _ _ _ (Core.Call _ args) ->
+        listArgIdx < List.length args && isListConstructor (args !! listArgIdx)
+      Core.Typed _ _ _ e ->
+        checkExpContentForCall listArgIdx e
+      _ -> False
+
+    checkExpContentForCall listArgIdx e = case e of
+      Core.If _ t f    -> spreadHasListConstructorArg listArgIdx t || spreadHasListConstructorArg listArgIdx f
+      Core.Do exps     -> any (spreadHasListConstructorArg listArgIdx) exps
+      _                -> False
+
+    checkExpContent listArgIdx e = case e of
+      Core.Where _ iss -> any (checkIs listArgIdx) iss
+      Core.If _ t f    -> checkExp listArgIdx t || checkExp listArgIdx f
+      Core.Do exps     -> any (checkExp listArgIdx) exps
+      Core.Definition _ body' -> any (checkExp listArgIdx) body'
+      _                -> False
+
+    checkIs listArgIdx is = case is of
+      Core.Typed _ _ _ (Core.Is _ exp) -> checkExp listArgIdx exp
+      _ -> False
+
+    isListConstructor exp = case exp of
+      Core.Typed _ _ _ (Core.ListConstructor _) -> True
+      _                                          -> False
+
+    lastMaybe [] = Nothing
+    lastMaybe xs = Just (last xs)
 
 
 -- | Callback context to break the circular dependency with LLVM.hs (generateExp lives there).

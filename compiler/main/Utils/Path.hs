@@ -189,7 +189,7 @@ retrieveMadlibDotJson pathUtils dir = do
       case json of
         Right json' -> return (Just json', dir)
         Left  _     ->  return (Nothing, dir)
-    else if dir == "/" then return (Nothing, dir) else retrieveMadlibDotJson pathUtils $ getParentFolder dir
+    else if dir == "/" || null dir then return (Nothing, dir) else retrieveMadlibDotJson pathUtils $ getParentFolder dir
 
 
 getParentFolder :: FilePath -> FilePath
@@ -230,8 +230,14 @@ findMadlibPackageMainPath pathUtils file pkgName = do
 
 findPreludeModulePath :: PathUtils -> FilePath -> IO (Maybe FilePath)
 findPreludeModulePath pathUtils moduleName = do
-  exePath <- getExecutablePath pathUtils
-  findPreludeModulePath' pathUtils moduleName (dropFileName exePath)
+  exePath  <- getExecutablePath pathUtils
+  result   <- findPreludeModulePath' pathUtils moduleName (dropFileName exePath)
+  case result of
+    Just _  -> return result
+    Nothing -> do
+      -- If not found via invoking path, try the canonicalized (symlink-resolved) path
+      realPath <- canonicalizePath pathUtils exePath
+      findPreludeModulePath' pathUtils moduleName (dropFileName realPath)
 
 findPreludeModulePath' :: PathUtils -> FilePath -> FilePath -> IO (Maybe FilePath)
 findPreludeModulePath' _         _          ""      = return Nothing

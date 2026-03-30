@@ -35,8 +35,8 @@ import           Data.ByteString.Short        as ShortByteString
 import           Data.ByteString.Char8        as Char8
 import           System.Process               (callCommand)
 import           System.Environment.Executable (getExecutablePath)
-import           System.FilePath              (takeDirectory, joinPath, replaceExtension)
-import           System.Directory            (createDirectoryIfMissing)
+import           System.FilePath              (takeDirectory, joinPath, replaceExtension, splitPath)
+import           System.Directory            (createDirectoryIfMissing, canonicalizePath, doesDirectoryExist, doesFileExist)
 import           Control.Monad.IO.Class       (MonadIO, liftIO)
 import qualified System.IO                    as SystemIO
 import           System.Environment           (getEnv)
@@ -539,6 +539,22 @@ makeExecutablePath output = case output of
     or
 
 
+-- | Walk up the directory tree from 'dir' looking for a 'runtime/lib' subdirectory.
+-- Returns the directory that contains 'runtime/' when found, Nothing when the root is reached.
+-- | Walk up the directory tree from 'dir' looking for the madlib runtime library.
+-- Returns the directory that contains 'runtime/build/libruntime.a' when found.
+findRuntimeDir :: FilePath -> IO (Maybe FilePath)
+findRuntimeDir ""  = return Nothing
+findRuntimeDir dir = do
+  libExists <- doesFileExist (joinPath [dir, "runtime", "build", "libruntime.a"])
+  if libExists
+    then return (Just dir)
+    else let parent = joinPath . Prelude.init . splitPath $ dir
+         in  if Prelude.null parent || parent == dir
+               then return Nothing
+               else findRuntimeDir parent
+
+
 buildTarget :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> [String] -> FilePath -> m ()
 buildTarget options staticLibs entrypoint = do
   let outputFolder = takeDirectory (optOutputPath options)
@@ -548,12 +564,22 @@ buildTarget options staticLibs entrypoint = do
 
   let objectFilePaths = Path.computeLLVMTargetPath outputFolder (optRootPath options) <$> modulePaths
 
-  compilerPath <- liftIO getExecutablePath
+  runtimeDir <- liftIO $ do
+    exePath  <- getExecutablePath
+    -- Search up from the invoking path first (direct invocation case).
+    result   <- findRuntimeDir (takeDirectory exePath)
+    case result of
+      Just dir -> return dir
+      Nothing  -> do
+        -- Fall back to the canonicalized (symlink-resolved) path.
+        realPath <- canonicalizePath exePath
+        found    <- findRuntimeDir (takeDirectory realPath)
+        return $ Maybe.fromMaybe (takeDirectory exePath) found
   let executablePath = makeExecutablePath (optOutputPath options)
 
   let objectFilePathsForCli = ListUtils.join " " objectFilePaths
-      runtimeLibPathOpt     = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "lib"] <> "\""
-      runtimeBuildPathOpt   = "-L\"" <> joinPath [takeDirectory compilerPath, "runtime", "build"] <> "\""
+      runtimeLibPathOpt     = "-L\"" <> joinPath [runtimeDir, "runtime", "lib"] <> "\""
+      runtimeBuildPathOpt   = "-L\"" <> joinPath [runtimeDir, "runtime", "build"] <> "\""
       linkerOptFlag         =
         case optOptimizationLevel options of
           O0 -> "-O0"
