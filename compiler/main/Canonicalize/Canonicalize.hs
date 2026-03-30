@@ -197,8 +197,8 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.Assignment "==" exp')
 
     Src.Assignment name exp -> do
-      declared <- getAllDeclaredNames
-      when (name `Set.member` Set.map (\(Declared _ n') -> n') declared) $
+      declaredNs <- getDeclaredNameStrings
+      when (name `Set.member` declaredNs) $
         pushNameAccess name
       pushNameDeclaration (Env.envExpPosition env) name
       exp' <- canonicalize env target exp
@@ -316,8 +316,9 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     Src.Do exps -> do
       -- TODO: merge the logic with the one in processAbs
-      allAccessesBeforeAbs <- getAllAccesses
-      allDeclaredBeforeAbs <- getAllDeclaredNames
+      allAccessesBeforeAbs    <- getAllAccesses
+      allDeclaredBeforeAbs    <- getAllDeclaredNames
+      declaredNsBefore        <- getDeclaredNameStrings
 
       resetNameAccesses
 
@@ -333,7 +334,7 @@ instance Canonicalizable Src.Exp Can.Exp where
 
       let localDecls   = map (\(e, i) -> (Src.getLocalOrNotExportedAssignmentName e, i + Env.envExpPosition env)) (zip exps [0..])
       let localDecls'  = map (\(Just x, i) -> (x, i)) $ filter (Maybe.isJust . fst) localDecls
-      let localDecls'' = filter (\(Src.Source _ _ n, _) -> n `Set.notMember` (Set.map (\(Declared _ n') -> n') allDeclaredBeforeAbs)) localDecls'
+      let localDecls'' = filter (\(Src.Source _ _ n, _) -> n `Set.notMember` declaredNsBefore) localDecls'
       let unusedDecls  =
             filter
               (\(Src.Source _ _ n, i) ->
@@ -450,6 +451,7 @@ processAbs :: Env.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] ->
 processAbs env target area params body = do
   allAccessesBeforeAbs <- getAllAccesses
   allDeclaredBeforeAbs <- getAllDeclaredNames
+  declaredNsBefore     <- getDeclaredNameStrings
 
   resetNameAccesses
   -- resetNamesDeclared
@@ -465,7 +467,7 @@ processAbs env target area params body = do
 
   let localDecls   = map (\(e, i) -> (Src.getLocalOrNotExportedAssignmentName e, i + Env.envExpPosition env)) (zip body [0..])
   let localDecls'  = map (\(Just x, i) -> (x, i)) $ filter (Maybe.isJust . fst) localDecls
-  let localDecls'' = filter (\(Src.Source _ _ n, _) -> n `Set.notMember` (Set.map (\(Declared _ n') -> n') allDeclaredBeforeAbs)) localDecls'
+  let localDecls'' = filter (\(Src.Source _ _ n, _) -> n `Set.notMember` declaredNsBefore) localDecls'
   let unusedParams = filter (\(Src.Source _ _ n) -> n /= "_" && n `Set.notMember` nameAccessesInAbs) params
   let unusedDecls  =
         filter

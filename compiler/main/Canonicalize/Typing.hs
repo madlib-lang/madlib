@@ -233,7 +233,7 @@ typingToType env _ (Src.Source _ _ (Src.TRRecord fields base)) = do
 
   case base' of
     Just (TRecord baseFields _ _) -> do
-      let fieldNames = M.keys fields' `union` M.keys baseFields
+      let fieldNames = S.toList $ M.keysSet fields' `S.union` M.keysSet baseFields
       pushRecordToDerive fieldNames
 
     _ -> do

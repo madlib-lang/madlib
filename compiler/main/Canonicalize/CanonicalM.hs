@@ -33,6 +33,8 @@ data CanonicalState
       { warnings :: [CompilationWarning]
       , namesAccessed :: Set.Set Accessed
       , namesDeclared :: Set.Set Declared
+      -- | Cached set of just the name strings from namesDeclared, for O(log n) membership tests
+      , declaredNameStrings :: Set.Set String
       , accumulatedJS :: String
       , typesToDerive :: [InstanceToDerive]
       -- List of InstanceToDerive for which an instance of Eq has been defined.
@@ -120,7 +122,8 @@ resetJS = do
 pushNameDeclaration :: Int -> String -> CanonicalM ()
 pushNameDeclaration position name = do
   s <- get
-  put s { namesDeclared = namesDeclared s <> Set.singleton (Declared position name) }
+  put s { namesDeclared = namesDeclared s <> Set.singleton (Declared position name)
+        , declaredNameStrings = Set.insert name (declaredNameStrings s) }
 
 pushNameAccess :: String -> CanonicalM ()
 pushNameAccess name = do
@@ -140,12 +143,13 @@ resetNameAccesses = do
 resetNamesDeclared :: CanonicalM ()
 resetNamesDeclared = do
   s <- get
-  put s { namesDeclared = Set.empty }
+  put s { namesDeclared = Set.empty, declaredNameStrings = Set.empty }
 
 setDeclaredNames :: Set.Set Declared -> CanonicalM ()
 setDeclaredNames declared = do
   s <- get
-  put s { namesDeclared = declared }
+  put s { namesDeclared = declared
+        , declaredNameStrings = Set.map (\(Declared _ n) -> n) declared }
 
 setAccesses :: Set.Set Accessed -> CanonicalM ()
 setAccesses accesses = do
@@ -154,6 +158,9 @@ setAccesses accesses = do
 
 getAllDeclaredNames :: CanonicalM (Set.Set Declared)
 getAllDeclaredNames = gets namesDeclared
+
+getDeclaredNameStrings :: CanonicalM (Set.Set String)
+getDeclaredNameStrings = gets declaredNameStrings
 
 getAllAccesses :: CanonicalM (Set.Set Accessed)
 getAllAccesses = gets namesAccessed

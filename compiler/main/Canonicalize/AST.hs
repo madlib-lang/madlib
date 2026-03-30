@@ -183,12 +183,12 @@ checkUnusedImports env imports = do
   let importedNamespaces = getAllImportedNamespaces imports
   let importedTypes      = getAllImportedTypes imports
 
-  namesAccessed <- S.toList <$> getAllNameAccesses
-  typesAccessed <- S.toList <$> getAllTypeAccesses
+  namesAccessed <- getAllNameAccesses
+  typesAccessed <- getAllTypeAccesses
 
-  let unusedNames   = filter (not . (`elem` namesAccessed) . fst) importedNames
-  let unusedAliases = filter (not . (`elem` namesAccessed) . fst) importedNamespaces
-  let unusedTypes   = filter (not . (`elem` typesAccessed) . fst) importedTypes
+  let unusedNames   = filter (not . (`S.member` namesAccessed) . fst) importedNames
+  let unusedAliases = filter (not . (`S.member` namesAccessed) . fst) importedNamespaces
+  let unusedTypes   = filter (not . (`S.member` typesAccessed) . fst) importedTypes
 
   let allUnused     = unusedNames ++ unusedAliases
 
@@ -209,9 +209,9 @@ checkUnusedDeclarations :: Env -> Can.AST -> CanonicalM ()
 checkUnusedDeclarations env ast = do
   let declsToFind = findAllNotExportedTopLevelDeclarationNames ast
   let constructorsToFind = findAllNotExportedConstructorNames ast
-  namesAccessed <- S.toList <$> getAllNameAccesses
-  let unusedNames = filter (not . (`elem` namesAccessed) . Can.getCanonicalContent) declsToFind
-  let unusedConstructors = filter (not . (`elem` namesAccessed) . Can.getCanonicalContent) constructorsToFind
+  namesAccessed <- getAllNameAccesses
+  let unusedNames = filter (not . (`S.member` namesAccessed) . Can.getCanonicalContent) declsToFind
+  let unusedConstructors = filter (not . (`S.member` namesAccessed) . Can.getCanonicalContent) constructorsToFind
 
   allJS <- getJS
 
@@ -237,13 +237,12 @@ checkUnusedDeclarations env ast = do
 checkUnusedTypes :: Env -> Can.AST -> CanonicalM ()
 checkUnusedTypes env ast = do
   let namesToFind = findAllNotExportedTypeNames ast
-  typesAccessed <- S.toList <$> getAllTypeAccesses
-  namesAccessed <- S.toList <$> getAllNameAccesses
-  -- let unusedNames = filter (not . (`elem` typesAccessed) . Can.getCanonicalContent) namesToFind
+  typesAccessed <- getAllTypeAccesses
+  namesAccessed <- getAllNameAccesses
   let unusedNames =
         mapMaybe
           (\(Can.Canonical area typeName, ctorNames) ->
-            if typeName `elem` typesAccessed || any (`elem` namesAccessed) ctorNames then
+            if typeName `S.member` typesAccessed || any (`S.member` namesAccessed) ctorNames then
               Nothing
             else
               Just $ Can.Canonical area typeName
@@ -369,7 +368,7 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
 
   derivedTypes             <- getDerivedTypes
   typeDeclarationsToDerive <- getTypeDeclarationsToDerive
-  let typeDeclarationsToDerive' = removeDuplicates $ typeDeclarationsToDerive \\ S.toList derivedTypes
+  let typeDeclarationsToDerive' = removeDuplicates $ filter (`S.notMember` derivedTypes) typeDeclarationsToDerive
       derivedEqInstances        =
         if optGenerateDerivedInstances options then
           mapMaybe (deriveEqInstance astPath) typeDeclarationsToDerive'

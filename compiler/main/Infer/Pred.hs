@@ -16,6 +16,7 @@ import           Control.Monad                  ( msum )
 import           Control.Monad.Except
 import           Data.List
 import qualified Data.Map                      as M
+import qualified Data.Set                      as Set
 import Infer.EnvUtils
 import Utils.Record (generateRecordPredsAndType)
 import qualified Data.Maybe as Maybe

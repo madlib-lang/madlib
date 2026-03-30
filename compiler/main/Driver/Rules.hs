@@ -655,6 +655,7 @@ runCanonicalM a =
         { Can.warnings = []
         , Can.namesAccessed = Set.empty
         , Can.namesDeclared = Set.empty
+        , Can.declaredNameStrings = Set.empty
         , Can.accumulatedJS = ""
         , Can.typesToDerive = []
         , Can.derivedTypes = Set.empty
