@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+
+stack exec madlib-fuzz -- run "$@"

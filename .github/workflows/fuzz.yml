@@ -1,0 +1,129 @@
+name: fuzz
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  fuzz-smoke:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install haskell
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+          ~/.ghcup/bin/ghcup install 8.10.7
+          ~/.ghcup/bin/ghcup install stack 2.7.3
+          ~/.ghcup/bin/ghcup set 8.10.7
+          ~/.ghcup/bin/ghcup set stack 2.7.3
+
+      - name: Configure stack
+        run: stack config set system-ghc --global true
+
+      - run: DEBIAN_FRONTEND=noninteractive sudo apt-get update -y
+      - run: sudo apt-get install -y llvm-12 nasm nodejs
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack-fuzz-smoke
+
+      - name: Build runtime libs
+        run: TARGET="LINUX_X64" ./scripts/build-runtime-libs
+
+      - name: Build runtime
+        run: AR="llvm-ar-12" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/" ./scripts/build-runtime
+
+      - name: Build fuzz executable
+        run: stack build madlib:exe:madlib-fuzz --fast
+
+      - name: Run smoke fuzz campaign
+        run: |
+          stack exec madlib-fuzz -- run \
+            --seed 1 \
+            --runs 60 \
+            --profile balanced \
+            --timeout-ms 3000 \
+            --max-size 10 \
+            --save-artifacts-dir .fuzz-artifacts
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-smoke-artifacts
+          path: .fuzz-artifacts
+
+  fuzz-nightly:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install haskell
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+          ~/.ghcup/bin/ghcup install 8.10.7
+          ~/.ghcup/bin/ghcup install stack 2.7.3
+          ~/.ghcup/bin/ghcup set 8.10.7
+          ~/.ghcup/bin/ghcup set stack 2.7.3
+
+      - name: Configure stack
+        run: stack config set system-ghc --global true
+
+      - run: DEBIAN_FRONTEND=noninteractive sudo apt-get update -y
+      - run: sudo apt-get install -y llvm-12 nasm nodejs
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-stack-fuzz-nightly
+
+      - name: Build runtime libs
+        run: TARGET="LINUX_X64" ./scripts/build-runtime-libs
+
+      - name: Build runtime
+        run: AR="llvm-ar-12" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/9:/usr/include/x86_64-linux-gnu/c++/9:/usr/include/" ./scripts/build-runtime
+
+      - name: Build fuzz executable
+        run: stack build madlib:exe:madlib-fuzz --fast
+
+      - name: Run nightly fuzz campaign
+        run: |
+          stack exec madlib-fuzz -- run \
+            --seed 1000 \
+            --runs 600 \
+            --profile pap-heavy \
+            --timeout-ms 4000 \
+            --max-size 14 \
+            --save-artifacts-dir .fuzz-artifacts
+          stack exec madlib-fuzz -- run \
+            --seed 10000 \
+            --runs 600 \
+            --profile closure-heavy \
+            --timeout-ms 4000 \
+            --max-size 14 \
+            --save-artifacts-dir .fuzz-artifacts
+          stack exec madlib-fuzz -- run \
+            --seed 20000 \
+            --runs 600 \
+            --profile allocation-heavy \
+            --timeout-ms 4000 \
+            --max-size 14 \
+            --save-artifacts-dir .fuzz-artifacts
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-nightly-artifacts
+          path: .fuzz-artifacts

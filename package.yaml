@@ -114,6 +114,13 @@ executables:
     when:
     - condition: flag(static)
       ld-options: -static
+  madlib-fuzz:
+    <<: *exe-defaults
+    main: Main.hs
+    source-dirs:
+      - compiler/fuzz
+    dependencies:
+      - madlib
 
 library:
   <<: *exe-defaults
