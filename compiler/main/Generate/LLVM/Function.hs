@@ -102,11 +102,37 @@ findListParamForInPlace metadata params body
                 -- Functions like 'flatten' that pass [xs, ...vs] (a ListConstructor)
                 -- to the recursive call are NOT safe for in-place mutation.
                 if hasListConstructorInRecursiveArg dictCount (List.elemIndex name nonDictParamNames) body
+                   || hasMultiItemRecursiveBranch body
                   then Nothing
                   else Just (dictCount + idx)
               Nothing  -> Nothing
             Nothing -> Nothing
   | otherwise = Nothing
+
+-- | Returns True if any recursive list branch has 2+ items before the spread.
+-- Such branches (like ['\\', '"', ...go(cs)]) produce more output nodes than input
+-- nodes consumed, making in-place mutation unsafe (would overwrite unconsumed input).
+hasMultiItemRecursiveBranch :: [Core.Exp] -> Bool
+hasMultiItemRecursiveBranch = any checkExp
+  where
+    checkExp exp = case exp of
+      Core.Typed _ _ meta (Core.ListConstructor items)
+        | Core.isRightListRecursiveCall meta ->
+            let itemCount = List.length $ List.filter isListItem items
+            in  itemCount > 1
+      Core.Typed _ _ _ e -> checkContent e
+      _ -> False
+
+    checkContent e = case e of
+      Core.Where _ iss    -> any (\is -> case is of { Core.Typed _ _ _ (Core.Is _ x) -> checkExp x; _ -> False }) iss
+      Core.If _ t f       -> checkExp t || checkExp f
+      Core.Do exps        -> any checkExp exps
+      Core.Definition _ b -> any checkExp b
+      _                   -> False
+
+    isListItem (Core.Typed _ _ _ (Core.ListItem _)) = True
+    isListItem _                                      = False
+
 
 -- | Returns True if any recursive cons cell in the body has a recursive call
 -- that passes a ListConstructor as the list argument (at the scrutinee position).
