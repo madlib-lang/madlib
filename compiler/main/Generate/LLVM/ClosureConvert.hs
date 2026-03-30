@@ -130,10 +130,10 @@ generateLiftedName env originalName = do
 addTopLevelExp :: Exp -> Convert ()
 addTopLevelExp e = do
   s <- MonadState.get
-  MonadState.put s { csTopLevel = csTopLevel s ++ [e] }
+  MonadState.put s { csTopLevel = e : csTopLevel s }
 
 getTopLevelExps :: Convert [Exp]
-getTopLevelExps = csTopLevel <$> MonadState.get
+getTopLevelExps = MonadState.gets (reverse . csTopLevel)
 
 
 -- ---------------------------------------------------------------------------

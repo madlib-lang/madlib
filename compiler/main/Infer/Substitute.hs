@@ -12,7 +12,6 @@ import           Error.Context
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
-import           Data.List                      ( nub )
 import           Control.Applicative
 
 
@@ -173,11 +172,20 @@ instance FtvOrdered Type where
 instance FtvOrdered Pred where
   ftvList (IsIn _ ts _) = ftvList ts
 
+-- | Deduplicate a list preserving first-occurrence order, in O(n log n).
+orderedNub :: Ord a => [a] -> [a]
+orderedNub = go S.empty
+  where
+    go _ [] = []
+    go seen (x : xs)
+      | S.member x seen = go seen xs
+      | otherwise       = x : go (S.insert x seen) xs
+
 instance FtvOrdered a => FtvOrdered [a] where
-  ftvList = nub . concatMap ftvList
+  ftvList = orderedNub . concatMap ftvList
 
 instance FtvOrdered t => FtvOrdered (Qual t) where
-  ftvList (ps :=> t) = nub (ftvList ps ++ ftvList t)
+  ftvList (ps :=> t) = orderedNub (ftvList ps ++ ftvList t)
 
 
 compose :: Substitution -> Substitution -> Substitution

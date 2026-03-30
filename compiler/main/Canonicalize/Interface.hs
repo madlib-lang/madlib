@@ -29,12 +29,15 @@ import Data.Hashable (hash)
 
 
 canonicalizeInterfaces :: Env -> [Src.Interface] -> CanonicalM (Env, [Can.Interface])
-canonicalizeInterfaces env = foldM
-  (\(env, interfaces) interface -> do
-    (env'', interface') <- canonicalizeInterface env interface
-    return (env'', interfaces ++ [interface'])
-  )
-  (env, [])
+canonicalizeInterfaces env interfaces = do
+  (env', rev) <- foldM
+    (\(env, acc) interface -> do
+      (env'', interface') <- canonicalizeInterface env interface
+      return (env'', interface' : acc)
+    )
+    (env, [])
+    interfaces
+  return (env', reverse rev)
 
 
 getAllInterfaceMethodNames :: Env -> [String]
