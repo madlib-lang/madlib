@@ -7,9 +7,11 @@ module Parse.Megaparsec.Pattern
 
 import qualified Data.ByteString.Char8         as C8
 import           Data.Char                      ( isUpper )
+import           Data.Word                      ( Word8 )
 import           Control.Monad                  ( void )
 
 import           Text.Megaparsec                hiding ( State )
+import qualified Text.Megaparsec.Byte          as C
 
 import qualified AST.Source                      as Src
 import           Explain.Location
@@ -88,21 +90,86 @@ pCompositePatternArgs = do
 
 
 -- | Parse a non-composite pattern (no constructor application)
+-- Uses lookAhead dispatch to avoid backtracking between numeric variants.
 pNonCompositePattern :: Parser Src.Pattern
-pNonCompositePattern = choice
-  [ pRecordPattern
-  , pListPattern
-  , pTuplePattern
-  , pParenthesizedPattern
-  , try pNegativeFloatPattern
-  , try pNegativeNumPattern
-  , pFloatPattern
-  , pNumPattern
-  , pStrPattern
-  , pCharPattern
-  , pBoolPattern
-  , pNamePattern
-  ]
+pNonCompositePattern = do
+  b <- lookAhead anySingle
+  case chr8' b of
+    '{' -> pRecordPattern
+    '[' -> pListPattern
+    '#' -> pTuplePattern
+    '(' -> pParenthesizedPattern
+    '-' -> try pNegativeNumericPattern <|> pNamePattern
+    '"' -> pStrPattern
+    '\'' -> pCharPattern
+    _ | isDigitB b -> pNumericPattern
+      | otherwise  -> choice [pBoolPattern, pNamePattern]
+
+
+-- | Parse all numeric patterns in a single pass (no backtracking between variants).
+-- Dispatches on '0x' for hex, then checks suffix for typed variants.
+pNumericPattern :: Parser Src.Pattern
+pNumericPattern = do
+  (area, (target, node)) <- withArea $ do
+    t <- pSourceTarget
+    n <- lexeme parseNum
+    return (t, n)
+  return $ Src.Source area target node
+  where
+    parseNum :: Parser Src.Pattern_
+    parseNum = do
+      isHex <- option False (True <$ C.string "0x")
+      if isHex then parseHexPat else parseDecPat
+
+    parseHexPat :: Parser Src.Pattern_
+    parseHexPat = do
+      digits <- C8.unpack <$> takeWhile1P (Just "hex digit") isHexDigitB
+      let hexStr = "0x" ++ digits
+      return $ Src.PNum hexStr
+
+    parseDecPat :: Parser Src.Pattern_
+    parseDecPat = do
+      digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
+      -- Check for float: digit.digit
+      mDot <- optional (C.char 46 :: Parser Word8)
+      case mDot of
+        Just _ -> do
+          frac <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
+          fsuf <- optional (C.string "_f" :: Parser C8.ByteString)
+          return $ Src.PFloat $ digits ++ "." ++ frac ++ maybe "" C8.unpack fsuf
+        Nothing -> do
+          suffix <- optional $
+            (C.string "_b" :: Parser C8.ByteString) <|> C.string "_s" <|> C.string "_i" <|> C.string "_f"
+          case fmap C8.unpack suffix of
+            Just "_f" -> return $ Src.PFloat (digits ++ "_f")
+            _         -> return $ Src.PNum digits
+
+
+-- | Parse a negative numeric pattern (-number or -float), single pass.
+pNegativeNumericPattern :: Parser Src.Pattern
+pNegativeNumericPattern = do
+  (area, (target, node)) <- withArea $ do
+    t <- pSourceTarget
+    n <- lexeme parseNeg
+    return (t, n)
+  return $ Src.Source area target node
+  where
+    parseNeg :: Parser Src.Pattern_
+    parseNeg = do
+      void $ C.char 45  -- '-'
+      digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
+      mDot <- optional (C.char 46 :: Parser Word8)
+      case mDot of
+        Just _ -> do
+          frac <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
+          fsuf <- optional (C.string "_f" :: Parser C8.ByteString)
+          return $ Src.PFloat $ '-' : digits ++ "." ++ frac ++ maybe "" C8.unpack fsuf
+        Nothing -> do
+          suffix <- optional $
+            (C.string "_b" :: Parser C8.ByteString) <|> C.string "_s" <|> C.string "_i" <|> C.string "_f"
+          case fmap C8.unpack suffix of
+            Just "_f" -> return $ Src.PFloat ('-' : digits ++ "_f")
+            _         -> return $ Src.PNum ('-' : digits)
 
 
 -- | Parse a name/variable/wildcard/nullary constructor pattern
@@ -119,40 +186,6 @@ nameToPattern area target n
   | n == "_"           = Src.Source area target Src.PAny
   | isUpper (head n)   = Src.Source area target (Src.PNullaryCon (Src.Source area target n))
   | otherwise          = Src.Source area target (Src.PVar n)
-
-
--- | Parse a number pattern
-pNumPattern :: Parser Src.Pattern
-pNumPattern = do
-  (area, n) <- withArea pNumber
-  target <- pSourceTarget
-  return $ Src.Source area target (Src.PNum n)
-
-
--- | Parse a negative number pattern
-pNegativeNumPattern :: Parser Src.Pattern
-pNegativeNumPattern = do
-  (area, _) <- withArea pDashUnary
-  n <- pNumber
-  target <- pSourceTarget
-  return $ Src.Source area target (Src.PNum $ '-' : n)
-
-
--- | Parse a float pattern
-pFloatPattern :: Parser Src.Pattern
-pFloatPattern = do
-  (area, f) <- withArea pFloat
-  target <- pSourceTarget
-  return $ Src.Source area target (Src.PFloat f)
-
-
--- | Parse a negative float pattern
-pNegativeFloatPattern :: Parser Src.Pattern
-pNegativeFloatPattern = do
-  (area, _) <- withArea pDashUnary
-  f <- pFloat
-  target <- pSourceTarget
-  return $ Src.Source area target (Src.PFloat $ '-' : f)
 
 
 -- | Parse a string pattern

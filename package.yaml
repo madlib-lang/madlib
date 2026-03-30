@@ -148,6 +148,17 @@ tests:
       - madlib
       - common
 
+benchmarks:
+  parse-bench:
+    main: ParseBench.hs
+    source-dirs: compiler/bench
+    ghc-options:
+      - -O2
+      - -rtsopts
+    dependencies:
+      - madlib
+      - criterion
+
 flags:
   static:
     description: Pass -static to ghc.

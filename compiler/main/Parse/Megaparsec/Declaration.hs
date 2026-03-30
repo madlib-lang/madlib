@@ -278,11 +278,20 @@ pInterfaceDecl = do
 pMethodDefs :: Parser (M.Map Src.Name Src.Typing)
 pMethodDefs = do
   first <- pMethodDef
-  rest <- many $ try $ do
-    rets
-    pMethodDef
+  rest <- pMethodDefsMore
   return $ M.fromList (first : rest)
   where
+    pMethodDefsMore :: Parser [(Src.Name, Src.Typing)]
+    pMethodDefsMore = do
+      rets
+      mb <- optional (lookAhead anySingle)
+      case mb of
+        Nothing  -> return []
+        Just 125 -> return []    -- '}': end of interface block
+        _        -> do
+          item <- pMethodDef
+          more <- pMethodDefsMore
+          return (item : more)
     pMethodDef = do
       name <- pNameStr
       pDoubleColon
@@ -335,11 +344,20 @@ pInstanceDecl = do
 pMethodImpls :: Parser (M.Map Src.Name Src.Exp)
 pMethodImpls = do
   first <- pMethodImpl
-  rest <- many $ try $ do
-    rets
-    pMethodImpl
+  rest <- pMethodImplsMore
   return $ M.fromList (first : rest)
   where
+    pMethodImplsMore :: Parser [(Src.Name, Src.Exp)]
+    pMethodImplsMore = do
+      rets
+      mb <- optional (lookAhead anySingle)
+      case mb of
+        Nothing  -> return []
+        Just 125 -> return []    -- '}': end of instance block
+        _        -> do
+          item <- pMethodImpl
+          more <- pMethodImplsMore
+          return (item : more)
     pMethodImpl = do
       (nameArea, name) <- withArea pNameStr
       target <- pSourceTarget
@@ -352,21 +370,35 @@ pMethodImpls = do
 -- Type declaration --
 
 pTypeDecl :: Parser Src.TypeDecl
-pTypeDecl = choice
-  [ -- export type Name params = constructors
-    try $ do
+pTypeDecl = do
+  -- Peek first keyword to dispatch without backtracking
+  w <- peekWord
+  case w of
+    "export" -> do
       (startArea, _) <- withArea pExport
       target <- pSourceTarget
-      pType
-      name <- pNameStr
-      params <- pTypeParams
-      rets
-      pEq
-      constructors <- pAdtConstructors
-      return $ Src.Source (mergeAreas startArea (Src.getArea (last constructors))) target
-        Src.ADT { Src.adtname = name, Src.adtparams = params, Src.adtconstructors = constructors, Src.adtexported = True }
-  , -- type Name params = constructors
-    try $ do
+      -- Peek at keyword after 'export': type or alias
+      w2 <- peekWord
+      case w2 of
+        "type" -> do
+          pType
+          name <- pNameStr
+          params <- pTypeParams
+          rets
+          pEq
+          constructors <- pAdtConstructors
+          return $ Src.Source (mergeAreas startArea (Src.getArea (last constructors))) target
+            Src.ADT { Src.adtname = name, Src.adtparams = params, Src.adtconstructors = constructors, Src.adtexported = True }
+        _ -> do  -- alias
+          pAlias
+          name <- pNameStr
+          params <- pTypeParams
+          rets
+          pEq
+          t <- pTypings
+          return $ Src.Source (mergeAreas startArea (Src.getArea t)) target
+            Src.Alias { Src.aliasname = name, Src.aliasparams = params, Src.aliastype = t, Src.aliasexported = True }
+    "type" -> do
       (startArea, _) <- withArea pType
       target <- pSourceTarget
       name <- pNameStr
@@ -376,20 +408,7 @@ pTypeDecl = choice
       constructors <- pAdtConstructors
       return $ Src.Source (mergeAreas startArea (Src.getArea (last constructors))) target
         Src.ADT { Src.adtname = name, Src.adtparams = params, Src.adtconstructors = constructors, Src.adtexported = False }
-  , -- export alias Name params = typing
-    try $ do
-      (startArea, _) <- withArea pExport
-      target <- pSourceTarget
-      pAlias
-      name <- pNameStr
-      params <- pTypeParams
-      rets
-      pEq
-      t <- pTypings
-      return $ Src.Source (mergeAreas startArea (Src.getArea t)) target
-        Src.Alias { Src.aliasname = name, Src.aliasparams = params, Src.aliastype = t, Src.aliasexported = True }
-  , -- alias Name params = typing
-    do
+    _ -> do  -- alias
       (startArea, _) <- withArea pAlias
       target <- pSourceTarget
       name <- pNameStr
@@ -399,7 +418,6 @@ pTypeDecl = choice
       t <- pTypings
       return $ Src.Source (mergeAreas startArea (Src.getArea t)) target
         Src.Alias { Src.aliasname = name, Src.aliasparams = params, Src.aliastype = t, Src.aliasexported = False }
-  ]
 
 
 pTypeParams :: Parser [Src.Name]
@@ -409,11 +427,22 @@ pTypeParams = many pNameStr
 pAdtConstructors :: Parser [Src.Constructor]
 pAdtConstructors = do
   first <- pAdtConstructor
-  rest <- many $ try $ do
-    rets
-    pPipeChar <|> (rets *> pPipeChar)
-    pAdtConstructor
-  return $ first : rest
+  rest <- pAdtConstructorsMore
+  return (first : rest)
+  where
+    -- Consume newlines, then check for '|' before attempting to parse next constructor.
+    -- Always succeeds: returns [] when no '|' found.
+    pAdtConstructorsMore :: Parser [Src.Constructor]
+    pAdtConstructorsMore = do
+      rets  -- consume any newlines/spaces
+      mb <- optional (lookAhead anySingle)
+      case mb of
+        Just 124 -> do  -- '|': parse next constructor
+          pPipeChar
+          item <- pAdtConstructor
+          more <- pAdtConstructorsMore
+          return (item : more)
+        _ -> return []  -- no '|': done
 
 
 pAdtConstructor :: Parser Src.Constructor

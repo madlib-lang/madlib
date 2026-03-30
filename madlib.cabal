@@ -528,3 +528,16 @@ test-suite madlib-test
     , unordered-containers ==0.2.16.0
     , utf8-string
   default-language: Haskell2010
+
+benchmark parse-bench
+  type: exitcode-stdio-1.0
+  main-is: ParseBench.hs
+  hs-source-dirs:
+      compiler/bench
+  build-depends:
+      base >=4.7 && <5
+    , bytestring
+    , criterion
+    , madlib
+  ghc-options: -O2 -rtsopts
+  default-language: Haskell2010

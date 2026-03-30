@@ -30,28 +30,37 @@ import           Parse.Megaparsec.Lexeme
 -- | Parse a type annotation that may include constraints
 -- constrainedTyping = constraint '=>' typings | '(' constraints ')' '=>' typings | typings
 pConstrainedTyping :: Parser Src.Typing
-pConstrainedTyping = choice
-  [ try $ do
-      (area, _) <- withArea (void pLeftParen)
-      rets
-      cs <- pConstraints
-      rets
-      pRightParen
-      rets
-      pFatArrow
-      rets
-      t <- pTypings
-      target <- pSourceTarget
-      return $ Src.Source (mergeAreas area (Src.getArea t)) target (Src.TRConstrained cs t)
-  , try $ do
-      c <- pConstraint
-      rets
-      pFatArrow
-      rets
-      t <- pTypings
-      return $ Src.Source (mergeAreas (Src.getArea c) (Src.getArea t)) (Src.getSourceTarget c) (Src.TRConstrained [c] t)
-  , pTypings
-  ]
+pConstrainedTyping = do
+  b <- lookAhead anySingle
+  case b of
+    40 -> do  -- '(' : could be (constraints) => ... or just a parenthesized type
+      mResult <- optional $ try $ do
+        (area, _) <- withArea (void pLeftParen)
+        rets
+        cs <- pConstraints
+        rets
+        pRightParen
+        rets
+        pFatArrow
+        rets
+        t <- pTypings
+        target <- pSourceTarget
+        return $ Src.Source (mergeAreas area (Src.getArea t)) target (Src.TRConstrained cs t)
+      case mResult of
+        Just t  -> return t
+        Nothing -> pTypings
+    _ -> do
+      -- Try single constraint => typings, otherwise fall through to typings
+      mResult <- optional $ try $ do
+        c <- pConstraint
+        rets
+        pFatArrow
+        rets
+        t <- pTypings
+        return $ Src.Source (mergeAreas (Src.getArea c) (Src.getArea t)) (Src.getSourceTarget c) (Src.TRConstrained [c] t)
+      case mResult of
+        Just t  -> return t
+        Nothing -> pTypings
 
 
 -- | Parse a list of constraints separated by commas
@@ -126,10 +135,11 @@ pManyTypings = some pSingleTyping
 
 
 -- | Parse a full typing (including arrow types)
--- typings = typing '->' typings | compositeTyping '->' typings | compositeTyping | typing
+-- typings = compositeTyping '->' typings | compositeTyping | atomicTyping '->' typings | atomicTyping
+-- Optimized: peek ahead to decide composite vs atomic without double-parsing the first name.
 pTypings :: Parser Src.Typing
 pTypings = do
-  left <- try pCompositeTyping <|> pAtomicTyping
+  left <- pTypingsLeft
   rest <- optional $ try $ do
     rets
     pRightArrow
@@ -141,12 +151,53 @@ pTypings = do
       target <- pSourceTarget
       return $ Src.Source (mergeAreas (Src.getArea left) (Src.getArea right)) target (Src.TRArr left right)
 
+-- | Parse the left-hand side of a typing: composite or atomic.
+-- For identifier-starting types, parse the name ONCE then decide if composite or atomic.
+{-# INLINE pTypingsLeft #-}
+pTypingsLeft :: Parser Src.Typing
+pTypingsLeft = do
+  b <- lookAhead anySingle
+  case b of
+    123 -> pAtomicTyping   -- '{': always atomic (record or unit)
+    35  -> pAtomicTyping   -- '#': always atomic (tuple type)
+    40  -> do              -- '(': parenthesized — could be composite or atomic
+      try pCompositeTyping <|> pAtomicTyping
+    _   ->                 -- identifier: parse name once, decide composite vs atomic
+      pTypingsFromName
+
+-- | Parse a typing that begins with an identifier, parsing the name exactly once.
+-- If the name is followed by '.' or an argument, it's composite; otherwise atomic.
+pTypingsFromName :: Parser Src.Typing
+pTypingsFromName = do
+  (startArea, name1) <- withArea pNameStr
+  target <- pSourceTarget
+  -- Check for dot (qualified name) or more args (composite)
+  mDot <- optional $ try $ do
+    pDot
+    pNameStr
+  case mDot of
+    Just name2 -> do
+      -- Qualified name: name1.name2 — check for args
+      let qualName = name1 ++ "." ++ name2
+      args <- many pCompositeTypingArg
+      if null args
+        then return $ Src.Source startArea target (Src.TRComp qualName [])
+        else return $ Src.Source (mergeAreas startArea (Src.getArea (last args))) target (Src.TRComp qualName args)
+    Nothing -> do
+      -- Simple name: check if there are args (composite) or not (atomic)
+      args <- many pCompositeTypingArg
+      if null args
+        then return $ Src.Source startArea target (Src.TRSingle name1)
+        else return $ Src.Source (mergeAreas startArea (Src.getArea (last args))) target (Src.TRComp name1 args)
+
 
 -- | Parse a composite typing (type application): `Maybe a`, `List String`, `M.Map`
+-- Optimized: parse name once, then check for dot or args — no double-backtracking.
 pCompositeTyping :: Parser Src.Typing
-pCompositeTyping = choice
-  [ -- Parenthesized composite: (name args)
-    try $ do
+pCompositeTyping = do
+  b <- lookAhead anySingle
+  case b of
+    40 -> do  -- '(' : parenthesized composite
       (startArea, _) <- withArea (void pLeftParen)
       name <- pNameStr
       target <- pSourceTarget
@@ -159,15 +210,14 @@ pCompositeTyping = choice
       args <- some pCompositeTypingArg
       (endArea, _) <- withArea (void pRightParen)
       return $ Src.Source (mergeAreas startArea endArea) target (Src.TRComp qualName args)
-  , -- name.name args? or name args (at least one arg for plain name)
-    try $ do
+    _ -> do
+      -- name.name or name with args (or plain qualified name)
       (startArea, name1) <- withArea pNameStr
       target <- pSourceTarget
-      -- Check for qualified name
+      -- Check for dot (qualified name)
       mDot <- optional $ try $ do
         pDot
-        name2 <- pNameStr
-        return name2
+        pNameStr
       case mDot of
         Just name2 -> do
           -- Qualified name: may have args or not
@@ -180,30 +230,44 @@ pCompositeTyping = choice
           -- Simple name: must have at least one arg
           args <- some pCompositeTypingArg
           return $ Src.Source (mergeAreas startArea (Src.getArea (last args))) target (Src.TRComp name1 args)
-  ]
 
 
 -- | Parse a single composite typing argument
 pCompositeTypingArg :: Parser Src.Typing
-pCompositeTypingArg = choice
-  [ try $ do
-      -- Parenthesized arrow type: (typing -> typings)
+pCompositeTypingArg = do
+  b <- lookAhead anySingle
+  case b of
+    40 -> do  -- '('
+      -- Parse '(' then the inner typing, then check for '->' (arrow) or ')' (plain)
       (startArea, _) <- withArea (void pLeftParen)
-      left <- try pCompositeTyping <|> pAtomicTyping
-      pRightArrow
-      right <- pTypings
-      (endArea, _) <- withArea (void pRightParen)
-      target <- pSourceTarget
-      return $ Src.Source (mergeAreas startArea endArea) target (Src.TRArr left right)
-  , try $ do
-      -- Qualified name: name.name
+      rets
+      inner <- pTypingsLeft  -- parse inner typing (handles composite/atomic inside parens)
+      -- Check for '->' to detect arrow type
+      mArrow <- optional $ try $ do
+        pRightArrow
+        pTypings
+      case mArrow of
+        Just right -> do
+          (endArea, _) <- withArea (void pRightParen)
+          target <- pSourceTarget
+          return $ Src.Source (mergeAreas startArea endArea) target (Src.TRArr inner right)
+        Nothing -> do
+          pRightParen
+          return inner
+    123 -> pAtomicTyping  -- '{': record/unit atomic
+    35  -> pAtomicTyping  -- '#': tuple atomic
+    _ -> do
+      -- Identifier: parse name once, then check if followed by '.' (qualified) or not (atomic)
       (startArea, name1) <- withArea pNameStr
       target <- pSourceTarget
-      pDot
-      (endArea, name2) <- withArea pNameStr
-      return $ Src.Source (mergeAreas startArea endArea) target (Src.TRSingle $ name1 ++ "." ++ name2)
-  , pAtomicTyping
-  ]
+      mDot <- optional $ try $ do
+        pDot
+        pNameStr
+      case mDot of
+        Just name2 ->
+          return $ Src.Source (mergeAreas startArea startArea) target (Src.TRSingle $ name1 ++ "." ++ name2)
+        Nothing ->
+          return $ Src.Source startArea target (Src.TRSingle name1)
 
 
 -- | Parse an atomic (simple) typing

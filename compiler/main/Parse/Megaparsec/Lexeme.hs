@@ -130,6 +130,7 @@ keywordSet = Set.fromList keywords
 
 
 -- | Parse a keyword (must not be followed by alphanumeric or underscore)
+-- try is needed: C.string consumes before notFollowedBy can check
 {-# INLINE pKeyword #-}
 pKeyword :: BS.ByteString -> Parser BS.ByteString
 pKeyword kw = lexeme $ try (C.string kw <* notFollowedBy (satisfy isIdentB))
@@ -160,15 +161,34 @@ pPipe      = pKeyword "pipe"
 
 
 -- | Parse an identifier name (starts with alpha or underscore, then alphanumeric, underscore, or ')
+-- try is needed: can fail at keyword-check after consuming identifier chars.
+-- Fast path: only bytes that start a keyword need the Set.member check.
+-- Keyword first bytes: i e w d r p f t a (all lowercase, no uppercase, no '_')
 {-# INLINE pNameStr #-}
 pNameStr :: Parser String
 pNameStr = lexeme $ try $ do
   b <- satisfy (\b -> isAlphaB b || b == 95)  -- letter or _
   rest <- takeWhileP Nothing isIdentB
   let nameBS = BS.cons b rest
-  when (nameBS `Set.member` keywordSet) $
-    fail $ "keyword " ++ C8.unpack nameBS ++ " cannot be used as an identifier"
+  -- Only do keyword check if first byte is a known keyword-starting byte
+  -- and the identifier is short enough to be a keyword (max 9 chars: "interface")
+  when (BS.length nameBS <= 9 && mightBeKeyword b) $
+    when (nameBS `Set.member` keywordSet) $
+      fail $ "keyword " ++ C8.unpack nameBS ++ " cannot be used as an identifier"
   return $! C8.unpack nameBS
+  where
+    -- First bytes of all keywords (lowercase only; '_' and uppercase can never be keywords)
+    {-# INLINE mightBeKeyword #-}
+    mightBeKeyword :: Word8 -> Bool
+    mightBeKeyword w = w == 105  -- 'i': if, import, instance, interface
+                    || w == 101  -- 'e': else, export, extern
+                    || w == 119  -- 'w': while, where
+                    || w == 100  -- 'd': do, derive
+                    || w == 114  -- 'r': return
+                    || w == 112  -- 'p': pipe
+                    || w == 102  -- 'f': from, false
+                    || w == 116  -- 't': type, true
+                    || w == 97   -- 'a': alias
 
 
 -- | Parse an identifier name as String
@@ -177,17 +197,18 @@ pName :: Parser String
 pName = pNameStr
 
 
--- | Parse a name that starts with an uppercase letter
+-- | Parse a name that starts with an uppercase letter.
+-- No try needed: once satisfy isUpperB succeeds, we can never fail.
 {-# INLINE pUpperName #-}
 pUpperName :: Parser String
-pUpperName = lexeme $ try $ do
+pUpperName = lexeme $ do
   b <- satisfy isUpperB
   rest <- takeWhileP Nothing isIdentB
-  let nameBS = BS.cons b rest
-  return $! C8.unpack nameBS
+  return $! C8.unpack (BS.cons b rest)
 
 
 -- | Parse a name that starts with a lowercase letter or underscore
+-- try is needed: can fail at keyword-check after consuming identifier chars
 {-# INLINE pLowerName #-}
 pLowerName :: Parser String
 pLowerName = lexeme $ try $ do
@@ -201,11 +222,8 @@ pLowerName = lexeme $ try $ do
 
 -- Numeric literals --
 
--- | Parse a decimal number (sequence of digits)
-pDecimal :: Parser String
-pDecimal = lexeme $ C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-
 -- | Parse a number literal (decimal, no suffix)
+-- try needed: consumes digits before notFollowedBy check
 pNumber :: Parser String
 pNumber = lexeme $ try $ do
   digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
@@ -213,6 +231,7 @@ pNumber = lexeme $ try $ do
   return digits
 
 -- | Parse a float literal: either decimal.decimal with optional _f, or decimal_f
+-- try needed: both branches consume digits before diverging
 pFloat :: Parser String
 pFloat = lexeme $ try $ do
   whole <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
@@ -228,6 +247,7 @@ pFloat = lexeme $ try $ do
     ]
 
 -- | Parse a byte literal (decimal_b)
+-- try needed: consumes digits before suffix check
 pByte :: Parser String
 pByte = lexeme $ try $ do
   digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
@@ -235,6 +255,7 @@ pByte = lexeme $ try $ do
   return digits
 
 -- | Parse a short literal (decimal_s)
+-- try needed: consumes digits before suffix check
 pShort :: Parser String
 pShort = lexeme $ try $ do
   digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
@@ -242,6 +263,7 @@ pShort = lexeme $ try $ do
   return digits
 
 -- | Parse an int literal (decimal_i)
+-- try needed: consumes digits before suffix check
 pInt :: Parser String
 pInt = lexeme $ try $ do
   digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB

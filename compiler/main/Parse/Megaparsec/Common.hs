@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -O2 #-}
 module Parse.Megaparsec.Common
   ( Parser
@@ -58,6 +59,8 @@ data ParseRecoveryError = ParseRecoveryError
   } deriving (Show)
 
 -- | Parser state tracking source target and formatter mode
+-- psLastTokenEnd: the Loc of the end of the last parsed token (before trailing whitespace).
+-- Populated only by `lexeme`.
 data ParserState = ParserState
   { psSourceTarget :: !SourceTarget
   , psFormatterMode :: !Bool
@@ -67,7 +70,6 @@ data ParserState = ParserState
 
 
 -- | The main parser type
--- Uses ParsecT with custom errors over ByteString input, with strict State for mutable parser state
 type Parser = ParsecT CustomError BS.ByteString (State ParserState)
 
 
@@ -113,17 +115,17 @@ runMadlibParserWithState p name input =
   in  runState (runParserT p name input) initialState
 
 
--- | Get current location as a Loc
+-- | Get current location as a Loc (calls getSourcePos).
 {-# INLINE getLoc #-}
 getLoc :: Parser Loc
 getLoc = do
-  offset <- getOffset
-  pos <- MP.getSourcePos
+  !offset <- getOffset
+  !pos <- MP.getSourcePos
   return $! Loc offset (unPos $ sourceLine pos) (unPos $ sourceColumn pos)
 
 
--- | Run a parser and wrap its result with area information
--- Captures end position BEFORE trailing whitespace using psLastTokenEnd
+-- | Run a parser and wrap its result with area information.
+-- Captures end position BEFORE trailing whitespace using psLastTokenEnd.
 {-# INLINE withArea #-}
 withArea :: Parser a -> Parser (Area, a)
 withArea p = do
@@ -141,13 +143,31 @@ pSourceTarget = getSourceTarget
 
 -- Space consumers --
 
--- | Space consumer that does NOT consume newlines
--- Handles spaces, tabs, and comments
+-- | Space consumer that does NOT consume newlines.
+-- Fast path: peek first byte to avoid all work when there's no whitespace/comment.
+-- In the common case (no trailing whitespace), just one lookAhead + return ().
+{-# INLINE sc #-}
 sc :: Parser ()
-sc = L.space
-  (void $ takeWhile1P Nothing (\b -> b == 32 || b == 9 || b == 12 || b == 11 || b == 13))
-  (L.skipLineComment "//")
-  (L.skipBlockCommentNested "/*" "*/")
+sc = do
+  mb <- optional (lookAhead anySingle)
+  case mb of
+    Nothing -> return ()
+    Just b
+      | b == 47 ->                        -- '/' : possible comment
+          skipMany scOne
+      | b == 32 || b == 9 || b == 12 || b == 11 || b == 13 ->
+          -- horizontal whitespace: consume then check for more/comments
+          void (takeWhile1P Nothing (\b' -> b' == 32 || b' == 9 || b' == 12 || b' == 11 || b' == 13))
+          *> skipMany scOne
+      | otherwise -> return ()
+  where
+    {-# INLINE scOne #-}
+    scOne :: Parser ()
+    scOne = choice
+      [ void $ takeWhile1P Nothing (\b -> b == 32 || b == 9 || b == 12 || b == 11 || b == 13)
+      , L.skipLineComment "//"
+      , L.skipBlockCommentNested "/*" "*/"
+      ]
 
 
 -- | Space consumer that DOES consume newlines
@@ -155,14 +175,17 @@ scn :: Parser ()
 scn = L.space C.space1 (L.skipLineComment "//") (L.skipBlockCommentNested "/*" "*/")
 
 
--- | Wrap a parser to consume trailing whitespace (no newlines)
--- Records the end position BEFORE consuming trailing whitespace in psLastTokenEnd
+-- | Wrap a parser to consume trailing whitespace (no newlines).
+-- Records end position BEFORE consuming trailing whitespace in psLastTokenEnd.
+-- getSourcePos is incremental in megaparsec (scans from last known pos),
+-- so this is amortized O(1) per token across the whole file.
 {-# INLINE lexeme #-}
 lexeme :: Parser a -> Parser a
 lexeme p = do
   result <- p
-  end    <- getLoc
-  lift $ modify' (\s -> s { psLastTokenEnd = end })
+  !offset <- getOffset
+  !pos <- MP.getSourcePos
+  lift $! modify' (\s -> s { psLastTokenEnd = Loc offset (unPos $ sourceLine pos) (unPos $ sourceColumn pos) })
   sc
   return result
 
@@ -174,27 +197,33 @@ symbol = L.symbol sc
 
 
 -- | Parse zero or more newlines (with optional whitespace and comments around them)
--- This corresponds to the `rets` non-terminal in the Happy grammar
 {-# INLINE rets #-}
 rets :: Parser ()
 rets = sc *> skipMany (C.newline *> sc)
 
 
--- | Parse zero or one newlines (with optional whitespace)
--- Corresponds to `maybeRet` in the Happy grammar
+-- | Parse zero or one newlines (with optional whitespace).
+-- Fast path: peek at first byte — skip whole thing if it's not space, '/', or newline.
 {-# INLINE maybeRet #-}
 maybeRet :: Parser ()
-maybeRet = sc *> void (optional (C.newline *> sc))
+maybeRet = do
+  mb <- optional (lookAhead anySingle)
+  case mb of
+    Nothing -> return ()
+    Just b
+      | b == 10 -> void $ C.newline *> sc  -- '\n': consume newline + trailing whitespace
+      | b == 32 || b == 9 || b == 12 || b == 11 || b == 13 || b == 47 ->
+          -- horizontal whitespace or '/': run full sc, then optional newline
+          sc *> (void (C.newline *> sc) <|> pure ())
+      | otherwise -> return ()
 
 
 -- ASCII range helpers --
 
--- | Convert ASCII Char to Word8
 {-# INLINE chr8 #-}
 chr8 :: Char -> Word8
 chr8 = fromIntegral . fromEnum
 
--- | Convert Word8 to ASCII Char
 {-# INLINE chr8' #-}
 chr8' :: Word8 -> Char
 chr8' = toEnum . fromIntegral

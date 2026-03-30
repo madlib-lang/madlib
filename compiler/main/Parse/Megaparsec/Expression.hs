@@ -34,20 +34,24 @@ import           Parse.Megaparsec.Typing
 -- bodyExp = name '=' exp | name '::' constrainedTyping '\n' name '=' exp | exp ':=' exp | exp
 pBodyExp :: Parser Src.Exp
 pBodyExp = do
-  -- Peek to see if this starts with an identifier (potential assignment or typed expression)
-  w <- lookAhead $ takeWhileP Nothing isIdentB
-  if BS.null w
-    then pBodyExpNoName  -- starts with non-identifier: expression or mutation
-    else do
-      -- Check what follows the identifier: `::` or `=` or something else
-      follows <- lookAhead $ do
-        _ <- takeWhileP Nothing isIdentB  -- skip identifier
-        _ <- takeWhileP Nothing (\b -> b == 32 || b == 9) -- skip horizontal whitespace
-        optional (takeWhileP (Just "operator") (\b -> b == 58 || b == 61)) -- ':' or '='
-      case follows of
-        Just "::" -> pNamedTypedBodyExp
-        Just "=" -> pAssignmentBodyExp
-        _ -> pBodyExpNoName
+  -- Single lookAhead: skip identifier (if any) + spaces, then peek at 2 bytes
+  follows <- lookAhead $ do
+    w <- takeWhileP Nothing isIdentB
+    if BS.null w
+      then return BS.empty  -- non-identifier start: fall through to pBodyExpNoName
+      else do
+        _ <- takeWhileP Nothing (\b -> b == 32 || b == 9)
+        b1 <- optional anySingle
+        b2 <- optional anySingle
+        return $! case (b1, b2) of
+          (Just 58, Just 58)       -> "::"  -- '::' type annotation
+          (Just 61, Nothing)       -> "="   -- '=' alone: assignment
+          (Just 61, Just b) | b /= 61 && b /= 62 -> "="  -- '=' not followed by '=' or '>': assignment
+          _                        -> "x"   -- identifier but no :: or plain =
+  case follows of
+    "::" -> pNamedTypedBodyExp
+    "="  -> pAssignmentBodyExp
+    _    -> pBodyExpNoName
   where
     -- name :: constrainedTyping \n ... (named typed expression OR extern declaration)
     pNamedTypedBodyExp = do
@@ -57,23 +61,22 @@ pBodyExp = do
       typing <- pConstrainedTyping
       rets
       -- Check for extern, export, or plain typed assignment
-      exported <- option False (True <$ try (lookAhead pExport))
+      -- lookAhead never consumes, no try needed
+      exported <- option False (True <$ lookAhead pExport)
       if exported
-        then choice
-          [ -- extern: export name = extern "path"
-            try $ do
-              pExport
-              name2 <- pNameStr
-              pEq
+        then do
+          -- Both sub-forms start with 'export name ='; dispatch on 'extern' after '='
+          pExport
+          name2 <- pNameStr
+          pEq
+          isExtern <- option False (True <$ lookAhead pExtern)
+          if isExtern
+            then do
               pExtern
               (endArea, path) <- withArea pStringLiteral
               let externExpr = Src.Source (mergeAreas startArea endArea) target (Src.Extern typing name2 path)
               return $ Src.Source (mergeAreas startArea endArea) target (Src.Export externExpr)
-          , -- named typed export assignment: export name = exp
-            do
-              pExport
-              name2 <- pNameStr
-              pEq
+            else do
               maybeRet
               body <- pExp
               let assignArea = mergeAreas startArea (Src.getArea body)
@@ -82,24 +85,21 @@ pBodyExp = do
                   (Src.Source assignArea target
                     (Src.Export (Src.Source assignArea target (Src.Assignment name2 body))))
                   typing)
-          ]
-        else choice
-          [ -- extern: name = extern "path"
-            try $ do
-              name2 <- pNameStr
-              pEq
+        else do
+          -- Both sub-forms start with 'name2 ='; dispatch on 'extern' after '='
+          name2 <- pNameStr
+          pEq
+          isExtern <- option False (True <$ lookAhead pExtern)
+          if isExtern
+            then do
               pExtern
               (endArea, path) <- withArea pStringLiteral
               return $ Src.Source (mergeAreas startArea endArea) target (Src.Extern typing name2 path)
-          , -- named typed assignment: name = exp
-            do
-              name2 <- pNameStr
-              pEq
+            else do
               rets
               body <- pExp
               let assignArea = mergeAreas startArea (Src.getArea body)
               return $ Src.Source assignArea target (Src.NamedTypedExp name1 (Src.Source assignArea target (Src.Assignment name2 body)) typing)
-          ]
     -- name = exp (assignment)
     pAssignmentBodyExp = do
       (startArea, name) <- withArea pNameStr
@@ -125,14 +125,14 @@ pBodyExp = do
 -- multiExpBody = 'return' exp | bodyExp rets multiExpBody | empty
 pMultiExpBody :: Parser [Src.Exp]
 pMultiExpBody = choice
-  [ -- return exp
-    try $ do
+  [ -- return exp: pReturn already backtracks on failure, no outer try needed
+    do
       (startArea, _) <- withArea pReturn
       target <- pSourceTarget
       body <- pExp
       return [Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Return body)]
-  , -- empty body produces unit
-    try $ do
+  , -- empty body produces unit (lookAhead never consumes, no try needed)
+    do
       lookAhead pRightCurly
       return [Src.Source emptyArea Src.TargetAll Src.LUnit]
   , -- bodyExp followed by more expressions
@@ -253,7 +253,7 @@ operatorTable =
         b <- lookAhead anySingle
         case b of
           63 -> do  -- '?'
-            (area, _) <- withArea pDoubleQuestionMark
+            (_, _) <- withArea pDoubleQuestionMark
             target <- pSourceTarget
             maybeRet
             return $ \l r -> Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target (Src.MaybeDefault l r)
@@ -560,34 +560,36 @@ pIf' = do
   maybeRet
   pRightParen
   maybeRet
-  -- Try braced body first
-  thenExpr <- choice
-    [ try $ do
+  -- Use lookAhead to pick braced vs non-braced body without backtracking
+  thenExpr <- do
+    mb <- optional (lookAhead anySingle)
+    case fmap chr8' mb of
+      Just '{' -> do
         pLeftCurly
         rets
         body <- pExp
         rets
         void $ withArea (void pRightCurly)
         return body
-    , pExp
-    ]
+      _ -> pExp
   -- Try to parse else clause; returns (bodyExp, endArea)
+  -- pElse already backtracks so the outer try is only needed for the whole else+body sequence
   elseResult <- optional $ try $ do
     maybeRet
     pElse
     maybeRet
-    choice
-      [ try $ do
-          pLeftCurly
-          rets
-          body <- pExp
-          rets
-          (endArea, _) <- withArea (void pRightCurly)
-          return (body, endArea)
-      , do
-          body <- pExp
-          return (body, Src.getArea body)
-      ]
+    mb2 <- optional (lookAhead anySingle)
+    case fmap chr8' mb2 of
+      Just '{' -> do
+        pLeftCurly
+        rets
+        body <- pExp
+        rets
+        (endArea, _) <- withArea (void pRightCurly)
+        return (body, endArea)
+      _ -> do
+        body <- pExp
+        return (body, Src.getArea body)
   let (elseExpr', endArea) = case elseResult of
         Just (body, ea) -> (body, ea)
         Nothing         -> let e = Src.Source (Src.getArea thenExpr) target Src.LUnit
@@ -607,18 +609,20 @@ pWhile' = do
   maybeRet
   pRightParen
   maybeRet
-  body <- choice
-    [ try $ do
+  -- Use lookAhead to pick braced vs non-braced body without backtracking
+  body <- do
+    mb <- optional (lookAhead anySingle)
+    case fmap chr8' mb of
+      Just '{' -> do
         pLeftCurly
         rets
         e <- pExp
         rets
         (endArea, _) <- withArea (void pRightCurly)
         return (e, endArea)
-    , do
+      _ -> do
         e <- pExp
         return (e, Src.getArea e)
-    ]
   let (bodyExpr, endArea) = body
   return $ Src.Source (mergeAreas startArea endArea) target (Src.While cond bodyExpr)
 
@@ -629,40 +633,51 @@ pWhere' :: Parser Src.Exp
 pWhere' = do
   (startArea, _) <- withArea pWhere
   target <- pSourceTarget
-  choice
-    [ -- where(expr) { branches }
-      try $ do
-        pLeftParen
-        rets
-        expr <- pExp
-        maybeRet
-        pRightParen
-        pLeftCurly
-        maybeRet
-        branches <- pIss
-        maybeRet
-        (endArea, _) <- withArea (void pRightCurly)
-        return $ Src.Source (mergeAreas startArea endArea) target (Src.Where expr branches)
-    , -- where { branches } (anonymous)
-      do
-        pLeftCurly
-        rets
-        branches <- pIss
-        rets
-        (endArea, _) <- withArea (void pRightCurly)
-        return $ Src.Source (mergeAreas startArea endArea) target (Src.WhereAbs branches)
-    ]
+  -- Use lookAhead to distinguish where(...) from where { ... } without backtracking
+  b <- lookAhead anySingle
+  case chr8' b of
+    '(' -> do
+      pLeftParen
+      rets
+      expr <- pExp
+      maybeRet
+      pRightParen
+      pLeftCurly
+      maybeRet
+      branches <- pIss
+      maybeRet
+      (endArea, _) <- withArea (void pRightCurly)
+      return $ Src.Source (mergeAreas startArea endArea) target (Src.Where expr branches)
+    _ -> do
+      pLeftCurly
+      rets
+      branches <- pIss
+      rets
+      (endArea, _) <- withArea (void pRightCurly)
+      return $ Src.Source (mergeAreas startArea endArea) target (Src.WhereAbs branches)
 
 
 -- | Parse pattern match branches
+-- Uses a recursive helper (not `many`) so we never need `try`:
+-- after consuming `rets`, we peek — if '}' or EOF, return []; otherwise parse next branch.
+-- Since the helper always succeeds (returning [] on stop), no backtracking is needed.
 pIss :: Parser [Src.Is]
 pIss = do
   first <- pIs
-  rest <- many $ try $ do
-    rets
-    pIs
-  return $ first : rest
+  rest <- pIsMore
+  return (first : rest)
   where
+    pIsMore :: Parser [Src.Is]
+    pIsMore = do
+      rets  -- consume newlines (always succeeds)
+      mb <- optional (lookAhead anySingle)
+      case mb of
+        Nothing  -> return []   -- EOF: done
+        Just 125 -> return []   -- '}': end of where block, done
+        _        -> do
+          item <- pIs
+          more <- pIsMore
+          return (item : more)
     pIs = do
       pat <- pPattern
       target <- pSourceTarget
@@ -688,18 +703,25 @@ pDo' = do
 
 pDoExps :: Parser [Src.Exp]
 pDoExps = choice
-  [ -- return exp
-    try $ do
+  [ -- return exp: pReturn already backtracks on failure, no outer try needed
+    do
       (startArea, _) <- withArea pReturn
       target <- pSourceTarget
       body <- pExp
       return [Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Return body)]
-  , -- empty
-    try $ do
+  , -- empty (lookAhead never consumes, no try needed)
+    do
       lookAhead pRightCurly
       return [Src.Source emptyArea Src.TargetAll Src.LUnit]
   , -- name <- exp ; doExps
+    -- Use lookAhead + try: lookAhead checks for "ident <-" cheaply (no real backtracking
+    -- needed in the happy path), try only needed for megaparsec's error bookkeeping.
     try $ do
+      lookAhead $ do
+        _ <- takeWhile1P Nothing isIdentB
+        _ <- takeWhileP Nothing (\b -> b == 32 || b == 9)
+        _ <- C.string "<-"
+        return ()
       (startArea, name) <- withArea pNameStr
       target <- pSourceTarget
       pLeftArrow
@@ -799,18 +821,20 @@ pAbsOrParenthesized = do
 
 -- | Parse lambda body after '=>' has been consumed (or we're about to)
 pLambdaBody :: Area -> Src.SourceTarget -> [Src.Source Src.Name] -> Parser Src.Exp
-pLambdaBody startArea target params = choice
-  [ try $ do
+pLambdaBody startArea target params = do
+  -- Use lookAhead to pick braced vs non-braced body — no backtracking needed
+  mb <- optional (lookAhead anySingle)
+  case fmap chr8' mb of
+    Just '{' -> do
       pLeftCurly
       rets
       body <- pMultiExpBody
       rets
       (endArea, _) <- withArea (void pRightCurly)
       return $ Src.Source (mergeAreas startArea endArea) target (Src.AbsWithMultilineBody params body)
-  , do
+    _ -> do
       body <- pBodyExp
       return $ Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Abs params [body])
-  ]
 
 
 
@@ -837,32 +861,33 @@ pRecord = do
   (startArea, _) <- withArea (void pLeftCurly)
   target <- pSourceTarget
   rets
-  choice
-    [ -- Unit literal: {} (empty braces = LUnit)
-      try $ do
-        (endArea, _) <- withArea (void pRightCurly)
-        return $ Src.Source (mergeAreas startArea endArea) target Src.LUnit
-    , -- Spread record: { ...expr, fields }
-      try $ do
-        pSpread
-        spreadExpr <- pExp
-        fields <- option [] $ try $ do
-          pComma
-          rets
-          pRecordFields
-        _ <- optional pComma
+  -- Dispatch on next char: '}' = unit, '.' = spread, else = regular record
+  b <- lookAhead anySingle
+  case chr8' b of
+    '}' -> do
+      -- Unit literal: {}
+      (endArea, _) <- withArea (void pRightCurly)
+      return $ Src.Source (mergeAreas startArea endArea) target Src.LUnit
+    '.' -> do
+      -- Spread record: { ...expr, fields }
+      pSpread
+      spreadExpr <- pExp
+      fields <- option [] $ try $ do
+        pComma
         rets
-        (endArea, _) <- withArea (void pRightCurly)
-        let spreadField = Src.Source (mergeAreas startArea (Src.getArea spreadExpr)) target (Src.FieldSpread spreadExpr)
-        return $ Src.Source (mergeAreas startArea endArea) target (Src.Record (spreadField : fields))
-    , -- Regular record: { field: val, ... }
-      do
-        fields <- pRecordFields
-        _ <- optional pComma
-        rets
-        (endArea, _) <- withArea (void pRightCurly)
-        return $ Src.Source (mergeAreas startArea endArea) target (Src.Record fields)
-    ]
+        pRecordFields
+      _ <- optional pComma
+      rets
+      (endArea, _) <- withArea (void pRightCurly)
+      let spreadField = Src.Source (mergeAreas startArea (Src.getArea spreadExpr)) target (Src.FieldSpread spreadExpr)
+      return $ Src.Source (mergeAreas startArea endArea) target (Src.Record (spreadField : fields))
+    _ -> do
+      -- Regular record: { field: val, ... }
+      fields <- pRecordFields
+      _ <- optional pComma
+      rets
+      (endArea, _) <- withArea (void pRightCurly)
+      return $ Src.Source (mergeAreas startArea endArea) target (Src.Record fields)
 
 
 pRecordFields :: Parser [Src.Field]
@@ -875,20 +900,23 @@ pRecordFields = option [] $ do
     pRecordField
   return $ first : rest
   where
-    pRecordField = choice
-      [ -- name: exp
-        try $ do
-          (nameArea, name) <- withArea pNameStr
-          target <- pSourceTarget
+    -- Parse name once, then peek at next 2 bytes to decide field:value vs shorthand.
+    -- ":" alone means field:value; "::" and ":=" mean shorthand (typed/mutated names).
+    pRecordField = do
+      (nameArea, name) <- withArea pNameStr
+      target <- pSourceTarget
+      mTwo <- optional $ lookAhead $ do
+        b1 <- anySingle
+        mb2 <- optional anySingle
+        return (b1, mb2)
+      case mTwo of
+        Just (58, Just 58) -> return $ Src.Source nameArea target (Src.FieldShorthand name)  -- '::'
+        Just (58, Just 61) -> return $ Src.Source nameArea target (Src.FieldShorthand name)  -- ':='
+        Just (58, _) -> do  -- ':' alone
           pColon
           value <- pExp
           return $ Src.Source (mergeAreas nameArea (Src.getArea value)) target (Src.Field (name, value))
-      , -- shorthand: just name
-        do
-          (nameArea, name) <- withArea pNameStr
-          target <- pSourceTarget
-          return $ Src.Source nameArea target (Src.FieldShorthand name)
-      ]
+        _ -> return $ Src.Source nameArea target (Src.FieldShorthand name)
 
 
 -- Dictionary --
