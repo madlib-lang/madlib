@@ -37,9 +37,16 @@ isNameInImport name ImportInfo { iiType, iiName }
   | otherwise = False
 
 
+isNameInImportFast :: String -> Bool -> ImportInfo -> Bool
+isNameInImportFast name hasDot ImportInfo { iiType, iiName }
+  | iiType == NameImport     = iiName == name
+  | hasDot                   = iiName == takeWhile (/= '.') name
+  | otherwise                = False
+
 lookupVar :: Env -> String -> Infer Scheme
 lookupVar env name = do
-  maybeType <- case List.find (isNameInImport name) $ envImportInfo env of
+  let hasDot = '.' `elem` name
+  maybeType <- case List.find (isNameInImportFast name hasDot) $ envImportInfo env of
     Just (ImportInfo path NameImport name) ->
       Rock.fetch $ Query.ForeignScheme path name
 

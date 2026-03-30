@@ -185,6 +185,7 @@ instance FtvOrdered t => FtvOrdered (Qual t) where
 compose :: Substitution -> Substitution -> Substitution
 compose !s1 s2
   | M.null s1 = s2
+  | M.null s2 = M.map (apply s1) s1
   | otherwise = M.map (apply s1) $ M.unionsWith mergeTypes [s2, M.map (apply s1) s1]
  where
   mergeTypes :: Type -> Type -> Type
