@@ -102,14 +102,14 @@ checkAST env ast = do
   unless (null errs) $ return ()
   when (null errs) $ do
     let defaultImportNames  = getDefaultImportNames ast
-        initialScope        = fromListScope (M.keys $ envVars env)
-                           <> fromListScope (M.keys $ envMethods env)
+        initialScope        = InScope (M.keysSet (envVars env) `S.union` M.keysSet (envMethods env))
                            <> fromListScope defaultImportNames
         exps                = aexps ast
         methods             = concat $ getInstanceMethods <$> ainstances ast
         topLevelAssignments = getAllTopLevelAssignments ast
         expsFromGlobalScope = getAllExpsFromGlobalScope ast
-    checkExps env ast expsFromGlobalScope topLevelAssignments initialScope emptyDeps (methods ++ exps)
+    let typedNames = fromListScope [ n | exp <- aexps ast, Just n <- [getExpName exp], isTypedExp exp ]
+    checkExps typedNames env ast expsFromGlobalScope topLevelAssignments initialScope emptyDeps (methods ++ exps)
     checkConstructors env (fromListScope defaultImportNames) (atypedecls ast)
     mapM_ (verifyMutations env mempty) exps
 
@@ -139,9 +139,9 @@ checkConstructors env scope tds = do
 -- Top-level expression processing loop
 -- ---------------------------------------------------------------------------
 
-checkExps :: Env -> AST -> [(String, Exp)] -> S.Set String -> InScope -> Dependencies -> [Exp] -> Infer ()
-checkExps _   _   _       _                   _           _    []       = return ()
-checkExps env ast globals topLevelAssignments globalScope deps (e : es) = do
+checkExps :: InScope -> Env -> AST -> [(String, Exp)] -> S.Set String -> InScope -> Dependencies -> [Exp] -> Infer ()
+checkExps _          _   _   _       _                   _           _    []       = return ()
+checkExps typedNames env ast globals topLevelAssignments globalScope deps (e : es) = do
   let globalScope' = extendScopeFromExp globalScope e
   collectedAccesses <- runCollect env topLevelAssignments (getExpName e) globalScope' e
 
@@ -151,17 +151,16 @@ checkExps env ast globals topLevelAssignments globalScope deps (e : es) = do
         if isMethod env e then
           []
         else
-          let typedNames = fromListScope [ n | exp <- aexps ast, Just n <- [getExpName exp], isTypedExp exp ]
-          in  List.filter
-                (\(name, exp) ->
-                  not (name `memberScope` globalScope') && not (name `memberScope` typedNames) && not (isTypeOrNameExport exp)
-                )
-                (unAccesses collectedAccesses)
+          List.filter
+            (\(name, exp) ->
+              not (name `memberScope` globalScope') && not (name `memberScope` typedNames) && not (isTypeOrNameExport exp)
+            )
+            (unAccesses collectedAccesses)
 
   generateShouldBeTypedOrAboveErrors env shouldBeTypedOrAbove
 
   let deps' = extendDependencies collectedAccesses deps e
-  checkExps env ast globals topLevelAssignments globalScope' deps' es
+  checkExps typedNames env ast globals topLevelAssignments globalScope' deps' es
 
 
 generateShouldBeTypedOrAboveErrors :: Env -> [(String, Exp)] -> Infer ()

@@ -173,12 +173,13 @@ findASTM table path = case M.lookup path table of
 extractImportedConstructors :: Env -> Slv.AST -> Can.Import -> Infer Vars
 extractImportedConstructors env ast imp = do
   let nameExports         = mapMaybe Slv.maybeNameExport (Slv.aexps ast)
+      nameExportsSet      = S.fromList nameExports
       exportedADTs        = Slv.getValue <$> filter Slv.isADTExported (Slv.atypedecls ast)
       exportedCtors       = concat $ Slv.adtconstructors <$> exportedADTs
       notExportedADTs     = Slv.getValue <$> filter (\td -> not (Slv.isADTExported td) && not (Slv.isAlias td)) (Slv.atypedecls ast)
       notExportedCtors    = concat $ Slv.adtconstructors <$> notExportedADTs
       exportedCtorNames   = Slv.getConstructorName <$> exportedCtors
-      additionalCtorNames = filter (`elem` nameExports) $ Slv.getConstructorName <$> notExportedCtors
+      additionalCtorNames = filter (`S.member` nameExportsSet) $ Slv.getConstructorName <$> notExportedCtors
 
       nameExportsInImports =
         mapMaybe
