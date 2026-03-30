@@ -223,19 +223,23 @@ entail env ps p = do
     )
   return $ any ((p `elem`) . bySuper env) ps || tt
 
-simplify :: ([Pred] -> Pred -> Bool) -> [Pred] -> [Pred]
+-- | ent takes two separate lists (retained, remaining) and tests if p is
+-- entailed — avoids O(n²) allocation of (rs ++ ps) at each loop step.
+simplify :: ([Pred] -> [Pred] -> Pred -> Bool) -> [Pred] -> [Pred]
 simplify ent = loop []
  where
   loop rs [] = rs
-  loop rs (p : ps) | ent (rs ++ ps) p = loop rs ps
-                   | otherwise        = loop (p : rs) ps
+  loop rs (p : ps) | ent rs ps p = loop rs ps
+                   | otherwise   = loop (p : rs) ps
 
 reduce :: Env -> [Pred] -> Infer [Pred]
 reduce env ps = do
   withoutTauts <- elimTauts env ps
   let superCache    = M.fromList [(p, bySuper env p) | p <- withoutTauts]
       cachedBySuper p = M.findWithDefault (bySuper env p) p superCache
-      scEntailFast retained p = any ((p `elem`) . cachedBySuper) retained
+      scEntailFast retained remaining p =
+        any ((p `elem`) . cachedBySuper) retained
+        || any ((p `elem`) . cachedBySuper) remaining
   return $ simplify scEntailFast withoutTauts
 
 elimTauts :: Env -> [Pred] -> Infer [Pred]
