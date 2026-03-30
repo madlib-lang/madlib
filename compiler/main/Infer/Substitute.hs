@@ -12,9 +12,7 @@ import           Error.Context
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
-import           Data.List                      ( nub
-                                                , union
-                                                )
+import           Data.List                      ( nub )
 import           Control.Applicative
 
 
@@ -162,14 +160,14 @@ class FtvOrdered a where
 instance FtvOrdered Type where
   ftvList TCon{}                         = []
   ftvList (TVar a)                       = [a]
-  ftvList (t1 `TApp` t2)                = ftvList t1 `union` ftvList t2
+  ftvList (t1 `TApp` t2)                = ftvList t1 ++ ftvList t2
   ftvList (TRecord fields Nothing optionalFields) =
-    foldr (\v acc -> ftvList v `union` acc) [] (M.elems fields)
-    `union` foldr (\v acc -> ftvList v `union` acc) [] (M.elems optionalFields)
+    concatMap ftvList (M.elems fields)
+    ++ concatMap ftvList (M.elems optionalFields)
   ftvList (TRecord fields (Just base) optionalFields) =
-    foldr (\v acc -> ftvList v `union` acc) [] (M.elems fields)
-    `union` ftvList base
-    `union` foldr (\v acc -> ftvList v `union` acc) [] (M.elems optionalFields)
+    concatMap ftvList (M.elems fields)
+    ++ ftvList base
+    ++ concatMap ftvList (M.elems optionalFields)
   ftvList _                              = []
 
 instance FtvOrdered Pred where
@@ -179,7 +177,7 @@ instance FtvOrdered a => FtvOrdered [a] where
   ftvList = nub . concatMap ftvList
 
 instance FtvOrdered t => FtvOrdered (Qual t) where
-  ftvList (ps :=> t) = ftvList ps `union` ftvList t
+  ftvList (ps :=> t) = nub (ftvList ps ++ ftvList t)
 
 
 compose :: Substitution -> Substitution -> Substitution

@@ -73,16 +73,16 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
   Can.PList pats -> do
     tv <- newTVar Star
 
-    (pats, ps, vars, t) <- foldlM
-      (\(pats, ps, vars, t) pat -> do
+    (patsRev, psAcc, vars, t) <- foldlM
+      (\(patsRev, ps, vars, t) pat -> do
         (pat', ps', vars', t') <- inferPListItem env t pat
         s                      <- contextualUnify Strict env pat t t'
-        return (pats ++ [pat'], ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
+        return (pat' : patsRev, ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
       )
       ([], [], mempty, tv)
       pats
 
-    return (Slv.Typed ([] :=> tListOf t) area (Slv.PList pats), ps, vars, tListOf t)
+    return (Slv.Typed ([] :=> tListOf t) area (Slv.PList (reverse patsRev)), psAcc, vars, tListOf t)
 
    where
     inferPListItem :: Env -> Type -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)

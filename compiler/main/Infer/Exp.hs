@@ -524,10 +524,9 @@ inferListConstructor discardError options env listExp@(Can.Canonical area (Can.L
   elems -> do
     tv               <- newTVar Star
 
-    -- Accumulate list items reversed (cons O(1)) then reverse — avoids O(n²) for es.
-    -- Predicates still use ++ to preserve order (deduplication is order-sensitive).
-    (s', ps, t', esRev) <- foldlM
-      (\(s, pss, t, lis) elem -> do
+    -- Accumulate list items and pred chunks reversed (cons O(1)) then reverse — avoids O(n²).
+    (s', psChunksRev, t', esRev) <- foldlM
+      (\(s, pssRev, t, lis) elem -> do
         (s', ps', t'', li) <- inferListItem discardError options (apply s env) (fromMaybe tv t) elem
         (s'', tr) <- case t of
           Nothing ->
@@ -538,11 +537,12 @@ inferListConstructor discardError options env listExp@(Can.Canonical area (Can.L
             return (s'''', pickJSXChild t''' t'')
 
         let s''' = s'' `compose` s' `compose` s
-        return (s''', pss ++ ps', Just $ apply s''' tr, li : lis)
+        return (s''', ps' : pssRev, Just $ apply s''' tr, li : lis)
       )
       (mempty, [], Nothing, [])
       elems
 
+    let ps = concat (reverse psChunksRev)
     let (Just t'') = t'
     let es = reverse esRev
 
@@ -584,14 +584,14 @@ pickJSXChild t1 t2 = case (t1, t2) of
 
 inferTupleConstructor :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferTupleConstructor discardError options env (Can.Canonical area (Can.TupleConstructor elems)) = do
-  -- Accumulate types/exps reversed (cons O(1)) then reverse — avoids O(n²) for those.
-  -- Predicates still use ++ to preserve order (deduplication is order-sensitive).
-  (s, ps, tsRev, esRev) <-
+  -- Accumulate types/exps/pred chunks reversed (cons O(1)) then reverse — avoids O(n²).
+  (s, psChunksRev, tsRev, esRev) <-
     foldM
-      (\(s, ps, ts, es) e -> do
+      (\(s, psRev, ts, es) e -> do
           (s', ps', t', e') <- infer discardError options (apply s env) e
-          return (s' `compose` s, ps ++ ps', t' : ts, e' : es)
+          return (s' `compose` s, ps' : psRev, t' : ts, e' : es)
       ) (M.empty, [], [], []) elems
+  let ps = concat (reverse psChunksRev)
 
   let elemTypes = reverse tsRev
   let elemEXPS  = reverse esRev
