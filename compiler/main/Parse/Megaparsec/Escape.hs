@@ -86,9 +86,20 @@ processEscapes input = case input of
   '\\':'x':_ ->
     Left $ "BadEscape: incomplete hex escape"
 
-  -- All other characters (including \n, \t, \\, \" etc.) are passed through raw.
-  -- The code generator is responsible for interpreting these escapes.
-  -- This matches the behavior of the original Alex/Happy parser's processHexaEscapes.
+  -- Standard one-character escapes (\n, \t, \r, \\, \", \', etc.)
+  '\\':c:more -> do
+    case interpretChars ['\\', c] of
+      [] ->
+        Left $ "BadEscape: invalid escape \\" ++ [c]
+      chars -> do
+        next <- processEscapes more
+        Right $ chars ++ next
+
+  -- Lone trailing backslash
+  '\\':[] ->
+    Left "BadEscape: incomplete escape sequence"
+
+  -- Plain character
   a1:more -> do
     next <- processEscapes more
     Right $ a1 : next

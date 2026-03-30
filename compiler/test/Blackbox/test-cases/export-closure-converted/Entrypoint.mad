@@ -1,0 +1,8 @@
+import IO from "IO"
+import { addBase, makeAdder } from "./Helper"
+
+main = () => {
+  IO.log(addBase(5))
+  add7 = makeAdder(7)
+  IO.log(add7(8))
+}

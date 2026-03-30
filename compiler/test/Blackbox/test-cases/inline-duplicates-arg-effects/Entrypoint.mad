@@ -1,0 +1,12 @@
+import IO from "IO"
+
+side = () => {
+  IO.log("side")
+  return 3
+}
+
+dup = (x) => x + x
+
+main = () => {
+  IO.log(dup(side()))
+}

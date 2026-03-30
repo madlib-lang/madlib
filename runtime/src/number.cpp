@@ -5,11 +5,19 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <limits.h>
+#include <math.h>
+#include <ctype.h>
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+static bool hasLeadingWhitespace(char *s) {
+  return s == NULL || s[0] == '\0' || isspace((unsigned char)s[0]);
+}
 
 // Byte
 
@@ -23,10 +31,16 @@ char *madlib__number__internal__showByte(unsigned char i) {
 
 madlib__maybe__Maybe_t *madlib__number__scanByte(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
+  if (hasLeadingWhitespace(s)) {
+    result->index = 1;
+    result->data = NULL;
+    return result;
+  }
   char *end = NULL;
-  unsigned long parsed = strtoul(s, &end, 10);
+  errno = 0;
+  unsigned long parsed = strtoul(s, &end, 16);
 
-  if (s != end && *end == '\0' && parsed <= 255UL) {
+  if (s != end && *end == '\0' && errno != ERANGE && parsed <= 255UL) {
     result->index = 0;
     result->data = (void *)(uintptr_t)((unsigned char)parsed);
   } else {
@@ -61,10 +75,16 @@ void *boxDouble(double x) {
 
 madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
-  double parsed;
-  int success = sscanf(s, "%lf", &parsed);
+  if (hasLeadingWhitespace(s)) {
+    result->index = 1;
+    result->data = NULL;
+    return result;
+  }
+  char *end = NULL;
+  errno = 0;
+  double parsed = strtod(s, &end);
 
-  if (success == 1) {
+  if (s != end && *end == '\0' && errno != ERANGE && isfinite(parsed)) {
     result->index = 0;
     result->data = boxDouble(parsed);
   } else {
@@ -88,10 +108,16 @@ char *madlib__number__internal__showInteger(int64_t i) {
 
 madlib__maybe__Maybe_t *madlib__number__scanInteger(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
-  int64_t parsed;
-  int success = sscanf(s, "%" SCNd64, &parsed);
+  if (hasLeadingWhitespace(s)) {
+    result->index = 1;
+    result->data = NULL;
+    return result;
+  }
+  char *end = NULL;
+  errno = 0;
+  int64_t parsed = strtoll(s, &end, 10);
 
-  if (success == 1) {
+  if (s != end && *end == '\0' && errno != ERANGE) {
     int64_t *boxed = (int64_t*)parsed;
     result->index = 0;
     result->data = boxed;
@@ -115,10 +141,22 @@ char *madlib__number__internal__showShort(int32_t i) {
 
 madlib__maybe__Maybe_t *madlib__number__scanShort(char *s) {
   madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
-  int32_t parsed;
-  int success = sscanf(s, "%" SCNd32, &parsed);
+  if (hasLeadingWhitespace(s)) {
+    result->index = 1;
+    result->data = NULL;
+    return result;
+  }
+  char *end = NULL;
+  errno = 0;
+  long parsed = strtol(s, &end, 10);
 
-  if (success == 1) {
+  if (
+    s != end
+    && *end == '\0'
+    && errno != ERANGE
+    && parsed >= INT32_MIN
+    && parsed <= INT32_MAX
+  ) {
     result->index = 0;
     result->data = (int32_t*)parsed;
   } else {

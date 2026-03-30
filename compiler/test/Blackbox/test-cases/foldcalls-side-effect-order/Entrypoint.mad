@@ -1,0 +1,21 @@
+import IO from "IO"
+
+mk = (x) => {
+  IO.log("mk:" ++ show(x))
+  return (y) => x + y
+}
+
+left = () => {
+  IO.log("left")
+  return 1
+}
+
+right = () => {
+  IO.log("right")
+  return 2
+}
+
+main = () => {
+  f = mk(left())
+  IO.log(f(right()))
+}

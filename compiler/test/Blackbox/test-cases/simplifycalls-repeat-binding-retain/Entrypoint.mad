@@ -1,0 +1,11 @@
+import IO from "IO"
+import List from "List"
+
+f = (x) => x + 1
+
+main = () => {
+  l = 10
+  biglist = List.repeat(1, l + 1)
+  r = map(f, biglist)
+  IO.log(List.length(r))
+}

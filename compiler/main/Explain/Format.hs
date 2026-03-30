@@ -36,6 +36,14 @@ import           Utils.EditDistance (findSimilar)
 letters :: [Char]
 letters = ['a' .. 'z']
 
+
+renderIndexedLetter :: Int -> String
+renderIndexedLetter n =
+  let alphabetSize = length letters
+      base = [letters !! (n `mod` alphabetSize)]
+      suffix = n `div` alphabetSize
+  in  if suffix == 0 then base else base <> show suffix
+
 renderTVar :: Int -> String
 renderTVar s = letters !! (s `mod` 26) : show s
 
@@ -2482,11 +2490,11 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
       case k of
         Star -> case M.lookup n vars of
           Just x ->
-            (vars, hkVars, [letters !! x])
+            (vars, hkVars, renderIndexedLetter x)
 
           Nothing ->
             let newIndex = M.size vars
-            in  (M.insert n newIndex vars, hkVars, [letters !! newIndex])
+            in  (M.insert n newIndex vars, hkVars, renderIndexedLetter newIndex)
 
         Kfun _ _ -> case M.lookup n hkVars of
           Just x ->
@@ -2571,11 +2579,11 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
     else
       case M.lookup (n - 1000) vars of
         Just x  ->
-          (vars, hkVars, [letters !! x])
+          (vars, hkVars, renderIndexedLetter x)
 
         Nothing ->
           let newIndex = M.size vars
-          in  (M.insert (n - 1000) newIndex vars, hkVars, [letters !! newIndex])
+          in  (M.insert (n - 1000) newIndex vars, hkVars, renderIndexedLetter newIndex)
 
   _ ->
     (vars, hkVars, "")
@@ -2676,11 +2684,11 @@ typeToDoc (vars, hkVars) t = case t of
     case k of
       Star -> case M.lookup n vars of
         Just x ->
-          (vars, hkVars, Pretty.pretty [letters !! x])
+          (vars, hkVars, Pretty.pretty (renderIndexedLetter x))
 
         Nothing ->
           let newIndex = M.size vars
-          in  (M.insert n newIndex vars, hkVars, Pretty.pretty [letters !! newIndex])
+          in  (M.insert n newIndex vars, hkVars, Pretty.pretty (renderIndexedLetter newIndex))
 
       Kfun _ _ -> case M.lookup n hkVars of
         Just x ->
@@ -2937,11 +2945,11 @@ typeToDoc (vars, hkVars) t = case t of
   TGen n ->
     case M.lookup (n - 1000) vars of
       Just x  ->
-        (vars, hkVars, Pretty.pretty [letters !! x])
+        (vars, hkVars, Pretty.pretty (renderIndexedLetter x))
 
       Nothing ->
         let newIndex = M.size vars
-        in  (M.insert (n - 1000) newIndex vars, hkVars, Pretty.pretty [letters !! newIndex])
+        in  (M.insert (n - 1000) newIndex vars, hkVars, Pretty.pretty (renderIndexedLetter newIndex))
 
   _ ->
     (vars, hkVars, Pretty.emptyDoc)

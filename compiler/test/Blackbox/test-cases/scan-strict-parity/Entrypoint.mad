@@ -1,0 +1,14 @@
+import IO from "IO"
+import { Just } from "Maybe"
+import {} from "Integer"
+import {} from "Float"
+import {} from "Short"
+
+main = () => {
+  IO.log(scan("12abc") == Just(12))
+  IO.log(scan(" 42") == Just(42))
+  IO.log(scan("1.2abc") == Just(1.2))
+  IO.log(scan(" 1.2") == Just(1.2))
+  IO.log(scan("42abc") == Just((42 :: Short)))
+  IO.log(scan(" 42") == Just((42 :: Short)))
+}

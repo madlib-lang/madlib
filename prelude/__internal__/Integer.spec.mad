@@ -1,6 +1,6 @@
 import { EQ, LT, GT } from "Compare"
 import { assertEquals, test } from "Test"
-import { Just, Nothing } from "Maybe"
+import { Just } from "Maybe"
 
 
 // Comparison
@@ -35,3 +35,7 @@ test("show Integer - zero", () => assertEquals(show(0), "0"))
 test("scan Integer - valid", () => assertEquals(scan("42"), Just(42)))
 test("scan Integer - negative", () => assertEquals(scan("-7"), Just(-7)))
 test("scan Integer - invalid", () => assertEquals(scan("abc") == Just(0), false))
+test("scan Integer - reject trailing chars", () => assertEquals(scan("12abc") == Just(12), false))
+test("scan Integer - reject overflow", () => assertEquals(scan("999999999999999999999999") == Just(9223372036854775807), false))
+test("scan Integer - reject negative with trailing chars", () => assertEquals(scan("-7x") == Just(-7), false))
+test("scan Integer - reject leading whitespace", () => assertEquals(scan(" 42") == Just(42), false))

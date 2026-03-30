@@ -19,6 +19,7 @@ import Infer.Type
 import Error.Context
 import qualified Data.Map as Map
 import qualified AST.Solved as Slv
+import qualified Data.List as List
 
 
 makeReadFile :: String -> (FilePath -> IO String)
@@ -488,6 +489,12 @@ spec = do
           actual   = schemeToStr scheme
           expected = "Monad m => m -> { ...base, x :: Integer } -> (String -> #[Byte, Boolean, Boolean, Boolean]) -> #[Boolean, String, Either ByteArray (List String)]"
       actual `shouldBe` expected
+
+    it "should render many type variables without crashing" $ do
+      let mkVar i = TVar (TV i Star)
+          longFn = foldr1 fn (mkVar <$> [1..30])
+          actual = prettyPrintType True longFn
+      actual `shouldBe` "a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q -> r -> s -> t -> u -> v -> w -> x -> y -> z -> a1 -> b1 -> c1 -> d1"
 
   describe "prettyPrintTyping" $ do
     it "should pretty print a typing" $ do

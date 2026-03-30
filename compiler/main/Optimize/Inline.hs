@@ -226,7 +226,8 @@ inlineInExp candidates exp@(Typed qt area meta e) = case e of
   -- Call to a known inline candidate with matching arity
   Call (Typed _ _ _ (Var fnName _)) args
     | Just candidate <- M.lookup fnName candidates
-    , L.length args == L.length (icParams candidate) ->
+    , L.length args == L.length (icParams candidate)
+    , all isTriviallyPureExp args ->
       let inlinedArgs = inlineInExp candidates <$> args
           substitution = M.fromList $ L.zip (icParams candidate) inlinedArgs
           inlinedBody = substituteInExps substitution (icBody candidate)
@@ -417,3 +418,27 @@ collectPatternConstructorNames (Typed _ _ _ p) = case p of
   PSpread p        -> collectPatternConstructorNames p
   _                -> S.empty
 collectPatternConstructorNames (Untyped _ _ _) = S.empty
+
+
+-- Keep inlining conservative: substituting effectful arguments into function
+-- bodies can duplicate, drop, or reorder effects relative to call-by-value
+-- evaluation. We only inline when call arguments are trivially pure.
+isTriviallyPureExp :: Exp -> Bool
+isTriviallyPureExp exp = case exp of
+  Typed _ _ _ (Literal _) ->
+    True
+
+  Typed _ _ _ (Var _ _) ->
+    True
+
+  Typed _ _ _ (TupleConstructor items) ->
+    all isTriviallyPureExp items
+
+  Typed _ _ _ (ListConstructor items) ->
+    all (isTriviallyPureExp . getListItemExp) items
+
+  Typed _ _ _ (Record fields) ->
+    all (isTriviallyPureExp . getFieldExp) fields
+
+  _ ->
+    False

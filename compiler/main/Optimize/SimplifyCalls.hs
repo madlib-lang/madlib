@@ -549,19 +549,26 @@ isDirectMapUseOfVar pureFns varName exp = case exp of
 
 rewriteMapRepeatWithEnv :: Set.Set String -> Map.Map String (Exp, Exp, Exp) -> Map.Map String Integer -> Exp -> Exp
 rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers exp = case exp of
+  -- `repeat(item, count)` evaluates `item` eagerly once. Replacing `length`/`nth`
+  -- with formulas that don't mention `item` is only sound when `item` is
+  -- side-effect free.
+  -- Example unsafe case without this guard:
+  --   length(repeat(log("x"), 2))
+  -- which must still log once.
   Typed qt area metadata (Call lengthFn@(Typed _ _ _ (Var lengthName _)) [listArg])
     | isLengthFnName lengthName ->
         let listArg' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers listArg
             fromRepeat (_, _, count) = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers count
+            isRepeatDataSafe (_, item, _) = isSideEffectFree pureFns item
         in case extractRepeatCall listArg' of
-            Just repeatData ->
+            Just repeatData | isRepeatDataSafe repeatData ->
               fromRepeat repeatData
 
             Nothing ->
               case listArg' of
                 Typed _ _ _ (Var listName _) ->
                   case Map.lookup listName knownRepeats of
-                    Just repeatData ->
+                    Just repeatData | isRepeatDataSafe repeatData ->
                       fromRepeat repeatData
 
                     Nothing ->
@@ -569,12 +576,15 @@ rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers exp = case exp of
 
                 _ ->
                   Typed qt area metadata (Call lengthFn [listArg'])
+            _ ->
+              Typed qt area metadata (Call lengthFn [listArg'])
 
   Typed qt area metadata (Call nthFn@(Typed _ _ _ (Var nthName _)) [indexArg, listArg])
     | isNthFnName nthName ->
         let indexArg' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers indexArg
             listArg' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers listArg
             fallback = Typed qt area metadata (Call nthFn [indexArg', listArg'])
+            isRepeatDataSafe (_, item, _) = isSideEffectFree pureFns item
             foldNthWithRepeat item count =
               case (resolveIntegerLiteral knownIntegers indexArg', resolveIntegerLiteral knownIntegers count) of
                 (Just i, Just c)
@@ -591,21 +601,25 @@ rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers exp = case exp of
                 _ ->
                   fallback
         in case extractRepeatCall listArg' of
-            Just (_, item, count) ->
-              foldNthWithRepeat item count
+            Just repeatData | isRepeatDataSafe repeatData ->
+              let (_, item, count) = repeatData
+              in foldNthWithRepeat item count
 
             Nothing ->
               case listArg' of
                 Typed _ _ _ (Var listName _) ->
                   case Map.lookup listName knownRepeats of
-                    Just (_, item, count) ->
-                      foldNthWithRepeat item count
+                    Just repeatData | isRepeatDataSafe repeatData ->
+                      let (_, item, count) = repeatData
+                      in foldNthWithRepeat item count
 
                     Nothing ->
                       fallback
 
                 _ ->
                   fallback
+            _ ->
+              fallback
 
   Typed qt area metadata (Call mapFn@(Typed _ _ _ (Var mapName _)) [fArg@(Typed _ _ _ (Var fName _)), listArg])
     | isMapFnName mapName
@@ -644,7 +658,9 @@ rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers exp = case exp of
     Typed qt area metadata (Call (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers fn) (map (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers) args))
 
   Typed qt area metadata (Definition params body) ->
-    Typed qt area metadata (Definition params (map (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers) body))
+    -- Function bodies may run after mutable captures change, so outer repeat
+    -- and integer facts are not valid assumptions there.
+    Typed qt area metadata (Definition params (map (rewriteMapRepeatWithEnv pureFns Map.empty Map.empty) body))
 
   Typed qt area metadata (ListConstructor items) ->
     Typed qt area metadata (ListConstructor (mapListItem (rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers) <$> items))
@@ -692,6 +708,45 @@ resolveIntegerLiteral knownIntegers exp = case extractIntegerLiteral exp of
 fuseMapRepeatInBody :: Set.Set String -> Map.Map String Integer -> [Exp] -> [Exp]
 fuseMapRepeatInBody pureFns initialIntegers exps = reverse $ go Map.empty initialIntegers Nothing [] exps
   where
+    invalidatesKnownFacts :: Exp -> Bool
+    invalidatesKnownFacts exp = case exp of
+      Typed _ _ _ (Call _ _) ->
+        True
+
+      Typed _ _ _ (If _ _ _) ->
+        True
+
+      Typed _ _ _ (While _ _) ->
+        True
+
+      Typed _ _ _ (Do _) ->
+        True
+
+      Typed _ _ _ (Where _ _) ->
+        True
+
+      Typed _ _ _ (Definition _ _) ->
+        True
+
+      Typed _ _ _ (Assignment (Typed _ _ _ (Var _ _)) rhs) ->
+        not (isSideEffectFree pureFns rhs)
+
+      Typed _ _ _ (Assignment _ _) ->
+        True
+
+      _ ->
+        False
+
+    freezeRepeatCount :: Map.Map String Integer -> (Exp, Exp, Exp) -> (Exp, Exp, Exp)
+    freezeRepeatCount knownInts (repeatFn, item, count) =
+      case resolveIntegerLiteral knownInts count of
+        Just n ->
+          let frozenCount = mkNumberLiteralLike count n
+          in (repeatFn, item, frozenCount)
+
+        Nothing ->
+          (repeatFn, item, count)
+
     flushPending pending acc = case pending of
       Nothing ->
         acc
@@ -702,6 +757,23 @@ fuseMapRepeatInBody pureFns initialIntegers exps = reverse $ go Map.empty initia
     go knownRepeats knownIntegers pending acc body = case body of
       exp : rest ->
         let exp' = rewriteMapRepeatWithEnv pureFns knownRepeats knownIntegers exp
+            knownRepeats' = case exp' of
+              Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) rhs) ->
+                case extractRepeatCall rhs of
+                  Just repeatData ->
+                    let frozenRepeat@(_, frozenItem, frozenCount) = freezeRepeatCount knownIntegers repeatData
+                        stableItem = Set.null (collectVarsUsed frozenItem)
+                        stableCount = Set.null (collectVarsUsed frozenCount)
+                    in if stableItem && stableCount then
+                        Map.insert n frozenRepeat knownRepeats
+                      else
+                        Map.delete n knownRepeats
+
+                  Nothing ->
+                    Map.delete n knownRepeats
+
+              _ ->
+                knownRepeats
             knownIntegers' = case exp' of
               Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) rhs) ->
                 case extractIntegerLiteral rhs of
@@ -713,21 +785,27 @@ fuseMapRepeatInBody pureFns initialIntegers exps = reverse $ go Map.empty initia
 
               _ ->
                 knownIntegers
+            (knownRepeatsNext, knownIntegersNext) =
+              if invalidatesKnownFacts exp' then
+                (Map.empty, Map.empty)
+              else
+                (knownRepeats', knownIntegers')
         in case exp' of
             Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) rhs)
-              | Just repeatData <- extractRepeatCall rhs ->
+              | Just _ <- extractRepeatCall rhs ->
                   let acc' = flushPending pending acc
-                      knownRepeats' = Map.insert n repeatData knownRepeats
-                  in go knownRepeats' knownIntegers' (Just (n, exp')) acc' rest
+                  in go knownRepeatsNext knownIntegersNext (Just (n, exp')) acc' rest
 
             _ ->
               case pending of
-                Just (pendingName, _) | isDirectMapUseOfVar pureFns pendingName exp ->
-                  go knownRepeats knownIntegers' Nothing (exp' : acc) rest
+                Just (pendingName, _)
+                  | isDirectMapUseOfVar pureFns pendingName exp
+                  , pendingName `Set.notMember` collectVarsUsed exp' ->
+                  go knownRepeatsNext knownIntegersNext Nothing (exp' : acc) rest
 
                 _ ->
                   let acc' = flushPending pending acc
-                  in go knownRepeats knownIntegers' Nothing (exp' : acc') rest
+                  in go knownRepeatsNext knownIntegersNext Nothing (exp' : acc') rest
 
       [] ->
         flushPending pending acc
@@ -743,14 +821,14 @@ reduceWithPureFns pureFns knownIntegers exp = case exp of
       "__P__" `List.isPrefixOf` aName ||
       "__M__" `List.isPrefixOf` aName ||
       "__W__" `List.isPrefixOf` aName ->
-        if isEligible body && (isLiteralOrVar arg || occurencesOf pName body == 1) then
+        if isEligible body && (isLiteralOrVar arg || (occurencesOf pName body == 1 && isSideEffectFree pureFns body)) then
           reduceWithPureFns pureFns knownIntegers $ replaceVarWith (getValue param) (reduceWithPureFns pureFns knownIntegers arg) (reduceWithPureFns pureFns knownIntegers body)
         else
           Typed qt area metadata (Call (Typed qt' area' metadata' (Definition [param] [reduceWithPureFns pureFns knownIntegers body])) [reduceWithPureFns pureFns knownIntegers arg])
 
   Typed qt area metadata (Call (Typed qt' area' metadata' (Definition [param@(Typed _ _ _ pName)] [body])) [arg])
     | "__$PH" `List.isPrefixOf` pName || "__P__" `List.isPrefixOf` pName || "__M__" `List.isPrefixOf` pName || "__W__" `List.isPrefixOf` pName ->
-      if isEligible body && (isLiteralOrVar arg || occurencesOf pName body == 1) then
+      if isEligible body && (isLiteralOrVar arg || (occurencesOf pName body == 1 && isSideEffectFree pureFns body)) then
         reduceWithPureFns pureFns knownIntegers $ replaceVarWith (getValue param) (reduceWithPureFns pureFns knownIntegers arg) (reduceWithPureFns pureFns knownIntegers body)
       else
         Typed qt area metadata (Call (Typed qt' area' metadata' (Definition [param] [reduceWithPureFns pureFns knownIntegers body])) [reduceWithPureFns pureFns knownIntegers arg])

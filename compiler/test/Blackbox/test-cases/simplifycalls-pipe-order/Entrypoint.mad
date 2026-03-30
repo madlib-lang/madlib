@@ -1,0 +1,18 @@
+import IO from "IO"
+
+main = () => {
+  state = 0
+
+  mk = () => {
+    state := state + 1
+    return (x) => x + state
+  }
+
+  arg = () => {
+    state := state + 10
+    return state
+  }
+
+  out = pipe(mk())(arg())
+  IO.log(out)
+}

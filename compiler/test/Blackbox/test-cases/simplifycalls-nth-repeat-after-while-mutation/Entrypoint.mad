@@ -1,0 +1,15 @@
+import IO from "IO"
+import List from "List"
+
+main = () => {
+  count = 0
+  i = 0
+
+  while(i < 1) do {
+    count := 3
+    i := i + 1
+  }
+
+  xs = List.repeat(9, count)
+  IO.log(List.nth(2, xs))
+}

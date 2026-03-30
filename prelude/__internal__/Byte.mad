@@ -7,8 +7,11 @@ import { Just, Nothing } from "Maybe"
 
 _scanByte :: (Byte -> Maybe Byte) -> Maybe Byte -> String -> Maybe Byte
 _scanByte = (just, nothing, str) => (#- {
-  const n = parseInt(str)
-  return isNaN(n) ? nothing : just(n)
+  if (!/^[0-9a-fA-F]+$/.test(str)) {
+    return nothing
+  }
+  const n = parseInt(str, 16)
+  return Number.isNaN(n) || n < 0 || n > 255 ? nothing : just(n)
 } -#)
 
 scanByte = _scanByte(Just, Nothing)
@@ -68,5 +71,4 @@ fromFloat :: Float -> Byte
 export fromFloat = extern "madlib__number__floatToByte"
 
 #endif
-
 

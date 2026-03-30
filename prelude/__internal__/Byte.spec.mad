@@ -47,3 +47,7 @@ test("show Byte - max", () => assertEquals(show(255_b), "FF"))
 
 // Scan
 test("scan Byte - invalid", () => assertEquals(scan("ZZ") == Just(0_b), false))
+test("scan Byte - parse uppercase hex", () => assertEquals(scan("FF"), Just(255_b)))
+test("scan Byte - parse lowercase hex", () => assertEquals(scan("ff"), Just(255_b)))
+test("scan Byte - roundtrip show/scan", () => assertEquals(scan(show(42_b)), Just(42_b)))
+test("scan Byte - reject leading whitespace", () => assertEquals(scan(" FF") == Just(255_b), false))

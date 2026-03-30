@@ -1,0 +1,12 @@
+import IO from "IO"
+
+f = (a,b,c) => (d,e) => a + b + c + d + e
+
+main = () => {
+  p1 = f(1)
+  p2 = p1(2,3,4)
+  IO.log(p2(5))
+
+  IO.log(f(1,2,3,4,5))
+  IO.log(f(1,2)(3,4,5))
+}

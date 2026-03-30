@@ -1,0 +1,9 @@
+import IO from "IO"
+import List from "List"
+
+main = () => {
+  x = 1
+  xs = List.repeat(x, 3)
+  x := 2
+  IO.log(List.nth(0, xs))
+}

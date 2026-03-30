@@ -89,7 +89,7 @@ import           Generate.LLVM.Function       (FunctionCtx, generateExps, genera
                                                 fnSymbol, topLevelSymbol, constructorSymbol)
 
 maxSupportedPAPArity :: Int
-maxSupportedPAPArity = 30
+maxSupportedPAPArity = 50
 
 mkPAPArityError :: String -> Int -> String
 mkPAPArityError name arity =

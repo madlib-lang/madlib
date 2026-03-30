@@ -1,0 +1,9 @@
+import IO from "IO"
+import Short from "Short"
+
+main = () => {
+  a = Short.fromInteger(2147483648)
+  b = Short.fromInteger(-2147483649)
+  IO.log(Short.toInteger(a))
+  IO.log(Short.toInteger(b))
+}

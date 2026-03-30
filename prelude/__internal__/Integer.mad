@@ -12,8 +12,12 @@ import { Just, Nothing } from "Maybe"
 _scanInteger :: (Integer -> Maybe Integer) -> Maybe Integer -> String -> Maybe Integer
 _scanInteger = (just, nothing, str) => (
   #- {
-    const n = parseInt(str)
-    return isNaN(n) ? nothing : just(n)
+    const intPattern = /^[+-]?\d+$/
+    if (str.trim() !== str || !intPattern.test(str)) {
+      return nothing
+    }
+    const n = Number(str)
+    return Number.isSafeInteger(n) ? just(n) : nothing
   } -#
 )
 

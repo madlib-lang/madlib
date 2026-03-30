@@ -16,6 +16,7 @@ import           Data.List                      ( sort
                                                 , intercalate
                                                 , foldl', stripPrefix, isInfixOf, isPrefixOf
                                                 )
+import           Data.Char                      ( isSpace )
 import           Data.List.GroupBy              ( groupBy )
 
 import           AST.Core                      as Core
@@ -393,10 +394,21 @@ instance Compilable Exp where
               <> "}"
 
 
+          isJSBlock :: String -> Bool
+          isJSBlock raw = case dropWhile isSpace raw of
+            '{' : _ ->
+              True
+
+            _ ->
+              False
+
           compileBody' :: Env -> [Exp] -> String
           compileBody' env [exp] = case exp of
-            (Typed _ _ _ (JSExp _)) ->
-              compile env config exp
+            (Typed _ _ _ (JSExp raw)) ->
+              if isJSBlock raw then
+                "    " <> raw <> "\n"
+              else
+                "    return (" <> raw <> ");\n"
 
             _ | isPlainRecursiveDefinition metadata || isRightListRecursiveDefinition metadata || isConstructorRecursiveDefinition metadata ->
               compile env config exp

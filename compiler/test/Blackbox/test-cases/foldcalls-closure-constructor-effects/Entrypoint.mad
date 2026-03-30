@@ -1,0 +1,16 @@
+import IO from "IO"
+
+left = () => {
+  IO.log("left")
+  return 1
+}
+
+main = () => {
+  f = ((x) => (y) => x + y)(left())
+
+  if (false) {
+    IO.log(f(1))
+  } else {
+    IO.log("skip")
+  }
+}

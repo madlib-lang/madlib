@@ -12,8 +12,12 @@ import { Just, Nothing } from "Maybe"
 _scanShort :: (Short -> Maybe Short) -> Maybe Short -> String -> Maybe Short
 _scanShort = (just, nothing, str) => (
   #- {
-    const n = parseInt(str)
-    return isNaN(n) ? nothing : just(n)
+    const intPattern = /^[+-]?\d+$/
+    if (str.trim() !== str || !intPattern.test(str)) {
+      return nothing
+    }
+    const n = Number(str)
+    return Number.isSafeInteger(n) && n >= -2147483648 && n <= 2147483647 ? just(n) : nothing
   } -#
 )
 
@@ -44,13 +48,13 @@ export toFloat = (a) => #- { return a } -#
 
 
 fromInteger :: Integer -> Short
-export fromInteger = (a) => #- { return a } -#
+export fromInteger = (a) => #- { return Int32Array.from([a])[0] } -#
 
 fromByte :: Byte -> Short
-export fromByte = (a) => #- { return a } -#
+export fromByte = (a) => #- { return Int32Array.from([a])[0] } -#
 
 fromFloat :: Float -> Short
-export fromFloat = (a) => #- { return Math.trunc(a) } -#
+export fromFloat = (a) => #- { return Int32Array.from([Math.trunc(a)])[0] } -#
 
 #elseif llvm
 

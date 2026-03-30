@@ -41,7 +41,7 @@ CPP_FILE_FOOTER =
 `
 
 CPP_SPECIFIC_FUNCTIONS = `
-static const int32_t MADLIB_MAX_SUPPORTED_PAP_ARITY = 30;
+static const int32_t MADLIB_MAX_SUPPORTED_PAP_ARITY = 50;
 
 static void failUnsupportedPAPArity(int32_t arity, int32_t argc) {
   fprintf(
@@ -62,7 +62,7 @@ static bool papAtomicEnvEnabled() {
   const char *value = getenv("MADLIB_PAP_ATOMIC_ENV");
   const bool enabled =
     value != NULL
-    && value[0] != '\0'
+    && value[0] != '\\0'
     &&
     (
     strcmp(value, "1") == 0
@@ -196,7 +196,7 @@ FUNCTION_START =
 `
 
 FUNCTION_END =
-`  printf("__applyPAP__ case not handled, argc: %d, ENV_SIZE: %d, ARITY: %d\n", argc, ENV_SIZE, ARITY);
+`  printf("__applyPAP__ case not handled, argc: %d, ENV_SIZE: %d, ARITY: %d\\n", argc, ENV_SIZE, ARITY);
 
   return NULL;
 }

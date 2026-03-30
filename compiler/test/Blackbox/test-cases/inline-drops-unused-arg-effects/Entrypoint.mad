@@ -1,0 +1,17 @@
+import IO from "IO"
+
+left = () => {
+  IO.log("left")
+  return 1
+}
+
+right = () => {
+  IO.log("right")
+  return 2
+}
+
+pickRight = (_, b) => b
+
+main = () => {
+  IO.log(pickRight(left(), right()))
+}

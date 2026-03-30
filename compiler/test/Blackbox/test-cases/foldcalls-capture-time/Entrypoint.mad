@@ -1,0 +1,10 @@
+import IO from "IO"
+
+mkAdder = (x) => (y) => x + y
+
+main = () => {
+  x = 1
+  f = mkAdder(x)
+  x := 2
+  IO.log(f(10))
+}

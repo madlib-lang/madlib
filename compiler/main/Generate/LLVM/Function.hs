@@ -70,7 +70,7 @@ gep :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Ope
 gep = emitGEP
 
 maxSupportedPAPArity :: Int
-maxSupportedPAPArity = 30
+maxSupportedPAPArity = 50
 
 mkPAPArityError :: String -> Int -> String
 mkPAPArityError name arity =

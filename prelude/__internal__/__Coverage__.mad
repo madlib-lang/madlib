@@ -7,6 +7,7 @@ import FilePath from "FilePath"
 import Math from "Math"
 import { fromMaybe, Just, Nothing } from "Maybe"
 import Integer from "Integer"
+import {} from "Float"
 import { always, when } from "Function"
 import Process from "Process"
 import IO from "IO"
@@ -27,21 +28,6 @@ CWD :: String
 CWD = Process.getCurrentWorkingDirectory()
 
 alias HitCounter = { increment :: {} -> {}, read :: {} -> Integer }
-
-makeHitCounter :: Integer -> HitCounter
-makeHitCounter = (initial) => {
-  value = initial
-
-  read :: {} -> Integer
-  read = () => value
-
-  increment :: {} -> {}
-  increment = () => {
-    value := value + 1
-  }
-
-  return { increment, read }
-}
 
 type CoverableLine = CoverableLine(Integer)
 derive Comparable CoverableLine
@@ -395,11 +381,11 @@ formatRows = (rows) =>
 renderPercentage :: String -> String
 renderPercentage = (input) =>
   if (IS_COLOR_ENABLED) {
-    where(scan(String.dropLast(1, input))) {
+    where(scan(String.dropLast(1, String.trim(input)))) {
       Just(num) =>
-        if (num > 90) {
+        if (num > 90_f) {
           Terminal.text.brightGreen(input)
-        } else if (num > 75) {
+        } else if (num > 75_f) {
           Terminal.text.brightYellow(input)
         } else {
           Terminal.text.brightRed(input)

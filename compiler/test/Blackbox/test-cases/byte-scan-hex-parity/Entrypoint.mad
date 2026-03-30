@@ -1,0 +1,9 @@
+import IO from "IO"
+import { Just } from "Maybe"
+import {} from "Byte"
+
+main = () => {
+  IO.log(scan("FF") == Just(255_b))
+  IO.log(scan("ff") == Just(255_b))
+  IO.log(scan("2A") == Just(42_b))
+}

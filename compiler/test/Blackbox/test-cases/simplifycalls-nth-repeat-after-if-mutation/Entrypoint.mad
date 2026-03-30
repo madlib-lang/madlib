@@ -1,0 +1,15 @@
+import IO from "IO"
+import List from "List"
+
+main = () => {
+  count = 0
+
+  if (true) {
+    do {
+      count := 3
+    }
+  }
+
+  xs = List.repeat(9, count)
+  IO.log(List.nth(2, xs))
+}

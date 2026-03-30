@@ -1,0 +1,11 @@
+import IO from "IO"
+import List from "List"
+
+side = () => {
+  IO.log("side")
+  return 42
+}
+
+main = () => {
+  IO.log(List.nth(5, List.repeat(side(), 2)))
+}

@@ -12,8 +12,12 @@ import { Just, Nothing } from "Maybe"
 _scanFloat :: (Float -> Maybe Float) -> Maybe Float -> String -> Maybe Float
 _scanFloat = (just, nothing, str) => (
   #- {
-    const n = parseFloat(str)
-    return isNaN(n) ? nothing : just(n)
+    const floatPattern = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/
+    if (str.trim() !== str || !floatPattern.test(str)) {
+      return nothing
+    }
+    const n = Number(str)
+    return Number.isFinite(n) ? just(n) : nothing
   } -#
 )
 

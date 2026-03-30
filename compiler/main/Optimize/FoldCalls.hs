@@ -125,7 +125,11 @@ findInvalidAccesses exp = case exp of
 
 findEligibleCalls :: Exp -> [(String, Exp)] -> [(String, Exp)]
 findEligibleCalls exp found = case exp of
-  Typed (_ :=> t) _ _ (Assignment (Typed _ _ _ (Var n _)) call@(Typed _ _ _ (Call (Typed _ _ metadata (Var fnName _)) _))) | isFunctionType t && not (isReferenceToMutatingFunction metadata) ->
+  Typed (_ :=> t) _ _ (Assignment (Typed _ _ _ (Var n _)) call@(Typed _ _ _ (Call (Typed _ _ metadata (Var fnName _)) args)))
+    | isFunctionType t
+    && not (isReferenceToMutatingFunction metadata)
+    && isClosureLiftedName fnName
+    && all isTriviallyPureExp args ->
     if any ((== fnName) . fst) found then
       -- if we have already found the function it'll most likely be inlined and we can
       -- skip it for the current pass
@@ -134,7 +138,10 @@ findEligibleCalls exp found = case exp of
     else
       (n, call) : found
 
-  Typed (_ :=> t) _ _ (Assignment (Typed _ _ _ (Var n _)) call@(Typed _ _ metadata (Var fnName _))) | isFunctionType t && not (isReferenceToMutatingFunction metadata) ->
+  Typed (_ :=> t) _ _ (Assignment (Typed _ _ _ (Var n _)) call@(Typed _ _ metadata (Var fnName _)))
+    | isFunctionType t
+    && not (isReferenceToMutatingFunction metadata)
+    && isClosureLiftedName fnName ->
     if any ((== fnName) . fst) found then
       -- if we have already found the function it'll most likely be inlined and we can
       -- skip it for the current pass
@@ -344,3 +351,39 @@ foldAST :: AST -> AST
 foldAST ast =
   let foldedExps = foldTopLevelExps <$> aexps ast
   in  ast { aexps = foldedExps }
+
+
+isClosureLiftedName :: String -> Bool
+isClosureLiftedName fnName =
+  "$lifted$" `List.isInfixOf` fnName || "$lambda" `List.isInfixOf` fnName
+
+
+-- Keep fold-calls conservative: the closure-constructor call we remove must not
+-- have side effects in its capture arguments, otherwise moving/removing it can
+-- change program behavior (for example when the resulting closure is used only
+-- in a non-taken branch).
+isTriviallyPureExp :: Exp -> Bool
+isTriviallyPureExp exp = case exp of
+  Typed _ _ _ (Literal _) ->
+    True
+
+  Typed _ _ _ (Var _ _) ->
+    True
+
+  Typed _ _ _ (TupleConstructor items) ->
+    all isTriviallyPureExp items
+
+  Typed _ _ _ (ListConstructor items) ->
+    all (isTriviallyPureExp . getListItemExp) items
+
+  Typed _ _ _ (Record fields) ->
+    all (isTriviallyPureExp . getFieldExp) fields
+
+  Typed _ _ _ (Access rec field) ->
+    isTriviallyPureExp rec && isTriviallyPureExp field
+
+  Typed _ _ _ (ArrayAccess arr index) ->
+    isTriviallyPureExp arr && isTriviallyPureExp index
+
+  _ ->
+    False

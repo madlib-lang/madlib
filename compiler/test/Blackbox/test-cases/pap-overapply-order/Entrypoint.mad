@@ -1,0 +1,22 @@
+import IO from "IO"
+
+x = () => {
+  IO.log("x")
+  return 1
+}
+
+y = () => {
+  IO.log("y")
+  return 2
+}
+
+z = () => {
+  IO.log("z")
+  return 3
+}
+
+f = (a) => (b) => (c) => a + b + c
+
+main = () => {
+  IO.log(f(x(), y(), z()))
+}

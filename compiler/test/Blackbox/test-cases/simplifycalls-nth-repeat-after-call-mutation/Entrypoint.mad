@@ -1,0 +1,14 @@
+import IO from "IO"
+import List from "List"
+
+main = () => {
+  count = 0
+  setCount = () => {
+    count := 3
+  }
+
+  setCount()
+
+  xs = List.repeat(9, count)
+  IO.log(List.nth(2, xs))
+}

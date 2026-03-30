@@ -57,3 +57,6 @@ test("show Short - zero", () => assertEquals(show((0 :: Short)), "0"))
 // Scan
 test("scan Short - valid", () => assertEquals(scan("42"), Just((42 :: Short))))
 test("scan Short - invalid", () => assertEquals(scan("abc") == Just((0 :: Short)), false))
+test("scan Short - reject trailing chars", () => assertEquals(scan("42abc") == Just((42 :: Short)), false))
+test("scan Short - reject overflow", () => assertEquals(scan("999999999999") == Just((-727379969 :: Short)), false))
+test("scan Short - reject leading whitespace", () => assertEquals(scan(" 42") == Just((42 :: Short)), false))

@@ -205,24 +205,9 @@ emptyList env area = do
   let globalRef = Operand.ConstantOperand $ Constant.GlobalReference (Type.ptr listStructType) nm
   addrspacecast globalRef listType
 
-sanitizeStr s = case s of
-  [] ->
-    []
-
-  '\\':'"':more ->
-    '\\':'"':sanitizeStr more
-
-  '"':more ->
-    '\\':'"':sanitizeStr more
-
-  c:more ->
-    c:sanitizeStr more
-
 buildStr :: (MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => Env -> Area -> String -> m Operand
 buildStr _env _area s = do
-  let sanitized = sanitizeStr s
-  let parsed = read $ "\"" ++ sanitized ++ "\"" :: String
-  let asText     = Text.pack parsed
+  let asText     = Text.pack s
       bs         = TextEncoding.encodeUtf8 asText
       bytes      = ByteString.unpack bs
       charCodes  = (fromEnum <$> bytes) ++ [0]

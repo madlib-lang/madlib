@@ -1,0 +1,7 @@
+import IO from "IO"
+
+mk = (a, b) => (c) => a + b + c
+
+main = () => {
+  IO.log(mk(1, 2, 3))
+}
