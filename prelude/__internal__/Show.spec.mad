@@ -1,10 +1,12 @@
 import { assertEquals, test } from "Test"
 
 import { pShow } from "./Show"
+import String from "String"
 
 
 type User = User(String, Integer)
 
+q = String.singleton('"')
 
 test("pShow - Integer", () => assertEquals(pShow(3), "3"))
 
@@ -32,6 +34,6 @@ test(
   ),
 )
 
-test("pShow - Constructor", () => assertEquals(pShow(User("John", 35)), "User(\"John\", 35)"))
+test("pShow - Constructor", () => assertEquals(pShow(User("John", 35)), `User(${q}John${q}, 35)`))
 
-test("pShow - Constructor overflowed", () => assertEquals(pShow(User("Name that is super long and should force the pretty printer to break the line right there or else it's broken", 35)), "User(\n  \"Name that is super long and should force the pretty printer to break the line right there or else it's broken\",\n  35\n)"))
+test("pShow - Constructor overflowed", () => assertEquals(pShow(User("Name that is super long and should force the pretty printer to break the line right there or else it's broken", 35)), `User(\n  ${q}Name that is super long and should force the pretty printer to break the line right there or else it's broken${q},\n  35\n)`))

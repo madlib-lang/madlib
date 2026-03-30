@@ -1,7 +1,10 @@
 import { assertEquals, test } from "Test"
 import { EQ, LT, GT } from "Compare"
+import String from "String"
 
 import { fst, snd } from "./Tuple"
+
+q = String.singleton('"')
 
 
 test("fst", () => assertEquals(fst(#["a", 200]), "a"))
@@ -13,7 +16,7 @@ test("Eq tuple - not equal", () => assertEquals(#[1, 2] == #[1, 3], false))
 
 // Show
 test("show pair", () => assertEquals(show(#[1, 2]), "#[1, 2]"))
-test("show pair - strings", () => assertEquals(show(#["hello", "world"]), "#[\"hello\", \"world\"]"))
+test("show pair - strings", () => assertEquals(show(#["hello", "world"]), `#[${q}hello${q}, ${q}world${q}]`))
 
 // Triple
 test("Eq triple", () => assertEquals(#[1, 2, 3] == #[1, 2, 3], true))

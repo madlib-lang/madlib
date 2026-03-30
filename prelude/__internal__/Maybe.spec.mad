@@ -2,6 +2,7 @@ import type { Maybe } from "./Maybe"
 import { test, assertEquals } from "Test"
 import { Just, Nothing, fromMaybe, isJust } from "./Maybe"
 import {} from "Number"
+import String from "String"
 
 // Functor
 test("map - Just", () => assertEquals(map((x) => x + 1, Just(0)), Just(1)))
@@ -39,7 +40,7 @@ test("chain - associativity", () => {
 // Show
 test("show - Just", () => assertEquals(show(Just(3)), "Just(3)"))
 test("show - Nothing", () => assertEquals(show((Nothing :: Maybe Integer)), "Nothing"))
-test("show - Just String", () => assertEquals(show(Just("hello")), "Just(\"hello\")"))
+test("show - Just String", () => assertEquals(show(Just("hello")), `Just(${String.singleton('"')}hello${String.singleton('"')})`))
 test("show - nested", () => assertEquals(show(Just(Just(1))), "Just(Just(1))"))
 
 // fromMaybe

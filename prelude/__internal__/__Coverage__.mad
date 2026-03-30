@@ -18,6 +18,9 @@ import __CoverageTracking__ from "__CoverageTracking__"
 COVERAGE_TEXT :: String
 COVERAGE_TEXT = "COVERAGE_TEXT"
 
+NL :: String
+NL = String.singleton('\n')
+
 IS_COLOR_ENABLED :: Boolean
 IS_COLOR_ENABLED = do {
   noColor = Process.getEnv("NO_COLOR")
@@ -332,11 +335,11 @@ printRows = (rows) => {
       _ =>
         [""]
     },
-    String.join("\n")
+    String.join(NL)
   )(rows)
 
-  IO.putLine("\nCoverage")
-  IO.putLine(IS_COLOR_ENABLED ? IO.grey("--------\n") : "--------\n")
+  IO.putLine(`${NL}Coverage`)
+  IO.putLine(IS_COLOR_ENABLED ? IO.grey(`--------${NL}`) : `--------${NL}`)
   IO.putLine(finalRows)
   IO.putLine("")
 }

@@ -16,6 +16,10 @@ import {
   JsonNull,
   JsonArray,
 } from "Json/Value"
+import String from "String"
+
+q = String.singleton('"')
+bs = String.singleton('\\')
 
 
 // Construction helpers
@@ -38,7 +42,7 @@ test("object", () => assertEquals(
 ))
 
 // printJson - simple values
-test("printJson - string", () => assertEquals(printJson(80, string("hello")), "\"hello\""))
+test("printJson - string", () => assertEquals(printJson(80, string("hello")), `${q}hello${q}`))
 test("printJson - integer", () => assertEquals(printJson(80, integer(42)), "42"))
 test("printJson - float", () => assertEquals(printJson(80, float(2.5)), "2.5"))
 test("printJson - boolean true", () => assertEquals(printJson(80, boolean(true)), "true"))
@@ -56,7 +60,10 @@ test("printJson - simple array", () => assertEquals(
 ))
 
 // Escaped strings
-test("printJson - string with quotes", () => assertEquals(
-  printJson(80, string("say \"hello\"")),
-  "\"say \\\"hello\\\"\"",
-))
+test("printJson - string with quotes", () => {
+  bsq = `${bs}${q}`
+  return assertEquals(
+    printJson(80, string(`say ${q}hello${q}`)),
+    `${q}say ${bsq}hello${bsq}${q}`,
+  )
+})
