@@ -691,7 +691,9 @@ typingToDoc canBreak comments typing = case typing of
 templateStringExpsToDoc :: [Comment] -> [Exp] -> (Pretty.Doc ann, [Comment])
 templateStringExpsToDoc comments exps = case exps of
   (Source _ _ (LStr s) : more) ->
-    let e' = Pretty.hcat $ Pretty.punctuate Pretty.hardline (map Pretty.pretty $ lines s)
+    -- Re-escape backslashes and backticks (newlines are output as-is via hardline)
+    let s' = reEscapeTemplatePart s
+        e' = Pretty.hcat $ Pretty.punctuate Pretty.hardline (map Pretty.pretty $ lines s')
         (more', comments') = templateStringExpsToDoc comments more
     in  (Pretty.nesting (\x -> Pretty.nest (-x) e') <> more', comments')
 
@@ -784,13 +786,15 @@ renderChar :: String -> String
 renderChar c = "'" ++ c ++ "'"
 
 
-escapeBackticks :: String -> String
-escapeBackticks s = s >>= \case
-  '`' ->
-    "\\`"
-
-  c ->
-    [c]
+-- | Re-escape characters that are special inside backtick template strings.
+-- processEscapes is called on template parts so LStr stores actual characters.
+-- The formatter must re-escape backslashes and backticks before outputting,
+-- but NOT newlines (those are emitted as-is via hardline).
+reEscapeTemplatePart :: String -> String
+reEscapeTemplatePart s = s >>= \case
+  '\\' -> "\\\\"
+  '`'  -> "\\`"
+  c    -> [c]
 
 
 -- | Re-escape a string whose escape sequences have already been processed.
