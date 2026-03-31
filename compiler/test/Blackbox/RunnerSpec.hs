@@ -287,6 +287,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/inline-variable-capture"
         , "compiler/test/Blackbox/test-cases/inline-nested-capture"
         , "compiler/test/Blackbox/test-cases/inline-where-pattern-capture"
+        , "compiler/test/Blackbox/test-cases/tco-reserved-param"
         ]
 
   forM_ cases $ \casePath -> do

@@ -1,0 +1,22 @@
+import IO from "IO"
+
+
+// Regression test: TCO must use generateSafeName on parameter names.
+// If a parameter shares a name with a reserved JS keyword (e.g. "length"),
+// the generated TCO preamble `let $$length = length` would fail at runtime
+// because the function parameter is emitted as `_$_length_$_`, not `length`.
+// After the fix all TCO helper variables ($$p, $p) and the rewrite map keys
+// use the same safe name, so the generated JS is well-formed.
+
+countDown :: Integer -> Integer -> Integer
+countDown = (length, acc) => where(length <= 0) {
+  true =>
+    acc
+
+  false =>
+    countDown(length - 1, acc + 1)
+}
+
+main = () => {
+  IO.log(countDown(5, 0))
+}

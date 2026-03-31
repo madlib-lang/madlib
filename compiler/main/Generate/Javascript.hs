@@ -326,9 +326,10 @@ instance Compilable Exp where
           compileBody :: Env -> [Exp] -> String
           compileBody env body = case body of
             es | isPlainRecursiveDefinition metadata ->
-              let tcoParams = (\param -> "    let $$" <> param <> " = " <> param <> ";") <$> (getValue <$> params)
-                  updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> (getValue <$> params)
-                  rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> (getValue <$> params))
+              let safeParams  = generateSafeName <$> (getValue <$> params)
+                  tcoParams   = (\p -> "    let $$" <> p <> " = " <> p <> ";") <$> safeParams
+                  updateParams = (\p -> "      let $" <> p <> " = $$" <> p <> ";") <$> safeParams
+                  rewrite     = M.fromList ((\p -> (p, "$"<>p)) <$> safeParams)
               in  "{\n"
                   <> "    let $_result_;\n"
                   <> "    let $_continue_ = true;\n"
@@ -338,15 +339,16 @@ instance Compilable Exp where
                   <> unlines updateParams
                   <> "\n"
                   <> "        $_continue_ = false;\n"
-                  <> "        "<> compileBody' env { recursionData = Just PlainRecursionData { rdParams = ("$$"<>) <$> (getValue <$> params) }, varsRewritten = varsRewritten env <> rewrite } es
+                  <> "        "<> compileBody' env { recursionData = Just PlainRecursionData { rdParams = ("$$"<>) <$> safeParams }, varsRewritten = varsRewritten env <> rewrite } es
                   <> "\n    }\n"
                   <> "    return $_result_;\n"
                   <> "}"
 
             es | isRightListRecursiveDefinition metadata ->
-              let tcoParams = (\param -> "    let $$" <> param <> " = " <> param <> ";") <$> (getValue <$> params)
-                  updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> (getValue <$> params)
-                  rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> (getValue <$> params))
+              let safeParams  = generateSafeName <$> (getValue <$> params)
+                  tcoParams   = (\p -> "    let $$" <> p <> " = " <> p <> ";") <$> safeParams
+                  updateParams = (\p -> "      let $" <> p <> " = $$" <> p <> ";") <$> safeParams
+                  rewrite     = M.fromList ((\p -> (p, "$"<>p)) <$> safeParams)
               in  "{\n"
                   <> "    let $_result_;\n"
                   <> "    let $_continue_ = true;\n"
@@ -358,15 +360,16 @@ instance Compilable Exp where
                   <> unlines updateParams
                   <> "\n"
                   <> "        $_continue_ = false;\n"
-                  <> "        " <> compileBody' env { recursionData = Just RightListRecursionData { rdParams = ("$$"<>) <$> (getValue <$> params) }, varsRewritten = varsRewritten env <> rewrite } es
+                  <> "        " <> compileBody' env { recursionData = Just RightListRecursionData { rdParams = ("$$"<>) <$> safeParams }, varsRewritten = varsRewritten env <> rewrite } es
                   <> "\n    }\n"
                   <> "    return $_result_;\n"
                   <> "}"
 
             es | isConstructorRecursiveDefinition metadata ->
-              let tcoParams = (\param -> "    let $$" <> param <> " = " <> param <> ";") <$> (getValue <$> params)
-                  updateParams =  (\param -> "      let $" <> param <> " = $$" <> param <> ";") <$> (getValue <$> params)
-                  rewrite     = M.fromList ((\param -> (param, "$"<>param)) <$> (getValue <$> params))
+              let safeParams  = generateSafeName <$> (getValue <$> params)
+                  tcoParams   = (\p -> "    let $$" <> p <> " = " <> p <> ";") <$> safeParams
+                  updateParams = (\p -> "      let $" <> p <> " = $$" <> p <> ";") <$> safeParams
+                  rewrite     = M.fromList ((\p -> (p, "$"<>p)) <$> safeParams)
               in  "{\n"
                   <> "    let $_result_;\n"
                   <> "    let $_continue_ = true;\n"
@@ -380,7 +383,7 @@ instance Compilable Exp where
                   <> unlines updateParams
                   <> "\n"
                   <> "        $_continue_ = false;\n"
-                  <> "        "<> compileBody' env { recursionData = Just ConstructorRecursionData { rdParams = ("$$"<>) <$> (getValue <$> params) }, varsRewritten = varsRewritten env <> rewrite } es
+                  <> "        "<> compileBody' env { recursionData = Just ConstructorRecursionData { rdParams = ("$$"<>) <$> safeParams }, varsRewritten = varsRewritten env <> rewrite } es
                   <> "\n    }\n"
                   <> "    return $_result_;\n"
                   <> "}"
