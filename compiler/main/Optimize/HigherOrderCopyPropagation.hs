@@ -301,7 +301,13 @@ recursiveCallsPassParamsVerbatim fnName paramSpec bodyExp = case bodyExp of
 
   Typed _ _ _ (Where e iss) ->
     recursiveCallsPassParamsVerbatim fnName paramSpec e
-    && all (\(Typed _ _ _ (Is _ isBody)) -> recursiveCallsPassParamsVerbatim fnName paramSpec isBody) iss
+    && all
+        (\(Typed _ _ _ (Is pat isBody)) ->
+          let shadowedNames = Set.fromList (getPatternVars pat)
+              paramSpec' = map (\(n, r) -> (n, r && Set.notMember n shadowedNames)) paramSpec
+          in  recursiveCallsPassParamsVerbatim fnName paramSpec' isBody
+        )
+        iss
 
   Typed _ _ _ (ListConstructor items) ->
     all (recursiveCallsPassParamsVerbatim fnName paramSpec . getListItemExp) items
