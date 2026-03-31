@@ -55,6 +55,21 @@ usesParam name exp = case exp of
   Typed _ _ _ (Do exps) ->
     any (usesParam name) exps
 
+  Typed _ _ _ (Where scrutinee iss) ->
+    usesParam name scrutinee
+    || any (usesParamInBranch name) iss
+
+  Typed _ _ _ (Assignment _ rhs) ->
+    usesParam name rhs
+
+  _ ->
+    False
+
+
+usesParamInBranch :: String -> Is -> Bool
+usesParamInBranch name is = case is of
+  Typed _ _ _ (Is _ body) ->
+    usesParam name body
   _ ->
     False
 
