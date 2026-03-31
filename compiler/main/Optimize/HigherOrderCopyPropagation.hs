@@ -257,6 +257,68 @@ replaceFnVar newQualType fnExp newName = case fnExp of
     other
 
 
+-- Check that every recursive call to fnName in the body passes each propagated
+-- parameter verbatim (as the original param variable). If any recursive call
+-- passes a modified value (e.g. f . f instead of f), the optimization is unsafe.
+recursiveCallsPassParamsVerbatim :: String -> [String] -> Exp -> Bool
+recursiveCallsPassParamsVerbatim fnName removedParams bodyExp = case bodyExp of
+  Typed _ _ _ (Call fn args) | getVarName fn == Just fnName ->
+    -- This is a recursive call: check each removed param position passes the var verbatim
+    let zippedCheck = zip removedParams args
+        verbatim (paramName, arg) = getVarName arg == Just paramName
+    in  all verbatim zippedCheck
+        && all (recursiveCallsPassParamsVerbatim fnName removedParams) args
+
+  Typed _ _ _ (Call fn args) ->
+    recursiveCallsPassParamsVerbatim fnName removedParams fn
+    && all (recursiveCallsPassParamsVerbatim fnName removedParams) args
+
+  Typed _ _ _ (Assignment _ e) ->
+    recursiveCallsPassParamsVerbatim fnName removedParams e
+
+  Typed _ _ _ (Definition params body) ->
+    -- Shadow: if a param shadows one of the removed params, skip check inside
+    let shadowedParams = map getValue params
+        removedParams' = filter (`notElem` shadowedParams) removedParams
+    in  all (recursiveCallsPassParamsVerbatim fnName removedParams') body
+
+  Typed _ _ _ (Do exps) ->
+    all (recursiveCallsPassParamsVerbatim fnName removedParams) exps
+
+  Typed _ _ _ (If cond truthy falsy) ->
+    recursiveCallsPassParamsVerbatim fnName removedParams cond
+    && recursiveCallsPassParamsVerbatim fnName removedParams truthy
+    && recursiveCallsPassParamsVerbatim fnName removedParams falsy
+
+  Typed _ _ _ (While cond body) ->
+    recursiveCallsPassParamsVerbatim fnName removedParams cond
+    && recursiveCallsPassParamsVerbatim fnName removedParams body
+
+  Typed _ _ _ (Where e iss) ->
+    recursiveCallsPassParamsVerbatim fnName removedParams e
+    && all (\(Typed _ _ _ (Is _ isBody)) -> recursiveCallsPassParamsVerbatim fnName removedParams isBody) iss
+
+  Typed _ _ _ (ListConstructor items) ->
+    all (recursiveCallsPassParamsVerbatim fnName removedParams . getListItemExp) items
+
+  Typed _ _ _ (TupleConstructor items) ->
+    all (recursiveCallsPassParamsVerbatim fnName removedParams) items
+
+  Typed _ _ _ (Record fields) ->
+    all (recursiveCallsPassParamsVerbatim fnName removedParams . getFieldExp) fields
+
+  Typed _ _ _ (Access rec field) ->
+    recursiveCallsPassParamsVerbatim fnName removedParams rec
+    && recursiveCallsPassParamsVerbatim fnName removedParams field
+
+  Typed _ _ _ (ArrayAccess arr index) ->
+    recursiveCallsPassParamsVerbatim fnName removedParams arr
+    && recursiveCallsPassParamsVerbatim fnName removedParams index
+
+  _ ->
+    True
+
+
 -- In case of recursion ( like map ), we also need to drop the arg in the recursive call:
 --   map(f, xs) -> map(xs)
 --   to do this we need to take the function name as a parameter so that we can transform:
@@ -345,20 +407,30 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
 propagateDefinition :: FilePath -> String -> Qual Type -> [(Bool, Exp)] -> Exp -> Propagate (Maybe Exp)
 propagateDefinition path newName newQualType args exp = case exp of
   Typed _ area metadata (Assignment (Typed lhsT lhsArea lhsMetadata (Var fnName isCtor)) (Typed _ area' metadata' (Definition params body))) | length params == length args -> do
-      let propagateMap = Map.fromList $ concat $
-            zipWith
-              (\(isRemoved, arg) param -> do
-                if isRemoved then
-                  [(getValue param, arg)]
-                else
-                  []
-              )
-              args
-              params
-      let body' = map (propagateBody fnName newName newQualType propagateMap) body
-      let params' = map snd $ filter (\((throwAway, _), _) -> not throwAway) (zip args params)
+      let removedParamNames = [ getValue param
+                               | ((isRemoved, _), param) <- zip args params
+                               , isRemoved
+                               ]
+      -- Guard: every recursive call in the body must pass each removed param
+      -- verbatim (as the original variable). If a recursive call passes a
+      -- modified value (e.g. f . f), specialising is unsound.
+      if not (all (recursiveCallsPassParamsVerbatim fnName removedParamNames) body) then
+        return Nothing
+      else do
+        let propagateMap = Map.fromList $ concat $
+              zipWith
+                (\(isRemoved, arg) param -> do
+                  if isRemoved then
+                    [(getValue param, arg)]
+                  else
+                    []
+                )
+                args
+                params
+        let body' = map (propagateBody fnName newName newQualType propagateMap) body
+        let params' = map snd $ filter (\((throwAway, _), _) -> not throwAway) (zip args params)
 
-      return $ Just $ Typed newQualType area metadata (Assignment (Typed lhsT lhsArea lhsMetadata (Var newName isCtor)) (Typed newQualType area' metadata' (Definition params' body')))
+        return $ Just $ Typed newQualType area metadata (Assignment (Typed lhsT lhsArea lhsMetadata (Var newName isCtor)) (Typed newQualType area' metadata' (Definition params' body')))
 
   Typed _ area metadata (Export e) -> do
     e' <- propagateDefinition path newName newQualType args e

@@ -1,0 +1,34 @@
+import IO from "IO"
+
+
+// Regression test: HOCP must NOT specialize a function when the
+// higher-order parameter is modified in the recursive call.
+//
+// weirdMap passes (f . f) instead of f in the recursive call.
+// If HOCP specializes this with inc, the recursive call becomes
+// weirdMap_opt(inc . inc, xs) which passes 2 args to a 1-param function,
+// corrupting the output.
+
+compose :: (b -> c) -> (a -> b) -> a -> c
+compose = (f, g, x) => f(g(x))
+
+weirdMap :: (Integer -> Integer) -> List Integer -> List Integer
+weirdMap = (f, list) => where(list) {
+  [x, ...rest] =>
+    [f(x), ...weirdMap(compose(f, f), rest)]
+
+  [] =>
+    []
+}
+
+inc :: Integer -> Integer
+inc = (x) => x + 1
+
+main = () => {
+  // weirdMap(inc, [0, 0, 0, 0]) should produce [1, 2, 4, 8]:
+  //   Step 0: f=inc,          x=0 -> inc(0)=1
+  //   Step 1: f=inc.inc,      x=0 -> inc(inc(0))=2
+  //   Step 2: f=inc.inc.inc.inc, x=0 -> 4
+  //   Step 3: f composed 8x,  x=0 -> 8
+  IO.log(weirdMap(inc, [0, 0, 0, 0]))
+}

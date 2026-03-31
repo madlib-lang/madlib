@@ -279,6 +279,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/trmc-concat-empty"
         , "compiler/test/Blackbox/test-cases/hocp-pattern-var-shadow"
         , "compiler/test/Blackbox/test-cases/hocp-where-pattern-shadows-hof"
+        , "compiler/test/Blackbox/test-cases/hocp-mutating-hof-recursive-call"
         , "compiler/test/Blackbox/test-cases/simplifycalls-repeat-used-twice"
         , "compiler/test/Blackbox/test-cases/simplifycalls-repeat-direct-use"
         , "compiler/test/Blackbox/test-cases/simplifycalls-repeat-raw-use"
