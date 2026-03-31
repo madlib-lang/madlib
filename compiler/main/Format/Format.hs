@@ -277,9 +277,8 @@ jsxChildrenToDoc :: [Comment] -> [JsxChild] -> (Pretty.Doc ann, [Comment])
 jsxChildrenToDoc comments children = case children of
   (JsxChild (Source area _ (LStr s)) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
-        -- We need to remove the leading and trailing double quote
-        s'                       = init (tail s)
-        exp'                     = commentsDoc <> Pretty.pretty s'
+        -- JSX text content is stored as raw text (no surrounding quotes)
+        exp'                     = commentsDoc <> Pretty.pretty s
         (more', comments'')      = jsxChildrenToDoc comments' more
     in  (exp' <> (if null more then emptyDoc else Pretty.line') <> more', comments'')
 

@@ -1,0 +1,21 @@
+import IO from "IO"
+
+
+// Regression test: curried functions with a local variable name matching
+// an inner lambda parameter must produce correct results.
+//
+// `addArg` has type Integer -> Integer -> Integer.
+// In Core, this is compiled as a two-parameter Definition ["arg", "n"],
+// so partial application `addArg(n)` does NOT trigger inlining
+// (arity 1 != 2 params). The call is preserved and evaluated correctly.
+//
+// f(10) should be 10 + n = 10 + 5 = 15
+
+addArg :: Integer -> Integer -> Integer
+addArg = (arg) => (n) => n + arg
+
+main = () => {
+  n = 5
+  f = addArg(n)
+  IO.log(f(10))
+}
