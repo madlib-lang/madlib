@@ -1,0 +1,34 @@
+import IO from "IO"
+
+
+// Regression test: the inliner must not capture variables from the call site
+// when the body binding appears inside a nested do block (inside an if branch),
+// not at top-level sequence position.
+//
+// `nested` is small enough to be inlined (body size <= threshold).
+// Its truthy branch introduces a local binding `z` (inside a `do` block),
+// which is also the name of the first argument passed at the call site.
+//
+// If avoidCapture only scans top-level sequential bindings (and misses bindings
+// inside nested do/if blocks), the substitution {x -> Var "z"} into `z + x`
+// inside the truthy branch will resolve x to the newly-bound z (= 1) rather
+// than the caller's z (= 0), producing 1 + 1 = 2 instead of the correct 1 + 0 = 1.
+
+nested :: Integer -> Boolean -> Integer
+nested = (x, c) =>
+  if (c) {
+    do {
+      z = 1
+      return z + x
+    }
+  } else {
+    do {
+      return x
+    }
+  }
+
+main = () => {
+  z = 0
+  // nested(z, true) should be 1 + z = 1 + 0 = 1
+  IO.log(nested(z, true))
+}

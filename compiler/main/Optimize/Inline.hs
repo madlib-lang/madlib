@@ -414,12 +414,34 @@ renameInExp oldName newName exp@(Typed qt area meta e) = case e of
 renameInExp _ _ exp = exp
 
 
--- | Collect top-level let-binding names from a sequential body (not inside nested lambdas).
-collectTopLevelBindingNames :: [Exp] -> S.Set Name
-collectTopLevelBindingNames = foldl go S.empty
+-- | Collect ALL let-binding names reachable in a body, including those inside
+-- nested Do/If/Where blocks, but NOT crossing into nested lambda boundaries.
+-- This is used by avoidCapture to detect any name that could shadow a
+-- substituted argument variable, even if the binding is inside an if-branch.
+collectAllBindingNames :: [Exp] -> S.Set Name
+collectAllBindingNames = foldl goExp S.empty
   where
-    go acc (Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) _)) = S.insert n acc
-    go acc _                                                     = acc
+    goExp acc (Typed _ _ _ e) = goExp_ acc e
+    goExp acc _               = acc
+
+    goExp_ acc e = case e of
+      Assignment (Typed _ _ _ (Var n _)) rhs ->
+        goExp (S.insert n acc) rhs
+      Assignment lhs rhs ->
+        goExp (goExp acc lhs) rhs
+      Do exps ->
+        foldl goExp acc exps
+      If c t f ->
+        foldl goExp acc [c, t, f]
+      Where scrutinee iss ->
+        foldl (\a (Typed _ _ _ (Is _ body)) -> goExp a body) (goExp acc scrutinee) iss
+      -- Don't cross into nested lambdas (they have their own binding scope)
+      Definition _ _ ->
+        acc
+      Call fn args ->
+        foldl goExp (goExp acc fn) args
+      _ ->
+        acc
 
 
 -- | Before substituting into a body, rename any local bindings that clash with
@@ -427,7 +449,7 @@ collectTopLevelBindingNames = foldl go S.empty
 -- a substituted Var "z" would accidentally resolve to an inner binding named "z".
 avoidCapture :: S.Set Name -> [Exp] -> [Exp]
 avoidCapture freeArgVars body =
-  let localBindings  = collectTopLevelBindingNames body
+  let localBindings  = collectAllBindingNames body
       clashingNames  = S.intersection localBindings freeArgVars
   in  S.foldl renameClash body clashingNames
   where
