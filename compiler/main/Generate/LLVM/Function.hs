@@ -355,7 +355,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
         mapM
           (\(param, coreParam) -> do
             ptr <- alloca (typeOf param) Nothing 0
-            storeWithMetadata (makeDILocation env (Core.getArea coreParam)) ptr 0 param
+            storeWithMetadata (makeDILocation env' (Core.getArea coreParam)) ptr 0 param
             return ptr
           )
           (List.zip unboxedParams coreParams)
@@ -549,10 +549,10 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
               return (paramName, localVarSymbol param unboxed, unboxed)
             else do
               unboxed <- unbox env' symbolTable paramQt param
-              Monad.when (envIsDebugBuild env) $ do
+              Monad.when (envIsDebugBuild env') $ do
                 ptr <- alloca (typeOf unboxed) Nothing 0
-                declareVariable env paramArea False paramName ptr
-                storeWithMetadata (makeDILocation env paramArea) ptr 0 unboxed
+                declareVariable env' paramArea False paramName ptr
+                storeWithMetadata (makeDILocation env' paramArea) ptr 0 unboxed
               return (paramName, tcoParamSymbol allocatedParam unboxed, unboxed)
         )
         (List.zip3 coreParams allocatedParams params)
@@ -592,10 +592,10 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
               return (paramName, localVarSymbol param unboxed, unboxed)
             else do
               unboxed <- unbox env' symbolTable paramQt param
-              Monad.when (envIsDebugBuild env) $ do
+              Monad.when (envIsDebugBuild env') $ do
                 ptr <- alloca (typeOf unboxed) Nothing 0
-                declareVariable env paramArea False paramName ptr
-                storeWithMetadata (makeDILocation env paramArea) ptr 0 unboxed
+                declareVariable env' paramArea False paramName ptr
+                storeWithMetadata (makeDILocation env' paramArea) ptr 0 unboxed
               -- Cache the original boxed param (i8*) to avoid re-boxing when forwarding
               return (paramName, Symbol (BoxedVariableSymbol param) unboxed, unboxed)
         )
