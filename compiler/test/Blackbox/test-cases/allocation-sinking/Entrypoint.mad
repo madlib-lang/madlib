@@ -1,0 +1,17 @@
+import IO from "IO"
+
+
+// Regression test: AllocationSinking was matching Literal(LStr field) for
+// record field access, but Core uses Var('.'+fieldName). The optimization
+// was silently a no-op. Verify that record construction followed by field
+// access produces correct results.
+
+getX = (r) => r.x
+getY = (r) => r.y
+
+main = () => {
+  p = { x: 10, y: 20 }
+  IO.log(getX(p))
+  IO.log(getY(p))
+  IO.log(p.x + p.y)
+}

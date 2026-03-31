@@ -125,7 +125,7 @@ rewriteRecordAccess :: String -> Map.Map String Exp -> Exp -> Maybe Exp
 rewriteRecordAccess name fields exp = case exp of
   Typed qt area metadata (Assignment lhs rhs) ->
     fmap (Typed qt area metadata . Assignment lhs) (rewriteRecordAccess name fields rhs)
-  Typed qt area metadata (Access (Typed _ _ _ (Var varName _)) (Typed _ _ _ (Literal (LStr fieldName))))
+  Typed qt area metadata (Access (Typed _ _ _ (Var varName _)) (Typed _ _ _ (Var ('.':fieldName) _)))
     | varName == name ->
       Map.lookup fieldName fields
   _ -> Nothing
