@@ -286,6 +286,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/trmc-filter-like"
         , "compiler/test/Blackbox/test-cases/inline-variable-capture"
         , "compiler/test/Blackbox/test-cases/inline-nested-capture"
+        , "compiler/test/Blackbox/test-cases/inline-where-pattern-capture"
         ]
 
   forM_ cases $ \casePath -> do

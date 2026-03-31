@@ -1,0 +1,32 @@
+import IO from "IO"
+
+
+// Regression test: the inliner must not capture variables from the call site
+// when the body has a where-branch that binds a variable with the same name
+// as an argument from the call site, via a pattern (not an Assignment).
+//
+// `headPlusOffset` body size is at the inline threshold.
+// Its where branch binds `z` via the list pattern `[z, ...rest]`.
+// The second parameter is named `x` (to be substituted with the caller's `z`).
+//
+// If avoidCapture misses pattern-bound names (it collects only Assignment bindings),
+// substitution {x -> Var "z"} inside the branch body `z + x` becomes `z + z`,
+// where both reference the pattern-bound z rather than the caller's z (= 5).
+// This produces z_head + z_head instead of z_head + 5.
+
+headPlusOffset :: List Integer -> Integer -> Integer
+headPlusOffset = (xs, x) =>
+  where(xs) {
+    [z, ...rest] =>
+      z + x
+
+    [] =>
+      x
+  }
+
+main = () => {
+  z = 5
+  myList = [10, 20, 30]
+  // headPlusOffset(myList, z) should be myList[0] + z = 10 + 5 = 15
+  IO.log(headPlusOffset(myList, z))
+}

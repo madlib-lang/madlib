@@ -415,9 +415,11 @@ renameInExp _ _ exp = exp
 
 
 -- | Collect ALL let-binding names reachable in a body, including those inside
--- nested Do/If/Where blocks, but NOT crossing into nested lambda boundaries.
+-- nested Do/If/Where blocks (including pattern-bound variables in where branches),
+-- but NOT crossing into nested lambda boundaries.
 -- This is used by avoidCapture to detect any name that could shadow a
--- substituted argument variable, even if the binding is inside an if-branch.
+-- substituted argument variable, even if the binding is inside an if-branch
+-- or a pattern.
 collectAllBindingNames :: [Exp] -> S.Set Name
 collectAllBindingNames = foldl goExp S.empty
   where
@@ -434,7 +436,14 @@ collectAllBindingNames = foldl goExp S.empty
       If c t f ->
         foldl goExp acc [c, t, f]
       Where scrutinee iss ->
-        foldl (\a (Typed _ _ _ (Is _ body)) -> goExp a body) (goExp acc scrutinee) iss
+        -- Collect both pattern-bound variables AND body bindings from each branch.
+        -- Pattern variables (PVar) can shadow arg-variable names just like
+        -- let-bindings: if the inlined body has `[z, ...rest] => z + x`
+        -- and we substitute {x -> Var "z"}, the body becomes `z + z` where
+        -- both z's resolve to the pattern-bound z rather than the caller's z.
+        foldl (\a (Typed _ _ _ (Is pat body)) ->
+          goExp (S.union a (collectPatternVars pat)) body
+        ) (goExp acc scrutinee) iss
       -- Don't cross into nested lambdas (they have their own binding scope)
       Definition _ _ ->
         acc
@@ -536,10 +545,25 @@ substituteInExp _ exp@(Untyped _ _ _) = exp
 
 substIs :: M.Map Name Exp -> Is -> Is
 substIs subst (Typed qt area meta (Is pat e)) =
-  -- Shadow pattern-bound variables
+  -- Shadow pattern-bound variables: remove them from the substitution so that
+  -- pattern-bound names are not replaced by arg expressions in the branch body.
+  -- Additionally, if a pattern-bound variable's name appears FREE in any
+  -- substitution value (e.g. pattern binds `z` and subst has `{x -> Var "z"}`),
+  -- alpha-rename that pattern variable and its body occurrences to avoid capture:
+  -- otherwise the substituted `Var "z"` would resolve to the pattern-bound `z`
+  -- rather than the caller's `z`.
   let patVars = collectPatternVars pat
-      subst' = M.filterWithKey (\k _ -> k `S.notMember` patVars) subst
-  in  Typed qt area meta (Is pat (substituteInExp subst' e))
+      -- Collect all free var names that appear in substitution values
+      substFreeVars = M.foldl (\acc e -> S.union acc (collectVarsInExp e)) S.empty subst
+      -- Pattern vars that clash with free vars in substitution values
+      clashingPatVars = S.intersection patVars substFreeVars
+      -- Alpha-rename clashing pattern vars: both in the pattern and the body
+      (pat', e') = S.foldl (\(p, b) n ->
+          let fresh = "$" <> n <> "_is"
+          in  (renamePatternVar n fresh p, renameInExp n fresh b)
+        ) (pat, e) clashingPatVars
+      subst' = M.filterWithKey (\k _ -> k `S.notMember` collectPatternVars pat') subst
+  in  Typed qt area meta (Is pat' (substituteInExp subst' e'))
 
 substListItem :: M.Map Name Exp -> ListItem -> ListItem
 substListItem subst (Typed qt area meta li) = case li of
@@ -550,6 +574,29 @@ substField :: M.Map Name Exp -> Field -> Field
 substField subst (Typed qt area meta f) = case f of
   Field (name, e)  -> Typed qt area meta (Field (name, substituteInExp subst e))
   FieldSpread e    -> Typed qt area meta (FieldSpread (substituteInExp subst e))
+
+
+-- | Rename a single PVar binding in a pattern (used to alpha-rename pattern
+-- variables that would capture substituted argument variables).
+renamePatternVar :: Name -> Name -> Pattern -> Pattern
+renamePatternVar oldName newName (Typed qt area meta p) = case p of
+  PVar n | n == oldName ->
+    Typed qt area meta (PVar newName)
+  PCon c pats ->
+    Typed qt area meta (PCon c (renamePatternVar oldName newName <$> pats))
+  PRecord fields restName ->
+    let fields' = renamePatternVar oldName newName <$> fields
+        restName' = if restName == Just oldName then Just newName else restName
+    in  Typed qt area meta (PRecord fields' restName')
+  PList pats ->
+    Typed qt area meta (PList (renamePatternVar oldName newName <$> pats))
+  PTuple pats ->
+    Typed qt area meta (PTuple (renamePatternVar oldName newName <$> pats))
+  PSpread spread ->
+    Typed qt area meta (PSpread (renamePatternVar oldName newName spread))
+  _ ->
+    Typed qt area meta p
+renamePatternVar _ _ pat = pat
 
 
 -- | Collect variable names bound by a pattern
