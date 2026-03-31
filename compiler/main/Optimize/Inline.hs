@@ -286,7 +286,9 @@ inlineInExp candidates exp@(Typed qt area meta e) = case e of
     Typed qt area meta (Call (inlineInExp candidates fn) (inlineInExp candidates <$> args))
 
   Definition params body ->
-    Typed qt area meta (Definition params (inlineInExp candidates <$> body))
+    let paramNames = S.fromList (getValue <$> params)
+        candidates' = M.filterWithKey (\k _ -> k `S.notMember` paramNames) candidates
+    in  Typed qt area meta (Definition params (inlineInExp candidates' <$> body))
 
   Assignment lhs rhs ->
     Typed qt area meta (Assignment (inlineInExp candidates lhs) (inlineInExp candidates rhs))
