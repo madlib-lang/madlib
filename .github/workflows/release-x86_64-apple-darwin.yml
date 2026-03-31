@@ -8,14 +8,14 @@ on:
         required: true
 
 env:
-  node-version: 14.x
+  node-version: 20.x
   HOMEBREW_NO_INSTALL_FROM_API:
 
 jobs:
   release:
     runs-on: macos-12
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - run: brew config
       - run: brew untap homebrew/core homebrew/cask
@@ -38,7 +38,7 @@ jobs:
         run: stack config set system-ghc --global true
 
       - name: Use Node.js ${{ env.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.node-version }}
 

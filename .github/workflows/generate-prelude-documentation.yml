@@ -3,16 +3,16 @@ name: 'Generate prelude documentation'
 on:
   workflow_dispatch
 env:
-  node-version: 14.x
+  node-version: 20.x
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Use Node.js ${{ env.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.node-version }}
 
@@ -33,7 +33,7 @@ jobs:
           node build/src/maddoc-cli.js ../../prelude/__internal__
 
       - name: Publish documentation
-        uses: JamesIves/github-pages-deploy-action@4.1.1
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: docs
           folder: .github/workflows/.docs

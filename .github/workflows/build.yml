@@ -4,7 +4,7 @@ jobs:
   test:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Install haskell
         run: |
@@ -23,7 +23,7 @@ jobs:
 
       - run: sudo apt-get install -y lcov llvm-12 nasm
 
-      - uses: actions/cache@v2.1.3
+      - uses: actions/cache@v4
         name: Cache ~/.stack
         with:
           path: ~/.stack
@@ -43,7 +43,7 @@ jobs:
           cd .github/workflows
           node update-cov.mjs
 
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v4
         with:
           files: ./coverage/codecov.json
           # flags: unittests # optional
