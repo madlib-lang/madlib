@@ -184,8 +184,11 @@ void __main__init__(int argc, char **argv) {
   madlib__stack__init(stackBottom, __main__start__);
 }
 
+void madlib__gc__configureAfterInit();
+
 void madlib__process__internal__initExtra() {
   GC_INIT();
+  madlib__gc__configureAfterInit();
   if (getenv("UV_THREADPOOL_SIZE") == NULL) {
     unsigned int cpuCount = std::thread::hardware_concurrency();
     if (cpuCount == 0) {

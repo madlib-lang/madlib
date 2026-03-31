@@ -82,6 +82,22 @@ static void reserveHeapForListCount(int64_t count, size_t multiplier) {
   }
 }
 
+static GC_warn_proc originalWarnProc = NULL;
+
+static void madlib__gc__warnProc(char *msg, GC_word arg) {
+  if (strstr(msg, "very large block") != NULL) {
+    return;
+  }
+  if (originalWarnProc != NULL) {
+    originalWarnProc(msg, arg);
+  }
+}
+
+void madlib__gc__configureAfterInit() {
+  originalWarnProc = GC_get_warn_proc();
+  GC_set_warn_proc(madlib__gc__warnProc);
+}
+
 void __setFreeSpaceDivisor__() {
   GC_set_free_space_divisor(1);
 }

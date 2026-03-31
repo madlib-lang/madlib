@@ -207,8 +207,11 @@ void __initEventLoopOnly__() {
   uv_loop_init(loop);
 }
 
+void madlib__gc__configureAfterInit();
+
 void __initEventLoop__() {
   GC_INIT();
+  madlib__gc__configureAfterInit();
   curl_global_init(CURL_GLOBAL_ALL);
   curl_global_init_mem(CURL_GLOBAL_ALL, GC_mallocWrap, GC_freeWrap,
                        GC_reallocWrap, GC_strdupWrap, GC_callocWrap);
