@@ -274,6 +274,10 @@ spec = do
         , "compiler/test/Blackbox/test-cases/tce-addition-in-where"
         , "compiler/test/Blackbox/test-cases/tce-addition-with-plain-branch"
         , "compiler/test/Blackbox/test-cases/tce-addition-branch-order"
+        , "compiler/test/Blackbox/test-cases/tce-multiplication-with-normalizing-branch"
+        , "compiler/test/Blackbox/test-cases/trmc-concat-empty"
+        , "compiler/test/Blackbox/test-cases/hocp-pattern-var-shadow"
+        , "compiler/test/Blackbox/test-cases/hocp-where-pattern-shadows-hof"
         ]
 
   forM_ cases $ \casePath -> do
@@ -288,6 +292,7 @@ spec = do
 
   let coverageCases =
         [ "compiler/test/Blackbox/test-cases/hocp-coverage-tce"
+        , "compiler/test/Blackbox/test-cases/tce-addition-with-coverage"
         ]
 
   forM_ coverageCases $ \casePath -> do

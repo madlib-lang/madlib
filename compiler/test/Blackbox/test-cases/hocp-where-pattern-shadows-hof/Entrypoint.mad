@@ -1,0 +1,31 @@
+import IO from "IO"
+
+// Test that HOCP correctly propagates a known function into a where expression
+// and that the result is semantically correct.
+// This exercises the propagateBody Where case.
+myMap :: (Integer -> Integer) -> List Integer -> List Integer
+myMap = (f, list) => where(list) {
+  [x, ...rest] =>
+    [f(x), ...myMap(f, rest)]
+
+  [] =>
+    []
+}
+
+double :: Integer -> Integer
+double = (x) => x * 2
+
+addTen :: Integer -> Integer
+addTen = (x) => x + 10
+
+main = () => {
+  // HOCP should specialize myMap for known 'double' and 'addTen' functions
+  IO.log(myMap(double, [1, 2, 3]))   // [2, 4, 6]
+  IO.log(myMap(addTen, [1, 2, 3]))   // [11, 12, 13]
+  IO.log(myMap(double, []))           // []
+
+  // Chained: double then addTen
+  step1 = myMap(double, [5, 10])
+  step2 = myMap(addTen, step1)
+  IO.log(step2)  // [20, 30]
+}

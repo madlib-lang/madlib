@@ -1,0 +1,14 @@
+import IO from "IO"
+
+// Tests arithmetic TCO (addition recursion) under coverage instrumentation.
+// Coverage wraps sub-expressions in Do blocks; if the LLVM backend doesn't
+// handle those wrappers, the TCO pattern fails to match and behavior is wrong.
+sumN :: Integer -> Integer
+sumN = (n) => n == 0 ? 0 : n + sumN(n - 1)
+
+main = () => {
+  IO.log(sumN(10))   // 55
+  IO.log(sumN(0))    // 0
+  IO.log(sumN(1))    // 1
+  IO.log(sumN(5))    // 15
+}

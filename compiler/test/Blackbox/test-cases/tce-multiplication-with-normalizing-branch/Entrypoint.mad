@@ -1,0 +1,16 @@
+import IO from "IO"
+
+// productAbs: product of absolute values of 1..abs(n)
+// Has a normalizing branch (PlainRecursion for negative n)
+// and a multiplication branch (MultiplicationRecursion for positive n).
+// After our combineRecursionKinds fix, this should be PlainRecursion TCO
+// instead of incorrectly being MultiplicationRecursion TCO.
+productAbs :: Integer -> Integer
+productAbs = (n) => n == 0 ? 1 : n < 0 ? productAbs(0 - n) : n * productAbs(n - 1)
+
+main = () => {
+  IO.log(productAbs(5))       // 120
+  IO.log(productAbs(0 - 5))   // 120
+  IO.log(productAbs(0))       // 1
+  IO.log(productAbs(1))       // 1
+}

@@ -1,0 +1,8 @@
+import IO from "IO"
+
+main = () => {
+  IO.log([1, 2, 3] ++ [])
+  IO.log([] ++ [1, 2, 3])
+  IO.log([] ++ [])
+  IO.log([1] ++ [2])
+}
