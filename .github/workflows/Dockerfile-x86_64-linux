@@ -40,7 +40,7 @@ RUN stack config set system-ghc --global true
 ENV PATH="$(stack path --bin-path):$PATH"
 
 # setup node and rollup
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt-get install -y nodejs
 RUN npm i -g esbuild@v0.20.0
 
