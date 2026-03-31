@@ -402,7 +402,12 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
 
   Typed qt area metadata (Where e iss) ->
     let e' = propagateBody fnName newFnName newQualType propagateMap e
-        iss' = map (mapIs $ propagateBody fnName newFnName newQualType propagateMap) iss
+        propagateBranch (Typed qt' area' metadata' (Is pat isBody)) =
+          let patVarNames = Set.fromList (getPatternVars pat)
+              propagateMap' = Map.filterWithKey (\k _ -> k `Set.notMember` patVarNames) propagateMap
+          in  Typed qt' area' metadata' (Is pat (propagateBody fnName newFnName newQualType propagateMap' isBody))
+        propagateBranch other = other
+        iss' = map propagateBranch iss
     in  Typed qt area metadata (Where e' iss')
 
   or ->
