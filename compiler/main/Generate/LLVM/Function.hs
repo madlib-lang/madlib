@@ -403,8 +403,12 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
 
               -- prevEnd tracks the last processed node so RecursionEnd can link
               -- the base-case expression (e.g. [] or the second arg of ++)
-              prevEndPtr  <- alloca listType Nothing 0
+              prevEndPtr   <- alloca listType Nothing 0
               store prevEndPtr 0 start'
+
+              -- anyNodeAdded: dummy for in-place path (prevEnd serves the same role)
+              anyNodeAdded' <- alloca Type.i1 Nothing 0
+              store anyNodeAdded' 0 (Operand.ConstantOperand (Constant.Int 1 0))
 
               return $
                 RightListRecursionData
@@ -418,6 +422,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   , arenaCapacity = arenaCap'
                   , chunkTracker = Nothing
                   , prevEnd = Just prevEndPtr
+                  , anyNodeAdded = anyNodeAdded'
                   }
             else if Core.isRightListRecursiveDefinition metadata then do
               let nodeType = Type.StructureType False [boxType, boxType]
@@ -443,8 +448,11 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
               arenaCap'    <- alloca Type.i64 Nothing 0
               store arenaCap' 0 (i64ConstOp (fromIntegral initialChunkSize))
 
-              end         <- alloca listType Nothing 0
+              end            <- alloca listType Nothing 0
               store end 0 start'
+
+              anyNodeAdded'  <- alloca Type.i1 Nothing 0
+              store anyNodeAdded' 0 (Operand.ConstantOperand (Constant.Int 1 0))
 
               return $
                 RightListRecursionData
@@ -458,6 +466,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   , arenaCapacity = arenaCap'
                   , chunkTracker = Nothing
                   , prevEnd = Nothing
+                  , anyNodeAdded = anyNodeAdded'
                   }
             else if Core.isConstructorRecursiveDefinition metadata then do
               let returnType = IT.getReturnType t

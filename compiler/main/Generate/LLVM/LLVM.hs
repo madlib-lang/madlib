@@ -546,15 +546,16 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     -- In-place end: link the base-case expression to the last processed node's next field.
     -- For map (base case []), this is a no-op (stores null into an already-null next).
     -- For ++ (base case b), this links the second list to the last node.
-    -- Special case: if the input list was empty (prevEnd is null), return the end expression
-    -- directly — no nodes were processed so there's nothing to link.
+    -- Special case: if no InPlaceListRecursiveCall ever fired (e.g. filter removed all elements,
+    -- or the input list was empty), return the end expression directly.
     (_, endList, _) <- generateExp env symbolTable (Core.Typed qt area [] e)
-    let Just startOperand = start <$> recursionData env
-    let Just prevEndPtr   = prevEnd =<< recursionData env
-    prevEnd' <- load prevEndPtr 0
+    let Just startOperand  = start        <$> recursionData env
+    let Just prevEndPtr    = prevEnd =<< recursionData env
+    let Just anyNodeAdded' = anyNodeAdded <$> recursionData env
+    prevEnd'   <- load prevEndPtr 0
+    nodeAdded  <- load anyNodeAdded' 0
 
-    isNull <- icmp IntegerPredicate.EQ prevEnd' (Operand.ConstantOperand (Constant.Null listType))
-    condBr isNull emptyBlock linkBlock
+    condBr nodeAdded linkBlock emptyBlock
 
     linkBlock <- block `named` "inplace.link"
     endListRaw <- addrspacecast endList boxType
@@ -568,20 +569,36 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     result <- phi [(startOperand, linkBlock), (endList, emptyBlock)]
     return (symbolTable, result, Nothing)
 
-  Core.Typed qt area metadata e | Core.isRightListRecursionEnd metadata -> do
-    -- TODO: generate exp without the metadata and append its result to the end
+  Core.Typed qt area metadata e | Core.isRightListRecursionEnd metadata -> mdo
+    -- Generate the base-case expression (e.g. [] or a tail list)
     (_, endList, _) <- generateExp env symbolTable (Core.Typed qt area [] e)
-    endValue        <- gep endList [i32ConstOp 0, i32ConstOp 0]
-    endValue'       <- load endValue 0
-    endNext         <- gep endList [i32ConstOp 0, i32ConstOp 1]
-    endNext'        <- load endNext 0
 
-    let Just startOperand = start <$> recursionData env
-    let Just endPtr       = end <$> recursionData env
-    end' <- load endPtr 0
+    let Just startOperand  = start        <$> recursionData env
+    let Just endPtr        = end          <$> recursionData env
+    let Just anyNodeAdded' = anyNodeAdded <$> recursionData env
+    end'       <- load endPtr 0
+    nodeAdded  <- load anyNodeAdded' 0
+
+    -- If no ListRecursiveCall ever fired (e.g. filter removed all elements),
+    -- return the base-case expression directly; the uninitialized arena sentinel
+    -- is not a valid list value the runtime would recognise.
+    condBr nodeAdded appendBlock emptyBlock
+
+    appendBlock <- block `named` "trmc.append"
+    endValue  <- gep endList [i32ConstOp 0, i32ConstOp 0]
+    endValue' <- load endValue 0
+    endNext   <- gep endList [i32ConstOp 0, i32ConstOp 1]
+    endNext'  <- load endNext 0
     storeItem end' () (endValue', 0)
     storeItem end' () (endNext', 1)
-    return (symbolTable, startOperand, Nothing)
+    br mergeBlock
+
+    emptyBlock <- block `named` "trmc.empty"
+    br mergeBlock
+
+    mergeBlock <- block `named` "trmc.merge"
+    result <- phi [(startOperand, appendBlock), (endList, emptyBlock)]
+    return (symbolTable, result, Nothing)
 
   Core.Typed qt area metadata e | Core.isConstructorRecursionEnd metadata -> do
     -- TODO: generate exp without the metadata and append its result to the end
@@ -1261,13 +1278,15 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
       Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
     ]) | Core.isInPlaceListRecursiveCall metadata -> do
       -- In-place: overwrite the current input node's value field; advance via its original next ptr.
-      let Just continue   = continueRef <$> recursionData env
-      let Just params     = boxedParams <$> recursionData env
-      let Just endPtr     = end <$> recursionData env
-      let Just prevEndPtr = prevEnd =<< recursionData env
+      let Just continue      = continueRef  <$> recursionData env
+      let Just params        = boxedParams  <$> recursionData env
+      let Just endPtr        = end          <$> recursionData env
+      let Just prevEndPtr    = prevEnd =<< recursionData env
+      let Just anyNodeAdded' = anyNodeAdded <$> recursionData env
       endValue <- load endPtr 0   -- current input node (listType, addrspace 1)
 
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+      store anyNodeAdded' 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
       -- Save current node as prevEnd (for RecursionEnd to link the base-case expression)
       store prevEndPtr 0 endValue
@@ -1302,12 +1321,14 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
       Core.Typed _ area _ (Core.ListItem li),
       Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
     ]) | Core.isRightListRecursiveCall metadata -> do
-      let Just continue = continueRef <$> recursionData env
-      let Just params   = boxedParams <$> recursionData env
-      let Just endPtr   = end <$> recursionData env
+      let Just continue      = continueRef  <$> recursionData env
+      let Just params        = boxedParams  <$> recursionData env
+      let Just endPtr        = end          <$> recursionData env
+      let Just anyNodeAdded' = anyNodeAdded <$> recursionData env
       endValue <- load endPtr 0
 
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+      store anyNodeAdded' 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
       args'  <- mapM (generateExp env symbolTable) args
       let unboxedArgs = (\(_, x, _) -> x) <$> args'
@@ -1340,12 +1361,14 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
       Core.Typed _ area2 _ (Core.ListItem li2),
       Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
     ]) | Core.isRightListRecursiveCall metadata -> do
-      let Just continue = continueRef <$> recursionData env
-      let Just params   = boxedParams <$> recursionData env
-      let Just endPtr   = end <$> recursionData env
+      let Just continue      = continueRef  <$> recursionData env
+      let Just params        = boxedParams  <$> recursionData env
+      let Just endPtr        = end          <$> recursionData env
+      let Just anyNodeAdded' = anyNodeAdded <$> recursionData env
       endValue <- load endPtr 0
 
       store continue 0 (Operand.ConstantOperand (Constant.Int 1 1))
+      store anyNodeAdded' 0 (Operand.ConstantOperand (Constant.Int 1 1))
 
       args'  <- mapM (generateExp env symbolTable) args
       let unboxedArgs = (\(_, x, _) -> x) <$> args'

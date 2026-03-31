@@ -1,0 +1,56 @@
+import IO from "IO"
+
+// A custom filter function using where-pattern
+// One branch builds [x, ...rest] (ListRecursion), the other just calls recursively (PlainRecursion)
+// combineRecursionKinds should classify this as ListRecursion
+myFilter :: (a -> Boolean) -> List a -> List a
+myFilter = (pred, list) => where(list) {
+  [x, ...rest] =>
+    pred(x)
+      ? [x, ...myFilter(pred, rest)]
+      : myFilter(pred, rest)
+
+  [] =>
+    []
+}
+
+// A custom map using where-pattern (straightforward TRMC case)
+myMap :: (a -> b) -> List a -> List b
+myMap = (f, list) => where(list) {
+  [x, ...rest] =>
+    [f(x), ...myMap(f, rest)]
+
+  [] =>
+    []
+}
+
+// A takeWhile-like function: produces a prefix of the list
+myTakeWhile :: (a -> Boolean) -> List a -> List a
+myTakeWhile = (pred, list) => where(list) {
+  [x, ...rest] =>
+    pred(x)
+      ? [x, ...myTakeWhile(pred, rest)]
+      : []
+
+  [] =>
+    []
+}
+
+main = () => {
+  // Basic filter
+  IO.log(myFilter((x) => x > 2, [1, 2, 3, 4, 5]))   // [3, 4, 5]
+  IO.log(myFilter((x) => x > 10, [1, 2, 3]))          // []
+  IO.log(myFilter((x) => x < 10, [1, 2, 3]))          // [1, 2, 3]
+
+  // Filter with all removed
+  IO.log(myFilter((x) => x == 0, [1, 2, 3, 4]))       // []
+
+  // Map
+  IO.log(myMap((x) => x * 2, [1, 2, 3]))              // [2, 4, 6]
+  IO.log(myMap((x) => x * 2, []))                     // []
+
+  // TakeWhile
+  IO.log(myTakeWhile((x) => x < 4, [1, 2, 3, 4, 5])) // [1, 2, 3]
+  IO.log(myTakeWhile((x) => x > 0, [1, 2, 3]))        // [1, 2, 3]
+  IO.log(myTakeWhile((x) => x < 0, [1, 2, 3]))        // []
+}

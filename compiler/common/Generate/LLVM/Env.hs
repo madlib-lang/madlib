@@ -28,6 +28,7 @@ data RecursionData
       , arenaCapacity :: Operand.Operand -- chunk capacity (alloca i64)
       , chunkTracker :: Maybe Operand.Operand -- GC-visible linked list keeping atomic arena chunks alive (Nothing = non-atomic, uses gcMalloc)
       , prevEnd :: Maybe Operand.Operand -- in-place only: tracks last processed node for RecursionEnd linking
+      , anyNodeAdded :: Operand.Operand  -- alloca i1: set to 1 when any ListRecursiveCall fires; used by RecursionEnd to detect empty result
       }
   | ConstructorRecursionData
       { entryBlockName :: AST.Name
