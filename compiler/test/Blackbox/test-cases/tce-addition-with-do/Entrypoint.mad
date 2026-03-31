@@ -1,0 +1,16 @@
+import IO from "IO"
+
+// Addition-recursive function with do-notation side effect.
+// The last expression of the do block is 'n + sumWithLog(n - 1)'.
+// TCE should detect this as addition recursion and still correctly
+// execute the side effects on each iteration.
+sumWithLog :: Integer -> Integer
+sumWithLog = (n) => {
+  IO.putLine("counting: " ++ show(n))
+  return n == 0 ? 0 : n + sumWithLog(n - 1)
+}
+
+main = () => {
+  result = sumWithLog(3)
+  IO.log(result)
+}

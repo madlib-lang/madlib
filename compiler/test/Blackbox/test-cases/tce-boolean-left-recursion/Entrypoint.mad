@@ -1,0 +1,17 @@
+import IO from "IO"
+
+// hasNoFive: returns true if none of [1..n] equals 5
+// Recursion on LEFT of &&: f(n-1) && (n != 5)
+// TCE bug: if arg1 has recursion, transforms to:
+//   if (n != 5) { f(n-1) } else { false }
+// which is WRONG: it skips the recursive check when n==5
+// instead of checking f(n-1) first and short-circuiting
+hasNoFive :: Integer -> Boolean
+hasNoFive = (n) => n == 0 ? true : hasNoFive(n - 1) && n != 5
+
+main = () => {
+  IO.log(hasNoFive(4))   // true  (1,2,3,4 — no 5)
+  IO.log(hasNoFive(5))   // false (5 is present)
+  IO.log(hasNoFive(10))  // false (5 is present)
+  IO.log(hasNoFive(3))   // true  (1,2,3 — no 5)
+}

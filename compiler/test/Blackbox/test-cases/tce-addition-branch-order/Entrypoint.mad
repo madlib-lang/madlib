@@ -1,0 +1,18 @@
+import IO from "IO"
+
+// Branch order matters for combineRecursionKinds.
+// Here the AdditionRecursion branch comes FIRST, PlainRecursion second.
+// combineRecursionKinds [AdditionRecursion, PlainRecursion] should be PlainRecursion
+// but the current code returns AdditionRecursion (bug!).
+//
+// n > 0: n + sumAbs3(n - 1)   -- AdditionRecursion (first branch)
+// n < 0: sumAbs3(0 - n)       -- PlainRecursion (second branch)
+// n == 0: 0                   -- base case
+sumAbs3 :: Integer -> Integer
+sumAbs3 = (n) => n > 0 ? n + sumAbs3(n - 1) : n < 0 ? sumAbs3(0 - n) : 0
+
+main = () => {
+  IO.log(sumAbs3(5))         // 15
+  IO.log(sumAbs3(0 - 5))     // 15
+  IO.log(sumAbs3(0))         // 0
+}

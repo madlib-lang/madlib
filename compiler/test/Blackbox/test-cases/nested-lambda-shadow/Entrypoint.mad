@@ -1,0 +1,24 @@
+import IO from "IO"
+
+// Test that nested lambdas with the same parameter name don't get confused
+// by replaceVarWith during SimplifyCalls optimization.
+//
+// inner lambda has a param with the same compiler-generated name prefix as
+// the outer one — after inlining/beta-reduction, the outer substitution
+// must NOT descend into the inner lambda's body and replace its param.
+
+// applyToOne: outer param x is unused; inner lambda returns its own arg (1)
+applyToOne :: Integer -> Integer
+applyToOne = (_) => ((innerX) => innerX)(1)
+
+// addOuter: applies inner lambda to 10, then adds outer param
+addOuter :: Integer -> Integer
+addOuter = (outerX) => ((innerX) => innerX + outerX)(10)
+
+main = () => {
+  // applyToOne(99) should be 1 — inner lambda ignores outer 99
+  IO.log(applyToOne(99))
+
+  // addOuter(5) should be 15 — inner gets 10, adds outer 5
+  IO.log(addOuter(5))
+}

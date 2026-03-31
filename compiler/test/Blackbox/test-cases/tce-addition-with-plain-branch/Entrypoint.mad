@@ -1,0 +1,26 @@
+import IO from "IO"
+
+// sumPositive: sums positive numbers in a list passed as integer range
+// Has two recursive branches:
+//   n > 0: x + sumPositive(n - 1)  -- AdditionRecursion
+//   n <= 0: handled by base case 0 -- Actually just (n < 0) => sumPositive(-n)
+//
+// More specifically: a function where one branch is AdditionRecursion
+// and another branch is PlainRecursion (normalizing).
+// combineRecursionKinds should return PlainRecursion for this combo.
+sumAbs2 :: Integer -> Integer
+sumAbs2 = (n) => n == 0 ? 0 : n < 0 ? sumAbs2(0 - n) : n + sumAbs2(n - 1)
+
+// sumOnlyPositive: adds only positive values, skips negatives
+// [x>0, ...rest] => x + sumOnlyPositive(rest)  -- AdditionRecursion
+// [x<=0, ...rest] => sumOnlyPositive(rest)      -- PlainRecursion
+// combineRecursionKinds [AdditionRecursion, PlainRecursion] should be PlainRecursion
+sumOnlyPositive :: Integer -> Integer -> Integer
+sumOnlyPositive = (n, acc) => n == 0 ? acc : n > 0 ? sumOnlyPositive(n - 1, acc + n) : sumOnlyPositive(n + 1, acc)
+
+main = () => {
+  IO.log(sumAbs2(5))         // 15
+  IO.log(sumAbs2(0 - 5))     // 15
+  IO.log(sumOnlyPositive(5, 0))    // 15
+  IO.log(sumOnlyPositive(0 - 5, 0))  // 0
+}

@@ -1,0 +1,27 @@
+import IO from "IO"
+import List from "List"
+
+// A module-level list that should not be modified in-place
+sharedList :: List Integer
+sharedList = [1, 2, 3, 4, 5]
+
+// A function that returns the shared list (not a new list)
+getShared :: {} -> List Integer
+getShared = (_) => sharedList
+
+main = () => {
+  // If map dispatches to __inplace for getShared(), it would corrupt sharedList
+  // The result of getShared() is NOT a fresh temporary — it's a reference to sharedList
+  doubled = map((x) => x * 2, getShared({}))
+  IO.log(doubled)
+
+  // sharedList should be unchanged
+  IO.log(sharedList)
+
+  // Direct map on sharedList (Var) should use arena, not in-place
+  tripled = map((x) => x * 3, sharedList)
+  IO.log(tripled)
+
+  // sharedList still unchanged
+  IO.log(sharedList)
+}

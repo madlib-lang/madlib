@@ -1,0 +1,21 @@
+import IO from "IO"
+
+// A small function with a mutable local variable.
+// If the inliner doesn't respect mutations, inlining this twice at two
+// different call sites in the same function body would produce two
+// copies of the same renamed local variable, causing them to share
+// the same stack slot and corrupting results.
+addWithMutation :: Integer -> Integer -> Integer
+addWithMutation = (a, b) => {
+  result = a
+  result := result + b
+  return result
+}
+
+main = () => {
+  x = addWithMutation(1, 2)
+  y = addWithMutation(3, 4)
+  IO.log(x)
+  IO.log(y)
+  IO.log(addWithMutation(10, 20))
+}

@@ -1,0 +1,16 @@
+import IO from "IO"
+
+// Fibonacci: BOTH branches of + are recursive calls
+// f(n) = f(n-1) + f(n-2)
+// This should NOT be TCE-optimized since it has two recursive calls.
+// If it IS incorrectly TCE'd, the result would be wrong.
+fib :: Integer -> Integer
+fib = (n) => n <= 1 ? n : fib(n - 1) + fib(n - 2)
+
+main = () => {
+  IO.log(fib(0))   // 0
+  IO.log(fib(1))   // 1
+  IO.log(fib(5))   // 5
+  IO.log(fib(7))   // 13
+  IO.log(fib(10))  // 55
+}

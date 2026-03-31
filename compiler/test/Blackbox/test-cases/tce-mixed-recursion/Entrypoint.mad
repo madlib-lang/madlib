@@ -1,0 +1,17 @@
+import IO from "IO"
+
+// Function with plain tail call branches.
+// sumAcc(n, acc): sum 1..n into acc
+sumAcc :: Integer -> Integer -> Integer
+sumAcc = (n, acc) => n == 0 ? acc : n < 0 ? sumAcc(0 - n, acc) : sumAcc(n - 1, acc + n)
+
+// classify: multiple plain tail call branches
+classify :: Integer -> String
+classify = (n) => n < 0 ? classify(0 - n) : n == 0 ? "zero" : "positive"
+
+main = () => {
+  IO.log(sumAcc(10, 0))
+  IO.log(sumAcc(0 - 5, 0))
+  IO.log(classify(0 - 3))
+  IO.log(classify(0))
+}

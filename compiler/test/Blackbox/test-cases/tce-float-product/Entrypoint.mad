@@ -1,0 +1,20 @@
+import IO from "IO"
+
+// Multiplication TCE with Float
+// product of 1.0 * 2.0 * ... * n
+floatProduct :: Float -> Float
+floatProduct = (n) => n <= 1.0 ? 1.0 : n * floatProduct(n - 1.0)
+
+// Integer factorial
+factorial :: Integer -> Integer
+factorial = (n) => n <= 1 ? 1 : n * factorial(n - 1)
+
+// Sum with Float
+floatSum :: Float -> Float
+floatSum = (n) => n <= 0.0 ? 0.0 : n + floatSum(n - 1.0)
+
+main = () => {
+  IO.log(floatProduct(5.0))   // 120.0
+  IO.log(factorial(5))        // 120
+  IO.log(floatSum(4.0))       // 10.0
+}

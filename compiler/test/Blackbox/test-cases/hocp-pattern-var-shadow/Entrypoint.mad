@@ -1,0 +1,32 @@
+import IO from "IO"
+import List from "List"
+import type { Maybe } from "Maybe"
+import { Just, Nothing } from "Maybe"
+
+// Transform a list using a function 'fn', collecting only Just results.
+// 'fn' is a HOF parameter. Inside the where branch, the pattern
+// destructures a tuple as (fn, snd) — using 'fn' as a pattern variable name.
+// HOCP may try to substitute the known function for 'fn' everywhere,
+// including inside the Is branch where 'fn' is pattern-bound.
+collectJusts :: (a -> Maybe b) -> List a -> List b
+collectJusts = (fn, list) => where(list) {
+  [x, ...rest] =>
+    where(fn(x)) {
+      Just(v) =>
+        [v, ...collectJusts(fn, rest)]
+
+      Nothing =>
+        collectJusts(fn, rest)
+    }
+
+  [] =>
+    []
+}
+
+keepIfPositive :: Integer -> Maybe Integer
+keepIfPositive = (n) => n > 0 ? Just(n) : Nothing
+
+main = () => {
+  result = collectJusts(keepIfPositive, [1, -2, 3, -4, 5])
+  IO.log(result)
+}

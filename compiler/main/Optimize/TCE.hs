@@ -203,17 +203,35 @@ markTRCCalls recursionKind fnType fnName exp = case exp of
 
 combineRecursionKinds :: [Maybe RecursionKind] -> Maybe RecursionKind
 combineRecursionKinds kinds = case kinds of
-  (Just (AdditionRecursion side) : _) ->
-    Just (AdditionRecursion side)
+  (Just (AdditionRecursion side) : more) ->
+    -- If any sibling branch is PlainRecursion, fall back to PlainRecursion
+    -- (some branches skip the accumulation, so arithmetic TCO is unsafe).
+    case combineRecursionKinds more of
+      Just PlainRecursion ->
+        Just PlainRecursion
+      _ ->
+        Just (AdditionRecursion side)
 
-  (Just (MultiplicationRecursion side) : _) ->
-    Just (MultiplicationRecursion side)
+  (Just (MultiplicationRecursion side) : more) ->
+    case combineRecursionKinds more of
+      Just PlainRecursion ->
+        Just PlainRecursion
+      _ ->
+        Just (MultiplicationRecursion side)
 
-  (Just BooleanAndRecursion : _) ->
-    Just BooleanAndRecursion
+  (Just BooleanAndRecursion : more) ->
+    case combineRecursionKinds more of
+      Just PlainRecursion ->
+        Just PlainRecursion
+      _ ->
+        Just BooleanAndRecursion
 
-  (Just BooleanOrRecursion : _) ->
-    Just BooleanOrRecursion
+  (Just BooleanOrRecursion : more) ->
+    case combineRecursionKinds more of
+      Just PlainRecursion ->
+        Just PlainRecursion
+      _ ->
+        Just BooleanOrRecursion
 
   (Just (ListRecursion InPlaceRightRecursion) : more) ->
     -- In-place is only safe when all other branches are also in-place or base cases.
@@ -245,8 +263,31 @@ combineRecursionKinds kinds = case kinds of
         -- so the overall function is not 1-to-1; fall back to regular right-list.
         Just (ListRecursion RightRecursion)
 
-      or ->
-        or
+      Just (ListRecursion side) ->
+        -- A plain-recursion branch (filter's "skip" arm) alongside a list-building
+        -- branch is fine: the result is still a list recursion.
+        Just (ListRecursion side)
+
+      Just (ConstructorRecursion x) ->
+        Just (ConstructorRecursion x)
+
+      -- Arithmetic recursion kinds (AdditionRecursion, MultiplicationRecursion, etc.)
+      -- combined with PlainRecursion: some branches skip the accumulation,
+      -- so fall back to PlainRecursion TCO rather than misidentifying as arithmetic TCO.
+      Just (AdditionRecursion _) ->
+        Just PlainRecursion
+
+      Just (MultiplicationRecursion _) ->
+        Just PlainRecursion
+
+      Just BooleanAndRecursion ->
+        Just PlainRecursion
+
+      Just BooleanOrRecursion ->
+        Just PlainRecursion
+
+      _ ->
+        Just PlainRecursion
 
   (Nothing : more) ->
     combineRecursionKinds more

@@ -1,0 +1,14 @@
+import IO from "IO"
+
+// sumAbs: sum of absolute values of 1..abs(n)
+// Has a "normalizing" branch (plain tail call for negative n)
+// and an "accumulating" branch (addition recursion for positive n).
+// TCE should handle both correctly.
+sumAbs :: Integer -> Integer
+sumAbs = (n) => n == 0 ? 0 : n < 0 ? sumAbs(0 - n) : n + sumAbs(n - 1)
+
+main = () => {
+  IO.log(sumAbs(5))   // 1+2+3+4+5 = 15
+  IO.log(sumAbs(0 - 5)) // sumAbs(5) = 15
+  IO.log(sumAbs(0))   // 0
+}

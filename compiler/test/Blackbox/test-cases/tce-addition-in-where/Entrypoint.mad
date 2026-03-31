@@ -1,0 +1,33 @@
+import IO from "IO"
+import List from "List"
+
+// Addition recursion inside a where/pattern match
+// Each branch of the pattern has different recursion kinds:
+//   [x, ...rest] => x + sumList(rest)   -- AdditionRecursion
+//   []           => 0                    -- base case (Nothing)
+// combineRecursionKinds [AdditionRecursion, Nothing] = AdditionRecursion
+sumList :: List Integer -> Integer
+sumList = (xs) => where(xs) {
+  [x, ...rest] =>
+    x + sumList(rest)
+
+  [] =>
+    0
+}
+
+// Product of list elements — MultiplicationRecursion inside where
+productList :: List Integer -> Integer
+productList = (xs) => where(xs) {
+  [x, ...rest] =>
+    x * productList(rest)
+
+  [] =>
+    1
+}
+
+main = () => {
+  IO.log(sumList([1, 2, 3, 4, 5]))      // 15
+  IO.log(productList([1, 2, 3, 4, 5]))  // 120
+  IO.log(sumList([]))                    // 0
+  IO.log(productList([]))                // 1
+}

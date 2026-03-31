@@ -1,0 +1,70 @@
+import IO from "IO"
+import List from "List"
+
+// A function with a 2-item recursive branch:
+// Double each element that is > 10 (push it twice), pass others through once.
+// This exercises the 2-item list arena path.
+doubleIfBig :: List Integer -> List Integer
+doubleIfBig = (xs) => where(xs) {
+  [x, ...rest] =>
+    if (x > 10) {
+      [x, x, ...doubleIfBig(rest)]
+    } else {
+      [x, ...doubleIfBig(rest)]
+    }
+
+  [] =>
+    []
+}
+
+
+// A function with ONLY 2-item branches (always doubles)
+alwaysDouble :: List Integer -> List Integer
+alwaysDouble = (xs) => where(xs) {
+  [x, ...rest] =>
+    [x, x, ...alwaysDouble(rest)]
+
+  [] =>
+    []
+}
+
+
+// A purely 1-item branch function (for regression)
+addOne :: List Integer -> List Integer
+addOne = (xs) => where(xs) {
+  [x, ...rest] =>
+    [x + 1, ...addOne(rest)]
+
+  [] =>
+    []
+}
+
+
+main = () => {
+  // Mixed: some elements doubled, some not
+  r1 = doubleIfBig([1, 20, 3, 40, 5])
+  IO.log(r1)
+
+  // Check length: 5 items where 2 are > 10 -> length = 5 + 2 = 7
+  IO.log(List.length(r1))
+
+  // All big: [11, 22] -> [11, 11, 22, 22] (length 4)
+  r2 = doubleIfBig([11, 22])
+  IO.log(r2)
+
+  // None big: [1, 2, 3] -> [1, 2, 3]
+  r3 = doubleIfBig([1, 2, 3])
+  IO.log(r3)
+
+  // Empty
+  r4 = doubleIfBig([])
+  IO.log(r4)
+
+  // Always double: [1, 2, 3] -> [1, 1, 2, 2, 3, 3]
+  r5 = alwaysDouble([1, 2, 3])
+  IO.log(r5)
+
+  // Regression: addOne works
+  r6 = addOne([10, 20, 30])
+  IO.log(r6)
+}

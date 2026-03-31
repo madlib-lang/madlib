@@ -257,10 +257,23 @@ spec = do
         , "compiler/test/Blackbox/test-cases/scan-strict-parity"
         , "compiler/test/Blackbox/test-cases/short-overflow-parity"
         , "compiler/test/Blackbox/test-cases/inplace-trmc"
+        , "compiler/test/Blackbox/test-cases/trmc-two-item-branch"
         , "compiler/test/Blackbox/test-cases/maybe-operators"
         , "compiler/test/Blackbox/test-cases/jsx-maybe-props"
         , "compiler/test/Blackbox/test-cases/jsx-children"
         , "compiler/test/Blackbox/test-cases/signature-too-general"
+        , "compiler/test/Blackbox/test-cases/inline-mutation-double"
+        , "compiler/test/Blackbox/test-cases/inplace-dispatch-shared"
+        , "compiler/test/Blackbox/test-cases/nested-lambda-shadow"
+        , "compiler/test/Blackbox/test-cases/tce-mixed-recursion"
+        , "compiler/test/Blackbox/test-cases/tce-addition-with-normalizing-branch"
+        , "compiler/test/Blackbox/test-cases/tce-boolean-left-recursion"
+        , "compiler/test/Blackbox/test-cases/tce-float-product"
+        , "compiler/test/Blackbox/test-cases/tce-double-recursion-not-optimized"
+        , "compiler/test/Blackbox/test-cases/tce-addition-with-do"
+        , "compiler/test/Blackbox/test-cases/tce-addition-in-where"
+        , "compiler/test/Blackbox/test-cases/tce-addition-with-plain-branch"
+        , "compiler/test/Blackbox/test-cases/tce-addition-branch-order"
         ]
 
   forM_ cases $ \casePath -> do

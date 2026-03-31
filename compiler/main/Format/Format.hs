@@ -1026,6 +1026,20 @@ expToDoc comments exp =
               , comments''''
               )
 
+        Source _ _ (MaybeDefault exp default_) ->
+          let (exp', comments'')       = expToDoc comments' exp
+              (default_', comments''') = expToDoc comments'' default_
+          in  (exp' <> Pretty.pretty " ?? " <> default_', comments''')
+
+        Source _ _ (OptionalAccess exp (Source _ _ (Var ('.' : fieldName)))) ->
+          let (exp', comments'') = expToDoc comments' exp
+          in  (exp' <> Pretty.pretty ("?." <> fieldName), comments'')
+
+        Source _ _ (OptionalAccess exp field) ->
+          let (exp', comments'')    = expToDoc comments' exp
+              (field', comments''') = expToDoc comments'' field
+          in  (exp' <> Pretty.pretty "?" <> field', comments''')
+
         Source _ _ (Record fields) ->
           let (fields', comments'') = fieldsToDoc comments' fields
           in  ( Pretty.group
