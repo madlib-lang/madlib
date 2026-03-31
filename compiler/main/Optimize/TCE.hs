@@ -3,6 +3,7 @@ module Optimize.TCE where
 import           AST.Core
 import qualified Data.Maybe          as Maybe
 import qualified Data.Bifunctor      as Bifunctor
+import qualified Data.Set            as Set
 import           Infer.Type
 import           Explain.Location
 
@@ -81,7 +82,10 @@ markDefinition env exp = case exp of
 markIs :: RecursionKind -> Type -> String -> Is -> Is
 markIs recursionKind fnType fnName is = case is of
   Typed qt area metadata (Is pat exp) ->
-    Typed qt area metadata (Is pat (markTRCCalls recursionKind fnType fnName exp))
+    if fnName `elem` getPatternVars pat then
+      is
+    else
+      Typed qt area metadata (Is pat (markTRCCalls recursionKind fnType fnName exp))
 
   _ ->
     is
@@ -301,15 +305,19 @@ findRecursionKindInIss fnType fnName params iss = case iss of
   [] ->
     Just PlainRecursion
 
-  [Typed _ _ _ (Is _ isExp)] ->
-    if containsRecursion True fnType fnName isExp then
+  [Typed _ _ _ (Is pat isExp)] ->
+    if fnName `elem` getPatternVars pat then
+      Nothing
+    else if containsRecursion True fnType fnName isExp then
       Just PlainRecursion
     else
       findRecursionKind fnType fnName params [isExp]
 
-  (Typed _ _ _ (Is _ isExp) : next) ->
+  (Typed _ _ _ (Is pat isExp) : next) ->
     let current =
-          if containsRecursion True fnType fnName isExp then
+          if fnName `elem` getPatternVars pat then
+            Nothing
+          else if containsRecursion True fnType fnName isExp then
             Just PlainRecursion
           else
             findRecursionKind fnType fnName params [isExp]
