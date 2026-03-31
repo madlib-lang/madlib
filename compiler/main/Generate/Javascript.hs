@@ -317,10 +317,16 @@ instance Compilable Exp where
           compileAbs :: Maybe [Exp] -> [Name] -> [Exp] -> String
           compileAbs _ params body =
             let params' = intercalate " => " (generateSafeName <$> params)
+                safeParamNames = S.fromList (generateSafeName <$> params)
+                innerEnv = env
+                  { varsInScope = varsInScope env <> S.fromList params
+                  , varsRewritten = M.filterWithKey (\k _ -> k `S.notMember` safeParamNames) (varsRewritten env)
+                  , inBody = True
+                  }
             in  "("
                 <> params'
                 <> " => "
-                <> compileBody env { varsInScope = varsInScope env <> S.fromList params, inBody = True } body
+                <> compileBody innerEnv body
                 <> ")"
 
           compileBody :: Env -> [Exp] -> String
@@ -655,12 +661,14 @@ instance Compilable Exp where
 
           compileIs :: Is -> String
           compileIs (Typed _ _ _ (Is pat exp)) =
-            "if ("
+            let patVarNames = S.fromList (generateSafeName <$> getPatternVars pat)
+                branchEnv = env { varsRewritten = M.filterWithKey (\k _ -> k `S.notMember` patVarNames) (varsRewritten env) }
+            in "if ("
               <> compilePattern "__x__" pat
               <> ") {\n"
               <> buildVars "__x__" pat
               <> (if Maybe.isJust (recursionData env) then "    " else "    return ")
-              <> compile env config exp
+              <> compile branchEnv config exp
               <> ";\n  }\n"
 
           buildVars :: String -> Pattern -> String
