@@ -328,7 +328,7 @@ patternToDoc (Source _ _ pat) = case pat of
     Pretty.pretty $ renderChar c
 
   PStr s ->
-    Pretty.pretty $ "\"" <> s <> "\""
+    Pretty.pretty $ "\"" <> reEscapeString s <> "\""
 
   PBool b ->
     Pretty.pretty b
@@ -793,6 +793,20 @@ escapeBackticks s = s >>= \case
     [c]
 
 
+-- | Re-escape a string whose escape sequences have already been processed.
+-- pStringLiteral calls processEscapes, so LStr/PStr store actual characters
+-- (e.g. real newline for \n). The formatter must reverse this before
+-- re-wrapping the string in double quotes.
+reEscapeString :: String -> String
+reEscapeString s = s >>= \case
+  '\n' -> "\\n"
+  '\t' -> "\\t"
+  '\r' -> "\\r"
+  '\\' -> "\\\\"
+  '"'  -> "\\\""
+  c    -> [c]
+
+
 expToDoc :: [Comment] -> Exp -> (Pretty.Doc ann, [Comment])
 expToDoc comments exp =
   let (commentsDoc, comments') = insertComments False (getArea exp) comments
@@ -1183,7 +1197,7 @@ expToDoc comments exp =
           (Pretty.pretty $ renderChar c, comments')
 
         Source _ _ (LStr s) ->
-          let s' = "\"" <> s <> "\""
+          let s' = "\"" <> reEscapeString s <> "\""
           in (Pretty.pretty s', comments')
 
         Source _ _ (LBool b) ->
