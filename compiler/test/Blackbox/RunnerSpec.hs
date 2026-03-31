@@ -284,6 +284,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/simplifycalls-repeat-direct-use"
         , "compiler/test/Blackbox/test-cases/simplifycalls-repeat-raw-use"
         , "compiler/test/Blackbox/test-cases/trmc-filter-like"
+        , "compiler/test/Blackbox/test-cases/inline-variable-capture"
         ]
 
   forM_ cases $ \casePath -> do

@@ -271,7 +271,9 @@ inlineInExp candidates exp@(Typed qt area meta e) = case e of
     , all isTriviallyPureExp args ->
       let inlinedArgs = inlineInExp candidates <$> args
           substitution = M.fromList $ L.zip (icParams candidate) inlinedArgs
-          inlinedBody = substituteInExps substitution (icBody candidate)
+          freeArgVars  = foldl (\acc e -> S.union acc (collectVarsInExp e)) S.empty inlinedArgs
+          safeBody     = avoidCapture freeArgVars (icBody candidate)
+          inlinedBody  = substituteInExps substitution safeBody
           -- Recursively inline in the result to handle transitive inlining
           -- (e.g., compose3 -> addOne(double(square(x))) -> inline addOne, double, square)
           result = case inlinedBody of
@@ -337,6 +339,99 @@ inlineField :: InlineCandidates -> Field -> Field
 inlineField candidates (Typed qt area meta f) = case f of
   Field (name, e)  -> Typed qt area meta (Field (name, inlineInExp candidates e))
   FieldSpread e    -> Typed qt area meta (FieldSpread (inlineInExp candidates e))
+
+
+-- | Rename a local binding name throughout a list of expressions.
+-- Used to avoid variable capture during inlining: if the body locally binds
+-- a name that also appears free in a substituted argument, the local binding
+-- must be renamed so that subsequent substitutions don't accidentally resolve
+-- the argument variable to the local binding.
+renameInExps :: Name -> Name -> [Exp] -> [Exp]
+renameInExps oldName newName = map (renameInExp oldName newName)
+
+renameInExp :: Name -> Name -> Exp -> Exp
+renameInExp oldName newName exp@(Typed qt area meta e) = case e of
+  Var n isCtor | n == oldName ->
+    Typed qt area meta (Var newName isCtor)
+
+  Assignment (Typed lhsQt lhsArea lhsMeta (Var n isCtor)) rhs
+    | n == oldName ->
+      -- Rename both the LHS binding and in the RHS
+      let rhs' = renameInExp oldName newName rhs
+      in  Typed qt area meta (Assignment (Typed lhsQt lhsArea lhsMeta (Var newName isCtor)) rhs')
+
+  Assignment lhs rhs ->
+    Typed qt area meta (Assignment (renameInExp oldName newName lhs) (renameInExp oldName newName rhs))
+
+  Definition params body ->
+    -- Don't rename inside nested lambdas that rebind oldName as a parameter
+    if any (\p -> getValue p == oldName) params then
+      exp
+    else
+      Typed qt area meta (Definition params (renameInExps oldName newName body))
+
+  Call fn args ->
+    Typed qt area meta (Call (renameInExp oldName newName fn) (renameInExp oldName newName <$> args))
+
+  If c t f ->
+    Typed qt area meta (If (renameInExp oldName newName c) (renameInExp oldName newName t) (renameInExp oldName newName f))
+
+  Where e iss ->
+    Typed qt area meta (Where (renameInExp oldName newName e)
+      (map (\(Typed qt' area' meta' (Is pat isBody)) ->
+        -- Don't rename inside branches that bind oldName in their pattern
+        if oldName `S.member` collectPatternVars pat then
+          Typed qt' area' meta' (Is pat isBody)
+        else
+          Typed qt' area' meta' (Is pat (renameInExp oldName newName isBody))
+      ) iss))
+
+  Do exps ->
+    Typed qt area meta (Do (renameInExps oldName newName exps))
+
+  Access a b ->
+    Typed qt area meta (Access (renameInExp oldName newName a) (renameInExp oldName newName b))
+
+  ArrayAccess a b ->
+    Typed qt area meta (ArrayAccess (renameInExp oldName newName a) (renameInExp oldName newName b))
+
+  ListConstructor items ->
+    Typed qt area meta (ListConstructor (map (mapListItem (renameInExp oldName newName)) items))
+
+  TupleConstructor exps ->
+    Typed qt area meta (TupleConstructor (renameInExp oldName newName <$> exps))
+
+  Record fields ->
+    Typed qt area meta (Record (map (mapRecordField (renameInExp oldName newName)) fields))
+
+  While c b ->
+    Typed qt area meta (While (renameInExp oldName newName c) (renameInExp oldName newName b))
+
+  Export e ->
+    Typed qt area meta (Export (renameInExp oldName newName e))
+
+  _ -> exp
+renameInExp _ _ exp = exp
+
+
+-- | Collect top-level let-binding names from a sequential body (not inside nested lambdas).
+collectTopLevelBindingNames :: [Exp] -> S.Set Name
+collectTopLevelBindingNames = foldl go S.empty
+  where
+    go acc (Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) _)) = S.insert n acc
+    go acc _                                                     = acc
+
+
+-- | Before substituting into a body, rename any local bindings that clash with
+-- free variables in the argument expressions. This avoids variable capture where
+-- a substituted Var "z" would accidentally resolve to an inner binding named "z".
+avoidCapture :: S.Set Name -> [Exp] -> [Exp]
+avoidCapture freeArgVars body =
+  let localBindings  = collectTopLevelBindingNames body
+      clashingNames  = S.intersection localBindings freeArgVars
+  in  S.foldl renameClash body clashingNames
+  where
+    renameClash b n = renameInExps n ("$" <> n <> "_inline") b
 
 
 -- | Substitute parameter names with argument expressions in a list of body expressions.

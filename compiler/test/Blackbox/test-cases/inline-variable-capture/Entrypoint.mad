@@ -1,0 +1,25 @@
+import IO from "IO"
+
+
+// Regression test: the inliner must not capture variables from the call site.
+//
+// `addThenDouble` is small enough to be inlined (body size < 10).
+// Its body introduces a local binding named `z`, which is also the name of
+// the argument passed at the call site.
+//
+// If the inliner substitutes naively (x -> Var "z") into the body, then
+// the `z` in the body text `x + z` resolves to the locally-bound `z = x + 1`
+// (= 6) rather than the caller's `z` (= 5), producing 6 + 6 = 12 instead of
+// the correct 5 + 6 = 11.
+
+addThenDouble :: Integer -> Integer
+addThenDouble = (x) => {
+  z = x + 1
+  return x + z
+}
+
+main = () => {
+  z = 5
+  // addThenDouble(z) should be z + (z + 1) = 5 + 6 = 11
+  IO.log(addThenDouble(z))
+}
