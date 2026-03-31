@@ -258,62 +258,67 @@ replaceFnVar newQualType fnExp newName = case fnExp of
 
 
 -- Check that every recursive call to fnName in the body passes each propagated
--- parameter verbatim (as the original param variable). If any recursive call
--- passes a modified value (e.g. f . f instead of f), the optimization is unsafe.
-recursiveCallsPassParamsVerbatim :: String -> [String] -> Exp -> Bool
-recursiveCallsPassParamsVerbatim fnName removedParams bodyExp = case bodyExp of
+-- parameter verbatim (as the original param variable) at the correct position.
+-- paramSpec is a list of (paramName, isRemoved) in original parameter order.
+-- If any recursive call passes a modified value at a removed-param position
+-- (e.g. f . f instead of f), the optimization is unsafe.
+recursiveCallsPassParamsVerbatim :: String -> [(String, Bool)] -> Exp -> Bool
+recursiveCallsPassParamsVerbatim fnName paramSpec bodyExp = case bodyExp of
   Typed _ _ _ (Call fn args) | getVarName fn == Just fnName ->
-    -- This is a recursive call: check each removed param position passes the var verbatim
-    let zippedCheck = zip removedParams args
-        verbatim (paramName, arg) = getVarName arg == Just paramName
-    in  all verbatim zippedCheck
-        && all (recursiveCallsPassParamsVerbatim fnName removedParams) args
+    -- This is a recursive call: for each removed parameter position, the
+    -- corresponding argument must be the original variable passed verbatim.
+    let positionalCheck = zipWith checkPos paramSpec args
+        checkPos (paramName, isRemoved) arg =
+          not isRemoved || getVarName arg == Just paramName
+    in  length args == length paramSpec
+        && and positionalCheck
+        && all (recursiveCallsPassParamsVerbatim fnName paramSpec) args
 
   Typed _ _ _ (Call fn args) ->
-    recursiveCallsPassParamsVerbatim fnName removedParams fn
-    && all (recursiveCallsPassParamsVerbatim fnName removedParams) args
+    recursiveCallsPassParamsVerbatim fnName paramSpec fn
+    && all (recursiveCallsPassParamsVerbatim fnName paramSpec) args
 
   Typed _ _ _ (Assignment _ e) ->
-    recursiveCallsPassParamsVerbatim fnName removedParams e
+    recursiveCallsPassParamsVerbatim fnName paramSpec e
 
   Typed _ _ _ (Definition params body) ->
-    -- Shadow: if a param shadows one of the removed params, skip check inside
-    let shadowedParams = map getValue params
-        removedParams' = filter (`notElem` shadowedParams) removedParams
-    in  all (recursiveCallsPassParamsVerbatim fnName removedParams') body
+    -- Shadow: if a param shadows one of the removed params, clear its isRemoved flag
+    let shadowedNames = Set.fromList (map getValue params)
+        paramSpec' = map (\(n, r) -> (n, r && Set.notMember n shadowedNames)) paramSpec
+    in  all (recursiveCallsPassParamsVerbatim fnName paramSpec') body
 
   Typed _ _ _ (Do exps) ->
-    all (recursiveCallsPassParamsVerbatim fnName removedParams) exps
+    all (recursiveCallsPassParamsVerbatim fnName paramSpec) exps
 
   Typed _ _ _ (If cond truthy falsy) ->
-    recursiveCallsPassParamsVerbatim fnName removedParams cond
-    && recursiveCallsPassParamsVerbatim fnName removedParams truthy
-    && recursiveCallsPassParamsVerbatim fnName removedParams falsy
+    recursiveCallsPassParamsVerbatim fnName paramSpec cond
+    && recursiveCallsPassParamsVerbatim fnName paramSpec truthy
+    && recursiveCallsPassParamsVerbatim fnName paramSpec falsy
 
   Typed _ _ _ (While cond body) ->
-    recursiveCallsPassParamsVerbatim fnName removedParams cond
-    && recursiveCallsPassParamsVerbatim fnName removedParams body
+    recursiveCallsPassParamsVerbatim fnName paramSpec cond
+    && recursiveCallsPassParamsVerbatim fnName paramSpec body
 
   Typed _ _ _ (Where e iss) ->
-    recursiveCallsPassParamsVerbatim fnName removedParams e
-    && all (\(Typed _ _ _ (Is _ isBody)) -> recursiveCallsPassParamsVerbatim fnName removedParams isBody) iss
+    recursiveCallsPassParamsVerbatim fnName paramSpec e
+    && all (\(Typed _ _ _ (Is _ isBody)) -> recursiveCallsPassParamsVerbatim fnName paramSpec isBody) iss
 
   Typed _ _ _ (ListConstructor items) ->
-    all (recursiveCallsPassParamsVerbatim fnName removedParams . getListItemExp) items
+    all (recursiveCallsPassParamsVerbatim fnName paramSpec . getListItemExp) items
 
   Typed _ _ _ (TupleConstructor items) ->
-    all (recursiveCallsPassParamsVerbatim fnName removedParams) items
+    all (recursiveCallsPassParamsVerbatim fnName paramSpec) items
 
   Typed _ _ _ (Record fields) ->
-    all (recursiveCallsPassParamsVerbatim fnName removedParams . getFieldExp) fields
+    all (recursiveCallsPassParamsVerbatim fnName paramSpec . getFieldExp) fields
 
   Typed _ _ _ (Access rec field) ->
-    recursiveCallsPassParamsVerbatim fnName removedParams rec
-    && recursiveCallsPassParamsVerbatim fnName removedParams field
+    recursiveCallsPassParamsVerbatim fnName paramSpec rec
+    && recursiveCallsPassParamsVerbatim fnName paramSpec field
 
   Typed _ _ _ (ArrayAccess arr index) ->
-    recursiveCallsPassParamsVerbatim fnName removedParams arr
-    && recursiveCallsPassParamsVerbatim fnName removedParams index
+    recursiveCallsPassParamsVerbatim fnName paramSpec arr
+    && recursiveCallsPassParamsVerbatim fnName paramSpec index
 
   _ ->
     True
@@ -407,14 +412,13 @@ propagateBody fnName newFnName newQualType propagateMap bodyExp = case bodyExp o
 propagateDefinition :: FilePath -> String -> Qual Type -> [(Bool, Exp)] -> Exp -> Propagate (Maybe Exp)
 propagateDefinition path newName newQualType args exp = case exp of
   Typed _ area metadata (Assignment (Typed lhsT lhsArea lhsMetadata (Var fnName isCtor)) (Typed _ area' metadata' (Definition params body))) | length params == length args -> do
-      let removedParamNames = [ getValue param
-                               | ((isRemoved, _), param) <- zip args params
-                               , isRemoved
-                               ]
+      let paramSpec = [ (getValue param, isRemoved)
+                       | ((isRemoved, _), param) <- zip args params
+                       ]
       -- Guard: every recursive call in the body must pass each removed param
       -- verbatim (as the original variable). If a recursive call passes a
       -- modified value (e.g. f . f), specialising is unsound.
-      if not (all (recursiveCallsPassParamsVerbatim fnName removedParamNames) body) then
+      if not (all (recursiveCallsPassParamsVerbatim fnName paramSpec) body) then
         return Nothing
       else do
         let propagateMap = Map.fromList $ concat $
