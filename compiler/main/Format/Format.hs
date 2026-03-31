@@ -1314,11 +1314,21 @@ expToDoc comments exp =
 
         Source _ _ (JsxAutoClosedTag name props) ->
           let (props', comments'')     = jsxPropsToDoc comments' props
+              lineAfterName            =
+                if null props then
+                  Pretty.emptyDoc
+                else
+                  Pretty.line
+              lineBeforeSlash          =
+                if null props then
+                  Pretty.emptyDoc
+                else
+                  Pretty.line'
           in  ( Pretty.group
                   (
                     Pretty.pretty "<" <> Pretty.pretty name
-                    <> Pretty.nest indentSize (Pretty.line <> props')
-                    <> Pretty.line
+                    <> Pretty.nest indentSize (lineAfterName <> props')
+                    <> lineBeforeSlash
                     <> Pretty.pretty "/>"
                   )
               , comments''
