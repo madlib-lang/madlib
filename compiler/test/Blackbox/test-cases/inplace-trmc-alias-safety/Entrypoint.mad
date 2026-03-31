@@ -1,0 +1,32 @@
+import IO from "IO"
+
+
+// Test that in-place TRMC does not mutate aliased lists.
+// If isLinearListArg is wrong, passing a variable through an If expression
+// would be treated as a fresh (unaliased) list and mutated in place,
+// corrupting the original binding.
+
+double :: List Integer -> List Integer
+double = (xs) => where(xs) {
+  [x, ...rest] =>
+    [x * 2, ...double(rest)]
+
+  [] =>
+    []
+}
+
+
+main = () => {
+  nums = [1, 2, 3]
+
+  // Pass nums through an If — result is nums itself (aliased).
+  // In-place mutation here would corrupt nums.
+  doubled = double(if (true) { nums } else { [] })
+  IO.log(nums)    // must still be [1, 2, 3]
+  IO.log(doubled) // must be [2, 4, 6]
+
+  // Sanity: direct variable arg (should always use arena, not in-place)
+  direct = double(nums)
+  IO.log(nums)   // must still be [1, 2, 3]
+  IO.log(direct) // must be [2, 4, 6]
+}

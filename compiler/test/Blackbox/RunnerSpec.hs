@@ -257,6 +257,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/scan-strict-parity"
         , "compiler/test/Blackbox/test-cases/short-overflow-parity"
         , "compiler/test/Blackbox/test-cases/inplace-trmc"
+        , "compiler/test/Blackbox/test-cases/inplace-trmc-alias-safety"
         , "compiler/test/Blackbox/test-cases/trmc-two-item-branch"
         , "compiler/test/Blackbox/test-cases/maybe-operators"
         , "compiler/test/Blackbox/test-cases/jsx-maybe-props"

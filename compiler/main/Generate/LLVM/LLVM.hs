@@ -104,10 +104,20 @@ topLevelSymbol =
 -- | Conservative linearity check for in-place TRMC dispatch.
 -- Returns True if the expression is provably a temporary (not aliased).
 -- Variable references are considered potentially aliased.
+-- Conditional expressions (If/Where/Do) are only linear if ALL branches are linear,
+-- since any branch could evaluate to an aliased variable.
 isLinearListArg :: Core.Exp -> Bool
 isLinearListArg exp = case exp of
-  Core.Typed _ _ _ (Core.Var _ _) -> False  -- variable reference, might be aliased
-  _ -> True  -- function call result, literal, constructor — freshly created
+  Core.Typed _ _ _ (Core.Var _ _)       -> False  -- variable reference, might be aliased
+  Core.Typed _ _ _ (Core.If _ t f)      -> isLinearListArg t && isLinearListArg f
+  Core.Typed _ _ _ (Core.Where _ iss)   -> all isLinearListArgBranch iss
+  Core.Typed _ _ _ (Core.Do exps)       -> not (null exps) && isLinearListArg (last exps)
+  _                                     -> True  -- function call result, literal, constructor
+
+isLinearListArgBranch :: Core.Is -> Bool
+isLinearListArgBranch is = case is of
+  Core.Typed _ _ _ (Core.Is _ body) -> isLinearListArg body
+  _                                 -> True
 
 constructorSymbol :: Operand -> Int -> Int -> Symbol
 constructorSymbol ctor id arity =
