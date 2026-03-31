@@ -23,7 +23,8 @@ import qualified Control.Monad as Monad
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t@(TRecord fields (Just base) optionalFields)
-  | any (occursCheck tv) (M.elems fields) = throwError $ CompilationError (InfiniteType tv t) NoContext
+  | any (occursCheck tv) (M.elems fields) || occursCheck tv base || any (occursCheck tv) (M.elems optionalFields)
+                                          = throwError $ CompilationError (InfiniteType tv t) NoContext
   | otherwise                             = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
 varBind tv t | t == TVar tv        = return M.empty
              | occursCheck tv t    = throwError $ CompilationError (InfiniteType tv t) NoContext
