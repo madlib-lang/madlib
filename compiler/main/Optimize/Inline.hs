@@ -330,7 +330,9 @@ inlineInExp candidates exp@(Untyped _ _ _) = exp
 
 inlineIs :: InlineCandidates -> Is -> Is
 inlineIs candidates (Typed qt area meta (Is pat e)) =
-  Typed qt area meta (Is pat (inlineInExp candidates e))
+  let patVars    = collectPatternVars pat
+      candidates' = M.filterWithKey (\k _ -> k `S.notMember` patVars) candidates
+  in  Typed qt area meta (Is pat (inlineInExp candidates' e))
 
 inlineListItem :: InlineCandidates -> ListItem -> ListItem
 inlineListItem candidates (Typed qt area meta li) = case li of
