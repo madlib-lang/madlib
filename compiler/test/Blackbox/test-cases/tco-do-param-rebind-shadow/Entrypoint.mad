@@ -1,0 +1,45 @@
+import IO from "IO"
+
+// Tests that a Do block inside a TCO function body compiles correctly
+// when it introduces a fresh local binding whose name does NOT shadow a TCO
+// parameter. Exercises the inner compileBody' path in the Do case, which must
+// correctly carry the modified env (with the new name in varsInScope and any
+// stale varsRewritten entry removed) forward to subsequent expressions.
+
+// TCO function whose body is a do block that introduces a fresh local
+// binding `step` and then uses it before the recursive call.
+sumWithDo :: Integer -> Integer -> Integer
+sumWithDo = (n, acc) => do {
+  step = n - 1
+  return where(step <= 0) {
+    true =>
+      acc + n
+
+    false =>
+      sumWithDo(step, acc + n)
+  }
+}
+
+// TCO function with a do block that introduces multiple local bindings,
+// exercising the chained env propagation through compileBody'.
+countUpWithDo :: Integer -> Integer -> Integer -> Integer
+countUpWithDo = (n, acc, limit) => do {
+  next = n + 1
+  newAcc = acc + n
+  return where(next > limit) {
+    true =>
+      newAcc
+
+    false =>
+      countUpWithDo(next, newAcc, limit)
+  }
+}
+
+main = () => {
+  // sumWithDo(5, 0): step=4, recurse(4,5); step=3, recurse(3,9); step=2, recurse(2,12);
+  //                 step=1, recurse(1,14); step=0, return 14+1=15
+  IO.log(sumWithDo(5, 0))   // 15
+  // countUpWithDo(1, 0, 4): next=2, newAcc=1; next=3, newAcc=3; next=4, newAcc=6;
+  //                          next=5, newAcc=10; 5>4, return 10
+  IO.log(countUpWithDo(1, 0, 4))  // 10
+}

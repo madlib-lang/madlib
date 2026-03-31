@@ -291,6 +291,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/inline-lambda-param-capture"
         , "compiler/test/Blackbox/test-cases/allocation-sinking"
         , "compiler/test/Blackbox/test-cases/tco-param-rebind-shadow"
+        , "compiler/test/Blackbox/test-cases/tco-do-param-rebind-shadow"
         , "compiler/test/Blackbox/test-cases/hocp-recursive-param-pattern-shadow"
         ]
 
