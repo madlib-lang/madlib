@@ -37,23 +37,64 @@ findInlineCandidates exps = M.fromList $ concatMap extractCandidate exps
       Typed _ _ _ (Export e) ->
         extractCandidate e
 
-      Typed qt _ _ (Assignment (Typed _ _ _ (Var name _)) (Typed _ _ _ (Definition params body))) ->
+      Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) (Typed _ _ _ (Definition params body))) ->
         let paramNames = getValue <$> params
             bodySize = sum (exprSize <$> body)
             isSelfRecursive = name `S.member` collectVarNames body
-            hasMutations = any (any isMutationMetadata . getMetadata) body
+            hasMutations = any containsMutations body
         in  if bodySize <= inlineThreshold && not isSelfRecursive && not hasMutations
             then [(name, InlineCandidate { icParams = paramNames, icBody = body })]
             else []
 
       _ -> []
 
-    isMutationMetadata :: Metadata -> Bool
-    isMutationMetadata m = case m of
+
+-- | Deeply check whether an expression contains any mutation metadata.
+-- Top-level check is insufficient: mutations inside If/Do/Where branches
+-- would be missed if we only inspect the outer expression's metadata.
+containsMutations :: Exp -> Bool
+containsMutations exp = case exp of
+  Typed _ _ metadata e ->
+    any isMutation metadata || containsMutations_ e
+  Untyped _ _ e ->
+    containsMutations_ e
+  where
+    isMutation m = case m of
       ReferenceAllocation -> True
       ReferenceStore      -> True
       MutatingFunctionRef -> True
       _                   -> False
+
+containsMutations_ :: Exp_ -> Bool
+containsMutations_ e = case e of
+  Call fn args          -> containsMutations fn || any containsMutations args
+  Definition _ body     -> any containsMutations body
+  Assignment lhs rhs    -> containsMutations lhs || containsMutations rhs
+  If c t f              -> any containsMutations [c, t, f]
+  Where exp' iss        -> containsMutations exp' || any containsMutationsIs iss
+  Do exps               -> any containsMutations exps
+  Access a b            -> containsMutations a || containsMutations b
+  ArrayAccess a b       -> containsMutations a || containsMutations b
+  ListConstructor items -> any containsMutationsListItem items
+  TupleConstructor exps -> any containsMutations exps
+  Record fields         -> any containsMutationsField fields
+  While c b             -> containsMutations c || containsMutations b
+  Export e              -> containsMutations e
+  _                     -> False
+
+containsMutationsIs :: Is -> Bool
+containsMutationsIs (Typed _ _ _ (Is _ body)) = containsMutations body
+containsMutationsIs _                          = False
+
+containsMutationsListItem :: ListItem -> Bool
+containsMutationsListItem (Typed _ _ _ (ListItem e))   = containsMutations e
+containsMutationsListItem (Typed _ _ _ (ListSpread e)) = containsMutations e
+containsMutationsListItem _                             = False
+
+containsMutationsField :: Field -> Bool
+containsMutationsField (Typed _ _ _ (Field (_, e)))  = containsMutations e
+containsMutationsField (Typed _ _ _ (FieldSpread e)) = containsMutations e
+containsMutationsField _                             = False
 
 
 -- | Find inline candidates safe for cross-module inlining.
