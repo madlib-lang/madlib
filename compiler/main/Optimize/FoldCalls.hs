@@ -3,6 +3,7 @@ import AST.Core
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import Infer.Type
+import qualified Data.Set as Set
 
 {-
 Main use case is to eliminate extra closures created by
@@ -260,7 +261,12 @@ propagateCalls exp candidates = case exp of
 
   Typed qt area metadata (Where e iss) ->
     let e' = Maybe.fromMaybe e $ propagateCalls e candidates
-        iss' = map (mapIs (\e -> Maybe.fromMaybe e $ propagateCalls e candidates)) iss
+        propagateBranch (Typed qt' area' metadata' (Is pat isBody)) =
+          let patVarNames = Set.fromList (getPatternVars pat)
+              candidates' = filter ((`Set.notMember` patVarNames) . fst) candidates
+          in  Typed qt' area' metadata' (Is pat (Maybe.fromMaybe isBody $ propagateCalls isBody candidates'))
+        propagateBranch other = other
+        iss' = map propagateBranch iss
     in  Just $ Typed qt area metadata (Where e' iss')
 
   Typed qt area metadata (ListConstructor items) ->
