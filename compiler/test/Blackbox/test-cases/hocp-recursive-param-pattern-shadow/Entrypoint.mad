@@ -1,0 +1,46 @@
+import IO from "IO"
+
+// Tests for HOCP correctness around where-pattern matching with a HOF parameter.
+// In particular: a function where a recursive call is inside a Where branch
+// whose pattern does NOT shadow the HOF param must still be correctly optimized.
+
+// Simple map-like: HOF 'fn' parameter, recursive calls in both branches,
+// neither branch pattern shadows 'fn'.
+mapWith :: (Integer -> Integer) -> List Integer -> List Integer
+mapWith = (fn, list) => where(list) {
+  [x, ...rest] =>
+    [fn(x), ...mapWith(fn, rest)]
+
+  [] =>
+    []
+}
+
+// Multi-branch where: one branch short-circuits, other recurses.
+// The HOF 'fn' param must be correctly specialized for the recursive branch.
+filterMap :: (Integer -> Integer) -> List Integer -> List Integer
+filterMap = (fn, list) => where(list) {
+  [x, ...rest] =>
+    where(x > 0) {
+      true =>
+        [fn(x), ...filterMap(fn, rest)]
+
+      false =>
+        filterMap(fn, rest)
+    }
+
+  [] =>
+    []
+}
+
+double :: Integer -> Integer
+double = (x) => x * 2
+
+addFive :: Integer -> Integer
+addFive = (x) => x + 5
+
+main = () => {
+  IO.log(mapWith(double, [1, 2, 3, 4]))       // [2, 4, 6, 8]
+  IO.log(mapWith(addFive, [1, 2, 3, 4]))      // [6, 7, 8, 9]
+  IO.log(filterMap(double, [-1, 2, -3, 4]))   // [4, 8]
+  IO.log(filterMap(addFive, [-1, 2, -3, 4]))  // [7, 9]
+}

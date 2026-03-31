@@ -1,0 +1,41 @@
+import IO from "IO"
+
+// Test that TCO functions with local bindings in the body (sequential
+// assignments before the recursive call) compile correctly.
+// Exercises the compileBody' path where nextEnv must not carry stale
+// varsRewritten entries for locally-bound names.
+
+countDown :: Integer -> Integer -> Integer
+countDown = (n, acc) => where(n <= 0) {
+  true =>
+    acc
+
+  false =>
+    countDown(n - 1, acc + 1)
+}
+
+// TCO function whose body has a local binding before the recursive call.
+// `step` is not a parameter, so it's a fresh let-binding.  After the fix,
+// `step` is correctly deleted from varsRewritten (it was never there, but
+// the code must not corrupt the env for subsequent uses of TCO params either).
+sumDown :: Integer -> Integer -> Integer
+sumDown = (n, acc) => {
+  step = n - 1
+  return where(step <= 0) {
+    true =>
+      acc + n
+
+    false =>
+      sumDown(step, acc + n)
+  }
+}
+
+main = () => {
+  IO.log(countDown(5, 0))  // 5
+  // sumDown(5, 0): step=4, 4>0 -> sumDown(4, 5)
+  //                step=3, 3>0 -> sumDown(3, 9)
+  //                step=2, 2>0 -> sumDown(2, 12)
+  //                step=1, 1>0 -> sumDown(1, 14)
+  //                step=0, 0<=0-> 15
+  IO.log(sumDown(5, 0))   // 15
+}
