@@ -174,13 +174,13 @@ fieldsToDoc comments fields = case fields of
   (Source area _ (Field (name, exp)) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         name'                    = Pretty.pretty name
-        (value, _)      = expToDoc comments' exp
+        (value, comments'')      = expToDoc comments' exp
         after =
           if null more then
             Pretty.emptyDoc
           else
             Pretty.comma <> Pretty.line
-        (more', comments''') = fieldsToDoc comments' more
+        (more', comments''') = fieldsToDoc comments'' more
     in  ( commentsDoc <> name' <> Pretty.pretty ": " <> value <> after <> more'
         , comments'''
         )
@@ -1624,12 +1624,12 @@ methodsToDoc comments methods = case methods of
 instanceToDoc :: [Comment] -> Instance -> (Pretty.Doc ann, [Comment])
 instanceToDoc comments inst = case inst of
   Source _ _ (Instance constraints name typings methods) ->
-    let (constraints', _) = typingListToDoc True comments constraints
+    let (constraints', comments') = typingListToDoc True comments constraints
         constraints''
           | null constraints       = Pretty.emptyDoc
           | length constraints > 1 = Pretty.lparen <> constraints' <> Pretty.rparen <> Pretty.pretty " => "
           | otherwise              = constraints' <> Pretty.pretty " => "
-        (typings', comments'')  = typingArgsToDoc comments typings
+        (typings', comments'')  = typingArgsToDoc comments' typings
         (methods', comments''') = methodsToDoc comments'' (Map.elems methods)
     in  ( Pretty.pretty "instance " <> constraints'' <> Pretty.pretty name <> Pretty.space <> typings' <> Pretty.pretty " {" <> Pretty.nest indentSize (Pretty.line <> methods') <> Pretty.line <> Pretty.rbrace
         , comments'''
