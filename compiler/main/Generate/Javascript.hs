@@ -426,7 +426,11 @@ instance Compilable Exp where
               "    return " <> compile env config exp <> ";\n"
           compileBody' e (exp : es) = case exp of
             Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) _) ->
-              let nextEnv = e { varsInScope = S.insert name (varsInScope e) }
+              let safeName = generateSafeName name
+                  nextEnv = e
+                    { varsInScope = S.insert name (varsInScope e)
+                    , varsRewritten = M.delete safeName (varsRewritten e)
+                    }
               in  "    " <> compile e config exp <> ";\n" <> compileBody' nextEnv es
 
             _ -> "    " <> compile e config exp <> ";\n" <> compileBody' e es
