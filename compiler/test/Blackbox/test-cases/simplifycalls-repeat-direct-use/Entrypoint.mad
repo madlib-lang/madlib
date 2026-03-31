@@ -1,0 +1,13 @@
+import IO from "IO"
+import List from "List"
+
+double = (x) => x * 2
+
+// Tests that a repeat binding is NOT dropped when it is used in a
+// non-map context (direct use) after being fused with a map call.
+main = () => {
+  xs = List.repeat(1, 3)
+  doubled = map(double, xs)
+  IO.log(List.length(xs))
+  IO.log(doubled)
+}

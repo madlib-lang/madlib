@@ -1,0 +1,17 @@
+import IO from "IO"
+import List from "List"
+
+double = (x) => x * 2
+triple = (x) => x * 3
+
+// Tests that when a repeat binding is "fused" into a map call,
+// subsequent uses of the repeat binding still work correctly.
+// Bug: fuseMapRepeatInBody drops the repeat assignment after fusing
+// one map call, but other uses of the binding are left dangling.
+main = () => {
+  xs = List.repeat(1, 3)
+  doubled = map(double, xs)
+  tripled = map(triple, xs)
+  IO.log(doubled)
+  IO.log(tripled)
+}
