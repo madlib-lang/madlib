@@ -46,16 +46,15 @@ jobs:
           skip-version-file: true
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1.1.4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
-          release_name: Release ${{ github.event.inputs.version }}
+          name: Release ${{ github.event.inputs.version }}
           body: ${{ steps.changelog.outputs.clean_changelog }}
           draft: false
           prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Start release for osx
         uses: benc-uk/workflow-dispatch@v1

@@ -33,18 +33,10 @@ jobs:
           cp ./package-installer.js ./madlib-x86_64-unknown-linux-gnu/
           tar -czvf madlib-x86_64-unknown-linux-gnu.tar.gz madlib-x86_64-unknown-linux-gnu
 
-      - uses: pdamianik/release-tag-to-upload-url-action@v1.0.1
-        id: release_upload_url
-        with:
-          tag: ${{ github.event.inputs.version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload unknown build
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          files: ./madlib-x86_64-unknown-linux-gnu.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.release_upload_url.outputs.uploadUrl }}
-          asset_path: ./madlib-x86_64-unknown-linux-gnu.tar.gz
-          asset_name: madlib-x86_64-unknown-linux-gnu.tar.gz
-          asset_content_type: application/tar+gzip
