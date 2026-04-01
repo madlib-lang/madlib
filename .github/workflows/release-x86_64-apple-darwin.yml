@@ -55,8 +55,6 @@ jobs:
           ls -l /usr/local/lib/ || true
           ls -l /usr/lib/ || true
 
-      - name: Fix libc++abi
-        run: ln -sf /usr/local/opt/llvm-12/lib/llvm-12/lib/libc++abi.1.dylib /usr/local/lib/libc++abi.1.dylib
       # - name: Fix libffi
       #   run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
 
@@ -67,7 +65,7 @@ jobs:
         run: stack install alex happy
 
       - name: Build madlib executable
-        run: stack build
+        run: DYLD_LIBRARY_PATH="/usr/local/opt/llvm-12/lib/llvm-12/lib:$DYLD_LIBRARY_PATH" stack build
 
       # - name: Build madlib executable
       #   run: |
