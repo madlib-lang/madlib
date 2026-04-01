@@ -186,7 +186,11 @@ void __main__init__(int argc, char **argv) {
   ARGV = argv;
 
   size_t size = 64 * 1024 * 1024;  // 64MB
+#if defined(_WIN32) || defined(__MINGW32__)
+  char *newStack = (char *)VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
   char *newStack = (char *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+#endif
   char *stackBottom = newStack + size;
 
   GC_stack_base stackBase = {

@@ -21,7 +21,12 @@ jobs:
 
       - run: DEBIAN_FRONTEND=noninteractive sudo apt-get update -y
 
-      - run: sudo apt-get install -y lcov llvm-12 libpolly-12-dev nasm
+      - name: Install LLVM 12 with Polly
+        run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-12 main" | sudo tee /etc/apt/sources.list.d/llvm-12.list
+          sudo apt-get update -y
+          sudo apt-get install -y lcov llvm-12 libpolly-12-dev nasm
 
       - uses: actions/cache@v4
         name: Cache ~/.stack
