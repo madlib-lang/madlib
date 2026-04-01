@@ -146,7 +146,7 @@ then
   cp "curl-$LIBCURL_VERSION/lib/libcurl.a" ../runtime/lib/
 elif [ "$TARGET" = "LINUX_X64" ]
 then
-  LDFLAGS="-L$OPENSSL_PREFIX/lib64 -L$LIBZ_PREFIX/lib" CPPFLAGS="-I$OPENSSL_PREFIX/include -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX"
+  LDFLAGS="-L$OPENSSL_PREFIX/lib64 -L$LIBZ_PREFIX/lib" CPPFLAGS="-I$OPENSSL_PREFIX/include -I$LIBZ_PREFIX/include" ./configure --disable-shared --enable-static --disable-ldap --disable-manual --disable-sspi --prefix $(pwd)/build --with-openssl="$OPENSSL_PREFIX" --without-libidn2 --without-nghttp2 --with-zlib="$LIBZ_PREFIX" --without-brotli --without-zstd
   make
   make install
 
