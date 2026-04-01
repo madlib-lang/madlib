@@ -1,6 +1,10 @@
 #include "uv.h"
 #include "process.hpp"
+#if defined(_WIN32)
+#include <windows.h>
+#else
 #include <sys/mman.h>
+#endif
 #include <cstring>
 #include "apply-pap.hpp"
 #include "event-loop.hpp"
@@ -61,13 +65,21 @@ static bool isTruthyEnvValue(const char *value) {
 }
 
 static uint64_t getPhysicalMemoryBytes() {
+#if defined(_WIN32)
+  MEMORYSTATUSEX statex;
+  statex.dwLength = sizeof(statex);
+  if (GlobalMemoryStatusEx(&statex)) {
+    return (uint64_t)statex.ullTotalPhys;
+  }
+  return 8ULL * 1024ULL * 1024ULL * 1024ULL;
+#else
   long pages = sysconf(_SC_PHYS_PAGES);
   long pageSize = sysconf(_SC_PAGESIZE);
   if (pages <= 0 || pageSize <= 0) {
     return 8ULL * 1024ULL * 1024ULL * 1024ULL;
   }
-
   return (uint64_t)pages * (uint64_t)pageSize;
+#endif
 }
 
 static size_t clampSize(size_t value, size_t minValue, size_t maxValue) {

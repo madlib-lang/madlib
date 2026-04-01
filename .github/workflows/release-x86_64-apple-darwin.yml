@@ -9,23 +9,12 @@ on:
 
 env:
   node-version: 20.x
-  HOMEBREW_NO_INSTALL_FROM_API:
 
 jobs:
   release:
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
-
-      - run: brew config
-      - run: brew untap homebrew/core homebrew/cask
-      - run: brew config
-      - run: brew update --verbose --debug
-
-      - name: Log lib
-        run: |
-          ls -l /usr/local/lib/ || true
-          ls -l /usr/lib/ || true
 
       - uses: haskell/actions/setup@v2
         with:
@@ -45,43 +34,41 @@ jobs:
       - name: Install rollup
         run: npm i -g esbuild@v0.20.0
 
-      - name: Install LLVM 12
-        run: brew install llvm-hs/llvm/llvm-12
-        # run: HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=TRUE brew install llvm-hs/llvm/llvm-12
+      - name: Install build dependencies
+        run: brew install cmake ninja autoconf automake nasm libtool perl
 
-      - name: Log lib
+      - name: Build and install LLVM 12 from source
         run: |
-          ls -l /usr/local/opt/llvm-12/lib/llvm-12/lib/ || true
-          ls -l /usr/local/lib/ || true
-          ls -l /usr/lib/ || true
-
-      # - name: Fix libffi
-      #   run: ln -s /usr/local/opt/libffi/lib/libffi.dylib /usr/local/opt/libffi/lib/libffi.7.dylib
-
-      # - name: Fix llvm install
-      #   run: cd /usr/local/Cellar/llvm-9/9.0.1/bin/ && ln -s llvm-config-9 llvm-config || cd /usr/local/Cellar/llvm-9/9.0.1.reinstall/bin/ && ln -s llvm-config-9 llvm-config
+          git clone https://github.com/llvm/llvm-project.git --branch llvmorg-12.0.1 --depth 1 /tmp/llvm-project
+          cmake -S /tmp/llvm-project/llvm -B /tmp/llvm-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DLLVM_ENABLE_PROJECTS="clang;lld" \
+            -DLLVM_TARGETS_TO_BUILD="X86" \
+            -DLLVM_INCLUDE_TESTS=OFF \
+            -DLLVM_INCLUDE_EXAMPLES=OFF \
+            -DLLVM_INCLUDE_BENCHMARKS=OFF \
+            -DLLVM_ENABLE_BINDINGS=OFF \
+            -DLLVM_ENABLE_LIBXML2=OFF \
+            -DLLVM_ENABLE_ZLIB=OFF \
+            -DLLVM_ENABLE_TERMINFO=OFF
+          ninja -C /tmp/llvm-build -j$(sysctl -n hw.logicalcpu)
+          sudo ninja -C /tmp/llvm-build install
 
       - name: Install alex and happy
         run: stack install alex happy
 
       - name: Build madlib executable
-        run: DYLD_LIBRARY_PATH="/usr/local/opt/llvm-12/lib/llvm-12/lib:$DYLD_LIBRARY_PATH" stack build
-
-      # - name: Build madlib executable
-      #   run: |
-      #     export PATH="$PATH:/usr/local/Cellar/llvm-9/9.0.1/bin:/usr/local/Cellar/llvm-9/9.0.1.reinstall/bin"
-      #     stack build
+        run: stack build
 
       - name: Add rpath
-        run: install_name_tool -change /usr/local/opt/llvm-12/lib/llvm-12/lib/libc++.1.0.dylib /usr/lib/libc++.1.dylib "$(stack path --dist-dir)/build/madlib/madlib"
-
-      - name: Install automake
-        run: brew install autoconf automake nasm libtool perl
+        run: install_name_tool -change /usr/local/lib/libc++.1.0.dylib /usr/lib/libc++.1.dylib "$(stack path --dist-dir)/build/madlib/madlib"
 
       - name: Build runtime
         run: |
           TARGET="MACOS_X64" ./scripts/build-runtime-libs
-          TARGET="MACOS_X64" AR="/usr/local/opt/llvm-12/bin/llvm-ar" ./scripts/build-runtime
+          TARGET="MACOS_X64" AR="llvm-ar" ./scripts/build-runtime
 
       - name: Build tools
         run: ./scripts/build
