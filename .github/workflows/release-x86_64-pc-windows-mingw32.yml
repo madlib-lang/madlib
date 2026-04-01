@@ -96,18 +96,20 @@ jobs:
         shell: msys2 {0}
         run: |
           export PATH="/c/hostedtoolcache/windows/stack/2.7.3/x64:/c/tools/ghc-8.10.7/bin:/c/Users/runneradmin/AppData/Roaming/cabal/bin:/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH"
+          DIST_DIR="$(stack path --dist-dir | tr -d '\r')"
           pwd
           ls -la
-          ls -l "$(stack path --dist-dir)"
-          ls -l "$(stack path --dist-dir)/build/"
-          ls -l "$(stack path --dist-dir)/build/madlib/"
+          ls -l "$DIST_DIR"
+          ls -l "$DIST_DIR/build/"
+          ls -l "$DIST_DIR/build/madlib/"
 
       - name: Build tools
         shell: msys2 {0}
         run: |
           export PATH="/c/hostedtoolcache/windows/stack/2.7.3/x64:/c/tools/ghc-8.10.7/bin:/c/Users/runneradmin/AppData/Roaming/cabal/bin:/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH"
+          DIST_DIR="$(stack path --dist-dir | tr -d '\r')"
           export ESBUILD_PATH="/c/npm/prefix/esbuild.cmd"
-          "$(stack path --dist-dir)/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle
+          "$DIST_DIR/build/madlib/madlib" compile -i tools/package-installer/src/Main.mad -o ./tools/package-installer/dist/package-installer.js --bundle
 
       - name: Override LLVM path
         run: echo "PATH=D:\a\_temp\msys64\mingw64\bin;$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -123,8 +125,9 @@ jobs:
         shell: msys2 {0}
         run: |
           export PATH="/c/hostedtoolcache/windows/stack/2.7.3/x64:/c/tools/ghc-8.10.7/bin:/c/Users/runneradmin/AppData/Roaming/cabal/bin:/c/npm/prefix:/c/Program Files/nodejs:/c/ProgramData/chocolatey/bin:/c/Users/runneradmin/AppData/Local/Programs/stack/x86_64-windows/ghc-8.10.7/bin:$PATH"
+          DIST_DIR="$(stack path --dist-dir | tr -d '\r')"
           mkdir madlib-x86_64-pc-windows-mingw32
-          cp "$(stack path --dist-dir)/build/madlib/madlib.exe" ./madlib-x86_64-pc-windows-mingw32/
+          cp "$DIST_DIR/build/madlib/madlib.exe" ./madlib-x86_64-pc-windows-mingw32/
           cp -R runtime ./madlib-x86_64-pc-windows-mingw32/
           cp -R prelude ./madlib-x86_64-pc-windows-mingw32/
           cp ./tools/package-installer/dist/package-installer.js ./madlib-x86_64-pc-windows-mingw32/
