@@ -21,7 +21,7 @@ jobs:
 
       - run: DEBIAN_FRONTEND=noninteractive sudo apt-get update -y
 
-      - run: sudo apt-get install -y lcov llvm-12 nasm
+      - run: sudo apt-get install -y lcov llvm-12 llvm-12-dev nasm
 
       - uses: actions/cache@v4
         name: Cache ~/.stack
