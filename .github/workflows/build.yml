@@ -21,7 +21,39 @@ jobs:
 
       - run: DEBIAN_FRONTEND=noninteractive sudo apt-get update -y
 
-      - run: sudo apt-get install -y lcov llvm-12 llvm-12-dev libclang-common-12-dev nasm
+      - run: sudo apt-get install -y lcov cmake ninja-build nasm
+
+      - uses: actions/cache@v4
+        id: cache-llvm
+        name: Cache LLVM 12 build
+        with:
+          path: /usr/local/llvm-12
+          key: ${{ runner.os }}-llvm-12.0.1
+
+      - name: Build LLVM 12 from source
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/llvm/llvm-project.git --branch llvmorg-12.0.1 --depth 1 /tmp/llvm-project
+          cmake -S /tmp/llvm-project/llvm -B /tmp/llvm-build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr/local/llvm-12 \
+            -DLLVM_ENABLE_PROJECTS="clang;polly" \
+            -DLLVM_TARGETS_TO_BUILD="X86" \
+            -DLLVM_INCLUDE_TESTS=OFF \
+            -DLLVM_INCLUDE_EXAMPLES=OFF \
+            -DLLVM_INCLUDE_BENCHMARKS=OFF \
+            -DLLVM_ENABLE_BINDINGS=OFF \
+            -DLLVM_ENABLE_LIBXML2=OFF \
+            -DLLVM_ENABLE_ZLIB=OFF \
+            -DLLVM_ENABLE_TERMINFO=OFF
+          ninja -C /tmp/llvm-build -j$(nproc)
+          sudo ninja -C /tmp/llvm-build install
+
+      - name: Add LLVM 12 to PATH
+        run: |
+          echo "/usr/local/llvm-12/bin" >> $GITHUB_PATH
+          echo "LIBRARY_PATH=/usr/local/llvm-12/lib:$LIBRARY_PATH" >> $GITHUB_ENV
 
       - uses: actions/cache@v4
         name: Cache ~/.stack
@@ -33,7 +65,7 @@ jobs:
         run: TARGET="LINUX_X64" ./scripts/build-runtime-libs
 
       - name: build runtime
-        run: AR="llvm-ar-12" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/include/c++/11:/usr/include/x86_64-linux-gnu/c++/11:/usr/include/" ./scripts/build-runtime
+        run: AR="llvm-ar" TARGET="LINUX_X64" CPLUS_INCLUDE_PATH="/usr/local/llvm-12/include/c++/v1:/usr/include/c++/11:/usr/include/x86_64-linux-gnu/c++/11:/usr/include/" ./scripts/build-runtime
 
       - run: ./scripts/test coverage
 
