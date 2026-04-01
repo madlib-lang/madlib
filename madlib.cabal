@@ -5,7 +5,7 @@ cabal-version: 2.0
 -- see: https://github.com/sol/hpack
 
 name:           madlib
-version:        0.24.1
+version:        0.25.0
 description:    Please see the README on GitHub at <https://github.com/madlib-lang/madlib#readme>
 homepage:       https://github.com/madlib-lang/madlib#readme
 bug-reports:    https://github.com/madlib-lang/madlib/issues
@@ -50,6 +50,10 @@ library
       Fuzz.Types
       Generate.Documentation
       Generate.Javascript
+      Generate.Javascript.Doc
+      Generate.Javascript.Internals
+      Generate.Javascript.Javascript
+      Generate.Javascript.ModuleDoc
       Generate.JSInternals
       Generate.LLVM.Boxing
       Generate.LLVM.Builtins
@@ -532,12 +536,72 @@ test-suite madlib-test
 benchmark parse-bench
   type: exitcode-stdio-1.0
   main-is: ParseBench.hs
+  other-modules:
+      Paths_madlib
+  autogen-modules:
+      Paths_madlib
   hs-source-dirs:
       compiler/bench
   build-depends:
-      base >=4.7 && <5
+      Cabal ==3.6.2.0
+    , Glob >=0.10.2
+    , MissingH >=1.4.3.0
+    , aeson ==1.5.6.0
+    , aeson-pretty
+    , ansi-terminal ==0.5.0
+    , ansi-wl-pprint >=0.6.9
+    , async ==2.2.4
+    , base >=4.7 && <5
     , bytestring
+    , constraints-extras ==0.3.2.0
+    , containers >=0.6.2.1
     , criterion
+    , cryptohash-md5
+    , data-default ==0.7.1.1
+    , dependent-hashmap ==0.1.0.1
+    , dependent-sum ==0.7.1.0
+    , dependent-sum-template ==0.1.*
+    , diagnose
+    , directory ==1.3.6.0
+    , either
+    , exceptions
+    , executable-path >=0.0.3.1
+    , filepath
+    , fold-debounce ==0.2.0.9
+    , fsnotify ==0.3.0.1
+    , groupBy
+    , hashable
+    , haskeline ==0.8.2.1
+    , hpc-codecov
+    , hpc-lcov
+    , hspec
+    , hspec-golden
+    , lifted-base ==0.2.3.12
+    , lsp
     , madlib
+    , megaparsec >=9.0
+    , monad-control ==1.0.3.1
+    , mtl
+    , optparse-applicative >=0.16.1.0
+    , parallel-io ==0.3.5
+    , parser-combinators >=1.3
+    , pretty-show
+    , prettyprinter >=1.6.2
+    , prettyprinter-ansi-terminal
+    , process >=1.6.9.0
+    , process-extras
+    , random ==1.2.1
+    , regex-tdfa
+    , rock ==0.3.*
+    , silently
+    , some ==1.*
+    , stm ==2.5.0.2
+    , template-haskell
+    , text
+    , time ==1.9.3
+    , transformers
+    , transformers-base ==0.4.6
+    , unordered-containers ==0.2.16.0
+    , utf8-string
   ghc-options: -O2 -rtsopts
   default-language: Haskell2010
