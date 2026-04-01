@@ -5,7 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#if defined(_WIN32) || defined(__MINGW32__)
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
 
 
 #ifdef __cplusplus
@@ -36,13 +40,21 @@ static size_t clampSize(size_t value, size_t minValue, size_t maxValue) {
 }
 
 static uint64_t getPhysicalMemoryBytes() {
+#if defined(_WIN32) || defined(__MINGW32__)
+  MEMORYSTATUSEX statex;
+  statex.dwLength = sizeof(statex);
+  if (GlobalMemoryStatusEx(&statex)) {
+    return (uint64_t)statex.ullTotalPhys;
+  }
+  return 8ULL * 1024ULL * 1024ULL * 1024ULL;
+#else
   long pages = sysconf(_SC_PHYS_PAGES);
   long pageSize = sysconf(_SC_PAGESIZE);
   if (pages <= 0 || pageSize <= 0) {
     return 8ULL * 1024ULL * 1024ULL * 1024ULL;
   }
-
   return (uint64_t)pages * (uint64_t)pageSize;
+#endif
 }
 
 static size_t saturatingMul(size_t a, size_t b) {

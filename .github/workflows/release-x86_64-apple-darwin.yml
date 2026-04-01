@@ -56,9 +56,6 @@ jobs:
           ninja -C /tmp/llvm-build -j$(sysctl -n hw.logicalcpu)
           sudo ninja -C /tmp/llvm-build install
 
-      - name: Install alex and happy
-        run: stack install alex happy
-
       - name: Build madlib executable
         run: stack build
 

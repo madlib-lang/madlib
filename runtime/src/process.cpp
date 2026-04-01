@@ -1,6 +1,6 @@
 #include "uv.h"
 #include "process.hpp"
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__MINGW32__)
 #include <windows.h>
 #else
 #include <sys/mman.h>
@@ -10,7 +10,9 @@
 #include "event-loop.hpp"
 #include "string.hpp"
 #include "tuple.hpp"
+#if !defined(_WIN32) && !defined(__MINGW32__)
 #include <unistd.h>
+#endif
 #include <limits.h>
 #include <time.h>
 #include <thread>
@@ -65,7 +67,7 @@ static bool isTruthyEnvValue(const char *value) {
 }
 
 static uint64_t getPhysicalMemoryBytes() {
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__MINGW32__)
   MEMORYSTATUSEX statex;
   statex.dwLength = sizeof(statex);
   if (GlobalMemoryStatusEx(&statex)) {
