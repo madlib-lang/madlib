@@ -29,16 +29,7 @@ jobs:
         run: stack config set system-ghc --global true
 
       - run: DEBIAN_FRONTEND=noninteractive sudo apt-get update -y
-      - run: sudo apt-get install -y llvm-12 llvm-12-dev nasm nodejs
-
-      - name: Wrap llvm-config to strip unavailable Polly libs
-        run: |
-          sudo tee /usr/local/bin/llvm-config-12 > /dev/null << 'EOF'
-          #!/bin/bash
-          /usr/bin/llvm-config-12 "$@" | sed 's/-lPolly[^ ]*//g'
-          EOF
-          sudo chmod +x /usr/local/bin/llvm-config-12
-          sudo ln -sf /usr/local/bin/llvm-config-12 /usr/local/bin/llvm-config
+      - run: sudo apt-get install -y llvm-12 llvm-12-dev libclang-common-12-dev nasm nodejs
 
       - uses: actions/cache@v4
         with:
@@ -90,16 +81,7 @@ jobs:
         run: stack config set system-ghc --global true
 
       - run: DEBIAN_FRONTEND=noninteractive sudo apt-get update -y
-      - run: sudo apt-get install -y llvm-12 llvm-12-dev nasm nodejs
-
-      - name: Wrap llvm-config to strip unavailable Polly libs
-        run: |
-          sudo tee /usr/local/bin/llvm-config-12 > /dev/null << 'EOF'
-          #!/bin/bash
-          /usr/bin/llvm-config-12 "$@" | sed 's/-lPolly[^ ]*//g'
-          EOF
-          sudo chmod +x /usr/local/bin/llvm-config-12
-          sudo ln -sf /usr/local/bin/llvm-config-12 /usr/local/bin/llvm-config
+      - run: sudo apt-get install -y llvm-12 llvm-12-dev libclang-common-12-dev nasm nodejs
 
       - uses: actions/cache@v4
         with:
