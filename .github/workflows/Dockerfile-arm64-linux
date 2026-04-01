@@ -39,8 +39,8 @@ COPY . .
 ENV LC_ALL="C.UTF-8"
 # ENV LANG="en_US.UTF-8"
 
-ENV GHCRTS="-M4G"
-RUN stack build --jobs 1
+ENV GHCRTS="-M8G -A64m"
+RUN stack build --jobs 1 --ghc-options "-O0"
 
 # build runtime
 RUN TARGET="LINUX_ARM64" ./scripts/build-runtime-libs
