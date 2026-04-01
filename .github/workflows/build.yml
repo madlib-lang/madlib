@@ -23,7 +23,7 @@ jobs:
 
       - run: sudo apt-get install -y lcov cmake ninja-build nasm
 
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         id: cache-llvm
         name: Cache LLVM 12 build
         with:
@@ -49,6 +49,13 @@ jobs:
             -DLLVM_ENABLE_TERMINFO=OFF
           ninja -C /tmp/llvm-build -j$(nproc)
           sudo ninja -C /tmp/llvm-build install
+
+      - name: Save LLVM 12 cache
+        if: steps.cache-llvm.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /usr/local/llvm-12
+          key: ${{ runner.os }}-llvm-12.0.1
 
       - name: Add LLVM 12 to PATH
         run: |
