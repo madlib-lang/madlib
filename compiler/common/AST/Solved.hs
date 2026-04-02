@@ -393,6 +393,9 @@ isTypedExp a = case a of
   Typed _ _ (Export (Typed _ _ Extern{})) ->
     True
 
+  Typed _ _ (Export (Typed _ _ (Assignment _ rhs))) ->
+    isAbs rhs
+
   _ ->
     False
 
@@ -512,6 +515,9 @@ bundleExports e'@(Typed _ _ exp) = case exp of
     (n, e')
 
   Export (Typed _ _ (Extern _ n _)) ->
+    (n, e')
+
+  Export (Typed _ _ (Assignment n _)) ->
     (n, e')
 
   TypedExp (Typed _ _ (Export (Typed _ _ (Assignment n _)))) _ _ ->

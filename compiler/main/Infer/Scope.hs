@@ -367,7 +367,7 @@ collect ctx cs solvedExp = case solvedExp of
   Typed _ _    (Where exp iss)                           -> collectWhere ctx cs exp iss
   Typed _ _    (ListConstructor items)                   -> mconcat <$> mapM (collectListItem ctx cs) items
   Typed _ _    (Record fields)                           -> mconcat <$> mapM (collectField ctx cs) fields
-  Typed _ area (Extern _ _ name)                         -> collectExtern ctx area name
+  Typed _ area (Extern _ name _)                         -> collectExtern ctx area name
   Typed _ _    (NameExport name)                         -> collectNameExport ctx cs name solvedExp
   Untyped _    (TypeExport name)                         -> collectTypeExport ctx cs name solvedExp
   _                                                      -> return mempty

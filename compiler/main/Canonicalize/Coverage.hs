@@ -12,6 +12,7 @@ import Data.List (isInfixOf, isSuffixOf)
 import Run.Options
 import Canonicalize.Coverable
 import Control.Monad.State
+import qualified Infer.Type as Ty
 
 
 trackingModuleName :: String
@@ -58,7 +59,7 @@ addTrackers options ast@AST{ apath = Just path } = do
       else
         return updatedImports
 
-    updatedExps      <- mapM (addTrackersToExp options path) $ aexps ast
+    updatedExps      <- fmap concat $ mapM (addTrackersToTopLevelExp options path) $ aexps ast
     updatedInstances <- forM (ainstances ast) $ \(Canonical area (Instance n ps p methods)) -> do
       if n == "Eq" || n == "Show" then
         return $ Canonical area (Instance n ps p methods)
@@ -355,6 +356,50 @@ addTrackersToExp options astPath exp = case exp of
 
   or ->
     return or
+
+
+-- | Like addTrackersToExp but handles top-level extern declarations which need to
+-- emit two bindings: an internal raw-extern binding and a coverage-wrapper assignment.
+addTrackersToTopLevelExp :: Options -> FilePath -> Exp -> CanonicalM [Exp]
+addTrackersToTopLevelExp options astPath exp = case exp of
+  Canonical area (Export (Canonical innerArea (Extern scheme fnName externName))) -> do
+    externExps <- mkExternCoverageBindings area innerArea scheme fnName externName True astPath
+    return externExps
+
+  Canonical area (Extern scheme fnName externName) -> do
+    externExps <- mkExternCoverageBindings area area scheme fnName externName False astPath
+    return externExps
+
+  _ -> do
+    exp' <- addTrackersToExp options astPath exp
+    return [exp']
+
+
+-- | Build the two-expression coverage wrapper for an extern declaration:
+-- 1. An internal non-exported Extern binding with a mangled name
+-- 2. An exported (or plain) Assignment that wraps it with a function tracker
+mkExternCoverageBindings :: Area -> Area -> Ty.Scheme -> String -> String -> Bool -> FilePath -> CanonicalM [Exp]
+mkExternCoverageBindings outerArea innerArea scheme fnName externName isExported astPath = do
+  let rawName  = "__extern_raw__" <> fnName
+      line     = getLineFromStart innerArea
+      arity    = case scheme of
+                   Ty.Forall _ (_ Ty.:=> ty) -> length (Ty.getParamTypes ty)
+      params    = [ "__ep_" <> show i <> "__" | i <- [0 .. arity - 1] ]
+      paramPats = [ Canonical emptyArea p | p <- params ]
+      paramRefs = [ Canonical emptyArea (Var p) | p <- params ]
+      rawRef    = Canonical innerArea (Var rawName)
+      applied   = foldl (\f (p, isLast) -> Canonical emptyArea (App f p isLast))
+                    rawRef
+                    (zip paramRefs (replicate (max 0 (arity - 1)) False ++ [True]))
+  tracker <- makeFunctionTracker astPath line fnName
+  let innerBody = Canonical emptyArea (Do [tracker, applied])
+      wrapped   = foldr (\p acc -> Canonical emptyArea (Abs p [acc])) innerBody paramPats
+      rhs       = if null params then Canonical emptyArea (Do [tracker, rawRef]) else wrapped
+      rawExtern = Canonical innerArea (Extern scheme rawName externName)
+      wrapperRhs = if isExported
+                   then Canonical outerArea (Export (Canonical innerArea (Assignment fnName rhs)))
+                   else Canonical outerArea (Assignment fnName rhs)
+  return [rawExtern, wrapperRhs]
 
 
 addTrackersToBooleanExpression :: Options -> FilePath -> Int -> Int -> Int -> Exp -> CanonicalM (Int, Exp)
