@@ -135,9 +135,6 @@ allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "l
 isGeneratedTestsName :: String -> Bool
 isGeneratedTestsName n = "__tests__" `isInfixOf` n
 
-isGeneratedTrackerName :: String -> Bool
-isGeneratedTrackerName n =
-  "___functionTracker_" `isInfixOf` n || "___lineTracker_" `isInfixOf` n
 
 looksLikeGeneratedConstructorName :: String -> Bool
 looksLikeGeneratedConstructorName n = case n of
@@ -771,25 +768,7 @@ emitExp env config (Typed qt area metadata exp) =
                            <> ");"
                        ]
                   <> methodGlobal
-              mkLazyFunctionFromExp rhsExp =
-                let fnCacheName = "__cached_" <> safeName
-                    rhsDoc = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config rhsExp
-                in  "var "
-                      <> docText fnCacheName
-                      <> ";"
-                      <> docHardline
-                      <> "function "
-                      <> docText safeName
-                      <> "(...__args) "
-                      <> docBlock
-                           [ "if (" <> docText fnCacheName <> " === undefined) "
-                               <> docBlock [docText fnCacheName <> " = " <> rhsDoc <> ";"]
-                           , "let __fn = " <> docText fnCacheName <> ";"
-                           , "return __args.length === 0"
-                               <> " ? __fn()"
-                               <> " : __args.reduce((f, a) => f(a), __fn);"
-                           ]
-                      <> methodGlobal
+
               mkFunctionDecl params =
                 let safeParams = generateSafeName <$> (getValue <$> params)
                     firstParam = head safeParams
@@ -805,9 +784,6 @@ emitExp env config (Typed qt area metadata exp) =
           in case exp of
                Typed _ _ _ (Var rhsName _) | not (inBody env) && rhsArity > 0 ->
                  mkFunctionAlias rhsName
-
-               _ | not (inBody env) && isGeneratedTrackerName safeName ->
-                 mkLazyFunctionFromExp exp
 
                _ | not (inBody env) && isGeneratedTestsName safeName ->
                  let content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
@@ -828,7 +804,6 @@ emitExp env config (Typed qt area metadata exp) =
                      needsModuleInit =
                        not (inBody env)
                          && needsModifier
-                         && not (isGeneratedTrackerName safeName)
                          && not (isGeneratedTestsName safeName)
                          && rhsNeedsModuleInit exp
                  in  if needsModuleInit then
@@ -843,33 +818,6 @@ emitExp env config (Typed qt area metadata exp) =
           in  lhs' <> " = " <> content
 
         Export e -> case e of
-          Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) exp)
-            | isGeneratedTrackerName (generateSafeName name) ->
-              let safeName = generateSafeName name
-                  fnCacheName = "__cached_" <> safeName
-                  rhsDoc = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
-                  methodGlobal =
-                    if name `S.member` methodNames env then
-                      docHardline <> "global." <> docText name <> " = " <> docText name
-                    else
-                      ""
-              in  "var "
-                    <> docText fnCacheName
-                    <> ";"
-                    <> docHardline
-                    <> "export function "
-                    <> docText safeName
-                    <> "(...__args) "
-                    <> docBlock
-                         [ "if (" <> docText fnCacheName <> " === undefined) "
-                             <> docBlock [docText fnCacheName <> " = " <> rhsDoc <> ";"]
-                         , "let __fn = " <> docText fnCacheName <> ";"
-                         , "return __args.length === 0"
-                             <> " ? __fn()"
-                             <> " : __args.reduce((f, a) => f(a), __fn);"
-                         ]
-                    <> methodGlobal
-
           Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) exp)
             | isGeneratedTestsName (generateSafeName name) ->
               let safeName = generateSafeName name
@@ -1627,7 +1575,6 @@ emitModuleInitBody env config (exp : es) =
           nextEnv  = env { varsInScope = S.insert name (varsInScope env) }
           needsInit =
             notElem safeName (varsInScope env)
-              && not (isGeneratedTrackerName safeName)
               && not (isGeneratedTestsName safeName)
               && rhsNeedsModuleInit rhs
           content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config rhs
@@ -1638,7 +1585,6 @@ emitModuleInitBody env config (exp : es) =
           nextEnv  = env { varsInScope = S.insert name (varsInScope env) }
           needsInit =
             notElem safeName (varsInScope env)
-              && not (isGeneratedTrackerName safeName)
               && not (isGeneratedTestsName safeName)
               && rhsNeedsModuleInit rhs
           content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config rhs
