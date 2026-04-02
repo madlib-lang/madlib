@@ -43,6 +43,7 @@ import           Error.Warning
 import           GHC.IO.Handle
 import           GHC.IO.Handle.FD
 import           Run.OptimizationLevel (OptimizationLevel)
+import           Run.SourceMapMode
 
 import           System.IO (hPutStrLn, stderr)
 
@@ -90,6 +91,7 @@ runTests entrypoint target debug watchMode coverage optLevel suiteFilter testInd
           , optOptimizationLevel = optLevel
           , optLspMode = False
           , optEmitLLVM = emitLLVM
+          , optSourceMaps = NoSourceMap
           }
 
   runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint []

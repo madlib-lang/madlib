@@ -9,6 +9,7 @@ import           Paths_madlib                   ( version )
 import           Text.PrettyPrint.ANSI.Leijen   ( string )
 import           Run.Target
 import           Run.OptimizationLevel
+import           Run.SourceMapMode
 
 
 data ConfigCommand
@@ -32,6 +33,7 @@ data Command
       , compileCoverage :: Bool
       , compileOptimizationLevel :: OptimizationLevel
       , compileEmitLLVM :: Bool
+      , compileSourceMaps :: SourceMapMode
       }
   | Test
       { testInput :: FilePath
@@ -116,6 +118,12 @@ parseCoverage =
 parseEmitLLVM :: Parser Bool
 parseEmitLLVM =
   switch (long "emit-llvm" <> help "emit LLVM IR (.ll files) alongside compilation" <> showDefault)
+
+parseSourceMaps :: Parser SourceMapMode
+parseSourceMaps =
+      flag' ExternalSourceMap (long "source-maps" <> help "Emit source map (.mjs.map) files alongside compiled JS modules")
+  <|> flag' InlineSourceMap   (long "source-maps-inline" <> help "Embed source maps inline inside compiled JS modules")
+  <|> pure NoSourceMap
 
 
 parseLimitedTargetOption :: ReadM Target
@@ -235,6 +243,7 @@ parseCompile =
     <*> parseCoverage
     <*> parseOptimizationLevel
     <*> parseEmitLLVM
+    <*> parseSourceMaps
 
 parseTestInput :: Parser FilePath
 parseTestInput =

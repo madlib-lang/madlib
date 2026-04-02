@@ -12,6 +12,7 @@ import           Run.Options
 import qualified Utils.PathUtils as Path
 import           Run.Target
 import           Run.OptimizationLevel
+import           Run.SourceMapMode
 import qualified Driver
 import           Control.Exception (try)
 import           System.Process
@@ -67,6 +68,7 @@ llvmCompileAndRun casePath = do
           , optOptimizationLevel = O3
           , optLspMode = False
           , optEmitLLVM = False
+          , optSourceMaps = NoSourceMap
           }
 
   state <- Driver.initialState
@@ -111,6 +113,7 @@ llvmCompileAndRunWithCoverage casePath = do
           , optOptimizationLevel = O3
           , optLspMode = False
           , optEmitLLVM = False
+          , optSourceMaps = NoSourceMap
           }
 
   state <- Driver.initialState
@@ -157,6 +160,7 @@ jsCompileAndRun casePath = do
           , optOptimizationLevel = O3
           , optLspMode = False
           , optEmitLLVM = False
+          , optSourceMaps = NoSourceMap
           }
 
   state <- Driver.initialState

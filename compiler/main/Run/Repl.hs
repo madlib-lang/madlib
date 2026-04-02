@@ -21,6 +21,7 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Utils.PathUtils as PathUtils
 import Run.Target
 import Run.OptimizationLevel
+import Run.SourceMapMode
 import Control.Monad (forM_, forM)
 import Explain.Format
 import qualified Data.List as List
@@ -488,6 +489,7 @@ start target = do
           , Options.optOptimizationLevel = O1
           , Options.optLspMode = False
           , Options.optEmitLLVM = False
+          , Options.optSourceMaps = NoSourceMap
           , Options.optDebug = False
           }
 

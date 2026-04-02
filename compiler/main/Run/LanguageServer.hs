@@ -65,6 +65,7 @@ import qualified Canonicalize.Interface as Can
 import System.FilePath (takeFileName, dropExtension, takeExtension, (</>))
 import qualified Data.HashMap.Strict as HashMap
 import Run.OptimizationLevel
+import Run.SourceMapMode
 import Data.Maybe (isJust)
 import GHC.Base (when)
 import Language.LSP.VFS (virtualFileText)
@@ -241,6 +242,7 @@ buildOptions target = do
       , Options.optOptimizationLevel = O1
       , Options.optLspMode = True
       , Options.optEmitLLVM = False
+      , Options.optSourceMaps = NoSourceMap
       , Options.optDebug = False
       }
 

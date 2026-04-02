@@ -50,7 +50,8 @@ import Error.Warning
 import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings, coverableInfo))
 import qualified Utils.PathUtils as PathUtils
 import qualified Generate.Javascript as Javascript
-import System.FilePath (takeDirectory, dropFileName, joinPath, takeExtension)
+import           Run.SourceMapMode
+import System.FilePath (takeDirectory, dropFileName, joinPath, takeExtension, takeFileName)
 import System.FilePath (isAbsolute)
 import Utils.Path
 import qualified Parse.Megaparsec.DocString as DocString
@@ -517,16 +518,27 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
     coreAst  <- Rock.fetch $ CoreAST path
     let coreAstWithPath = coreAst { Core.apath = Just path }
-    jsModule <- liftIO $ Javascript.generateJSModule options paths coreAstWithPath
+    (jsModule, _mappings) <- liftIO $ Javascript.generateJSModule options paths coreAstWithPath
     return (jsModule, (mempty, mempty))
 
   BuiltJSModule path -> nonInput $ do
-    jsModule <- Rock.fetch $ GeneratedJSModule path
-    let computedOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
+    paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+    coreAst  <- Rock.fetch $ CoreAST path
+    let coreAstWithPath  = coreAst { Core.apath = Just path }
+        computedOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
 
+    (jsModule, mappings) <- liftIO $ Javascript.generateJSModule options paths coreAstWithPath
     liftIO $ do
       createDirectoryIfMissing True $ Path.takeDirectoryIfFile computedOutputPath
-      writeFile computedOutputPath jsModule
+      case optSourceMaps options of
+        NoSourceMap -> writeFile computedOutputPath jsModule
+        ExternalSourceMap -> do
+          let (annotated, mapJson) = Javascript.makeExternalSourceMap path computedOutputPath mappings jsModule
+          writeFile computedOutputPath annotated
+          writeFile (computedOutputPath <> ".map") mapJson
+        InlineSourceMap -> do
+          let annotated = Javascript.makeInlineSourceMap path computedOutputPath mappings jsModule
+          writeFile computedOutputPath annotated
     return (jsModule, (mempty, mempty))
 
   BuiltTarget path -> nonInput $ do
@@ -556,13 +568,13 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
       when (optBundle options) $ do
         let mainOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
-        result <- liftIO $ Javascript.runBundle mainOutputPath (optTarget options)
+        result <- liftIO $ Javascript.runBundle mainOutputPath (optOutputPath options) (optTarget options) (optSourceMaps options)
         case result of
           Left err ->
             liftIO $ putStr err
 
           Right ("", stderr) ->
-            liftIO $ putStrLn stderr
+            liftIO $ unless (null stderr) $ putStrLn stderr
 
           Right (bundle, _) -> do
             liftIO $ writeFile (optOutputPath options) bundle

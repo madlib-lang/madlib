@@ -42,6 +42,7 @@ import           Utils.PathUtils (defaultPathUtils)
 import           Control.Monad
 import qualified Driver
 import Run.OptimizationLevel
+import Run.SourceMapMode
 
 
 getFilesForDoc :: FilePath -> IO [FilePath]
@@ -84,6 +85,7 @@ generateDocData rootFolder paths = do
           , optOptimizationLevel = O1
           , optLspMode = False
           , optEmitLLVM = False
+          , optSourceMaps = NoSourceMap
           , optDebug = False
           }
   let llvmOptions =
@@ -103,6 +105,7 @@ generateDocData rootFolder paths = do
           , optOptimizationLevel = O1
           , optLspMode = False
           , optEmitLLVM = False
+          , optSourceMaps = NoSourceMap
           , optDebug = False
           }
   jsMemoVar <- newIORef mempty

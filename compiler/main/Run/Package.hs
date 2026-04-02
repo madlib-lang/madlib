@@ -50,6 +50,7 @@ import qualified Driver
 import           Run.Options
 import Utils.PathUtils (defaultPathUtils)
 import Run.OptimizationLevel
+import Run.SourceMapMode
 
 
 typeCheckTask :: FilePath -> Rock.Task Query.Query Slv.Table
@@ -83,6 +84,7 @@ typeCheckMain target main = do
           , optOptimizationLevel = O1
           , optLspMode = False
           , optEmitLLVM = False
+          , optSourceMaps = NoSourceMap
           , optDebug = False
           }
   (table, warnings, errors) <- Driver.runIncrementalTask state options [] mempty Driver.Don'tPrune (typeCheckTask main)

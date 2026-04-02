@@ -25,6 +25,7 @@ import           Run.Compile
 import           Run.CommandLine
 import           Utils.Path (computeTargetPath)
 import           Run.OptimizationLevel
+import           Run.SourceMapMode
 import           System.IO (stdout)
 import           System.IO.Silently
 import           Run.Target
@@ -98,6 +99,7 @@ runModule target input args watchMode exePath = do
           , optOptimizationLevel = O1
           , optLspMode = False
           , optEmitLLVM = False
+          , optSourceMaps = NoSourceMap
           , optParseOnly = False
           }
 

@@ -38,7 +38,10 @@ import           Infer.Type
 import           Generate.Javascript.Internals
 import           Generate.Javascript.Doc
 import           Generate.Javascript.ModuleDoc
+import           Generate.Javascript.SourceMap  (Mapping(..), buildSourceMapJSON, base64Encode)
+import           Explain.Location               (getLineFromStart, getColumnFromStart)
 import           Run.Target
+import           Run.SourceMapMode
 import           Text.Show.Pretty               ( ppShow )
 import Distribution.Types.Lens (_Impl)
 import qualified Data.Maybe as Maybe
@@ -1630,8 +1633,8 @@ rollupNotFoundMessage = unlines
   ]
 
 -- TODO: rework this
-runBundle :: FilePath -> Target -> IO (Either String (String, String))
-runBundle entrypointCompiledPath target = do
+runBundle :: FilePath -> FilePath -> Target -> SourceMapMode -> IO (Either String (String, String))
+runBundle entrypointCompiledPath bundleOutputPath target sourceMapMode = do
   putStrLn $ "Bundling with entrypoint '" <> entrypointCompiledPath <> "'"
   esbuildPath        <- try $ getEnv "ESBUILD_PATH"
   esbuildPathChecked <- case (esbuildPath :: Either IOError String) of
@@ -1660,24 +1663,50 @@ runBundle entrypointCompiledPath target = do
 
   let platform = if target == TNode then "node" else "browser"
   case esbuildPathChecked of
-    Right esbuild -> do
-      r <-
-        try
-          (readProcessWithExitCode
-            esbuild
-            [ entrypointCompiledPath
-            , "--platform=" ++ platform
-            , "--bundle"
-            ]
-            ""
-          ) :: IO (Either SomeException (ExitCode, String, String))
+    Right esbuild ->
+      case sourceMapMode of
+        -- External source maps require --outfile so esbuild can write the .map
+        -- file alongside the bundle; capturing stdout is not supported in this mode.
+        ExternalSourceMap -> do
+          r <-
+            try
+              (readProcessWithExitCode
+                esbuild
+                [ entrypointCompiledPath
+                , "--platform=" ++ platform
+                , "--bundle"
+                , "--sourcemap=external"
+                , "--outfile=" ++ bundleOutputPath
+                ]
+                ""
+              ) :: IO (Either SomeException (ExitCode, String, String))
+          case r of
+            Left  e ->
+              return $ Left (ppShow e)
+            -- esbuild wrote the files itself; return empty stdout so the caller
+            -- does not overwrite the file.
+            Right (_, _, stderr) ->
+              return $ Right ("", stderr)
 
-      case r of
-        Left  e ->
-          return $ Left (ppShow e)
-
-        Right (_, stdout, stderr) -> do
-          return $ Right (stdout, stderr)
+        _ -> do
+          let sourcemapFlag = case sourceMapMode of
+                InlineSourceMap -> ["--sourcemap=inline"]
+                _               -> []
+          r <-
+            try
+              (readProcessWithExitCode
+                esbuild
+                ([ entrypointCompiledPath
+                 , "--platform=" ++ platform
+                 , "--bundle"
+                 ] ++ sourcemapFlag)
+                ""
+              ) :: IO (Either SomeException (ExitCode, String, String))
+          case r of
+            Left  e ->
+              return $ Left (ppShow e)
+            Right (_, stdout, stderr) ->
+              return $ Right (stdout, stderr)
 
     Left e ->
       return $ Left e
@@ -1779,8 +1808,79 @@ generateMainCallFromAST options astPath ast =
           fallbackMainCall
 
 
-generateJSModule :: Options -> [FilePath] -> Core.AST -> IO String
-generateJSModule _ _ Core.AST { Core.apath = Nothing } = return ""
+-- | Count the number of newlines in a string (= number of complete lines - 1).
+countNewlines :: String -> Int
+countNewlines = length . filter (== '\n')
+
+-- | Render a list of JSStmt sections (as in renderModuleDoc but only the
+-- prefix sections before mdDefinitions) and return the number of output lines
+-- consumed, including the trailing blank-line separator if any sections are non-empty.
+renderPrefixLineCount :: [[JSStmt]] -> Int
+renderPrefixLineCount prefixSections =
+  let nonEmpty   = filter (not . null) prefixSections
+      rendered   = docRender . docVsep . map renderStmtDoc <$> nonEmpty
+      -- Each non-empty section contributes its lines.
+      -- Between sections there is one docHardline (blank line separator).
+      sectionLines = map countNewlines rendered
+      separators   = if null nonEmpty then 0 else length nonEmpty  -- one \n per section end + inter-section blank lines
+  in  sum sectionLines + separators
+
+-- | Build source map Mapping entries for the top-level expressions emitted by
+-- the given module doc.  We render each definition individually to count how
+-- many output lines it occupies.
+--
+-- Returns a list of Mapping values (0-based output line → 0-based source line).
+buildMappings :: [[JSStmt]] -> [(JSStmt, Core.Exp)] -> [Mapping]
+buildMappings prefixSections defsWithExps =
+  let prefixLines = renderPrefixLineCount prefixSections
+      -- Start at prefixLines + 1 blank line before mdDefinitions section
+      -- (renderModuleDoc inserts a docHardline between non-empty sections)
+      defsStartLine = if prefixLines == 0 then 0 else prefixLines + 1
+  in  go defsStartLine defsWithExps
+  where
+    go _   []                   = []
+    go cur ((stmt, exp) : rest) =
+      let rendered  = docRender (renderStmtDoc stmt)
+          srcLine   = getLineFromStart (Core.getArea exp) - 1   -- convert 1-based to 0-based
+          srcCol    = getColumnFromStart (Core.getArea exp) - 1 -- convert 1-based to 0-based
+          mapping   = Mapping { mappingGenLine = cur, mappingGenCol = 0
+                              , mappingSrcLine = max 0 srcLine, mappingSrcCol = max 0 srcCol }
+          nextLine  = cur + countNewlines rendered + 1
+      in  mapping : go nextLine rest
+
+-- | Attach a //# sourceMappingURL comment and optionally write the map JSON.
+-- Returns (annotated JS string, map JSON string).
+makeExternalSourceMap
+  :: FilePath   -- absolute path to .mad source file
+  -> FilePath   -- absolute path to output .mjs file
+  -> [Mapping]
+  -> String     -- JS module content
+  -> (String, String)
+makeExternalSourceMap sourcePath outputPath mappings jsContent =
+  let outFileName    = takeFileName outputPath
+      -- relative path from the .mjs directory to the .mad source
+      relSource      = makeRelativeEx (dropFileName outputPath) sourcePath
+      mapJson        = buildSourceMapJSON outFileName relSource mappings Nothing
+      annotated      = jsContent <> "\n//# sourceMappingURL=" <> outFileName <> ".map\n"
+  in  (annotated, mapJson)
+
+makeInlineSourceMap
+  :: FilePath   -- absolute path to .mad source file
+  -> FilePath   -- absolute path to output .mjs file
+  -> [Mapping]
+  -> String     -- JS module content
+  -> String
+makeInlineSourceMap sourcePath outputPath mappings jsContent =
+  let outFileName = takeFileName outputPath
+      relSource   = makeRelativeEx (dropFileName outputPath) sourcePath
+      mapJson     = buildSourceMapJSON outFileName relSource mappings Nothing
+      encoded     = base64Encode mapJson
+      annotated   = jsContent <> "\n//# sourceMappingURL=data:application/json;base64," <> encoded <> "\n"
+  in  annotated
+
+
+generateJSModule :: Options -> [FilePath] -> Core.AST -> IO (String, [Mapping])
+generateJSModule _ _ Core.AST { Core.apath = Nothing } = return ("", [])
 generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
   = do
     pathAbs              <- makeAbsolute path
@@ -1812,26 +1912,53 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
       else
         return []
 
-    let moduleContent = docRender $ emit
-          initialEnv
-            { methodNames = monomorphicMethodNames
-            , constructorsByName = collectConstructorsByName ast
-            , topLevelNames = collectTopLevelNames ast
-            }
-          (
-            CompilationConfig
-              { ccrootPath          = rootPath
-              , ccastPath           = path
-              , ccentrypointPath    = entrypointPath
-              , ccoutputPath        = outputPath
-              , ccoptimize          = optOptimized options
-              , cctarget            = optTarget options
-              , ccinternalsPath     = internalsPath
-              , ccisEntrypoint      = isEntrypoint
-              , ccmoduleInitImports = moduleInitImports
-              }
-          )
-          ast
-    let moduleContent' = moduleContent <> generateMainCallFromAST options path ast
+    let env = initialEnv
+                { methodNames        = monomorphicMethodNames
+                , constructorsByName = collectConstructorsByName ast
+                , topLevelNames      = collectTopLevelNames ast
+                }
+        config = CompilationConfig
+                  { ccrootPath          = rootPath
+                  , ccastPath           = path
+                  , ccentrypointPath    = entrypointPath
+                  , ccoutputPath        = outputPath
+                  , ccoptimize          = optOptimized options
+                  , cctarget            = optTarget options
+                  , ccinternalsPath     = internalsPath
+                  , ccisEntrypoint      = isEntrypoint
+                  , ccmoduleInitImports = moduleInitImports
+                  }
 
-    return moduleContent'
+    let moduleContent  = docRender $ emit env config ast
+        moduleContent' = moduleContent <> generateMainCallFromAST options path ast
+
+    -- Build source map mappings when requested (JS targets only)
+    let mappings =
+          if optSourceMaps options /= NoSourceMap then
+            let astPath           = fromMaybe "Unknown" (Core.apath ast)
+                configWithASTPath = updateASTPath astPath config
+                exps              = Core.aexps ast
+                typeDecls         = Core.atypedecls ast
+                imports           = Core.aimports ast
+
+                -- Reconstruct the prefix sections (everything before mdDefinitions)
+                -- using the same logic as the Compilable AST instance.
+                infoComment   = [JSCommentLine (docText ("// file: " <> astPath))]
+                preludeImport = if isEntrypoint then [JSImportStmt (JSImportBare internalsPath)] else []
+                moduleInitImportStmts =
+                  if isEntrypoint
+                  then [ JSImportStmt (JSImportNamed [fn] rp) | (fn, rp) <- moduleInitImports ]
+                  else []
+                compiledImports = JSImportStmt . compileImport configWithASTPath <$> imports
+                compiledAdts    = JSRawBlock . emit env configWithASTPath <$> typeDecls
+
+                prefixSections = [infoComment, preludeImport, moduleInitImportStmts <> compiledImports, compiledAdts]
+
+                -- Pair each emitted definition JSStmt with its source Exp
+                compiledExps   = emitExps env configWithASTPath exps
+                defsWithExps   = zip compiledExps exps
+
+            in  buildMappings prefixSections defsWithExps
+          else []
+
+    return (moduleContent', mappings)

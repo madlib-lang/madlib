@@ -28,7 +28,7 @@ import           System.IO (hPutStr, stderr)
 
 
 runCompilation :: Command -> IO ()
-runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized target watchMode coverage optLevel emitLLVM)
+runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized target watchMode coverage optLevel emitLLVM sourceMaps)
   = do
     canonicalEntrypoint <- canonicalizePath entrypoint
     canonicalOutputPath <- canonicalizePath outputPath
@@ -64,6 +64,7 @@ runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized t
             , optLspMode = False
             , optParseOnly = False
             , optEmitLLVM = emitLLVM
+            , optSourceMaps = sourceMaps
             }
 
     when verbose $ do

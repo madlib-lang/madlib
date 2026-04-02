@@ -3,6 +3,7 @@ module Run.Options where
 import Utils.PathUtils (PathUtils)
 import Run.Target (Target)
 import Run.OptimizationLevel (OptimizationLevel)
+import Run.SourceMapMode (SourceMapMode)
 
 
 data Options
@@ -23,4 +24,5 @@ data Options
     , optOptimizationLevel :: OptimizationLevel
     , optLspMode :: Bool
     , optEmitLLVM :: Bool
+    , optSourceMaps :: SourceMapMode
     }

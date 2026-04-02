@@ -24,6 +24,7 @@ import           Run.Options
 import           Run.Target
 import Explain.Format (formatError)
 import Run.OptimizationLevel (OptimizationLevel(..))
+import Run.SourceMapMode
 
 
 
@@ -60,6 +61,7 @@ parseASTsToFormat  (fp : fps)   = do
                               , optOptimizationLevel = O1
                               , optLspMode = False
                               , optEmitLLVM = False
+                              , optSourceMaps = NoSourceMap
                               }
         ast <- case parseForFormatter code of
           Right a ->

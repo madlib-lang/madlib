@@ -22,6 +22,7 @@ import           Canonicalize.CanonicalM
 import           Error.Error
 import           Run.Target
 import           Run.OptimizationLevel
+import           Run.SourceMapMode
 import           Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
 import           Error.Warning
@@ -71,6 +72,7 @@ buildOptions entrypoint pathUtils =
     , optOptimizationLevel = O3
     , optLspMode = False
     , optEmitLLVM = False
+    , optSourceMaps = NoSourceMap
     }
 
 
