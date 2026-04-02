@@ -15,7 +15,7 @@ import           Run.OptimizationLevel
 import qualified Driver
 import           Control.Exception (try)
 import           System.Process
-import           System.Exit (ExitCode)
+import           System.Exit (ExitCode, ExitCode(ExitSuccess))
 import           Text.Show.Pretty (ppShow)
 import qualified Explain.Format as Explain
 import qualified Data.List as List
@@ -163,8 +163,11 @@ jsCompileAndRun casePath = do
     runResult <- try $ readProcessWithExitCode "node" [outputPath] ""
     callCommand $ "rm -r " <> outputFolder
     case (runResult :: Either IOError (ExitCode, String, String)) of
-        Right (_, result, _) ->
+        Right (ExitSuccess, result, _) ->
           return (expected, result)
+
+        Right (_, _, stderr) ->
+          return (expected, stderr)
 
         Left e ->
           return (ppShow e, "")

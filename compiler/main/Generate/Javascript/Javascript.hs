@@ -15,9 +15,9 @@ import           Data.Maybe                     ( fromMaybe )
 import           Data.List                      ( sort
                                                 , find
                                                 , intercalate
-                                                , foldl', stripPrefix, isInfixOf, isPrefixOf
+                                                , foldl', stripPrefix, isInfixOf, isPrefixOf, isSuffixOf
                                                 )
-import           Data.Char                      ( isSpace )
+import           Data.Char                      ( isSpace, isUpper, isHexDigit )
 import           Data.Char                      ( ord )
 import           Numeric                        ( showHex )
 import           Data.List.GroupBy              ( groupBy )
@@ -43,9 +43,11 @@ import           Text.Show.Pretty               ( ppShow )
 import Distribution.Types.Lens (_Impl)
 import qualified Data.Maybe as Maybe
 import Control.Exception
+import Control.Monad (forM)
 import GHC.IO.Exception
 import System.Process
 import System.Environment (getEnv)
+import System.Directory (createDirectoryIfMissing, makeAbsolute)
 import Run.Options
 import qualified Data.List as List
 import Data.IORef
@@ -66,6 +68,8 @@ data Env
   { varsInScope :: S.Set String
   , recursionData :: Maybe RecursionData
   , varsRewritten :: M.Map String String
+  , constructorsByName :: M.Map String (String, Int)
+  , topLevelNames :: S.Set String
   , methodNames :: S.Set String
   , inBody :: Bool
   }
@@ -77,12 +81,89 @@ initialEnv =
     { varsInScope = S.empty
     , recursionData = Nothing
     , varsRewritten = M.empty
+    , constructorsByName = M.empty
+    , topLevelNames = S.empty
     , methodNames = S.empty
     , inBody = False
     }
 
+collectConstructorsByName :: Core.AST -> M.Map String (String, Int)
+collectConstructorsByName ast =
+  let getCtorName ctor = case ctor of
+        Untyped _ _ (Constructor cname _ _) ->
+          cname
+
+        Typed _ _ _ (Constructor cname _ _) ->
+          cname
+
+      collectTypeDecl typeDecl = case typeDecl of
+        Untyped _ _ ADT { adtconstructors = ctors } ->
+          [ (generateSafeName name, (drop 7 name, Core.getConstructorArity ctor))
+          | ctor <- ctors
+          , let name = getCtorName ctor
+          ]
+
+        _ ->
+          []
+  in M.fromList (atypedecls ast >>= collectTypeDecl)
+
+emitConstructorValueDoc :: String -> Int -> JSDoc
+emitConstructorValueDoc ctorName arity =
+  let args = (: []) <$> take arity ['a' ..]
+      argDocs = docText <$> args
+      body =
+        docGroup
+          $ "({"
+          <> docNest 2
+               (docLine'
+               <> "__constructor: \""
+               <> docText ctorName
+               <> "\","
+               <> docLine'
+               <> "__args: ["
+               <> docNest 2 (docLine' <> docCommaSeparatedLines argDocs)
+               <> docLine'
+               <> "]"
+               )
+          <> docLine'
+          <> "})"
+  in  if arity == 0 then body else "(" <> docCurriedLambda args body <> ")"
+
 allowedJSNames :: [String]
 allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default", "break", "null"]
+
+isGeneratedTestsName :: String -> Bool
+isGeneratedTestsName n = "__tests__" `isInfixOf` n
+
+isGeneratedTrackerName :: String -> Bool
+isGeneratedTrackerName n =
+  "___functionTracker_" `isInfixOf` n || "___lineTracker_" `isInfixOf` n
+
+looksLikeGeneratedConstructorName :: String -> Bool
+looksLikeGeneratedConstructorName n = case n of
+  '_' : next ->
+    let (hashPart, rest) = span isHexDigit next
+    in  not (null hashPart) && case rest of
+          '_' : first : more ->
+            isUpper first && not ("__" `isInfixOf` more)
+
+          _ ->
+            False
+
+  _ ->
+    False
+
+
+collectTopLevelNames :: Core.AST -> S.Set String
+collectTopLevelNames ast =
+  let names = aexps ast >>= \case
+        Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) _) ->
+          [generateSafeName n]
+        Typed _ _ _ (Export (Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) _))) ->
+          [generateSafeName n]
+        _ ->
+          []
+  in S.fromList names
 
 generateSafeName :: String -> String
 generateSafeName n =
@@ -172,15 +253,95 @@ normalizeJSRawBlock raw =
       else
         raw
 
+trimJS :: String -> String
+trimJS = reverse . dropWhile isSpace . reverse . dropWhile isSpace
+
+isJSIdentifierChar :: Char -> Bool
+isJSIdentifierChar c = c == '_' || c == '$' || c == '\'' || c == '#' || c == '.' || c `elem` ['0' .. '9'] || c `elem` ['A' .. 'Z'] || c `elem` ['a' .. 'z']
+
+stripBindingKeyword :: String -> Maybe String
+stripBindingKeyword s =
+  Maybe.listToMaybe
+    $ Maybe.mapMaybe (`stripPrefix` s) ["const ", "let ", "var "]
+
+rewriteTopLevelArrowBindingToFunction :: String -> String
+rewriteTopLevelArrowBindingToFunction raw =
+  let trimmed = trimJS raw
+      parseWithParams name rhs =
+        let rhs' = dropWhile isSpace rhs
+        in  case rhs' of
+              '(' : rest ->
+                let (params, afterParams) = break (== ')') rest
+                    afterClose = case afterParams of
+                      ')' : more ->
+                        dropWhile isSpace more
+
+                      _ ->
+                        ""
+                in  case stripPrefix "=>" afterClose of
+                      Just afterArrow ->
+                        let body = trimJS afterArrow
+                            fnBody = if not (null body) && head body == '{'
+                              then body
+                              else "{ return " <> dropTrailingSemicolon body <> "; }"
+                        in  Just ("function " <> name <> "(" <> params <> ") " <> fnBody)
+
+                      Nothing ->
+                        Nothing
+
+              _ ->
+                let (param, afterParam) = span isJSIdentifierChar rhs'
+                    afterParam' = dropWhile isSpace afterParam
+                in  case stripPrefix "=>" afterParam' of
+                      Just afterArrow | not (null param) ->
+                        let body = trimJS afterArrow
+                            fnBody = if not (null body) && head body == '{'
+                              then body
+                              else "{ return " <> dropTrailingSemicolon body <> "; }"
+                        in  Just ("function " <> name <> "(" <> param <> ") " <> fnBody)
+
+                      _ ->
+                        Nothing
+      dropTrailingSemicolon s = reverse (dropWhile isSpace (dropWhile (== ';') (dropWhile isSpace (reverse s))))
+  in  case stripBindingKeyword trimmed of
+        Just rest ->
+          let (name, rest') = span isJSIdentifierChar rest
+              afterName = dropWhile isSpace rest'
+          in  if null name then
+                trimmed
+              else
+                case stripPrefix "=" afterName >>= parseWithParams name of
+                  Just rewritten ->
+                    rewritten
+
+                  Nothing ->
+                    trimmed
+
+        Nothing ->
+          trimmed
+
+normalizeTopLevelJSExp :: Env -> String -> String
+normalizeTopLevelJSExp env raw =
+  let normalized = normalizeJSRawBlock raw
+  in  if inBody env then
+        normalized
+      else
+        rewriteTopLevelArrowBindingToFunction normalized
+
 data CompilationConfig
   = CompilationConfig
-      { ccrootPath       :: FilePath
-      , ccastPath        :: FilePath
-      , ccentrypointPath :: FilePath
-      , ccoutputPath     :: FilePath
-      , ccoptimize       :: Bool
-      , cctarget         :: Target
-      , ccinternalsPath  :: FilePath
+      { ccrootPath            :: FilePath
+      , ccastPath             :: FilePath
+      , ccentrypointPath      :: FilePath
+      , ccoutputPath          :: FilePath
+      , ccoptimize            :: Bool
+      , cctarget              :: Target
+      , ccinternalsPath       :: FilePath
+      -- | True only for the single true entrypoint module (not per-module entrypoints).
+      , ccisEntrypoint        :: Bool
+      -- | For the entrypoint module only: list of (moduleInitFnName, relativeImportPath)
+      -- for all dependency modules, in dependency order. The entrypoint calls each in order.
+      , ccmoduleInitImports   :: [(String, FilePath)]
       }
 
 codegenPanic :: String -> a
@@ -219,6 +380,20 @@ docCurriedLambda names bodyDoc =
     (\name acc -> docText name <> docText " =>" <> docLine <> acc)
     bodyDoc
     names
+
+-- Returns True if a top-level RHS needs to go into the module init function
+-- rather than being evaluated at module load time.
+-- Lambdas (Definition), plain literals, and constructor Vars are safe to
+-- evaluate eagerly at load time. Everything else may depend on values from
+-- other modules that are not yet initialized when this module first loads.
+rhsNeedsModuleInit :: Core.Exp -> Bool
+rhsNeedsModuleInit (Core.Typed _ _ _ e) = case e of
+  Core.Definition _ _ -> False
+  Core.Literal _      -> False
+  Core.Var _ True     -> False  -- constructor var, emits as a record literal
+  _                   -> True
+rhsNeedsModuleInit _ = False
+
 
 class Compilable a where
   emit :: Env -> CompilationConfig -> a -> JSDoc
@@ -552,27 +727,209 @@ emitExp env config (Typed qt area metadata exp) =
         Var name _ ->
           let safeName  = generateSafeName name
               rewritten = varsRewritten env
-          in  docText $ fromMaybe safeName (M.lookup safeName rewritten)
+              resolvedName = fromMaybe safeName (M.lookup safeName rewritten)
+              ctorArityFromType = length $ getParamTypes (getQualified qt)
+              ctorNameFromVar =
+                if length safeName > 7 then drop 7 safeName else safeName
+          in  case M.lookup safeName (constructorsByName env) of
+                Just (ctorName, arity) | not (safeName `S.member` varsInScope env) ->
+                  emitConstructorValueDoc ctorName arity
+
+                _ | looksLikeGeneratedConstructorName safeName && not (safeName `S.member` varsInScope env) ->
+                  emitConstructorValueDoc ctorNameFromVar ctorArityFromType
+
+                _ | isGeneratedTestsName safeName && not (safeName `S.member` varsInScope env) ->
+                  docText safeName <> "()"
+
+                _ ->
+                  docText resolvedName
 
         Assignment (Typed _ _ _ (Var name _)) exp ->
           let safeName = generateSafeName name
-              content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
-              needsModifier = notElem safeName $ varsInScope env
-              assignment = (if needsModifier then "let " else "") <> docText safeName <> " = " <> content
+              rhsArity = case exp of
+                Typed rhsQt _ _ _ ->
+                  length $ getParamTypes (getQualified rhsQt)
+
+                Untyped{} ->
+                  0
               methodGlobal =
                 if name `S.member` methodNames env then
                   docHardline <> "global." <> docText name <> " = " <> docText name
                 else
                   ""
-          in  assignment <> methodGlobal
+              mkFunctionAlias rhsName =
+                let safeRhs = generateSafeName rhsName
+                in "function "
+                  <> docText safeName
+                  <> "(...__args) "
+                  <> docBlock
+                       [ "return __args.length === 0"
+                           <> " ? "
+                           <> docText safeRhs
+                           <> " : __args.reduce((f, a) => f(a), "
+                           <> docText safeRhs
+                           <> ");"
+                       ]
+                  <> methodGlobal
+              mkLazyFunctionFromExp rhsExp =
+                let fnCacheName = "__cached_" <> safeName
+                    rhsDoc = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config rhsExp
+                in  "var "
+                      <> docText fnCacheName
+                      <> ";"
+                      <> docHardline
+                      <> "function "
+                      <> docText safeName
+                      <> "(...__args) "
+                      <> docBlock
+                           [ "if (" <> docText fnCacheName <> " === undefined) "
+                               <> docBlock [docText fnCacheName <> " = " <> rhsDoc <> ";"]
+                           , "let __fn = " <> docText fnCacheName <> ";"
+                           , "return __args.length === 0"
+                               <> " ? __fn()"
+                               <> " : __args.reduce((f, a) => f(a), __fn);"
+                           ]
+                      <> methodGlobal
+              mkFunctionDecl params =
+                let safeParams = generateSafeName <$> (getValue <$> params)
+                    firstParam = head safeParams
+                    fnExpr = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
+                    invoke = docApplyChain fnExpr [docText firstParam]
+                in "function "
+                  <> docText safeName
+                  <> "("
+                  <> docText firstParam
+                  <> ") "
+                  <> docBlock ["return " <> invoke <> ";"]
+                  <> methodGlobal
+          in case exp of
+               Typed _ _ _ (Var rhsName _) | not (inBody env) && rhsArity > 0 ->
+                 mkFunctionAlias rhsName
+
+               _ | not (inBody env) && isGeneratedTrackerName safeName ->
+                 mkLazyFunctionFromExp exp
+
+               _ | not (inBody env) && isGeneratedTestsName safeName ->
+                 let content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
+                 in  "function "
+                      <> docText safeName
+                      <> "() "
+                      <> docBlock ["return " <> content <> ";"]
+                      <> methodGlobal
+
+               Typed _ _ _ (Definition params _) | not (null params) && not (inBody env) ->
+                 mkFunctionDecl params
+
+               _ ->
+                 let content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
+                     needsModifier = notElem safeName $ varsInScope env
+                     declKeyword = if inBody env then "let " else "var "
+                     assignment = (if needsModifier then declKeyword else "") <> docText safeName <> " = " <> content
+                     needsModuleInit =
+                       not (inBody env)
+                         && needsModifier
+                         && not (isGeneratedTrackerName safeName)
+                         && not (isGeneratedTestsName safeName)
+                         && rhsNeedsModuleInit exp
+                 in  if needsModuleInit then
+                       -- Declare uninitialized at top level; actual assignment goes in __moduleInit_<hash>
+                       "var " <> docText safeName <> methodGlobal
+                     else
+                       assignment <> methodGlobal
 
         Assignment lhs exp ->
           let lhs' = emitExp env config lhs
               content = emitExp env config exp
           in  lhs' <> " = " <> content
 
-        Export e ->
-          "export " <> emitExp env config e
+        Export e -> case e of
+          Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) exp)
+            | isGeneratedTrackerName (generateSafeName name) ->
+              let safeName = generateSafeName name
+                  fnCacheName = "__cached_" <> safeName
+                  rhsDoc = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
+                  methodGlobal =
+                    if name `S.member` methodNames env then
+                      docHardline <> "global." <> docText name <> " = " <> docText name
+                    else
+                      ""
+              in  "var "
+                    <> docText fnCacheName
+                    <> ";"
+                    <> docHardline
+                    <> "export function "
+                    <> docText safeName
+                    <> "(...__args) "
+                    <> docBlock
+                         [ "if (" <> docText fnCacheName <> " === undefined) "
+                             <> docBlock [docText fnCacheName <> " = " <> rhsDoc <> ";"]
+                         , "let __fn = " <> docText fnCacheName <> ";"
+                         , "return __args.length === 0"
+                             <> " ? __fn()"
+                             <> " : __args.reduce((f, a) => f(a), __fn);"
+                         ]
+                    <> methodGlobal
+
+          Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) exp)
+            | isGeneratedTestsName (generateSafeName name) ->
+              let safeName = generateSafeName name
+                  content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
+                  methodGlobal =
+                    if name `S.member` methodNames env then
+                      docHardline <> "global." <> docText name <> " = " <> docText name
+                    else
+                      ""
+              in  "export function "
+                    <> docText safeName
+                    <> "() "
+                    <> docBlock ["return " <> content <> ";"]
+                    <> methodGlobal
+
+          Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) rhs@(Typed rhsQt _ _ (Var rhsName _)))
+            | let rhsArity = length $ getParamTypes (getQualified rhsQt)
+            , rhsArity > 0 ->
+              let safeName = generateSafeName name
+                  safeRhs = generateSafeName rhsName
+                  methodGlobal =
+                    if name `S.member` methodNames env then
+                      docHardline <> "global." <> docText name <> " = " <> docText name
+                    else
+                      ""
+              in  "export function "
+                    <> docText safeName
+                    <> "(...__args) "
+                    <> docBlock
+                         [ "return __args.length === 0"
+                             <> " ? "
+                             <> docText safeRhs
+                             <> " : __args.reduce((f, a) => f(a), "
+                             <> docText safeRhs
+                             <> ");"
+                         ]
+                    <> methodGlobal
+
+          Typed _ _ _ (Assignment (Typed _ _ _ (Var name _)) exp@(Typed _ _ _ (Definition params _)))
+            | not (null params) ->
+              let safeName = generateSafeName name
+                  safeParams = generateSafeName <$> (getValue <$> params)
+                  firstParam = head safeParams
+                  fnExpr = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
+                  invoke = docApplyChain fnExpr [docText firstParam]
+                  methodGlobal =
+                    if name `S.member` methodNames env then
+                      docHardline <> "global." <> docText name <> " = " <> docText name
+                    else
+                      ""
+              in  "export function "
+                    <> docText safeName
+                    <> "("
+                    <> docText firstParam
+                    <> ") "
+                    <> docBlock ["return " <> invoke <> ";"]
+                    <> methodGlobal
+
+          _ ->
+            "export " <> emitExp env config e
 
         NameExport _ ->
           ""
@@ -623,7 +980,7 @@ emitExp env config (Typed qt area metadata exp) =
           --       <> "]"
           --       <> "})())"
 
-        JSExp           content -> docText (normalizeJSRawBlock content)
+        JSExp           content -> docText (normalizeTopLevelJSExp env content)
 
         Core.ListConstructor [
             Core.Typed _ _ _ (Core.ListItem li),
@@ -1020,9 +1377,82 @@ emitExp env config (Typed qt area metadata exp) =
               params = take paramCount ((:"")<$> ['a' ..])
               body = docApplyChain (docText foreignName) (docText <$> params)
               lambdaDoc = docCurriedLambda params body
-          in  "let " <> docText name <> " = " <> docGroup lambdaDoc
+          in  (if inBody env then "let " else "var ") <> docText name <> " = " <> docGroup lambdaDoc
 
         _ -> codegenPanic ("unsupported expression node: " <> ppShow exp)
+      where
+        hasAnyTopLevelRef :: Exp -> Bool
+        hasAnyTopLevelRef e = case e of
+          Typed _ _ _ inner -> case inner of
+            Var n _ ->
+              generateSafeName n `S.member` topLevelNames env
+
+            Definition _ body ->
+              any hasAnyTopLevelRef body
+
+            Assignment l r ->
+              hasAnyTopLevelRef l || hasAnyTopLevelRef r
+
+            Export e' ->
+              hasAnyTopLevelRef e'
+
+            Do exps ->
+              any hasAnyTopLevelRef exps
+
+            Where e' iss ->
+              hasAnyTopLevelRef e' || any (hasAnyTopLevelRef . getIsExpression) iss
+
+            If c t f ->
+              hasAnyTopLevelRef c || hasAnyTopLevelRef t || hasAnyTopLevelRef f
+
+            While c b ->
+              hasAnyTopLevelRef c || hasAnyTopLevelRef b
+
+            Call fn args ->
+              hasAnyTopLevelRef fn || any hasAnyTopLevelRef args
+
+            Record fields ->
+              any
+                (\case
+                  Typed _ _ _ (Field (_, fe)) ->
+                    hasAnyTopLevelRef fe
+
+                  Typed _ _ _ (FieldSpread fe) ->
+                    hasAnyTopLevelRef fe
+
+                  _ ->
+                    False
+                )
+                fields
+
+            Access rec _ ->
+              hasAnyTopLevelRef rec
+
+            ArrayAccess arr idx ->
+              hasAnyTopLevelRef arr || hasAnyTopLevelRef idx
+
+            ListConstructor items ->
+              any
+                (\case
+                  Typed _ _ _ (ListItem ie) ->
+                    hasAnyTopLevelRef ie
+
+                  Typed _ _ _ (ListSpread ie) ->
+                    hasAnyTopLevelRef ie
+
+                  _ ->
+                    False
+                )
+                items
+
+            TupleConstructor items ->
+              any hasAnyTopLevelRef items
+
+            _ ->
+              False
+
+          Untyped{} ->
+            False
 
 
 removeNamespace :: String -> String
@@ -1050,10 +1480,10 @@ emitConstructorDoc :: Constructor -> JSDoc
 emitConstructorDoc (Untyped _ _ (Constructor cname cparams _)) =
     case cparams of
       [] ->
-        "let " <> docText cname <> " = " <> compileBody cname cparams <> ";" <> docHardline
+        "var " <> docText cname <> " = " <> compileBody cname cparams <> ";" <> docHardline
 
       _ ->
-        "let "
+        "var "
           <> docText cname
           <> " = ("
           <> docCurriedLambda (argNames cparams) (compileBody cname cparams)
@@ -1111,32 +1541,61 @@ generateRecordName optimized cls ts var =
 
 instance Compilable AST where
   emit env config ast =
-    let entrypointPath     = ccentrypointPath config
-        internalsPath      = ccinternalsPath config
-        exps               = aexps ast
-        typeDecls          = atypedecls ast
-        path               = apath ast
-        imports            = aimports ast
+    let internalsPath    = ccinternalsPath config
+        moduleInitImports = ccmoduleInitImports config
+        isEntrypoint     = ccisEntrypoint config
+        exps             = aexps ast
+        typeDecls        = atypedecls ast
+        path             = apath ast
+        imports          = aimports ast
 
-        astPath            = fromMaybe "Unknown" path
-        configWithASTPath  = updateASTPath astPath config
-        infoComment        = JSCommentLine (docText ("// file: " <> astPath))
-        preludeImport =
-          if entrypointPath == astPath then
-            [JSImportStmt (JSImportBare internalsPath)]
+        astPath          = fromMaybe "Unknown" path
+        configWithASTPath = updateASTPath astPath config
+        infoComment      = JSCommentLine (docText ("// file: " <> astPath))
+        preludeImport    =
+          if isEntrypoint then [JSImportStmt (JSImportBare internalsPath)] else []
+
+        -- For the entrypoint: import __moduleInit_<hash> from each dependency
+        moduleInitImportStmts =
+          if isEntrypoint then
+            [ JSImportStmt (JSImportNamed [fnName] relPath)
+            | (fnName, relPath) <- moduleInitImports
+            ]
+          else []
+
+        compiledImports  = JSImportStmt . compileImport configWithASTPath <$> imports
+        compiledAdts     = JSRawBlock . emit env configWithASTPath <$> typeDecls
+        compiledExps     = emitExps env configWithASTPath exps
+
+        -- Module init function: exported so the entrypoint can call it
+        moduleHash       = generateHashFromPath astPath
+        moduleInitFnName = "__moduleInit_" <> moduleHash
+        moduleInitStmts  = emitModuleInitBody env configWithASTPath exps
+        moduleInitFn     =
+          if null moduleInitStmts then
+            JSLineStmt $ "export function " <> docText moduleInitFnName <> "() {}"
           else
-            []
-        compiledImports = JSImportStmt . compileImport configWithASTPath <$> imports
-        compiledAdts = JSRawBlock . emit env configWithASTPath <$> typeDecls
-        compiledExps = emitExps env configWithASTPath exps
+            JSLineStmt $
+              "export function " <> docText moduleInitFnName <> "() "
+              <> docBlock (moduleInitStmts)
+
+        -- For the entrypoint: call each dependency's module init in order, then our own
+        moduleInitCalls =
+          if isEntrypoint then
+            [ JSLineStmt (docText fnName <> "()")
+            | (fnName, _) <- moduleInitImports
+            ]
+            <> [JSLineStmt (docText moduleInitFnName <> "()")]
+          else []
+
         defaultExport = [buildDefaultExport typeDecls exps]
         moduleDoc = emptyModuleDoc
           { mdHeaderComments = [infoComment]
           , mdPreludeImports = preludeImport
-          , mdImports = compiledImports
-          , mdTypeDecls = compiledAdts
-          , mdDefinitions = compiledExps
-          , mdFooter = defaultExport
+          , mdImports        = moduleInitImportStmts <> compiledImports
+          , mdTypeDecls      = compiledAdts
+          , mdDefinitions    = compiledExps <> [moduleInitFn]
+          , mdFooter         = moduleInitCalls <> defaultExport
           }
     in  renderModuleDoc moduleDoc
 
@@ -1149,7 +1608,43 @@ emitExps env config (exp : es) = case exp of
     let nextEnv = env { varsInScope = S.insert name (varsInScope env) }
     in  JSLineStmt (emit env config exp) : emitExps nextEnv config es
 
+  Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) _))) ->
+    let nextEnv = env { varsInScope = S.insert name (varsInScope env) }
+    in  JSLineStmt (emit env config exp) : emitExps nextEnv config es
+
   _ -> JSLineStmt (emit env config exp) : emitExps env config es
+
+
+-- | Collect the module init body: for every top-level var that needs module init,
+-- emit the assignment statement (varName = expr) that goes inside __moduleInit_<hash>.
+emitModuleInitBody :: Env -> CompilationConfig -> [Exp] -> [JSDoc]
+emitModuleInitBody _ _ [] = []
+emitModuleInitBody env config (exp : es) =
+  let rest env' = emitModuleInitBody env' config es
+  in  case exp of
+    Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) rhs) ->
+      let safeName = generateSafeName name
+          nextEnv  = env { varsInScope = S.insert name (varsInScope env) }
+          needsInit =
+            notElem safeName (varsInScope env)
+              && not (isGeneratedTrackerName safeName)
+              && not (isGeneratedTestsName safeName)
+              && rhsNeedsModuleInit rhs
+          content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config rhs
+      in  (if needsInit then (docText safeName <> " = " <> content :) else id) (rest nextEnv)
+
+    Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) rhs))) ->
+      let safeName = generateSafeName name
+          nextEnv  = env { varsInScope = S.insert name (varsInScope env) }
+          needsInit =
+            notElem safeName (varsInScope env)
+              && not (isGeneratedTrackerName safeName)
+              && not (isGeneratedTestsName safeName)
+              && rhsNeedsModuleInit rhs
+          content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config rhs
+      in  (if needsInit then (docText safeName <> " = " <> content :) else id) (rest nextEnv)
+
+    _ -> rest env
 
 
 buildDefaultExport :: [TypeDecl] -> [Exp] -> JSStmt
@@ -1249,15 +1744,22 @@ makeInternalsModuleTargetPath outputPath =
 
 generateInternalsModule :: Options -> IO ()
 generateInternalsModule options = do
-  writeFile (makeInternalsModuleTargetPath (optOutputPath options))
+  let internalsTargetPath = makeInternalsModuleTargetPath (optOutputPath options)
+  createDirectoryIfMissing True (takeDirectoryIfFile internalsTargetPath)
+  writeFile internalsTargetPath
     $ generateInternalsModuleContent (optTarget options) (optOptimized options) (optCoverage options)
 
 
-computeInternalsRelativePath :: FilePath -> FilePath -> FilePath
+computeInternalsRelativePath :: FilePath -> FilePath -> IO FilePath
 computeInternalsRelativePath outputPath astTargetPath =
-  let internalsPath = makeInternalsModuleTargetPath outputPath
-      parts = splitPath $ fromMaybe "" $ stripPrefix (dropFileName internalsPath) (dropFileName astTargetPath)
-  in  joinPath $ "./" : (".." <$ parts) ++ [takeFileName internalsPath]
+  let outputRoot = takeDirectoryIfFile outputPath
+  in do
+    outputRootAbs <- makeAbsolute outputRoot
+    astTargetAbs  <- makeAbsolute astTargetPath
+    let internalsPath = outputRootAbs <> (pathSeparator : "__internals__.mjs")
+        astDir        = dropFileName astTargetAbs
+        relPath       = convertWindowsSeparators $ cleanRelativePath $ makeRelativeEx astDir internalsPath
+    return $ if "." `isPrefixOf` relPath then relPath else "./" <> relPath
 
 
 hashModulePath :: AST -> String
@@ -1290,34 +1792,100 @@ generateMainCall options astPath =
       else
         ""
 
+findGeneratedMainName :: Core.AST -> Maybe String
+findGeneratedMainName ast =
+  let names = aexps ast >>= \case
+        Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) _) ->
+          [n]
+        Typed _ _ _ (Export (Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) _))) ->
+          [n]
+        _ ->
+          []
+  in  find ("_main" `isSuffixOf`) names
+
+
+generateMainCallFromAST :: Options -> String -> Core.AST -> String
+generateMainCallFromAST options astPath ast =
+  let fallbackMainCall = generateMainCall options astPath
+  in  case findGeneratedMainName ast of
+        Just mainName ->
+          if astPath == optEntrypoint options then
+            if optTarget options == TNode then
+              "\n" <> unlines
+                [ "const __makeArgs = () => {"
+                , "  let list = {}"
+                , "  let start = list"
+                , "  Object.keys(process.argv.slice(0)).forEach((key) => {"
+                , "    list = list.n = { v: process.argv[key], n: null }"
+                , "  }, {})"
+                , "  return {"
+                , "    n: start.n.n.n,"
+                , "    v: start.n.n.v"
+                , "  }"
+                , "}"
+                , mainName <> "(__makeArgs())"
+                ]
+            else
+              "\n" <> mainName <> "(null)\n"
+          else
+            ""
+        Nothing ->
+          fallbackMainCall
+
 
 generateJSModule :: Options -> [FilePath] -> Core.AST -> IO String
 generateJSModule _ _ Core.AST { Core.apath = Nothing } = return ""
 generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
   = do
+    pathAbs              <- makeAbsolute path
+    pathsToBuildAbs      <- mapM makeAbsolute pathsToBuild
+    trueEntrypointAbs    <- makeAbsolute (optEntrypoint options)
     let rootPath           = optRootPath options
-        computedOutputPath = computeTargetPath (optOutputPath options) rootPath path
-        internalsPath      = convertWindowsSeparators $ computeInternalsRelativePath (optOutputPath options) computedOutputPath
-        entrypointPath     = if path `elem` pathsToBuild then path else optEntrypoint options
+        outputPath         = optOutputPath options
+        computedOutputPath = computeTargetPath outputPath rootPath path
+        entrypointPath     = if pathAbs `elem` pathsToBuildAbs then path else optEntrypoint options
+        isEntrypoint       = pathAbs == trueEntrypointAbs
+    internalsPath <- computeInternalsRelativePath outputPath computedOutputPath
 
     -- TODO: move this to a Query as well?
     monomorphicMethodNames <- readIORef monomorphicMethods
 
+    -- For the entrypoint, compute import entries for all dependency module init functions.
+    -- pathsToBuild is in dependency order with the entrypoint last; exclude the entrypoint itself.
+    moduleInitImports <-
+      if isEntrypoint then do
+        let deps = filter (/= path) pathsToBuild
+        forM deps $ \depPath -> do
+          let depHash    = generateHashFromPath depPath
+              depFnName  = "__moduleInit_" <> depHash
+              depOutPath = computeTargetPath outputPath rootPath depPath
+              entryDir   = dropFileName computedOutputPath
+              relPath    = convertWindowsSeparators $ cleanRelativePath
+                             $ replaceExtension (joinPath ["./", makeRelativeEx entryDir depOutPath]) ".mjs"
+          return (depFnName, relPath)
+      else
+        return []
+
     let moduleContent = docRender $ emit
-          initialEnv { methodNames = monomorphicMethodNames }
+          initialEnv
+            { methodNames = monomorphicMethodNames
+            , constructorsByName = collectConstructorsByName ast
+            , topLevelNames = collectTopLevelNames ast
+            }
           (
             CompilationConfig
-              rootPath
-              path
-              entrypointPath
-              computedOutputPath
-              (optOptimized options)
-              (optTarget options)
-              internalsPath
+              { ccrootPath          = rootPath
+              , ccastPath           = path
+              , ccentrypointPath    = entrypointPath
+              , ccoutputPath        = outputPath
+              , ccoptimize          = optOptimized options
+              , cctarget            = optTarget options
+              , ccinternalsPath     = internalsPath
+              , ccisEntrypoint      = isEntrypoint
+              , ccmoduleInitImports = moduleInitImports
+              }
           )
           ast
-    let moduleContent' = moduleContent <> generateMainCall options path
-
-    Prelude.putStrLn $ "[1 of 1] Compiled '" <> path <> "'"
+    let moduleContent' = moduleContent <> generateMainCallFromAST options path ast
 
     return moduleContent'

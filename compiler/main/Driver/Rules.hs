@@ -51,6 +51,7 @@ import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings, coverab
 import qualified Utils.PathUtils as PathUtils
 import qualified Generate.Javascript as Javascript
 import System.FilePath (takeDirectory, dropFileName, joinPath, takeExtension)
+import System.FilePath (isAbsolute)
 import Utils.Path
 import qualified Parse.Megaparsec.DocString as DocString
 import qualified Data.Maybe as Maybe
@@ -446,7 +447,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       _ -> do
         coreAst <- astToCore (optOptimized options) monomorphicAST
         let coreAst'         = SortExpressions.keepLastMainExpAndDeps coreAst
-            renamedAst       = Rename.renameAST coreAst'
+            sortedAst        = SortExpressions.sortASTExpressions coreAst'
+            renamedAst       = Rename.renameAST sortedAst
             reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST renamedAst else renamedAst
             tceResolved      = if optLevel > O0 then TCE.resolveAST reducedAst else reducedAst
         return (tceResolved, (mempty, mempty))
@@ -514,7 +516,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   GeneratedJSModule path -> nonInput $ do
     paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
     coreAst  <- Rock.fetch $ CoreAST path
-    jsModule <- liftIO $ Javascript.generateJSModule options paths coreAst
+    let coreAstWithPath = coreAst { Core.apath = Just path }
+    jsModule <- liftIO $ Javascript.generateJSModule options paths coreAstWithPath
     return (jsModule, (mempty, mempty))
 
   BuiltJSModule path -> nonInput $ do
@@ -542,15 +545,12 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return ((), (globalWarnings, mempty))
 
     else do
-      mainAST <- mergedMainAST (optEntrypoint options)
-      let mainASTWithSortedExps = SortExpressions.sortASTExpressions mainAST
-      paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
-      jsModule <- liftIO $ Javascript.generateJSModule options paths mainASTWithSortedExps
-      let computedOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
-
-      liftIO $ do
-        createDirectoryIfMissing True $ Path.takeDirectoryIfFile computedOutputPath
-        writeFile computedOutputPath jsModule
+      paths <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+      let allPathsToEmit = removeDuplicates (path : paths)
+      let totalModules = length allPathsToEmit
+      forM_ (zip [(1 :: Int) ..] allPathsToEmit) $ \(moduleIndex, modulePath) -> do
+        _ <- Rock.fetch $ BuiltJSModule modulePath
+        liftIO $ putStrLn $ "[" <> show moduleIndex <> " of " <> show totalModules <> "] Compiled '" <> modulePath <> "'"
 
       liftIO $ Javascript.generateInternalsModule options
 

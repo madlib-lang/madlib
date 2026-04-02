@@ -98,7 +98,11 @@ buildDependencies localNames cachedExps exps = case exps of
         buildDependencies localNames (cachedExps ++ [e]) es
 
   [] ->
-    []
+    -- Any accumulated unnamed expressions (e.g. JSExp nodes) at the end
+    -- must be preserved. Attach them as a synthetic node with no deps.
+    case cachedExps of
+      [] -> []
+      _  -> [(cachedExps, "__unnamed_trailing__", [])]
 
 
 buildDependencies' :: S.Set String -> String -> Exp -> [String]
