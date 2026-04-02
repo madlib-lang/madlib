@@ -19,7 +19,7 @@ import           System.Exit (ExitCode, ExitCode(ExitSuccess))
 import           Text.Show.Pretty (ppShow)
 import qualified Explain.Format as Explain
 import qualified Data.List as List
-import           Error.Warning (CompilationWarning)
+import           Error.Warning (CompilationWarning (CompilationWarning))
 import           Error.Error (CompilationError (CompilationError), TypeError (ImportCycle))
 import           Driver.Query (Query)
 import           Rock (Cyclic)
@@ -40,18 +40,20 @@ sanitizeExpected :: String -> String
 sanitizeExpected s = read $ "\"" <> s <> "\""
 
 
+
 llvmCompileAndRun :: FilePath -> IO (String, String)
 llvmCompileAndRun casePath = do
   setEnv "NO_COLOR" "true"
+  rootPath <- canonicalizePath casePath
   expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected-llvm"])
-  let entrypoint   = joinPath [casePath, "Entrypoint.mad"]
-  let outputPath   = joinPath [casePath, ".tests/run"]
-  let outputFolder = joinPath [casePath, ".tests"]
+  let entrypoint   = joinPath [rootPath, "Entrypoint.mad"]
+  let outputPath   = joinPath [rootPath, ".tests/run"]
+  let outputFolder = joinPath [rootPath, ".tests"]
 
   let options = Options
           { optPathUtils = Path.defaultPathUtils
           , optEntrypoint = entrypoint
-          , optRootPath = "./"
+          , optRootPath = rootPath
           , optOutputPath = outputPath
           , optTarget = TLLVM
           , optOptimized = False
@@ -86,15 +88,16 @@ llvmCompileAndRun casePath = do
 llvmCompileAndRunWithCoverage :: FilePath -> IO (String, String)
 llvmCompileAndRunWithCoverage casePath = do
   setEnv "NO_COLOR" "true"
+  rootPath <- canonicalizePath casePath
   expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected-llvm"])
-  let entrypoint   = joinPath [casePath, "Entrypoint.mad"]
-  let outputPath   = joinPath [casePath, ".tests/run"]
-  let outputFolder = joinPath [casePath, ".tests"]
+  let entrypoint   = joinPath [rootPath, "Entrypoint.mad"]
+  let outputPath   = joinPath [rootPath, ".tests/run"]
+  let outputFolder = joinPath [rootPath, ".tests"]
 
   let options = Options
           { optPathUtils = Path.defaultPathUtils
           , optEntrypoint = entrypoint
-          , optRootPath = "./"
+          , optRootPath = rootPath
           , optOutputPath = outputPath
           , optTarget = TLLVM
           , optOptimized = False
@@ -131,16 +134,16 @@ llvmCompileAndRunWithCoverage casePath = do
 jsCompileAndRun :: FilePath -> IO (String, String)
 jsCompileAndRun casePath = do
   setEnv "NO_COLOR" "true"
+  rootPath <- canonicalizePath casePath
   expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected-js"])
-  let entrypoint   = joinPath [casePath, "Entrypoint.mad"]
-  let outputPath   = joinPath [casePath, ".tests/Entrypoint.mjs"]
-  let runPath      = joinPath [casePath, ".tests", casePath, "Entrypoint.mjs"]
-  let outputFolder = joinPath [casePath, ".tests"]
+  let entrypoint   = joinPath [rootPath, "Entrypoint.mad"]
+  let outputPath   = joinPath [rootPath, ".tests/Entrypoint.mjs"]
+  let outputFolder = joinPath [rootPath, ".tests"]
 
   let options = Options
           { optPathUtils = Path.defaultPathUtils
           , optEntrypoint = entrypoint
-          , optRootPath = casePath
+          , optRootPath = rootPath
           , optOutputPath = outputPath
           , optTarget = TNode
           , optOptimized = False
@@ -175,14 +178,18 @@ jsCompileAndRun casePath = do
     return (expected, errorsAndWarnings)
 
 
+-- Strip absolute path prefix, keeping from "compiler" segment onward
+stripAbsPrefix :: FilePath -> FilePath
+stripAbsPrefix path = joinPath $ dropWhile (not . ("compiler" `isInfixOf`)) $ splitPath path
+
 sanitizeError :: CompilationError -> CompilationError
 sanitizeError err = case err of
   CompilationError (ImportCycle paths) ctx ->
     let updatedPaths = takeFileName <$> paths
-    in  CompilationError (ImportCycle updatedPaths) ctx { ctxAstPath = joinPath $ dropWhile (not . ("compiler" `isInfixOf`)) $ splitPath $ ctxAstPath ctx }
+    in  CompilationError (ImportCycle updatedPaths) ctx { ctxAstPath = stripAbsPrefix (ctxAstPath ctx) }
 
-  or ->
-    or
+  CompilationError e ctx ->
+    CompilationError e ctx { ctxAstPath = stripAbsPrefix (ctxAstPath ctx) }
 
 
 spec :: Spec
@@ -356,12 +363,20 @@ compile state options invalidatedPaths = do
 
       return (warnings, errors)
 
-  formattedWarnings <- mapM (Explain.formatWarning readFile False) warnings
+  cwd <- getCurrentDirectory
+  let stripCwd = replaceStr (cwd <> "/") ""
+      replaceStr _ _ [] = []
+      replaceStr old new str@(x:xs)
+        | old `List.isPrefixOf` str = new <> replaceStr old new (drop (length old) str)
+        | otherwise                 = x : replaceStr old new xs
+
+  let sanitizeWarning (CompilationWarning w ctx) = CompilationWarning w ctx { ctxAstPath = stripAbsPrefix (ctxAstPath ctx) }
+  formattedWarnings <- mapM (Explain.formatWarning readFile False) (sanitizeWarning <$> warnings)
   let ppWarnings =
         if null warnings then
           ""
         else
-          List.intercalate "\n\n\n" formattedWarnings <> "\n"
+          List.intercalate "\n\n\n" (stripCwd <$> formattedWarnings) <> "\n"
 
   formattedErrors   <- mapM (Explain.formatError readFile False) (sanitizeError <$> errors)
   -- We drop the first line for now as it contains paths that are system-dependent
@@ -370,7 +385,7 @@ compile state options invalidatedPaths = do
         if null errors then
           ""
         else
-          List.intercalate "\n\n\n" formattedErrors' <> "\n"
+          List.intercalate "\n\n\n" (stripCwd <$> formattedErrors') <> "\n"
 
   return $ ppWarnings ++ ppErrors
 
@@ -412,12 +427,19 @@ compileIgnoreWarnings state options invalidatedPaths = do
 
       return errors
 
+  cwd <- getCurrentDirectory
+  let stripCwd = replaceStr (cwd <> "/") ""
+      replaceStr _ _ [] = []
+      replaceStr old new str@(x:xs)
+        | old `List.isPrefixOf` str = new <> replaceStr old new (drop (length old) str)
+        | otherwise                 = x : replaceStr old new xs
+
   formattedErrors   <- mapM (Explain.formatError readFile False) (sanitizeError <$> errors)
   let formattedErrors' = unlines . drop 1 . lines <$> formattedErrors
   let ppErrors =
         if null errors then
           ""
         else
-          List.intercalate "\n\n\n" formattedErrors' <> "\n"
+          List.intercalate "\n\n\n" (stripCwd <$> formattedErrors') <> "\n"
 
   return ppErrors

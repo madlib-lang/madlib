@@ -13,26 +13,37 @@ import Control.Monad.IO.Class (liftIO)
 
 
 detectCycle :: [FilePath] -> FilePath -> Rock.Task Query.Query (Maybe CompilationError)
-detectCycle found path = do
+detectCycle found path = detectCycleStep False found path
+
+detectCycleStep :: Bool -> [FilePath] -> FilePath -> Rock.Task Query.Query (Maybe CompilationError)
+detectCycleStep finalStep found path = do
   AST { aimports, apath } <- Rock.fetch $ Query.ParsedAST path
   case apath of
     Just astPath ->
-      foldM (processImport astPath (found ++ [astPath])) Nothing aimports
+      foldM (processImport finalStep astPath (found ++ [astPath])) Nothing aimports
 
     _ ->
       return Nothing
 
 
-processImport :: FilePath -> [FilePath] -> Maybe CompilationError -> Import -> Rock.Task Query.Query (Maybe CompilationError)
-processImport originAstPath importChain err imp = do
+processImport :: Bool -> FilePath -> [FilePath] -> Maybe CompilationError -> Import -> Rock.Task Query.Query (Maybe CompilationError)
+processImport finalStep originAstPath importChain err imp = do
   let importPath = getImportAbsolutePath imp
   let importArea = getArea imp
   case err of
     Nothing ->
       if importPath `elem` importChain then
-        return $ Just $ CompilationError (ImportCycle importChain) (Context originAstPath importArea)
+        if finalStep then
+          -- Second time we see a cycle: report here. Use importChain which already
+          -- contains originAstPath (appended in detectCycleStep), giving the full path.
+          return $ Just $ CompilationError (ImportCycle importChain) (Context originAstPath importArea)
+        else
+          -- First time: recurse once more into the repeated node so the error
+          -- is reported from within it (gives the full cycle representation).
+          -- Append importPath to chain so the next pass sees it.
+          detectCycleStep True importChain importPath
       else
-        detectCycle importChain importPath
+        detectCycleStep finalStep importChain importPath
 
     Just err' ->
       return $ Just err'
