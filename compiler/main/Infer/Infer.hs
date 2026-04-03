@@ -16,8 +16,8 @@ type Infer a = forall m . (Rock.MonadFetch Query m, MonadIO m, MonadError Compil
 
 data InferState
   = InferState
-  { extensibleRecordsToDerive :: Set.Set InstanceToDerive
-  , count :: Int
+  { extensibleRecordsToDerive :: !(Set.Set InstanceToDerive)
+  , count :: !Int
   , errors :: [CompilationError]
   , warnings :: [CompilationWarning]
   }

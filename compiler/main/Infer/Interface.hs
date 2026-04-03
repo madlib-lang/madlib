@@ -18,6 +18,7 @@ import           Infer.Placeholder
 import           Error.Error
 import           Error.Context
 import qualified Data.Map                      as M
+import qualified Data.HashMap.Strict           as HM
 import qualified Data.Set                      as S
 import           Data.List
 import           Control.Monad

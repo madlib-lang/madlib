@@ -110,20 +110,20 @@ validateImport originAstPath imp = do
   let path = Src.getImportAbsolutePath imp
   (ast, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
 
-  let allExportNames   = findAllExportedNames ast
+  let allExportNames   = S.fromList $ findAllExportedNames ast
   let allImportNames   = Src.getImportNames imp
-  let namesNotExported = filter (not . (`elem` allExportNames) . Src.getSourceContent) allImportNames
+  let namesNotExported = filter (not . (`S.member` allExportNames) . Src.getSourceContent) allImportNames
 
-  let allExportTypes   = findAllExportedTypeNames ast
+  let allExportTypes   = S.fromList $ findAllExportedTypeNames ast
   let allImportTypes   = Src.getImportTypeNames imp
-  let typesNotExported = filter (not . (`elem` allExportTypes) . Src.getSourceContent) allImportTypes
+  let typesNotExported = filter (not . (`S.member` allExportTypes) . Src.getSourceContent) allImportTypes
 
   let allNotExported   = namesNotExported ++ typesNotExported
 
   unless
     (null allNotExported)
     (let notExportedName = Src.getSourceContent $ head allNotExported
-         allAvailable    = allExportNames ++ allExportTypes
+         allAvailable    = S.toList allExportNames ++ S.toList allExportTypes
          suggestions     = findSimilar notExportedName allAvailable
      in  throwError $ CompilationError (NotExported notExportedName path suggestions)
                                        (Context originAstPath (Src.getArea $ head allNotExported))

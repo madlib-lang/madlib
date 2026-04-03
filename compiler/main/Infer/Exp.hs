@@ -289,9 +289,9 @@ postProcessBody discardError options env s expType es = do
   -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
   (esRev, s', _) <- foldM
     (\(resultsRev, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
-      let fsSet = ftv (apply accSubst env'') `S.union` ftv (apply accSubst expType) `S.union` ftvForLetGenSet (apply accSubst t')
-          fs = S.toList fsSet
       let ps'' = apply accSubst ps'
+          -- Lazily compute fs only when needed (non-empty unsolvedPs)
+          fs = S.toList $ ftv (apply accSubst env'') `S.union` ftv (apply accSubst expType) `S.union` ftvForLetGenSet (apply accSubst t')
 
       (ps''', substFromDefaulting) <- do
         prep <- CM.forM ps'' $ \p -> do
@@ -301,8 +301,8 @@ postProcessBody discardError options env s expType es = do
         let solvedPs = [p | (p, True) <- prep]
         let unsolvedPs = [p | (p, False) <- prep]
 
-        -- if ambiguities fs unsolvedPs /= [] && not discardError then do
-        if ambiguities fs unsolvedPs /= [] then do
+        -- Short-circuit: ambiguities is only non-empty if unsolvedPs is non-empty
+        if not (null unsolvedPs) && ambiguities fs unsolvedPs /= [] then do
           (sDef, unsolvedPs')   <- tryDefaults env unsolvedPs
           (sDef', unsolvedPs'') <- tryDefaults env (apply sDef unsolvedPs')
           let subst = sDef' `compose` sDef
@@ -620,9 +620,9 @@ inferRecord discardError options env exp = do
   let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
   let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
 
-  let fieldTypes' = filter (\(k, _) -> k /= "...") (concat fieldTypes)
-  let spreads     = snd <$> filter (\(k, _) -> k == "...") (concat fieldTypes)
-
+  let allFieldTypes = concat fieldTypes
+  let fieldTypes' = filter (\(k, _) -> k /= "...") allFieldTypes
+  let spreads     = snd <$> filter (\(k, _) -> k == "...") allFieldTypes
   let base = case spreads of
         (x : _) -> Just x
         _       -> Nothing
@@ -679,9 +679,9 @@ inferJsxRecord discardError options env exp = do
   let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
   let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
 
-  let fieldTypes' = filter (\(k, _) -> k /= "...") (concat fieldTypes)
-  let spreads     = snd <$> filter (\(k, _) -> k == "...") (concat fieldTypes)
-
+  let allFieldTypes = concat fieldTypes
+  let fieldTypes' = filter (\(k, _) -> k /= "...") allFieldTypes
+  let spreads     = snd <$> filter (\(k, _) -> k == "...") allFieldTypes
   let base = case spreads of
         (x : _) -> Just x
         _       -> Nothing

@@ -11,6 +11,7 @@ import           Infer.Instantiate
 import           Error.Error
 import           Error.Context
 import qualified Data.Map                      as M
+import qualified Data.HashMap.Strict           as HM
 import           Control.Monad.Except           ( MonadError(throwError) )
 import qualified Data.Set                      as Set
 import           Infer.Env
@@ -79,7 +80,7 @@ lookupVar env name = do
       return sc
 
     Nothing ->
-      let candidates = List.nub $ M.keys (envVars env) ++ M.keys (envMethods env) ++ Set.toList (envNamesInScope env)
+      let candidates = Set.toList $ Set.fromList $ M.keys (envVars env) ++ M.keys (envMethods env) ++ Set.toList (envNamesInScope env)
           suggestions = findSimilar name candidates
       in  throwError $ CompilationError (UnboundVariable name suggestions) NoContext
 

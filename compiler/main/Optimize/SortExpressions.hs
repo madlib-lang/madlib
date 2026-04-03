@@ -63,46 +63,38 @@ buildDependenciesForAllExps exps =
 
 
 buildDependenciesForMain :: Int -> S.Set String -> [Exp] -> [Exp] -> [([Exp], String, [String])]
-buildDependenciesForMain expIndex localNames cachedExps exps = case exps of
-  e : es ->
-    case getExpName e of
-      Just n ->
-        let deps = buildDependencies' localNames n e
-        in  (cachedExps ++ [e], n, deps) : buildDependenciesForMain (expIndex + 1) localNames [] es
-
-      Nothing ->
-        let expName = "exp__" <> show expIndex
-            deps = buildDependencies' localNames expName e
-        in  (cachedExps ++ [e], expName, deps) : buildDependenciesForMain (expIndex + 1) localNames [] es
-    -- case getExpName e of
-    --   Just n ->
-    --     let deps = buildDependencies' localNames n e
-    --     in  (cachedExps ++ [e], n, deps) : buildDependencies localNames [] es
-
-    --   Nothing ->
-    --     buildDependencies localNames (cachedExps ++ [e]) es
-
-  [] ->
-    []
+buildDependenciesForMain expIndex localNames cachedExps exps =
+  go expIndex (cachedExps ++) exps
+  where
+    go _ _ [] = []
+    go idx acc (e : es) =
+      case getExpName e of
+        Just n ->
+          let deps = buildDependencies' localNames n e
+          in  (acc [e], n, deps) : go (idx + 1) id es
+        Nothing ->
+          let expName = "exp__" <> show idx
+              deps = buildDependencies' localNames expName e
+          in  (acc [e], expName, deps) : go (idx + 1) id es
 
 
 buildDependencies :: S.Set String -> [Exp] -> [Exp] -> [([Exp], String, [String])]
-buildDependencies localNames cachedExps exps = case exps of
-  e : es ->
-    case getExpName e of
-      Just n ->
-        let deps = buildDependencies' localNames n e
-        in  (cachedExps ++ [e], n, deps) : buildDependencies localNames [] es
-
-      Nothing ->
-        buildDependencies localNames (cachedExps ++ [e]) es
-
-  [] ->
-    -- Any accumulated unnamed expressions (e.g. JSExp nodes) at the end
-    -- must be preserved. Attach them as a synthetic node with no deps.
-    case cachedExps of
-      [] -> []
-      _  -> [(cachedExps, "__unnamed_trailing__", [])]
+buildDependencies localNames cachedExps exps = go (cachedExps ++) exps
+  where
+    go acc [] =
+      -- Any accumulated unnamed expressions (e.g. JSExp nodes) at the end
+      -- must be preserved. Attach them as a synthetic node with no deps.
+      let trailing = acc []
+      in  case trailing of
+            [] -> []
+            _  -> [(trailing, "__unnamed_trailing__", [])]
+    go acc (e : es) =
+      case getExpName e of
+        Just n ->
+          let deps = buildDependencies' localNames n e
+          in  (acc [e], n, deps) : go id es
+        Nothing ->
+          go (acc . (e :)) es
 
 
 buildDependencies' :: S.Set String -> String -> Exp -> [String]

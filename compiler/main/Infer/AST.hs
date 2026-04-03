@@ -27,6 +27,7 @@ import           Data.Hashable (hash, hashWithSalt)
 import           Control.Monad.State
 import           Control.Monad.Except
 import qualified Data.Map                                   as M
+import qualified Data.HashMap.Strict                        as HM
 import qualified Data.Set                                   as S
 import           Infer.Unify
 import           Infer.Instantiate
@@ -145,7 +146,7 @@ buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstanc
     defaultImportNames <- buildDefaultImportNames [] env''' { envCurrentPath = apath } aimports
     let defaultImportVars  = M.fromList $ (, Forall [] $ [] :=> tVar (-3)) <$> defaultImportNames
 
-    return $ env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath, envVars = defaultImportVars <> envVars env''' }
+    return $ env''' { envMethods = M.fromList (M.toList methods) <> envMethods priorEnv, envCurrentPath = apath, envVars = defaultImportVars <> envVars env''' }
 
 
 addConstructors :: Env -> [Can.Constructor] -> Infer Env
@@ -192,7 +193,8 @@ extractImportedConstructors env ast imp = do
     (ast, env') <- Rock.fetch $ Query.SolvedASTWithEnv path
     extractImportedConstructors env' ast imp
 
-  let exportedCtorSchemes = M.restrictKeys (envVars env) $ S.fromList (exportedCtorNames ++ additionalCtorNames)
+  let exportedCtorSet = S.fromList (exportedCtorNames ++ additionalCtorNames)
+      exportedCtorSchemes = M.filterWithKey (\k _ -> S.member k exportedCtorSet) (envVars env)
   return $ filterExportsByImport imp exportedCtorSchemes <> mconcat chainedExports
 
 
@@ -207,10 +209,11 @@ extractImportedVars env ast imp = do
 filterExportsByImport :: Can.Import -> Vars -> Vars
 filterExportsByImport imp vars = case imp of
   Can.Canonical _ (Can.DefaultImport (Can.Canonical _ namespace) _ _) ->
-    M.mapKeys ((namespace <> ".") <>) vars
+    M.fromList $ map (\(k, v) -> ((namespace <> ".") <> k, v)) $ M.toList vars
 
   Can.Canonical _ (Can.NamedImport names _ _) ->
-    M.restrictKeys vars $ S.fromList (Can.getCanonicalContent <$> names)
+    let ks = S.fromList (Can.getCanonicalContent <$> names)
+    in  M.filterWithKey (\k _ -> S.member k ks) vars
 
   Can.Canonical _ Can.TypeImport{} ->
     mempty
@@ -234,7 +237,7 @@ solveImport env imp = do
   return
     env''
       { envVars = envVars env'' <> importedVars <> constructorImports
-      , envConstructors = envConstructors env <> M.keysSet constructorImports
+      , envConstructors = envConstructors env <> S.fromList (M.keys constructorImports)
       }
 
 
@@ -419,7 +422,7 @@ buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case inst
 
                           _ ->
                             undefined
-        -- newComparableInterface = case M.lookup "Comparable" envInterfaces of
+        -- newComparableInterface = case HM.lookup "Comparable" envInterfaces of
         --                   Just (Interface vars preds instances) ->
         --                     Interface vars preds (comparableInstanceForEnv : instances)
 

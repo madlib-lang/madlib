@@ -262,7 +262,11 @@ buildLocalPath outputPath rootPath path =
         if rootParts `isPrefixOf` pathParts then
           pathParts \\ rootParts -- remove the root path components
         else
-          pathParts
+          -- rootPath is not a prefix (e.g. CWD differs from source location).
+          -- Strip the longest common prefix to avoid absolute path being joined
+          -- (joinPath [out, /abs/path] = /abs/path, writing into source dir).
+          let commonLen = length $ takeWhile id $ zipWith (==) rootParts pathParts
+          in  drop commonLen pathParts
   in  cleanRelativePath . joinPath $ [outputPath, replaceExtension (joinPath withoutRoot) ".mjs"]
 
 

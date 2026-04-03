@@ -13,6 +13,7 @@ import           Infer.Substitute
 import           Infer.Pattern (applyToPattern)
 import qualified AST.Solved                    as Slv
 import qualified Data.Map                      as M
+import qualified Data.HashMap.Strict           as HM
 import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Error.Error
@@ -73,14 +74,7 @@ verifyMethodAccess env s ph@(Slv.Typed (ps :=> t) a (Slv.Var methodName _)) = do
 
 
 updateExpTypesForExpList :: Options -> Env -> Bool -> Substitution -> [Slv.Exp] -> Infer [Slv.Exp]
-updateExpTypesForExpList options env push s exps = case exps of
-  (e : es) -> do
-    es' <- updateExpTypesForExpList options env push s es
-    e' <- updateExpTypes options env push s e
-    return (e' : es')
-
-  [] ->
-    return []
+updateExpTypesForExpList options env push s = mapM (updateExpTypes options env push s)
 
 
 updateExpTypes :: Options -> Env -> Bool -> Substitution -> Slv.Exp -> Infer Slv.Exp

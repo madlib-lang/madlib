@@ -1733,16 +1733,14 @@ generateInternalsModule options = do
     $ generateInternalsModuleContent (optTarget options) (optOptimized options) (optCoverage options)
 
 
-computeInternalsRelativePath :: FilePath -> FilePath -> IO FilePath
+computeInternalsRelativePath :: FilePath -> FilePath -> FilePath
 computeInternalsRelativePath outputPath astTargetPath =
-  let outputRoot = takeDirectoryIfFile outputPath
-  in do
-    outputRootAbs <- makeAbsolute outputRoot
-    astTargetAbs  <- makeAbsolute astTargetPath
-    let internalsPath = outputRootAbs <> (pathSeparator : "__internals__.mjs")
-        astDir        = dropFileName astTargetAbs
-        relPath       = convertWindowsSeparators $ cleanRelativePath $ makeRelativeEx astDir internalsPath
-    return $ if "." `isPrefixOf` relPath then relPath else "./" <> relPath
+  -- outputPath and astTargetPath are already absolute paths
+  let outputRoot    = takeDirectoryIfFile outputPath
+      internalsPath = outputRoot <> (pathSeparator : "__internals__.mjs")
+      astDir        = dropFileName astTargetPath
+      relPath       = convertWindowsSeparators $ cleanRelativePath $ makeRelativeEx astDir internalsPath
+  in  if "." `isPrefixOf` relPath then relPath else "./" <> relPath
 
 
 hashModulePath :: AST -> String
@@ -1867,15 +1865,14 @@ generateJSModule :: Options -> [FilePath] -> Core.AST -> IO (String, [Mapping])
 generateJSModule _ _ Core.AST { Core.apath = Nothing } = return ("", [])
 generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
   = do
-    pathAbs              <- makeAbsolute path
-    pathsToBuildAbs      <- mapM makeAbsolute pathsToBuild
-    trueEntrypointAbs    <- makeAbsolute (optEntrypoint options)
+    -- All paths are already canonicalized/absolute from the Rock query system and Options,
+    -- so makeAbsolute is redundant here.
     let rootPath           = optRootPath options
         outputPath         = optOutputPath options
         computedOutputPath = computeTargetPath outputPath rootPath path
-        entrypointPath     = if pathAbs `elem` pathsToBuildAbs then path else optEntrypoint options
-        isEntrypoint       = pathAbs == trueEntrypointAbs
-    internalsPath <- computeInternalsRelativePath outputPath computedOutputPath
+        entrypointPath     = if path `elem` pathsToBuild then path else optEntrypoint options
+        isEntrypoint       = path == optEntrypoint options
+        internalsPath      = computeInternalsRelativePath outputPath computedOutputPath
 
     -- TODO: move this to a Query as well?
     monomorphicMethodNames <- readIORef monomorphicMethods

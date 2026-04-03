@@ -21,6 +21,7 @@ newTVar k = do
 
 
 instantiate :: Scheme -> Infer (Qual Type)
+instantiate (Forall [] qt) = return qt
 instantiate (Forall ks qt) = do
   ts <- mapM newTVar ks
   return (inst ts qt)

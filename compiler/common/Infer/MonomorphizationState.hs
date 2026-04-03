@@ -22,6 +22,12 @@ monomorphizationState :: IORef (Map.Map FunctionId MonomorphizationRequest)
 {-# NOINLINE monomorphizationState #-}
 monomorphizationState = unsafePerformIO $ newIORef Map.empty
 
+-- Secondary index: module path → subset of monomorphizationState for that module.
+-- Updated in sync with monomorphizationState by newRequest/setRequestResult.
+monomorphizationStateByModule :: IORef (Map.Map FilePath (Map.Map FunctionId MonomorphizationRequest))
+{-# NOINLINE monomorphizationStateByModule #-}
+monomorphizationStateByModule = unsafePerformIO $ newIORef Map.empty
+
 -- Outer Map is where the import is needed
 -- Inner Map is where the imported names come from and gives a list of names to be imported
 monomorphizationImports :: IORef (Map.Map FilePath (Map.Map FilePath (Set.Set (String, Type, ImportType))))
@@ -37,6 +43,7 @@ data ScopeState
   = ScopeState
       { ssRequests :: Map.Map FunctionId MonomorphizationRequest
       , ssDefinitions :: Map.Map String Exp
+      , ssNameCounts :: Map.Map String Int  -- tracks how many instances of each function name exist
       }
       deriving(Eq, Ord, Show)
 
@@ -84,29 +91,29 @@ makeMonomorphizedName fnName modulePath t = do
 
 newRequest :: String -> FilePath -> Bool -> Type -> IO String
 newRequest fnName modulePath isNullaryMethod t = do
-  atomicModifyIORef
-    monomorphizationState
-    (\state ->
-      let nextIndex = Map.size state
-          fnId = FunctionId fnName modulePath t
-          req = MonomorphizationRequest nextIndex Nothing isNullaryMethod
-      in  (Map.insert fnId req state, ())
-    )
-
+  let fnId = FunctionId fnName modulePath t
+  req <- atomicModifyIORef monomorphizationState $ \state ->
+    let nextIndex = Map.size state
+        req = MonomorphizationRequest nextIndex Nothing isNullaryMethod
+    in  (Map.insert fnId req state, req)
+  atomicModifyIORef monomorphizationStateByModule $ \byModule ->
+    let inner = Map.findWithDefault Map.empty modulePath byModule
+    in  (Map.insert modulePath (Map.insert fnId req inner) byModule, ())
   makeMonomorphizedName fnName modulePath t
 
 setRequestResult :: String -> FilePath -> Bool -> Type -> Exp -> IO ()
 setRequestResult fnName modulePath isNullaryMethod t result = do
-  atomicModifyIORef
-    monomorphizationState
-    (\state ->
-      let fnId = FunctionId fnName modulePath t
-          updatedReq = case Map.lookup fnId state of
-            Just req ->
-              req{ mrResult = Just result, mrIsNullaryMethod = isNullaryMethod }
+  let fnId = FunctionId fnName modulePath t
+  updatedReq <- atomicModifyIORef monomorphizationState $ \state ->
+    let updatedReq = case Map.lookup fnId state of
+          Just req -> req{ mrResult = Just result, mrIsNullaryMethod = isNullaryMethod }
+          Nothing  -> MonomorphizationRequest (-1) (Just result) isNullaryMethod
+    in  (Map.insert fnId updatedReq state, updatedReq)
+  atomicModifyIORef monomorphizationStateByModule $ \byModule ->
+    let inner = Map.findWithDefault Map.empty modulePath byModule
+    in  (Map.insert modulePath (Map.insert fnId updatedReq inner) byModule, ())
 
-            Nothing ->
-              MonomorphizationRequest (-1) (Just result) isNullaryMethod
-          updatedState = Map.insert fnId updatedReq state
-      in  (updatedState, ())
-    )
+lookupByModulePath :: FilePath -> IO (Map.Map FunctionId MonomorphizationRequest)
+lookupByModulePath modulePath = do
+  byModule <- readIORef monomorphizationStateByModule
+  return $ Map.findWithDefault Map.empty modulePath byModule

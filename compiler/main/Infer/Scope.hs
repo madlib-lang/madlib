@@ -10,6 +10,7 @@ import           Infer.Infer
 import           Infer.Type
 import qualified Data.Set                      as S
 import qualified Data.Map                      as M
+import qualified Data.HashMap.Strict           as HM
 import           Data.Maybe
 import           Control.Monad
 import           Error.Error

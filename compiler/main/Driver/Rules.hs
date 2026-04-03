@@ -36,6 +36,7 @@ import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
 import qualified Generate.LLVM.LLVM            as LLVM
 import qualified Generate.LLVM.Env             as LLVMEnv
 import qualified Data.Map                      as Map
+import qualified Data.HashMap.Strict           as HM
 import qualified Data.Set                      as Set
 import           Control.Monad.State
 import           Control.Monad.Except
@@ -374,6 +375,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   MonomorphizedProgram -> nonInput $ do
     liftIO $ atomicModifyIORef monomorphizationState (const (mempty, ()))
+    liftIO $ atomicModifyIORef monomorphizationStateByModule (const (mempty, ()))
     liftIO $ atomicModifyIORef monomorphizationImports (const (mempty, ()))
     liftIO $ atomicModifyIORef monomorphicMethods (const (mempty, ()))
 

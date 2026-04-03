@@ -231,18 +231,20 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
             (monomorphicName, nextIndex) <- liftIO $ atomicModifyIORef
               envLocalState
               (\localState ->
-                let flippedScopes = reverse localState
-                    ScopeState { ssRequests, ssDefinitions } = flippedScopes!!index
-                    nextIndex = Map.size $ Map.filterWithKey (\FunctionId { fiFunctionName } _ -> fiFunctionName == fnName) ssRequests
+                -- localState is innermost-last; index is into the flipped (innermost-first) list.
+                -- The element at flippedScopes!!index is at position (len-1-index) in localState.
+                let len = length localState
+                    localIndex = len - 1 - index
+                    scope = localState !! localIndex
+                    ScopeState { ssRequests, ssDefinitions, ssNameCounts } = scope
+                    nextIndex = Map.findWithDefault 0 fnName ssNameCounts
                     req = MonomorphizationRequest nextIndex Nothing False
                     withNewRequest = Map.insert fnId req ssRequests
-                    updatedScope = ScopeState { ssRequests = withNewRequest, ssDefinitions }
+                    newNameCounts = Map.insert fnName (nextIndex + 1) ssNameCounts
+                    updatedScope = ScopeState { ssRequests = withNewRequest, ssDefinitions, ssNameCounts = newNameCounts }
                     monomorphicName = buildMonomorphizedName fnName nextIndex
-                    result =
-                      List.reverse $ zipWith
-                        (\scope i -> (if i == index then updatedScope else scope))
-                        flippedScopes
-                        [0..]
+                    (before, _ : after) = splitAt localIndex localState
+                    result = before <> (updatedScope : after)
                 in  (result, (monomorphicName, nextIndex))
               )
 
@@ -255,16 +257,15 @@ monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalStat
             liftIO $ atomicModifyIORef
               envLocalState
               (\localState ->
-                let flippedScopes = reverse localState
-                    ScopeState { ssRequests, ssDefinitions } = flippedScopes!!index
+                let len = length localState
+                    localIndex = len - 1 - index
+                    scope = localState !! localIndex
+                    ScopeState { ssRequests, ssDefinitions, ssNameCounts } = scope
                     updatedReq = MonomorphizationRequest nextIndex (Just monomorphized) False
                     withUpdatedRequest = Map.insert fnId updatedReq ssRequests
-                    updatedScope2 = ScopeState { ssRequests = withUpdatedRequest, ssDefinitions }
-                    updatedScopes2 = List.reverse $ zipWith
-                      (\scope i -> (if i == index then updatedScope2 else scope))
-                      flippedScopes
-                      [0..]
-                in  (updatedScopes2, ())
+                    updatedScope2 = ScopeState { ssRequests = withUpdatedRequest, ssDefinitions, ssNameCounts }
+                    (before, _ : after) = splitAt localIndex localState
+                in  (before <> (updatedScope2 : after), ())
               )
 
             return monomorphicName
@@ -557,7 +558,7 @@ pushNewScopeState env = do
   liftIO $ atomicModifyIORef
     (envLocalState env)
     (\localState ->
-      (localState <> [ScopeState mempty mempty], ())
+      (localState <> [ScopeState mempty mempty mempty], ())
     )
 
 
@@ -876,20 +877,12 @@ replaceTypedNameWithMonomorphicOnes state (Untyped area n) =
   in  if null mapped then [Untyped area n] else mapped
 
 
-filterMonomorphicFunctionsForModule :: Map.Map FunctionId MonomorphizationRequest -> FilePath -> Map.Map FunctionId MonomorphizationRequest
-filterMonomorphicFunctionsForModule state modulePath =
-  Map.filterWithKey
-    (\id _ -> fiModulePath id == modulePath)
-    state
-
-
 -- Target and Env are only needed so that we can monomorphize coverage trackers
 -- that would otherwise be eliminated so that they resolve to the right,
 -- meaning the one with the monomorphic name.
 mergeResult :: Target -> Env -> AST -> Monomorphize AST
 mergeResult target env ast@AST{ apath = Just currentModulePath } = do
-  state <- liftIO $ readIORef monomorphizationState
-  let monomorphizedFunctionsForModule = filterMonomorphicFunctionsForModule state currentModulePath
+  monomorphizedFunctionsForModule <- liftIO $ lookupByModulePath currentModulePath
   let methodExps = Set.toList $ Set.fromList $ ainstances ast >>= findMonomorphicMethods monomorphizedFunctionsForModule
   newExps <- concat <$> mapM (replaceDefinitionWithMonomorphicOnes target env monomorphizedFunctionsForModule) (aexps ast)
   let allExps = methodExps ++ newExps

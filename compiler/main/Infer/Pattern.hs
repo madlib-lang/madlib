@@ -14,6 +14,7 @@ import           Infer.Env
 import           Infer.Substitute
 import qualified Utils.Tuple                   as T
 import qualified Data.Map                      as M
+import qualified Data.HashMap.Strict           as HM
 import qualified Data.Set                      as S
 import           Data.List
 import           Error.Context
