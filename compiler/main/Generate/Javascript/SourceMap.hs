@@ -43,28 +43,42 @@ encodeVLQ n =
 -- ---------------------------------------------------------------------------
 
 -- | Encode a list of Mapping entries into the Source Map v3 'mappings' string.
+--
+-- Source map v3 delta-encoding rules:
+--   - Generated column resets to 0 at the start of each output line.
+--   - Source file index, source line, and source column are cumulative
+--     across ALL segments in ALL lines (state is NOT reset per line).
 encodeMappings :: [Mapping] -> String
 encodeMappings [] = ""
 encodeMappings mappings =
-  let sorted     = sortOn (\m -> (mappingGenLine m, mappingGenCol m)) mappings
-      maxLine    = mappingGenLine (last sorted)
-      byLine     = [ filter (\m -> mappingGenLine m == l) sorted | l <- [0..maxLine] ]
-  in  intercalate ";" (encodeLineSegments <$> byLine)
+  let sorted  = sortOn (\m -> (mappingGenLine m, mappingGenCol m)) mappings
+      maxLine = mappingGenLine (last sorted)
+      byLine  = [ filter (\m -> mappingGenLine m == l) sorted | l <- [0..maxLine] ]
+  in  go 0 0 0 byLine
+  where
+    -- prevSrcLine and prevSrcCol persist across output lines.
+    go :: Int -> Int -> Int -> [[Mapping]] -> String
+    go _prevSrcLine _prevSrcCol _prevSrcFile [] = ""
+    go prevSrcLine prevSrcCol prevSrcFile (line : rest) =
+      let (lineStr, prevSrcLine', prevSrcCol') =
+            encodeLineSegments prevSrcLine prevSrcCol line
+      in  lineStr <> (if null rest then "" else ";") <> go prevSrcLine' prevSrcCol' prevSrcFile rest
 
-encodeLineSegments :: [Mapping] -> String
-encodeLineSegments ms =
-  let go _prevGenCol _prevSrcLine _prevSrcCol [] = ""
-      go prevGenCol prevSrcLine prevSrcCol (m : rest) =
+encodeLineSegments :: Int -> Int -> [Mapping] -> (String, Int, Int)
+encodeLineSegments prevSrcLine prevSrcCol ms =
+  let go _prevGenCol psl psc [] = ("", psl, psc)
+      go prevGenCol psl psc (m : rest) =
         let dGenCol  = mappingGenCol m  - prevGenCol
-            dSrcLine = mappingSrcLine m - prevSrcLine
-            dSrcCol  = mappingSrcCol m  - prevSrcCol
+            dSrcLine = mappingSrcLine m - psl
+            dSrcCol  = mappingSrcCol m  - psc
             seg      = encodeVLQ dGenCol
                     <> encodeVLQ 0          -- source file index (always 0)
                     <> encodeVLQ dSrcLine
                     <> encodeVLQ dSrcCol
+            (restStr, psl', psc') = go (mappingGenCol m) (mappingSrcLine m) (mappingSrcCol m) rest
             sep      = if null rest then "" else ","
-        in  seg <> sep <> go (mappingGenCol m) (mappingSrcLine m) (mappingSrcCol m) rest
-  in  go 0 0 0 ms
+        in  (seg <> sep <> restStr, psl', psc')
+  in  go 0 prevSrcLine prevSrcCol ms
 
 
 -- ---------------------------------------------------------------------------

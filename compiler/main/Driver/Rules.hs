@@ -533,11 +533,19 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       case optSourceMaps options of
         NoSourceMap -> writeFile computedOutputPath jsModule
         ExternalSourceMap -> do
-          let (annotated, mapJson) = Javascript.makeExternalSourceMap path computedOutputPath mappings jsModule
+          -- Filter mappings: only keep entries whose source line is within
+          -- the actual source file.  Monomorphization can produce Core nodes
+          -- with areas from other (inlined) modules whose line numbers exceed
+          -- the current source file's line count.
+          srcLineCount <- Javascript.sourceFileLineCount path
+          let validMappings = Javascript.filterMappingsBySourceFile srcLineCount mappings
+          let (annotated, mapJson) = Javascript.makeExternalSourceMap path computedOutputPath validMappings jsModule
           writeFile computedOutputPath annotated
           writeFile (computedOutputPath <> ".map") mapJson
         InlineSourceMap -> do
-          let annotated = Javascript.makeInlineSourceMap path computedOutputPath mappings jsModule
+          srcLineCount <- Javascript.sourceFileLineCount path
+          let validMappings = Javascript.filterMappingsBySourceFile srcLineCount mappings
+          let annotated = Javascript.makeInlineSourceMap path computedOutputPath validMappings jsModule
           writeFile computedOutputPath annotated
     return (jsModule, (mempty, mempty))
 

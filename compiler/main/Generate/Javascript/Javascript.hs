@@ -39,7 +39,7 @@ import           Generate.Javascript.Internals
 import           Generate.Javascript.Doc
 import           Generate.Javascript.ModuleDoc
 import           Generate.Javascript.SourceMap  (Mapping(..), buildSourceMapJSON, base64Encode)
-import           Explain.Location               (getLineFromStart, getColumnFromStart)
+import           Explain.Location               (Area)
 import           Run.Target
 import           Run.SourceMapMode
 import           Text.Show.Pretty               ( ppShow )
@@ -404,6 +404,7 @@ instance Compilable Exp where
 emitExp :: Env -> CompilationConfig -> Exp -> JSDoc
 emitExp _ _ Untyped{} = mempty
 emitExp env config (Typed qt area metadata exp) =
+    docAnnotate area $
     let optimized = ccoptimize config
     in case exp of
         _ | isPlainRecursionEnd metadata ->
@@ -1553,17 +1554,24 @@ instance Compilable AST where
 
 emitExps :: Env -> CompilationConfig -> [Exp] -> [JSStmt]
 emitExps _ _ [] = []
-emitExps env config [exp] = [JSLineStmt (emit env config exp)]
+emitExps env config [exp] = [JSLineStmt (annotatedEmit env config exp)]
 emitExps env config (exp : es) = case exp of
   Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) _) ->
     let nextEnv = env { varsInScope = S.insert name (varsInScope env) }
-    in  JSLineStmt (emit env config exp) : emitExps nextEnv config es
+    in  JSLineStmt (annotatedEmit env config exp) : emitExps nextEnv config es
 
   Core.Typed _ _ _ (Core.Export (Core.Typed _ _ _ (Core.Assignment (Core.Typed _ _ _ (Core.Var name _)) _))) ->
     let nextEnv = env { varsInScope = S.insert name (varsInScope env) }
-    in  JSLineStmt (emit env config exp) : emitExps nextEnv config es
+    in  JSLineStmt (annotatedEmit env config exp) : emitExps nextEnv config es
 
-  _ -> JSLineStmt (emit env config exp) : emitExps env config es
+  _ -> JSLineStmt (annotatedEmit env config exp) : emitExps env config es
+
+-- | Emit an expression and wrap it with its source annotation so that
+-- renderWithMappings can extract a Mapping entry for it.
+annotatedEmit :: Env -> CompilationConfig -> Exp -> JSDoc
+annotatedEmit env config exp = case exp of
+  Core.Typed _ area _ _ -> docAnnotate area (emit env config exp)
+  Core.Untyped area _ _ -> docAnnotate area (emit env config exp)
 
 
 -- | Collect the module init body: for every top-level var that needs module init,
@@ -1808,45 +1816,21 @@ generateMainCallFromAST options astPath ast =
           fallbackMainCall
 
 
--- | Count the number of newlines in a string (= number of complete lines - 1).
-countNewlines :: String -> Int
-countNewlines = length . filter (== '\n')
 
--- | Render a list of JSStmt sections (as in renderModuleDoc but only the
--- prefix sections before mdDefinitions) and return the number of output lines
--- consumed, including the trailing blank-line separator if any sections are non-empty.
-renderPrefixLineCount :: [[JSStmt]] -> Int
-renderPrefixLineCount prefixSections =
-  let nonEmpty   = filter (not . null) prefixSections
-      rendered   = docRender . docVsep . map renderStmtDoc <$> nonEmpty
-      -- Each non-empty section contributes its lines.
-      -- Between sections there is one docHardline (blank line separator).
-      sectionLines = map countNewlines rendered
-      separators   = if null nonEmpty then 0 else length nonEmpty  -- one \n per section end + inter-section blank lines
-  in  sum sectionLines + separators
+-- | Return the number of lines in a source file (used to filter mappings).
+sourceFileLineCount :: FilePath -> IO Int
+sourceFileLineCount path = do
+  content <- readFile path
+  return $! length (lines content)
 
--- | Build source map Mapping entries for the top-level expressions emitted by
--- the given module doc.  We render each definition individually to count how
--- many output lines it occupies.
---
--- Returns a list of Mapping values (0-based output line → 0-based source line).
-buildMappings :: [[JSStmt]] -> [(JSStmt, Core.Exp)] -> [Mapping]
-buildMappings prefixSections defsWithExps =
-  let prefixLines = renderPrefixLineCount prefixSections
-      -- Start at prefixLines + 1 blank line before mdDefinitions section
-      -- (renderModuleDoc inserts a docHardline between non-empty sections)
-      defsStartLine = if prefixLines == 0 then 0 else prefixLines + 1
-  in  go defsStartLine defsWithExps
-  where
-    go _   []                   = []
-    go cur ((stmt, exp) : rest) =
-      let rendered  = docRender (renderStmtDoc stmt)
-          srcLine   = getLineFromStart (Core.getArea exp) - 1   -- convert 1-based to 0-based
-          srcCol    = getColumnFromStart (Core.getArea exp) - 1 -- convert 1-based to 0-based
-          mapping   = Mapping { mappingGenLine = cur, mappingGenCol = 0
-                              , mappingSrcLine = max 0 srcLine, mappingSrcCol = max 0 srcCol }
-          nextLine  = cur + countNewlines rendered + 1
-      in  mapping : go nextLine rest
+
+-- | Drop mappings whose source line exceeds the source file's line count.
+-- Monomorphization and inlining can produce Core nodes with areas from other
+-- modules; those produce line numbers that are out-of-range for the current
+-- source file and would confuse source map consumers.
+filterMappingsBySourceFile :: Int -> [Mapping] -> [Mapping]
+filterMappingsBySourceFile lineCount = filter (\m -> mappingSrcLine m < lineCount)
+
 
 -- | Attach a //# sourceMappingURL comment and optionally write the map JSON.
 -- Returns (annotated JS string, map JSON string).
@@ -1929,36 +1913,16 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
                   , ccmoduleInitImports = moduleInitImports
                   }
 
-    let moduleContent  = docRender $ emit env config ast
-        moduleContent' = moduleContent <> generateMainCallFromAST options path ast
-
-    -- Build source map mappings when requested (JS targets only)
-    let mappings =
+    -- Render the module.  When source maps are requested we use the annotated
+    -- render path to extract Mapping entries directly from the Doc annotations
+    -- that emitExp attaches.  Otherwise we strip annotations for a plain render.
+    let moduleDoc = emit env config ast
+        mainCallSuffix = generateMainCallFromAST options path ast
+    let (moduleContent, mappings) =
           if optSourceMaps options /= NoSourceMap then
-            let astPath           = fromMaybe "Unknown" (Core.apath ast)
-                configWithASTPath = updateASTPath astPath config
-                exps              = Core.aexps ast
-                typeDecls         = Core.atypedecls ast
-                imports           = Core.aimports ast
+            let (rendered, ms) = renderWithMappings 80 moduleDoc
+            in  (rendered <> mainCallSuffix, ms)
+          else
+            (docRender moduleDoc <> mainCallSuffix, [])
 
-                -- Reconstruct the prefix sections (everything before mdDefinitions)
-                -- using the same logic as the Compilable AST instance.
-                infoComment   = [JSCommentLine (docText ("// file: " <> astPath))]
-                preludeImport = if isEntrypoint then [JSImportStmt (JSImportBare internalsPath)] else []
-                moduleInitImportStmts =
-                  if isEntrypoint
-                  then [ JSImportStmt (JSImportNamed [fn] rp) | (fn, rp) <- moduleInitImports ]
-                  else []
-                compiledImports = JSImportStmt . compileImport configWithASTPath <$> imports
-                compiledAdts    = JSRawBlock . emit env configWithASTPath <$> typeDecls
-
-                prefixSections = [infoComment, preludeImport, moduleInitImportStmts <> compiledImports, compiledAdts]
-
-                -- Pair each emitted definition JSStmt with its source Exp
-                compiledExps   = emitExps env configWithASTPath exps
-                defsWithExps   = zip compiledExps exps
-
-            in  buildMappings prefixSections defsWithExps
-          else []
-
-    return (moduleContent', mappings)
+    return (moduleContent, mappings)
