@@ -19,6 +19,11 @@ class Substitutable a where
   apply :: Substitution -> a -> a
   ftv   :: a -> S.Set TVar
 
+{-# SPECIALIZE apply :: Substitution -> Type -> Type #-}
+{-# SPECIALIZE apply :: Substitution -> Scheme -> Scheme #-}
+{-# SPECIALIZE apply :: Substitution -> [Type] -> [Type] #-}
+{-# SPECIALIZE apply :: Substitution -> [Pred] -> [Pred] #-}
+
 
 instance Substitutable Pred where
   apply s (IsIn i ts maybeArea) = IsIn i (apply s ts) maybeArea
