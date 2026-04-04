@@ -146,7 +146,7 @@ buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstanc
     defaultImportNames <- buildDefaultImportNames [] env''' { envCurrentPath = apath } aimports
     let defaultImportVars  = M.fromList $ (, Forall [] $ [] :=> tVar (-3)) <$> defaultImportNames
 
-    return $ env''' { envMethods = M.fromList (M.toList methods) <> envMethods priorEnv, envCurrentPath = apath, envVars = defaultImportVars <> envVars env''' }
+    return $ env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath, envVars = defaultImportVars <> envVars env''' }
 
 
 addConstructors :: Env -> [Can.Constructor] -> Infer Env
@@ -209,7 +209,7 @@ extractImportedVars env ast imp = do
 filterExportsByImport :: Can.Import -> Vars -> Vars
 filterExportsByImport imp vars = case imp of
   Can.Canonical _ (Can.DefaultImport (Can.Canonical _ namespace) _ _) ->
-    M.fromList $ map (\(k, v) -> ((namespace <> ".") <> k, v)) $ M.toList vars
+    M.mapKeys (\k -> (namespace <> ".") <> k) vars
 
   Can.Canonical _ (Can.NamedImport names _ _) ->
     let ks = S.fromList (Can.getCanonicalContent <$> names)
