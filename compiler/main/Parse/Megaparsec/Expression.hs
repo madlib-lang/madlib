@@ -7,17 +7,9 @@ module Parse.Megaparsec.Expression
   , pMultiExpBody
   ) where
 
-import qualified Data.ByteString               as BS
-import qualified Data.ByteString.Char8         as C8
-import qualified Data.Text                      as T
-import qualified Data.Text.Encoding             as TE
-import qualified Data.Map                       as M
-import           Data.Word                      ( Word8 )
-import           Data.Maybe                     ( fromMaybe )
 import           Control.Monad                  ( void, when )
 
-import           Text.Megaparsec                hiding ( State )
-import qualified Text.Megaparsec.Byte          as C
+import           Text.Megaparsec                hiding ( State, Token )
 import           Control.Monad.Combinators.Expr
 
 import qualified AST.Source                      as Src
@@ -28,46 +20,58 @@ import           Parse.Megaparsec.Escape        ( processEscapes )
 import           Parse.Megaparsec.Lexeme
 import           Parse.Megaparsec.Pattern
 import           Parse.Megaparsec.Typing
+import           Parse.Lexer.Token              ( Token(..), RangedToken(..) )
+
+
+-- Helper: peek at the next token kind (Nothing at EOF)
+peekTok :: Parser (Maybe Token)
+peekTok = fmap (fmap rtToken) (optional (lookAhead anySingle))
 
 
 -- | Parse a body expression (assignment, mutation, typed expression, or plain expression)
 -- bodyExp = name '=' exp | name '::' constrainedTyping '\n' name '=' exp | exp ':=' exp | exp
 pBodyExp :: Parser Src.Exp
 pBodyExp = do
-  -- Single lookAhead: skip identifier (if any) + spaces, then peek at 2 bytes
-  follows <- lookAhead $ do
-    w <- takeWhileP Nothing isIdentB
-    if BS.null w
-      then return BS.empty  -- non-identifier start: fall through to pBodyExpNoName
-      else do
-        _ <- takeWhileP Nothing (\b -> b == 32 || b == 9)
-        b1 <- optional anySingle
-        b2 <- optional anySingle
-        return $! case (b1, b2) of
-          (Just 58, Just 58)       -> "::"  -- '::' type annotation
-          (Just 61, Nothing)       -> "="   -- '=' alone: assignment
-          (Just 61, Just b) | b /= 61 && b /= 62 -> "="  -- '=' not followed by '=' or '>': assignment
-          _                        -> "x"   -- identifier but no :: or plain =
-  case follows of
-    "::" -> pNamedTypedBodyExp
-    "="  -> pAssignmentBodyExp
-    _    -> pBodyExpNoName
+  -- Peek at the next token to determine dispatch
+  mt <- peekTok
+  case mt of
+    -- Could be: name = exp | name :: typing \n name = exp | plain exp
+    -- Handles TkName (lowercase), TkTypeName (uppercase/constant), and soft keywords
+    Just (TkName _)     -> tryNameAssignment
+    Just (TkTypeName _) -> tryNameAssignment
+    Just TkWhen         -> tryNameAssignment
+    Just TkIs           -> tryNameAssignment
+    Just TkNot          -> tryNameAssignment
+    _ -> pBodyExpNoName
   where
-    -- name :: constrainedTyping \n ... (named typed expression OR extern declaration)
-    pNamedTypedBodyExp = do
-      (startArea, name1) <- withArea pNameStr
-      target <- pSourceTarget
-      pDoubleColon
-      typing <- pConstrainedTyping
-      rets
-      -- Check for extern, export, or plain typed assignment
-      -- lookAhead never consumes, no try needed
+    tryNameAssignment = do
+      mResult <- optional $ try $ do
+        (startArea, name1) <- withArea pName
+        target <- pSourceTarget
+        mt2 <- peekTok
+        case mt2 of
+          Just TkDoubleColon -> do
+            pDoubleColon
+            typing <- pConstrainedTyping
+            rets
+            pNamedTypedBodyExpBody startArea target name1 typing
+          Just TkEq -> do
+            pEq
+            maybeRet
+            body <- pExp
+            return $ Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Assignment name1 body)
+          _ -> empty
+      case mResult of
+        Just e  -> return e
+        Nothing -> pBodyExpNoName
+
+    -- After name :: typing, parse either export extern | export assignment | extern | assignment
+    pNamedTypedBodyExpBody startArea target name1 typing = do
       exported <- option False (True <$ lookAhead pExport)
       if exported
         then do
-          -- Both sub-forms start with 'export name ='; dispatch on 'extern' after '='
           pExport
-          name2 <- pNameStr
+          name2 <- pName
           pEq
           isExtern <- option False (True <$ lookAhead pExtern)
           if isExtern
@@ -86,8 +90,7 @@ pBodyExp = do
                     (Src.Export (Src.Source assignArea target (Src.Assignment name2 body))))
                   typing)
         else do
-          -- Both sub-forms start with 'name2 ='; dispatch on 'extern' after '='
-          name2 <- pNameStr
+          name2 <- pName
           pEq
           isExtern <- option False (True <$ lookAhead pExtern)
           if isExtern
@@ -100,14 +103,7 @@ pBodyExp = do
               body <- pExp
               let assignArea = mergeAreas startArea (Src.getArea body)
               return $ Src.Source assignArea target (Src.NamedTypedExp name1 (Src.Source assignArea target (Src.Assignment name2 body)) typing)
-    -- name = exp (assignment)
-    pAssignmentBodyExp = do
-      (startArea, name) <- withArea pNameStr
-      target <- pSourceTarget
-      pEq
-      maybeRet
-      body <- pExp
-      return $ Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Assignment name body)
+
     -- exp := exp or plain expression
     pBodyExpNoName = choice
       [ try $ do
@@ -122,21 +118,17 @@ pBodyExp = do
 
 
 -- | Parse a multi-expression body (used in multiline lambdas and do blocks)
--- multiExpBody = 'return' exp | bodyExp rets multiExpBody | empty
 pMultiExpBody :: Parser [Src.Exp]
 pMultiExpBody = choice
-  [ -- return exp: pReturn already backtracks on failure, no outer try needed
-    do
+  [ do
       (startArea, _) <- withArea pReturn
       target <- pSourceTarget
       body <- pExp
       return [Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Return body)]
-  , -- empty body produces unit (lookAhead never consumes, no try needed)
-    do
+  , do
       lookAhead pRightCurly
       return [Src.Source emptyArea Src.TargetAll Src.LUnit]
-  , -- bodyExp followed by more expressions
-    do
+  , do
       e <- pBodyExp
       rets
       rest <- pMultiExpBody
@@ -149,11 +141,9 @@ pMultiExpBody = choice
 pExp :: Parser Src.Exp
 pExp = do
   e <- pExprWithOps
-  -- Try ternary: e ? trueExpr : falseExpr (? may be on next line)
-  -- Peek first to avoid the overhead of `try` on non-ternary expressions
-  mc <- optional (lookAhead anySingle)
-  case fmap chr8' mc of
-    Just '?' -> do
+  mt <- peekTok
+  case mt of
+    Just TkQuestionMark -> do
       pQuestionMark
       maybeRet
       trueExpr <- pExp
@@ -162,7 +152,7 @@ pExp = do
       maybeRet
       falseExpr <- pExp
       return $ Src.Source (mergeAreas (Src.getArea e) (Src.getArea falseExpr)) (Src.getSourceTarget e) (Src.Ternary e trueExpr falseExpr)
-    Just '\n' -> option e $ try $ do
+    Just TkNewline -> option e $ try $ do
       maybeRet
       pQuestionMark
       maybeRet
@@ -176,12 +166,9 @@ pExp = do
 
 
 -- | Expression parser with operator precedence
--- Uses makeExprParser for clean operator handling
 pExprWithOps :: Parser Src.Exp
 pExprWithOps = makeExprParser pTermWithNewline operatorTable
   where
-    -- Consume trailing optional newline after each term so operators can appear on next line
-    -- This avoids repeating maybeRet inside every operator in the table
     pTermWithNewline = pTermWithPostfix <* maybeRet
 
 
@@ -192,67 +179,59 @@ mkBinOp area target opStr l r =
   Src.Source (mergeAreas (Src.getArea l) (Src.getArea r)) target
     (Src.BinOp l (Src.Source area target (Src.Var opStr)) r)
 
+
 -- | Operator precedence table for makeExprParser.
--- Uses a single dispatching InfixL per level for fast first-byte dispatch.
--- NOTE: makeExprParser treats FIRST entry as HIGHEST precedence (opposite of docs).
--- This order matches the Happy grammar's %left declarations (highest to lowest).
 operatorTable :: [[Operator Parser Src.Exp]]
 operatorTable =
-  [ -- Highest precedence: * / %
+  [ -- Highest: * / %
     [ InfixL $ try $ do
-        b <- lookAhead anySingle
-        case b of
-          42 -> do (area, _) <- withArea pStar;    target <- pSourceTarget; maybeRet; return $ mkBinOp area target "*"
-          47 -> do (area, _) <- withArea pSlash;   target <- pSourceTarget; maybeRet; return $ mkBinOp area target "/"
-          37 -> do (area, _) <- withArea pPercent; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "%"
-          _  -> empty
+        mt <- peekTok
+        case mt of
+          Just TkStar    -> do (area, _) <- withArea pStar;    target <- pSourceTarget; maybeRet; return $ mkBinOp area target "*"
+          Just TkSlash   -> do (area, _) <- withArea pSlash;   target <- pSourceTarget; maybeRet; return $ mkBinOp area target "/"
+          Just TkPercent -> do (area, _) <- withArea pPercent; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "%"
+          _              -> empty
     ]
   , -- + ++ -
     [ InfixL $ try $ do
-        b <- lookAhead anySingle
-        case b of
-          43 -> choice
-            [ do (area, _) <- withArea pDoublePlus; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "++"
-            , do (area, _) <- withArea pPlus;       target <- pSourceTarget; maybeRet; return $ mkBinOp area target "+"
-            ]
-          45 -> do (area, _) <- withArea pDash; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "-"
-          _  -> empty
+        mt <- peekTok
+        case mt of
+          Just TkDoublePlus -> do (area, _) <- withArea pDoublePlus; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "++"
+          Just TkPlus       -> do (area, _) <- withArea pPlus;       target <- pSourceTarget; maybeRet; return $ mkBinOp area target "+"
+          Just TkDash       -> do (area, _) <- withArea pDash;       target <- pSourceTarget; maybeRet; return $ mkBinOp area target "-"
+          _                 -> empty
     ]
-  , -- == != > < >= <=
+  , -- == != >= > <= <
     [ InfixL $ try $ do
-        b <- lookAhead anySingle
-        case b of
-          61 -> do (area, _) <- withArea pDoubleEq;       target <- pSourceTarget; maybeRet; return $ mkBinOp area target "=="
-          33 -> do (area, _) <- withArea pNotEq;          target <- pSourceTarget; maybeRet; return $ mkBinOp area target "!="
-          62 -> choice
-            [ do (area, _) <- withArea pRightChevronEq;  target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">="
-            , do (area, _) <- withArea pRightChevron;    target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">"
-            ]
-          60 -> choice
-            [ do (area, _) <- withArea pLeftChevronEq;   target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<="
-            , do (area, _) <- withArea pLeftChevron;     target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<"
-            ]
-          _  -> empty
+        mt <- peekTok
+        case mt of
+          Just TkDoubleEq      -> do (area, _) <- withArea pDoubleEq;      target <- pSourceTarget; maybeRet; return $ mkBinOp area target "=="
+          Just TkNotEq         -> do (area, _) <- withArea pNotEq;         target <- pSourceTarget; maybeRet; return $ mkBinOp area target "!="
+          Just TkRightChevronEq -> do (area, _) <- withArea pRightChevronEq; target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">="
+          Just TkRightChevron  -> do (area, _) <- withArea pRightChevron;  target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">"
+          Just TkLeftChevronEq -> do (area, _) <- withArea pLeftChevronEq; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<="
+          Just TkLeftChevron   -> do (area, _) <- withArea pLeftChevron;   target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<"
+          _                    -> empty
     ]
   , -- &&
     [ InfixL $ try $ do
-        b <- lookAhead anySingle
-        case b of
-          38 -> do (area, _) <- withArea pDoubleAmpersand; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "&&"
-          _  -> empty
+        mt <- peekTok
+        case mt of
+          Just TkDoubleAmpersand -> do (area, _) <- withArea pDoubleAmpersand; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "&&"
+          _                      -> empty
     ]
   , -- ||
     [ InfixL $ try $ do
-        b <- lookAhead anySingle
-        case b of
-          124 -> do (area, _) <- withArea pDoublePipe; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "||"
-          _   -> empty
+        mt <- peekTok
+        case mt of
+          Just TkDoublePipe -> do (area, _) <- withArea pDoublePipe; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "||"
+          _                 -> empty
     ]
-  , -- ?? (maybe default)
+  , -- ??
     [ InfixL $ try $ do
-        b <- lookAhead anySingle
-        case b of
-          63 -> do  -- '?'
+        mt <- peekTok
+        case mt of
+          Just TkDoubleQuestionMark -> do
             (_, _) <- withArea pDoubleQuestionMark
             target <- pSourceTarget
             maybeRet
@@ -261,36 +240,34 @@ operatorTable =
     ]
   , -- |>
     [ InfixL $ try $ do
-        b <- lookAhead anySingle
-        case b of
-          124 -> do (area, _) <- withArea pPipeOp; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "|>"
-          _   -> empty
+        mt <- peekTok
+        case mt of
+          Just TkPipeOp -> do (area, _) <- withArea pPipeOp; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "|>"
+          _             -> empty
     ]
   , -- <|>
     [ InfixL $ try $ do
-        b <- lookAhead anySingle
-        case b of
-          60 -> do (area, _) <- withArea pAlternativeOp; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<|>"
-          _  -> empty
+        mt <- peekTok
+        case mt of
+          Just TkAlternativeOp -> do (area, _) <- withArea pAlternativeOp; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<|>"
+          _                    -> empty
     ]
-  , -- Lowest precedence: bitwise operators | & ^ << >> >>>
+  , -- Bitwise: | & ^ << >> >>>
     [ InfixL $ try $ do
-        b <- lookAhead anySingle
-        case b of
-          124 -> do (area, _) <- withArea pPipeChar;          target <- pSourceTarget; maybeRet; return $ mkBinOp area target "|"
-          38  -> do (area, _) <- withArea pAmpersand;         target <- pSourceTarget; maybeRet; return $ mkBinOp area target "&"
-          94  -> do (area, _) <- withArea pXor;               target <- pSourceTarget; maybeRet; return $ mkBinOp area target "^"
-          60  -> do (area, _) <- withArea pDoubleLeftChevron; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<<"
-          62  -> choice
-            [ do (area, _) <- withArea pTripleRightChevron; target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">>>"
-            , do (area, _) <- withArea pDoubleRightChevron; target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">>"
-            ]
-          _   -> empty
+        mt <- peekTok
+        case mt of
+          Just TkPipeChar            -> do (area, _) <- withArea pPipeChar;          target <- pSourceTarget; maybeRet; return $ mkBinOp area target "|"
+          Just TkAmpersand           -> do (area, _) <- withArea pAmpersand;         target <- pSourceTarget; maybeRet; return $ mkBinOp area target "&"
+          Just TkXor                 -> do (area, _) <- withArea pXor;               target <- pSourceTarget; maybeRet; return $ mkBinOp area target "^"
+          Just TkDoubleLeftChevron   -> do (area, _) <- withArea pDoubleLeftChevron; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<<"
+          Just TkTripleRightChevron  -> do (area, _) <- withArea pTripleRightChevron; target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">>>"
+          Just TkDoubleRightChevron  -> do (area, _) <- withArea pDoubleRightChevron; target <- pSourceTarget; maybeRet; return $ mkBinOp area target ">>"
+          _                          -> empty
     ]
   ]
 
 
--- | Parse a term with optional postfix operations (application, access, array access, ternary)
+-- | Parse a term with optional postfix operations
 pTermWithPostfix :: Parser Src.Exp
 pTermWithPostfix = do
   base <- pTerm
@@ -298,11 +275,9 @@ pTermWithPostfix = do
   where
     applyPostfix :: Src.Exp -> Parser Src.Exp
     applyPostfix expr = do
-      mc <- optional (lookAhead anySingle)
-      case fmap chr8' mc of
-        Nothing -> return expr
-        Just '(' -> do
-          -- Function application or nullary application
+      mt <- peekTok
+      case mt of
+        Just TkLeftParen -> do
           f <- try $ do
             pLeftParen
             choice
@@ -317,24 +292,24 @@ pTermWithPostfix = do
                   return $ \e -> Src.Source (mergeAreas (Src.getArea e) endArea) (Src.getSourceTarget e) (Src.App e [])
               ]
           applyPostfix (f expr)
-        Just '?' -> do
+        Just TkQuestionDot -> do
           mf <- optional $ try $ do
             pQuestionDot
-            (nameArea, name) <- withArea pNameStr
+            (nameArea, name) <- withArea pName
             target <- pSourceTarget
             return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) target
               (Src.OptionalAccess e (Src.Source nameArea target (Src.Var $ '.' : name)))
           case mf of
             Just f  -> applyPostfix (f expr)
-            Nothing -> return expr  -- not ?., let pExp handle ? as ternary
-        Just '.' -> do
+            Nothing -> return expr
+        Just TkDot -> do
           f <- try $ do
             pDot
-            (nameArea, name) <- withArea pNameStr
+            (nameArea, name) <- withArea pName
             target <- pSourceTarget
             return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) (Src.getSourceTarget e) (Src.Access e (Src.Source nameArea target (Src.Var $ '.' : name)))
           applyPostfix (f expr)
-        Just '[' -> do
+        Just TkLeftSquare -> do
           f <- try $ do
             pLeftSquareBracket
             rets
@@ -343,12 +318,12 @@ pTermWithPostfix = do
             (endArea, _) <- withArea (void pRightSquareBracket)
             return $ \e -> Src.Source (mergeAreas (Src.getArea e) endArea) (Src.getSourceTarget e) (Src.ArrayAccess e idx)
           applyPostfix (f expr)
-        Just '\n' -> do
+        Just TkNewline -> do
           -- Method chaining: check if next non-whitespace is '.'
           f <- optional $ try $ do
             maybeRet
             pDot
-            (nameArea, name) <- withArea pNameStr
+            (nameArea, name) <- withArea pName
             target <- pSourceTarget
             return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) (Src.getSourceTarget e) (Src.Access e (Src.Source nameArea target (Src.Var $ '.' : name)))
           case f of
@@ -358,64 +333,61 @@ pTermWithPostfix = do
 
 
 -- | Parse a term (primary expression without operators)
--- Uses lookAhead dispatch to avoid unnecessary backtracking.
 pTerm :: Parser Src.Exp
 pTerm = do
-  b <- lookAhead anySingle
-  case chr8' b of
-    '?' -> pTypedHoleExpr
-    '#' -> choice [pJSBlockExpr, pTupleConstructor, try pHashName]
-    '[' -> pListConstructor
-    '`' -> pTemplateString
-    '(' -> choice [try pAbsOrParenthesized, try pTypedExp]
-    '<' -> try pJsxTag
-    '.' -> try pDotName
-    '!' -> pPrefixExp
-    '~' -> pPrefixExp
-    '-' -> pPrefixExp
-    '{' -> do
-        -- Peek 2nd byte: '{{' = dict, '{' alone = record or unit literal
-        mb2 <- optional $ lookAhead (anySingle *> anySingle)
-        case mb2 of
-          Just 123 -> pDict   -- '{{': dictionary literal
-          _        -> choice [try pRecord, pLiteral]  -- record or unit {}
-    '"' -> pLiteral
-    '\'' -> pLiteral
-    _ | isDigitB b -> pLiteral
-      | b == 105 -> do  -- 'i'
-          isIf <- option False (True <$ lookAhead (C.string "if"))
-          if isIf then choice [pIf', pNameExpr] else pNameExpr
-      | b == 119 -> do  -- 'w'
-          isWh <- option False (True <$ lookAhead (C.string "wh"))
-          if isWh then choice [pWhile', pWhere', pNameExpr] else pNameExpr
-      | b == 100 -> do  -- 'd'
-          isDo <- option False (True <$ lookAhead (C.string "do"))
-          if isDo then choice [pDo', pNameExpr] else pNameExpr
-      | b == 112 -> do  -- 'p'
-          isPi <- option False (True <$ lookAhead (C.string "pi"))
-          if isPi then choice [pPipe', pNameExpr] else pNameExpr
-      | b == 116 || b == 102 -> choice [pLiteral, pNameExpr]  -- 't' or 'f'
-      | isLowerB b || b == 95 -> pNameExpr  -- lower or '_'
-      | isUpperB b -> pNameExpr
-      | otherwise -> pNameExpr
+  mt <- peekTok
+  case mt of
+    Just TkTypedHole           -> pTypedHoleExpr
+    Just (TkJSBlock _)         -> pJSBlockExpr
+    Just TkTupleStart          -> pTupleConstructor
+    Just TkSharp               -> choice [pJSBlockExpr, pTupleConstructor, try pHashName]
+    Just TkLeftSquare          -> pListConstructor
+    Just (TkTemplateStringFull _)  -> pTemplateString
+    Just (TkTemplateStringStart _) -> pTemplateString
+    Just TkLeftParen           -> choice [try pAbsOrParenthesized, try pTypedExp]
+    Just TkLeftChevron         -> try pJsxTag
+    Just TkDot                 -> try pDotName
+    Just TkExclamation         -> pPrefixExp
+    Just TkTilde               -> pPrefixExp
+    Just TkDash                -> pPrefixExp
+    Just TkLeftDoubleCurly     -> pDict
+    Just TkLeftCurly           -> choice [try pRecord, pLiteral]
+    Just (TkString _)          -> pLiteral
+    Just (TkChar _)            -> pLiteral
+    Just (TkInt _)             -> pLiteral
+    Just (TkFloat _)           -> pLiteral
+    Just (TkByte _)            -> pLiteral
+    Just (TkShort _)           -> pLiteral
+    Just (TkHexNumber _)       -> pLiteral
+    Just (TkHexByte _)         -> pLiteral
+    Just (TkHexShort _)        -> pLiteral
+    Just (TkHexInt _)          -> pLiteral
+    Just TkTrue                -> pLiteral
+    Just TkFalse               -> pLiteral
+    Just TkIf                  -> pIf'
+    Just TkWhile               -> pWhile'
+    Just TkWhere               -> pWhere'
+    Just TkDo                  -> pDo'
+    Just TkPipe                -> pPipe'
+    _                          -> pNameExpr
 
 
 -- | Parse a prefix expression: !, ~, or unary minus applied to a term
 pPrefixExp :: Parser Src.Exp
 pPrefixExp = do
-  b <- lookAhead anySingle
-  case b of
-    33 -> do  -- '!'
+  mt <- peekTok
+  case mt of
+    Just TkExclamation -> do
       (area, _) <- withArea pExclamationMark
       target <- pSourceTarget
       e <- pTermWithPostfix
       return $ Src.Source (mergeAreas area (Src.getArea e)) target (Src.UnOp (Src.Source area target (Src.Var "!")) e)
-    126 -> do  -- '~'
+    Just TkTilde -> do
       (area, _) <- withArea pTilde
       target <- pSourceTarget
       e <- pTermWithPostfix
       return $ Src.Source (mergeAreas area (Src.getArea e)) target (Src.UnOp (Src.Source area target (Src.Var "~")) e)
-    _ -> do  -- '-'
+    _ -> do
       (area, _) <- withArea pDashUnary
       target <- pSourceTarget
       e <- pTermWithPostfix
@@ -426,90 +398,59 @@ pPrefixExp = do
 
 pLiteral :: Parser Src.Exp
 pLiteral = do
-  b <- lookAhead anySingle
-  case chr8' b of
-    '{' -> do
+  mt <- peekTok
+  case mt of
+    Just TkLeftCurly -> do
       -- Unit literal: {}
       (startArea, _) <- withArea (void pLeftCurly)
       (endArea, _) <- withArea (void pRightCurly)
       target <- pSourceTarget
       return $ Src.Source (mergeAreas startArea endArea) target Src.LUnit
-    '"' -> do
+    Just (TkString _) -> do
       (area, s) <- withArea pStringLiteral
       target <- pSourceTarget
       return $ Src.Source area target (Src.LStr s)
-    '\'' -> do
+    Just (TkChar _) -> do
       (area, ch) <- withArea pCharLiteral
       target <- pSourceTarget
       return $ Src.Source area target (Src.LChar ch)
-    '0' -> pNumericLiteral
-    d | d >= '1' && d <= '9' -> pNumericLiteral
-    _ -> do
-      -- Booleans (start with 't' or 'f')
-      choice
-        [ do
-            (area, _) <- withArea pBoolTrue
-            target <- pSourceTarget
-            return $ Src.Source area target (Src.LBool "true")
-        , do
-            (area, _) <- withArea pBoolFalse
-            target <- pSourceTarget
-            return $ Src.Source area target (Src.LBool "false")
-        ]
+    Just TkTrue -> do
+      (area, _) <- withArea pBoolTrue
+      target <- pSourceTarget
+      return $ Src.Source area target (Src.LBool "true")
+    Just TkFalse -> do
+      (area, _) <- withArea pBoolFalse
+      target <- pSourceTarget
+      return $ Src.Source area target (Src.LBool "false")
+    _ -> pNumericLiteral
 
 
--- | Parse all numeric literal variants with a single-pass approach.
--- Dispatches on '0x' prefix for hex, otherwise parses decimal digits once
--- then checks for suffix (_b/_s/_i/_f) or decimal point — eliminating backtracking.
+-- | Parse all numeric literal variants using token-based dispatch.
 pNumericLiteral :: Parser Src.Exp
 pNumericLiteral = do
   (area, (target, node)) <- withArea $ do
     t <- pSourceTarget
-    n <- lexeme parseNum
+    n <- parseNum
     return (t, n)
   return $ Src.Source area target node
   where
     parseNum :: Parser Src.Exp_
-    parseNum = do
-      isHex <- option False (True <$ C.string "0x")
-      if isHex then parseHex else parseDecimal
-
-    parseHex :: Parser Src.Exp_
-    parseHex = do
-      digits <- C8.unpack <$> takeWhile1P (Just "hex digit") isHexDigitB
-      suffix <- optional $ (C.string "_b" :: Parser C8.ByteString) <|> C.string "_s" <|> C.string "_i"
-      let hexStr = "0x" ++ digits
-      case fmap C8.unpack suffix of
-        Just "_b" -> return $ Src.LByte hexStr
-        Just "_s" -> return $ Src.LShort hexStr
-        Just "_i" -> return $ Src.LInt hexStr
-        _         -> return $ Src.LNum hexStr
-
-    parseDecimal :: Parser Src.Exp_
-    parseDecimal = do
-      digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-      -- Check for float suffix first (before integer suffixes)
-      mFloat <- optional $ do
-        void (C.char 46 :: Parser Word8)  -- '.'
-        frac <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-        fsuf <- optional (C.string "_f" :: Parser C8.ByteString)
-        return $ digits ++ "." ++ frac ++ maybe "" C8.unpack fsuf
-      case mFloat of
-        Just floatStr -> return $ Src.LFloat floatStr
-        Nothing -> do
-          suffix <- optional $ (C.string "_b" :: Parser C8.ByteString) <|> C.string "_s" <|> C.string "_i" <|> C.string "_f"
-          case fmap C8.unpack suffix of
-            Just "_b" -> return $ Src.LByte digits
-            Just "_s" -> return $ Src.LShort digits
-            Just "_i" -> return $ Src.LInt digits
-            Just "_f" -> return $ Src.LFloat (digits ++ "_f")
-            _         -> return $ Src.LNum digits
+    parseNum = choice
+      [ Src.LByte  <$> pHexByte
+      , Src.LShort <$> pHexShort
+      , Src.LInt   <$> pHexInt
+      , Src.LNum   <$> pHexNumber
+      , Src.LByte  <$> pByte
+      , Src.LShort <$> pShort
+      , Src.LFloat <$> pFloat
+      , Src.LNum   <$> pNumber
+      ]
 
 
 -- | Parse a variable name expression
 pNameExpr :: Parser Src.Exp
 pNameExpr = do
-  (area, name) <- withArea pNameStr
+  (area, name) <- withArea pName
   target <- pSourceTarget
   return $ Src.Source area target (Src.Var name)
 
@@ -527,7 +468,7 @@ pHashName = do
 pDotName :: Parser Src.Exp
 pDotName = do
   (startArea, _) <- withArea (void pDot)
-  (endArea, name) <- withArea pNameStr
+  (endArea, name) <- withArea pName
   target <- pSourceTarget
   return $ Src.Source (mergeAreas startArea endArea) target (Src.Var $ '.' : name)
 
@@ -560,11 +501,10 @@ pIf' = do
   maybeRet
   pRightParen
   maybeRet
-  -- Use lookAhead to pick braced vs non-braced body without backtracking
   thenExpr <- do
-    mb <- optional (lookAhead anySingle)
-    case fmap chr8' mb of
-      Just '{' -> do
+    mt <- peekTok
+    case mt of
+      Just TkLeftCurly -> do
         pLeftCurly
         rets
         body <- pExp
@@ -572,15 +512,13 @@ pIf' = do
         void $ withArea (void pRightCurly)
         return body
       _ -> pExp
-  -- Try to parse else clause; returns (bodyExp, endArea)
-  -- pElse already backtracks so the outer try is only needed for the whole else+body sequence
   elseResult <- optional $ try $ do
     maybeRet
     pElse
     maybeRet
-    mb2 <- optional (lookAhead anySingle)
-    case fmap chr8' mb2 of
-      Just '{' -> do
+    mt2 <- peekTok
+    case mt2 of
+      Just TkLeftCurly -> do
         pLeftCurly
         rets
         body <- pExp
@@ -609,11 +547,10 @@ pWhile' = do
   maybeRet
   pRightParen
   maybeRet
-  -- Use lookAhead to pick braced vs non-braced body without backtracking
   body <- do
-    mb <- optional (lookAhead anySingle)
-    case fmap chr8' mb of
-      Just '{' -> do
+    mt <- peekTok
+    case mt of
+      Just TkLeftCurly -> do
         pLeftCurly
         rets
         e <- pExp
@@ -633,10 +570,9 @@ pWhere' :: Parser Src.Exp
 pWhere' = do
   (startArea, _) <- withArea pWhere
   target <- pSourceTarget
-  -- Use lookAhead to distinguish where(...) from where { ... } without backtracking
-  b <- lookAhead anySingle
-  case chr8' b of
-    '(' -> do
+  mt <- peekTok
+  case mt of
+    Just TkLeftParen -> do
       pLeftParen
       rets
       expr <- pExp
@@ -658,9 +594,6 @@ pWhere' = do
 
 
 -- | Parse pattern match branches
--- Uses a recursive helper (not `many`) so we never need `try`:
--- after consuming `rets`, we peek — if '}' or EOF, return []; otherwise parse next branch.
--- Since the helper always succeeds (returning [] on stop), no backtracking is needed.
 pIss :: Parser [Src.Is]
 pIss = do
   first <- pIs
@@ -669,12 +602,12 @@ pIss = do
   where
     pIsMore :: Parser [Src.Is]
     pIsMore = do
-      rets  -- consume newlines (always succeeds)
-      mb <- optional (lookAhead anySingle)
-      case mb of
-        Nothing  -> return []   -- EOF: done
-        Just 125 -> return []   -- '}': end of where block, done
-        _        -> do
+      rets
+      mt <- peekTok
+      case mt of
+        Nothing               -> return []
+        Just TkRightCurly     -> return []
+        _                     -> do
           item <- pIs
           more <- pIsMore
           return (item : more)
@@ -703,25 +636,16 @@ pDo' = do
 
 pDoExps :: Parser [Src.Exp]
 pDoExps = choice
-  [ -- return exp: pReturn already backtracks on failure, no outer try needed
-    do
+  [ do
       (startArea, _) <- withArea pReturn
       target <- pSourceTarget
       body <- pExp
       return [Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Return body)]
-  , -- empty (lookAhead never consumes, no try needed)
-    do
+  , do
       lookAhead pRightCurly
       return [Src.Source emptyArea Src.TargetAll Src.LUnit]
-  , -- name <- exp ; doExps
-    -- Use lookAhead + try: lookAhead checks for "ident <-" cheaply (no real backtracking
-    -- needed in the happy path), try only needed for megaparsec's error bookkeeping.
+  , -- name <- exp ; doExps  (use try: must backtrack if not an assignment)
     try $ do
-      lookAhead $ do
-        _ <- takeWhile1P Nothing isIdentB
-        _ <- takeWhileP Nothing (\b -> b == 32 || b == 9)
-        _ <- C.string "<-"
-        return ()
       (startArea, name) <- withArea pNameStr
       target <- pSourceTarget
       pLeftArrow
@@ -729,8 +653,7 @@ pDoExps = choice
       rets
       rest <- pDoExps
       return $ Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.DoAssignment name body) : rest
-  , -- bodyExp ; doExps
-    do
+  , do
       e <- pBodyExp
       rets
       rest <- pDoExps
@@ -750,7 +673,6 @@ pPipe' = do
   rets
   (endArea, _) <- withArea (void pRightParen)
   let pipeExpr = buildPipe (mergeAreas startArea endArea) target exprs
-  -- Optionally followed by (args) for application
   applied <- optional $ try $ do
     pLeftParen
     args <- pArgsWithPlaceholder
@@ -770,21 +692,17 @@ buildPipe area target exps = Src.Source area target (Src.Pipe exps)
 
 pAbsOrParenthesized :: Parser Src.Exp
 pAbsOrParenthesized = do
-  -- All alternatives start with '(' - parse it once
   (startArea, _) <- withArea (void pLeftParen)
   target <- pSourceTarget
-  -- Peek at what follows to determine which form we have
-  b <- lookAhead anySingle
-  case chr8' b of
-    ')' -> do
-      -- () => exp (nullary lambda)
+  mt <- peekTok
+  case mt of
+    Just TkRightParen -> do
       pRightParen
       pFatArrow
       rets
       pLambdaBody startArea target []
     _ -> do
       rets
-      -- Try to parse as lambda params or expression
       mResult <- optional $ try $ do
         params <- pParams
         rets
@@ -793,18 +711,13 @@ pAbsOrParenthesized = do
         rets
         return params
       case mResult of
-        Just params -> do
-          -- (params) => exp (multi-param lambda)
-          pLambdaBody startArea target params
+        Just params -> pLambdaBody startArea target params
         Nothing -> do
-          -- Either (name) => exp, (name), or (exp)
           inner <- pExp
           rets
           (parenEndArea, _) <- withArea (void pRightParen)
-          -- Check if this looks like a single-name lambda
           case inner of
             Src.Source nameArea _ (Src.Var name) -> do
-              -- Could be (name) => exp or just (name)
               mLambda <- optional $ try $ do
                 pFatArrow
                 rets
@@ -819,13 +732,12 @@ pAbsOrParenthesized = do
               return $ Src.Source (mergeAreas startArea parenEndArea) target (Src.Parenthesized startArea inner parenEndArea)
 
 
--- | Parse lambda body after '=>' has been consumed (or we're about to)
+-- | Parse lambda body after '=>'
 pLambdaBody :: Area -> Src.SourceTarget -> [Src.Source Src.Name] -> Parser Src.Exp
 pLambdaBody startArea target params = do
-  -- Use lookAhead to pick braced vs non-braced body — no backtracking needed
-  mb <- optional (lookAhead anySingle)
-  case fmap chr8' mb of
-    Just '{' -> do
+  mt <- peekTok
+  case mt of
+    Just TkLeftCurly -> do
       pLeftCurly
       rets
       body <- pMultiExpBody
@@ -835,8 +747,6 @@ pLambdaBody startArea target params = do
     _ -> do
       body <- pBodyExp
       return $ Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Abs params [body])
-
-
 
 
 -- | Parse lambda parameters (comma-separated names, at least two)
@@ -861,15 +771,12 @@ pRecord = do
   (startArea, _) <- withArea (void pLeftCurly)
   target <- pSourceTarget
   rets
-  -- Dispatch on next char: '}' = unit, '.' = spread, else = regular record
-  b <- lookAhead anySingle
-  case chr8' b of
-    '}' -> do
-      -- Unit literal: {}
+  mt <- peekTok
+  case mt of
+    Just TkRightCurly -> do
       (endArea, _) <- withArea (void pRightCurly)
       return $ Src.Source (mergeAreas startArea endArea) target Src.LUnit
-    '.' -> do
-      -- Spread record: { ...expr, fields }
+    Just TkSpread -> do
       pSpread
       spreadExpr <- pExp
       fields <- option [] $ try $ do
@@ -882,7 +789,6 @@ pRecord = do
       let spreadField = Src.Source (mergeAreas startArea (Src.getArea spreadExpr)) target (Src.FieldSpread spreadExpr)
       return $ Src.Source (mergeAreas startArea endArea) target (Src.Record (spreadField : fields))
     _ -> do
-      -- Regular record: { field: val, ... }
       fields <- pRecordFields
       _ <- optional pComma
       rets
@@ -900,19 +806,15 @@ pRecordFields = option [] $ do
     pRecordField
   return $ first : rest
   where
-    -- Parse name once, then peek at next 2 bytes to decide field:value vs shorthand.
-    -- ":" alone means field:value; "::" and ":=" mean shorthand (typed/mutated names).
+    -- Parse name once, then peek at next token to decide field:value vs shorthand.
     pRecordField = do
-      (nameArea, name) <- withArea pNameStr
+      (nameArea, name) <- withArea pName
       target <- pSourceTarget
-      mTwo <- optional $ lookAhead $ do
-        b1 <- anySingle
-        mb2 <- optional anySingle
-        return (b1, mb2)
-      case mTwo of
-        Just (58, Just 58) -> return $ Src.Source nameArea target (Src.FieldShorthand name)  -- '::'
-        Just (58, Just 61) -> return $ Src.Source nameArea target (Src.FieldShorthand name)  -- ':='
-        Just (58, _) -> do  -- ':' alone
+      mt <- peekTok
+      case mt of
+        Just TkDoubleColon -> return $ Src.Source nameArea target (Src.FieldShorthand name)
+        Just TkMutateEq    -> return $ Src.Source nameArea target (Src.FieldShorthand name)
+        Just TkColon -> do
           pColon
           value <- pExp
           return $ Src.Source (mergeAreas nameArea (Src.getArea value)) target (Src.Field (name, value))
@@ -1015,70 +917,61 @@ pTupleItems = do
 
 
 -- Template String --
+-- The Alex lexer pre-processes template strings into:
+--   TkTemplateStringFull s      -- `...` with no interpolation
+--   TkTemplateStringStart s     -- `...${  (opening segment)
+--   TkTemplateStringMid s       -- }...${  (middle segment)
+--   TkTemplateStringEnd s       -- }...`   (closing segment)
+--   TkTemplateInterpolClose     -- } that closes the interpolated expression
 
 pTemplateString :: Parser Src.Exp
 pTemplateString = do
-  startLoc <- getLoc
-  void $ C.char 96  -- '`'
-  let startArea = Area startLoc startLoc
-  target <- pSourceTarget
-  parts <- collectSegments target
-  let endArea = case reverse parts of
-        (lastPart : _) -> Src.getArea lastPart
-        []             -> startArea
-  return $ Src.Source (mergeAreas startArea endArea) target (Src.TemplateString parts)
+  mt <- peekTok
+  case mt of
+    Just (TkTemplateStringFull raw) -> do
+      (area, _) <- withArea anySingle
+      target <- pSourceTarget
+      str <- processEscape raw
+      return $ Src.Source area target (Src.TemplateString [Src.Source area target (Src.LStr str)])
+    Just (TkTemplateStringStart raw) -> do
+      (startArea, _) <- withArea anySingle
+      target <- pSourceTarget
+      str <- processEscape raw
+      let strPart = Src.Source startArea target (Src.LStr str)
+      parts <- collectInterpolated target startArea
+      let endArea = case reverse parts of
+            (p:_) -> Src.getArea p
+            []    -> startArea
+      return $ Src.Source (mergeAreas startArea endArea) target (Src.TemplateString (strPart : parts))
+    _ -> fail "expected template string"
   where
-    collectSegments :: Src.SourceTarget -> Parser [Src.Exp]
-    collectSegments tgt = do
-      strStart <- getLoc
-      rawParts <- manyTill pTemplateRawChunk (lookAhead (void (C.string "${") <|> void (satisfy (== 96))))
-      str <- processEscapesInTemplate (concat rawParts)
-      strEnd <- getLoc
-      let strPart = Src.Source (Area strStart strEnd) tgt (Src.LStr str)
+    collectInterpolated :: Src.SourceTarget -> Area -> Parser [Src.Exp]
+    collectInterpolated tgt prevArea = do
+      rets  -- interpolation may start with a newline (e.g. `${  \n  expr\n}`)
+      expr <- pExp
+      rets
+      -- consume the TkTemplateInterpolClose
+      _ <- satisfyTok (\rt -> rtToken rt == TkTemplateInterpolClose)
+      -- now check for mid or end
+      mt2 <- peekTok
+      case mt2 of
+        Just (TkTemplateStringMid raw) -> do
+          (midArea, _) <- withArea anySingle
+          str <- processEscape raw
+          let strPart = Src.Source midArea tgt (Src.LStr str)
+          rest <- collectInterpolated tgt midArea
+          return $ expr : strPart : rest
+        Just (TkTemplateStringEnd raw) -> do
+          (endArea, _) <- withArea anySingle
+          str <- processEscape raw
+          let strPart = Src.Source endArea tgt (Src.LStr str)
+          return [expr, strPart]
+        _ -> return [expr]
 
-      next <- lookAhead anySingle
-      if next == 96 then do
-        void $ satisfy (== 96) -- consume closing '`'
-        return [strPart]
-      else do
-        void $ C.string "${"
-        void $ optional scn
-        expr <- pExp
-        void $ optional scn
-        void $ satisfy (== 125) -- '}'
-        rest <- collectSegments tgt
-        return (strPart : expr : rest)
-
-    pTemplateRawChunk :: Parser String
-    pTemplateRawChunk = choice
-      [ try $ C.string "\\`" >> return ['`']
-      , try $ do
-          void $ satisfy (== 92)  -- '\\'
-          b <- anySingle
-          case chr8' b of
-            'u' -> do
-              rest <- try (do
-                  void $ satisfy (== 123)  -- '{'
-                  hex <- map chr8' <$> many (satisfy isHexDigitB)
-                  void $ satisfy (== 125)  -- '}'
-                  return $ '{' : hex ++ "}")
-                <|> (map chr8' <$> count 4 (satisfy isHexDigitB))
-              return $ '\\' : 'u' : rest
-            'x' -> do
-              hex <- map chr8' <$> count 2 (satisfy isHexDigitB)
-              return $ '\\' : 'x' : hex
-            ch -> return ['\\', ch]
-      , T.unpack . TE.decodeUtf8 <$> takeWhile1P Nothing (\b -> b /= 96 && b /= 92 && b /= 36)  -- not '`', '\\', or '$'
-      , try $ do
-          void $ satisfy (== 36)  -- '$' not followed by '{'
-          notFollowedBy (satisfy (== 123))
-          return "$"
-      ]
-
-    processEscapesInTemplate :: String -> Parser String
-    processEscapesInTemplate raw = case processEscapes raw of
-      Left err      -> fail err
-      Right content -> return content
+    processEscape :: String -> Parser String
+    processEscape raw = case processEscapes raw of
+      Left err -> fail err
+      Right s  -> return s
 
 
 -- Typed Expression --
@@ -1089,7 +982,7 @@ pTypedExp = do
   target <- pSourceTarget
   inner <- choice
     [ try $ do
-        (nameArea, name) <- withArea pNameStr
+        (nameArea, name) <- withArea pName
         pDoubleColon
         t <- pTypings
         return (Src.Source nameArea target (Src.Var name), t)
@@ -1105,31 +998,36 @@ pTypedExp = do
 
 
 -- JSX --
+-- JSX uses regular tokens: TkLeftChevron (<), TkRightChevron (>), TkSlash (/)
+-- Tag names are identifiers (lower for HTML tags, upper for components)
 
 pJsxTag :: Parser Src.Exp
 pJsxTag = choice
   [ -- Self-closing: <Name props />
     try $ do
-      (startArea, _) <- withArea (void $ lexeme $ C.char 60)  -- '<'
+      (startArea, _) <- withArea (void pLeftChevron)
       target <- pSourceTarget
-      name <- pNameStr
+      name <- pName
       props <- pJsxProps
       scn
-      void $ lexeme $ C.char 47   -- '/'
-      (endArea, _) <- withArea (void $ lexeme $ C.char 62)    -- '>'
+      void pSlash
+      (endArea, _) <- withArea (void pRightChevron)
       return $ Src.Source (mergeAreas startArea endArea) target (Src.JsxAutoClosedTag name props)
   , -- Opening/closing: <Name props>children</Name>
     try $ do
-      (startArea, _) <- withArea (void $ lexeme $ C.char 60)  -- '<'
+      (startArea, _) <- withArea (void pLeftChevron)
       target <- pSourceTarget
-      name <- pNameStr
+      name <- pName
       props <- pJsxProps
       scn
-      void $ lexeme $ C.char 62   -- '>'
+      void pRightChevron
       children <- pJsxChildren
-      void $ lexeme $ C.string "</"
-      void $ lexeme $ C.string (C8.pack name)
-      (endArea, _) <- withArea (void $ lexeme $ C.char 62)    -- '>'
+      void pLeftChevron
+      void pSlash
+      -- Match closing tag name
+      closeName <- pName
+      when (closeName /= name) $ fail $ "mismatched JSX tags: <" ++ name ++ "> vs </" ++ closeName ++ ">"
+      (endArea, _) <- withArea (void pRightChevron)
       return $ Src.Source (mergeAreas startArea endArea) target (Src.JsxTag name props children)
   ]
 
@@ -1138,9 +1036,9 @@ pJsxProps :: Parser [Src.JsxProp]
 pJsxProps = many (try (scn *> pJsxProp))
   where
     pJsxProp = choice
-      [ -- {...expr} (spread prop)
+      [ -- {...expr} (spread prop) - uses TkLeftCurly directly (not TkLeftDoubleCurly)
         try $ do
-          (startArea, _) <- withArea (void $ lexeme $ C.char 123)  -- '{' without rejecting '{{'
+          (startArea, _) <- withArea (void pLeftCurly)
           scn
           pSpread
           expr <- pExp
@@ -1155,12 +1053,12 @@ pJsxProps = many (try (scn *> pJsxProp))
           pEq
           (strArea, str) <- withArea pStringLiteral
           return $ Src.Source (mergeAreas nameArea strArea) target (Src.JsxProp name (Src.Source strArea target (Src.LStr str)))
-      , -- name={expr} (uses raw '{' to allow record values like name={{ x: 3 }})
+      , -- name={expr}
         try $ do
           (nameArea, name) <- withArea pNameStr
           target <- pSourceTarget
           pEq
-          void $ lexeme $ C.char 123  -- '{' without rejecting '{{'
+          void pLeftCurly
           expr <- pExp
           (endArea, _) <- withArea (void pRightCurly)
           return $ Src.Source (mergeAreas nameArea endArea) target (Src.JsxProp name expr)
@@ -1176,9 +1074,9 @@ pJsxChildren :: Parser [Src.JsxChild]
 pJsxChildren = scn *> many (pJsxChild <* scn)
   where
     pJsxChild = choice
-      [ -- {...expr} (must try before {expr} since both start with {)
+      [ -- {...expr} (spread child)
         try $ do
-          void $ lexeme $ C.char 123  -- '{' without rejecting '{{'
+          void pLeftCurly
           scn
           pSpread
           expr <- pExp
@@ -1187,7 +1085,7 @@ pJsxChildren = scn *> many (pJsxChild <* scn)
           return $ Src.JsxSpreadChild expr
       , -- {expr}
         try $ do
-          void $ lexeme $ C.char 123  -- '{' without rejecting '{{'
+          void pLeftCurly
           scn
           expr <- pExp
           scn
@@ -1195,12 +1093,9 @@ pJsxChildren = scn *> many (pJsxChild <* scn)
           return $ Src.JsxExpChild expr
       , -- Nested JSX tag
         try pJsxTag >>= \tag -> return (Src.JsxChild tag)
-      , -- Text content (whitespace-only is skipped)
-        try $ do
-          text <- C8.unpack <$> takeWhile1P Nothing (\b -> b /= 60 && b /= 62 && b /= 123 && b /= 125)
-          let trimmed = C8.unpack $ C8.strip $ C8.pack text
-          if null trimmed then fail "empty text"
-          else return $ Src.JsxChild (Src.Source emptyArea Src.TargetAll (Src.LStr trimmed))
+      -- Note: text content between JSX tags is not handled here since the tokenizer
+      -- doesn't produce text tokens between tags. JSX text content would require
+      -- special lexer support or a different approach.
       ]
 
 

@@ -5,44 +5,45 @@ module Parse.Megaparsec.Pattern
   ( pPattern
   ) where
 
-import qualified Data.ByteString.Char8         as C8
 import           Data.Char                      ( isUpper )
-import           Data.Word                      ( Word8 )
 import           Control.Monad                  ( void )
 
-import           Text.Megaparsec                hiding ( State )
-import qualified Text.Megaparsec.Byte          as C
+import           Text.Megaparsec                hiding ( State, Token )
 
 import qualified AST.Source                      as Src
 import           Explain.Location
 
 import           Parse.Megaparsec.Common
 import           Parse.Megaparsec.Lexeme
+import           Parse.Lexer.Token              ( Token(..), RangedToken(..) )
 
 
 -- | Parse a pattern (composite or non-composite)
 pPattern :: Parser Src.Pattern
 pPattern = do
-  b <- lookAhead anySingle
-  -- Try composite pattern if the first character could be an uppercase name or module
-  -- Also try when starting with '_' since __MODULE__.Constructor is a valid qualified pattern
-  if isUpperB b || b == 95  -- 95 = '_'
-    then choice [try pCompositePattern, pNonCompositePattern]
-    else pNonCompositePattern
+  mrt <- optional (lookAhead anySingle)
+  case fmap rtToken mrt of
+    Just (TkTypeName _) -> choice [try pCompositePattern, pNonCompositePattern]
+    -- TkName can be module prefix (e.g. __BUILTINS__.Constructor) or wildcard "_"
+    Just (TkName _)     -> choice [try pCompositePattern, pNonCompositePattern]
+    _                   -> pNonCompositePattern
 
 
 -- | Parse a composite pattern: Constructor(args) or Module.Constructor(args)
--- Parses the first name once, then dispatches on '.' vs '(' vs end
+-- Succeeds when:
+--   - Module.Constructor[(...)] — dot-qualified, lower/upper module prefix
+--   - Constructor(args)         — uppercase constructor with argument list
+--   - Constructor               — uppercase nullary constructor (no parens)
 pCompositePattern :: Parser Src.Pattern
 pCompositePattern = try $ do
-  (startArea, name1) <- withArea pNameStr
+  (startArea, name1) <- withArea pName
   target <- pSourceTarget
   mDot <- optional $ try $ do
     pDot
-    pNameStr
+    pName
   case mDot of
     Just name2 -> do
-      -- Module.Constructor pattern
+      -- Module.Constructor pattern (module can be any identifier)
       let qualName = name1 ++ "." ++ name2
       args <- optional $ try $ do
         pLeftParen
@@ -90,92 +91,76 @@ pCompositePatternArgs = do
 
 
 -- | Parse a non-composite pattern (no constructor application)
--- Uses lookAhead dispatch to avoid backtracking between numeric variants.
+-- Dispatch on the next token type.
 pNonCompositePattern :: Parser Src.Pattern
 pNonCompositePattern = do
-  b <- lookAhead anySingle
-  case chr8' b of
-    '{' -> pRecordPattern
-    '[' -> pListPattern
-    '#' -> pTuplePattern
-    '(' -> pParenthesizedPattern
-    '-' -> try pNegativeNumericPattern <|> pNamePattern
-    '"' -> pStrPattern
-    '\'' -> pCharPattern
-    _ | isDigitB b -> pNumericPattern
-      | otherwise  -> choice [pBoolPattern, pNamePattern]
+  mrt <- optional (lookAhead anySingle)
+  case fmap rtToken mrt of
+    Just TkLeftCurly   -> pRecordPattern
+    Just TkLeftSquare  -> pListPattern
+    Just TkTupleStart  -> pTuplePattern
+    Just TkLeftParen   -> pParenthesizedPattern
+    Just TkDash        -> try pNegativeNumericPattern <|> pNamePattern
+    Just (TkString _)  -> pStrPattern
+    Just (TkChar _)    -> pCharPattern
+    -- Numeric tokens
+    Just (TkInt _)     -> pNumericPattern
+    Just (TkFloat _)   -> pNumericPattern
+    Just (TkByte _)    -> pNumericPattern
+    Just (TkShort _)   -> pNumericPattern
+    Just (TkHexNumber _) -> pNumericPattern
+    Just (TkHexByte _)   -> pNumericPattern
+    Just (TkHexShort _)  -> pNumericPattern
+    Just (TkHexInt _)    -> pNumericPattern
+    -- Boolean / name
+    Just TkTrue        -> pBoolPattern
+    Just TkFalse       -> pBoolPattern
+    _                  -> choice [pBoolPattern, pNamePattern]
 
 
--- | Parse all numeric patterns in a single pass (no backtracking between variants).
--- Dispatches on '0x' for hex, then checks suffix for typed variants.
+-- | Parse a numeric literal pattern (int, float, hex, byte, short, etc.)
 pNumericPattern :: Parser Src.Pattern
 pNumericPattern = do
   (area, (target, node)) <- withArea $ do
     t <- pSourceTarget
-    n <- lexeme parseNum
+    n <- parseNum
     return (t, n)
   return $ Src.Source area target node
   where
     parseNum :: Parser Src.Pattern_
-    parseNum = do
-      isHex <- option False (True <$ C.string "0x")
-      if isHex then parseHexPat else parseDecPat
-
-    parseHexPat :: Parser Src.Pattern_
-    parseHexPat = do
-      digits <- C8.unpack <$> takeWhile1P (Just "hex digit") isHexDigitB
-      let hexStr = "0x" ++ digits
-      return $ Src.PNum hexStr
-
-    parseDecPat :: Parser Src.Pattern_
-    parseDecPat = do
-      digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-      -- Check for float: digit.digit
-      mDot <- optional (C.char 46 :: Parser Word8)
-      case mDot of
-        Just _ -> do
-          frac <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-          fsuf <- optional (C.string "_f" :: Parser C8.ByteString)
-          return $ Src.PFloat $ digits ++ "." ++ frac ++ maybe "" C8.unpack fsuf
-        Nothing -> do
-          suffix <- optional $
-            (C.string "_b" :: Parser C8.ByteString) <|> C.string "_s" <|> C.string "_i" <|> C.string "_f"
-          case fmap C8.unpack suffix of
-            Just "_f" -> return $ Src.PFloat (digits ++ "_f")
-            _         -> return $ Src.PNum digits
+    parseNum = choice
+      [ Src.PNum  <$> pHexByte
+      , Src.PNum  <$> pHexShort
+      , Src.PNum  <$> pHexInt
+      , Src.PNum  <$> pHexNumber
+      , Src.PNum  <$> pByte
+      , Src.PNum  <$> pShort
+      , Src.PFloat <$> pFloat
+      , Src.PNum  <$> pNumber
+      ]
 
 
--- | Parse a negative numeric pattern (-number or -float), single pass.
+-- | Parse a negative numeric pattern (-number or -float)
 pNegativeNumericPattern :: Parser Src.Pattern
 pNegativeNumericPattern = do
   (area, (target, node)) <- withArea $ do
     t <- pSourceTarget
-    n <- lexeme parseNeg
+    pDash
+    n <- parseNeg
     return (t, n)
   return $ Src.Source area target node
   where
     parseNeg :: Parser Src.Pattern_
-    parseNeg = do
-      void $ C.char 45  -- '-'
-      digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-      mDot <- optional (C.char 46 :: Parser Word8)
-      case mDot of
-        Just _ -> do
-          frac <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-          fsuf <- optional (C.string "_f" :: Parser C8.ByteString)
-          return $ Src.PFloat $ '-' : digits ++ "." ++ frac ++ maybe "" C8.unpack fsuf
-        Nothing -> do
-          suffix <- optional $
-            (C.string "_b" :: Parser C8.ByteString) <|> C.string "_s" <|> C.string "_i" <|> C.string "_f"
-          case fmap C8.unpack suffix of
-            Just "_f" -> return $ Src.PFloat ('-' : digits ++ "_f")
-            _         -> return $ Src.PNum ('-' : digits)
+    parseNeg = choice
+      [ (\s -> Src.PFloat ('-' : s)) <$> pFloat
+      , (\s -> Src.PNum  ('-' : s)) <$> pNumber
+      ]
 
 
 -- | Parse a name/variable/wildcard/nullary constructor pattern
 pNamePattern :: Parser Src.Pattern
 pNamePattern = do
-  (area, name) <- withArea pNameStr
+  (area, name) <- withArea pName
   target <- pSourceTarget
   return $ nameToPattern area target name
 
@@ -207,7 +192,10 @@ pCharPattern = do
 -- | Parse a boolean pattern
 pBoolPattern :: Parser Src.Pattern
 pBoolPattern = do
-  (area, b) <- withArea (C8.unpack <$> (pBoolTrue <|> pBoolFalse))
+  (area, b) <- withArea $ choice
+    [ "true"  <$ satisfyTok (\rt -> rtToken rt == TkTrue)
+    , "false" <$ satisfyTok (\rt -> rtToken rt == TkFalse)
+    ]
   target <- pSourceTarget
   return $ Src.Source area target (Src.PBool b)
 

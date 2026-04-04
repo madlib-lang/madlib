@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict #-}
 {-# OPTIONS_GHC -O2 #-}
+-- | Token-based lexeme parsers for Madlib.
+-- Each combinator matches a specific Token constructor in the RangedToken stream.
 module Parse.Megaparsec.Lexeme
   ( -- Keywords
     pKeyword
@@ -101,22 +103,18 @@ module Parse.Megaparsec.Lexeme
   ) where
 
 import qualified Data.ByteString               as BS
-import qualified Data.ByteString.Char8         as C8
-import qualified Data.Text                      as T
-import qualified Data.Text.Encoding             as TE
 import qualified Data.Set                       as Set
-import           Data.Word                      ( Word8 )
-import           Data.Char                      ( isUpper, isAlpha )
-import           Control.Monad                  ( void, when )
+import           Control.Monad                  ( void )
+import           Data.List.NonEmpty             ( NonEmpty(..) )
 
-import           Text.Megaparsec                hiding ( State )
-import qualified Text.Megaparsec.Byte          as C
+import           Text.Megaparsec                hiding ( State, Token )
 
 import           Parse.Megaparsec.Common
-import           Parse.Megaparsec.Escape
+import           Parse.Megaparsec.Escape        ( processHexaEscapes )
+import           Parse.Lexer.Token              ( Token(..), RangedToken(..) )
 
 
--- | Set of keywords that cannot be used as identifiers
+-- | Set of keywords (kept for any downstream code that checks it)
 keywords :: [BS.ByteString]
 keywords =
   [ "if", "else", "while", "where", "do", "return", "pipe"
@@ -124,495 +122,261 @@ keywords =
   , "interface", "instance", "derive", "true", "false"
   ]
 
--- | Fast O(log n) keyword lookup set
-keywordSet :: Set.Set BS.ByteString
-keywordSet = Set.fromList keywords
+
+-- ── Low-level primitive ───────────────────────────────────────────────────────
+
+-- | Consume the next token if it matches the given Token constructor.
+-- Updates psLastTokenEnd.
+{-# INLINE tok #-}
+tok :: Token -> Parser ()
+tok t = void $ satisfyTok (\rt -> rtToken rt == t)
+
+-- | Consume the next token if the predicate holds, returning the matched RangedToken.
+{-# INLINE tokWith #-}
+tokWith :: (Token -> Maybe a) -> Parser a
+tokWith f = do
+  rt <- satisfyTok (\rt -> case f (rtToken rt) of { Just _ -> True; Nothing -> False })
+  case f (rtToken rt) of
+    Just a  -> return a
+    Nothing -> unexpected (Tokens (rt :| []))
 
 
--- | Parse a keyword (must not be followed by alphanumeric or underscore)
--- try is needed: C.string consumes before notFollowedBy can check
+-- ── Keywords ─────────────────────────────────────────────────────────────────
+
+-- | Parse a keyword by name (kept for generic callers)
 {-# INLINE pKeyword #-}
 pKeyword :: BS.ByteString -> Parser BS.ByteString
-pKeyword kw = lexeme $ try (C.string kw <* notFollowedBy (satisfy isIdentB))
+pKeyword kw = case kw of
+  "import"    -> BS.pack [105,109,112,111,114,116] <$ tok TkImport
+  "export"    -> BS.pack [101,120,112,111,114,116] <$ tok TkExport
+  "from"      -> BS.pack [102,114,111,109]         <$ tok TkFrom
+  "type"      -> BS.pack [116,121,112,101]         <$ tok TkType
+  "alias"     -> BS.pack [97,108,105,97,115]       <$ tok TkAlias
+  "extern"    -> BS.pack [101,120,116,101,114,110] <$ tok TkExtern
+  "if"        -> BS.pack [105,102]                 <$ tok TkIf
+  "else"      -> BS.pack [101,108,115,101]         <$ tok TkElse
+  "while"     -> BS.pack [119,104,105,108,101]     <$ tok TkWhile
+  "where"     -> BS.pack [119,104,101,114,101]     <$ tok TkWhere
+  "do"        -> BS.pack [100,111]                 <$ tok TkDo
+  "return"    -> BS.pack [114,101,116,117,114,110] <$ tok TkReturn
+  "pipe"      -> BS.pack [112,105,112,101]         <$ tok TkPipe
+  "interface" -> BS.pack [105,110,116,101,114,102,97,99,101] <$ tok TkInterface
+  "instance"  -> BS.pack [105,110,115,116,97,110,99,101] <$ tok TkInstance
+  "derive"    -> BS.pack [100,101,114,105,118,101] <$ tok TkDerive
+  "true"      -> BS.pack [116,114,117,101]         <$ tok TkTrue
+  "false"     -> BS.pack [102,97,108,115,101]      <$ tok TkFalse
+  _           -> fail $ "unknown keyword: " ++ show kw
 
-
--- Keywords
 pImport, pExport, pFrom, pType, pAlias, pExtern :: Parser BS.ByteString
-pImport    = pKeyword "import"
-pExport    = pKeyword "export"
-pFrom      = pKeyword "from"
-pType      = pKeyword "type"
-pAlias     = pKeyword "alias"
-pExtern    = pKeyword "extern"
+pImport    = kw "import"    <$ tok TkImport
+pExport    = kw "export"    <$ tok TkExport
+pFrom      = kw "from"      <$ tok TkFrom
+pType      = kw "type"      <$ tok TkType
+pAlias     = kw "alias"     <$ tok TkAlias
+pExtern    = kw "extern"    <$ tok TkExtern
 
 pIf, pElse, pWhile, pWhere, pDo, pReturn :: Parser BS.ByteString
-pIf        = pKeyword "if"
-pElse      = pKeyword "else"
-pWhile     = pKeyword "while"
-pWhere     = pKeyword "where"
-pDo        = pKeyword "do"
-pReturn    = pKeyword "return"
+pIf        = kw "if"        <$ tok TkIf
+pElse      = kw "else"      <$ tok TkElse
+pWhile     = kw "while"     <$ tok TkWhile
+pWhere     = kw "where"     <$ tok TkWhere
+pDo        = kw "do"        <$ tok TkDo
+pReturn    = kw "return"    <$ tok TkReturn
 
 pInterface, pInstance, pDerive, pPipe :: Parser BS.ByteString
-pInterface = pKeyword "interface"
-pInstance  = pKeyword "instance"
-pDerive    = pKeyword "derive"
-pPipe      = pKeyword "pipe"
+pInterface = kw "interface" <$ tok TkInterface
+pInstance  = kw "instance"  <$ tok TkInstance
+pDerive    = kw "derive"    <$ tok TkDerive
+pPipe      = kw "pipe"      <$ tok TkPipe
+
+-- Helper: convert String keyword to ByteString
+{-# INLINE kw #-}
+kw :: String -> BS.ByteString
+kw = BS.pack . map (fromIntegral . fromEnum)
 
 
--- | Parse an identifier name (starts with alpha or underscore, then alphanumeric, underscore, or ')
--- try is needed: can fail at keyword-check after consuming identifier chars.
--- Fast path: only bytes that start a keyword need the Set.member check.
--- Keyword first bytes: i e w d r p f t a (all lowercase, no uppercase, no '_')
-{-# INLINE pNameStr #-}
-pNameStr :: Parser String
-pNameStr = lexeme $ try $ do
-  b <- satisfy (\b -> isAlphaB b || b == 95)  -- letter or _
-  rest <- takeWhileP Nothing isIdentB
-  let nameBS = BS.cons b rest
-  -- Only do keyword check if first byte is a known keyword-starting byte
-  -- and the identifier is short enough to be a keyword (max 9 chars: "interface")
-  when (BS.length nameBS <= 9 && mightBeKeyword b) $
-    when (nameBS `Set.member` keywordSet) $
-      fail $ "keyword " ++ C8.unpack nameBS ++ " cannot be used as an identifier"
-  return $! C8.unpack nameBS
-  where
-    -- First bytes of all keywords (lowercase only; '_' and uppercase can never be keywords)
-    {-# INLINE mightBeKeyword #-}
-    mightBeKeyword :: Word8 -> Bool
-    mightBeKeyword w = w == 105  -- 'i': if, import, instance, interface
-                    || w == 101  -- 'e': else, export, extern
-                    || w == 119  -- 'w': while, where
-                    || w == 100  -- 'd': do, derive
-                    || w == 114  -- 'r': return
-                    || w == 112  -- 'p': pipe
-                    || w == 102  -- 'f': from, false
-                    || w == 116  -- 't': type, true
-                    || w == 97   -- 'a': alias
+-- ── Identifiers ───────────────────────────────────────────────────────────────
 
-
--- | Parse an identifier name as String
+-- | Parse any identifier (lower or upper case).
+-- Also accepts "soft" keywords that are used as function names in practice
+-- (when, is, not) since no parser consumes those keyword tokens.
 {-# INLINE pName #-}
 pName :: Parser String
-pName = pNameStr
+pName = tokWith $ \t -> case t of
+  TkName s     -> Just s
+  TkTypeName s -> Just s
+  TkWhen       -> Just "when"
+  TkIs         -> Just "is"
+  TkNot        -> Just "not"
+  _            -> Nothing
 
+-- | Parse a lowercase identifier (including soft keywords used as names).
+{-# INLINE pNameStr #-}
+pNameStr :: Parser String
+pNameStr = tokWith $ \t -> case t of
+  TkName s -> Just s
+  TkWhen   -> Just "when"
+  TkIs     -> Just "is"
+  TkNot    -> Just "not"
+  _        -> Nothing
 
--- | Parse a name that starts with an uppercase letter.
--- No try needed: once satisfy isUpperB succeeds, we can never fail.
+-- | Parse an upper-case identifier (type/constructor name)
 {-# INLINE pUpperName #-}
 pUpperName :: Parser String
-pUpperName = lexeme $ do
-  b <- satisfy isUpperB
-  rest <- takeWhileP Nothing isIdentB
-  return $! C8.unpack (BS.cons b rest)
+pUpperName = tokWith $ \t -> case t of
+  TkTypeName s -> Just s
+  _            -> Nothing
 
-
--- | Parse a name that starts with a lowercase letter or underscore
--- try is needed: can fail at keyword-check after consuming identifier chars
+-- | Parse a lower-case identifier
 {-# INLINE pLowerName #-}
 pLowerName :: Parser String
-pLowerName = lexeme $ try $ do
-  b <- satisfy (\b -> isLowerB b || b == 95)  -- lowercase or _
-  rest <- takeWhileP Nothing isIdentB
-  let nameBS = BS.cons b rest
-  when (nameBS `Set.member` keywordSet) $
-    fail $ "keyword " ++ C8.unpack nameBS ++ " cannot be used as an identifier"
-  return $! C8.unpack nameBS
+pLowerName = tokWith $ \t -> case t of
+  TkName s -> Just s
+  _        -> Nothing
 
 
--- Numeric literals --
+-- ── Numeric literals ─────────────────────────────────────────────────────────
 
--- | Parse a number literal (decimal, no suffix)
--- try needed: consumes digits before notFollowedBy check
+-- | Parse any numeric literal (decimal, no suffix). Returns the string of digits.
 pNumber :: Parser String
-pNumber = lexeme $ try $ do
-  digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-  notFollowedBy (satisfy (\b -> b == 95 || b == 46))  -- _ or .
-  return digits
+pNumber = tokWith $ \t -> case t of
+  TkInt s -> Just s
+  _       -> Nothing
 
--- | Parse a float literal: either decimal.decimal with optional _f, or decimal_f
--- try needed: both branches consume digits before diverging
 pFloat :: Parser String
-pFloat = lexeme $ try $ do
-  whole <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-  choice
-    [ do
-        void $ C.char 46  -- '.'
-        frac <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-        suffix <- optional (C.string "_f")
-        return $ whole ++ "." ++ frac ++ maybe "" C8.unpack suffix
-    , do
-        void $ C.string "_f"
-        return $ whole ++ "_f"
-    ]
+pFloat = tokWith $ \t -> case t of
+  TkFloat s -> Just s
+  _         -> Nothing
 
--- | Parse a byte literal (decimal_b)
--- try needed: consumes digits before suffix check
 pByte :: Parser String
-pByte = lexeme $ try $ do
-  digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-  void $ C.string "_b"
-  return digits
+pByte = tokWith $ \t -> case t of
+  TkByte s -> Just s
+  _        -> Nothing
 
--- | Parse a short literal (decimal_s)
--- try needed: consumes digits before suffix check
 pShort :: Parser String
-pShort = lexeme $ try $ do
-  digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-  void $ C.string "_s"
-  return digits
+pShort = tokWith $ \t -> case t of
+  TkShort s -> Just s
+  _         -> Nothing
 
--- | Parse an int literal (decimal_i)
--- try needed: consumes digits before suffix check
 pInt :: Parser String
-pInt = lexeme $ try $ do
-  digits <- C8.unpack <$> takeWhile1P (Just "digit") isDigitB
-  void $ C.string "_i"
-  return digits
+pInt = tokWith $ \t -> case t of
+  TkInt s -> Just s   -- TkInt is used for "decimal" int literals
+  _       -> Nothing
 
--- | Parse a hex number literal
--- try needed: we consume digits then notFollowedBy '_'; need to backtrack if that fails
 pHexNumber :: Parser String
-pHexNumber = lexeme $ try $ do
-  void $ C.string "0x"
-  digits <- C8.unpack <$> takeWhile1P (Just "hex digit") isHexDigitB
-  notFollowedBy (C.char 95)  -- '_'
-  return $ "0x" ++ digits
+pHexNumber = tokWith $ \t -> case t of
+  TkHexNumber s -> Just s
+  _             -> Nothing
 
--- | Parse a hex byte literal (0x..._b)
--- try needed: ambiguous with pHexNumber (same prefix)
 pHexByte :: Parser String
-pHexByte = lexeme $ try $ do
-  void $ C.string "0x"
-  digits <- C8.unpack <$> takeWhile1P (Just "hex digit") isHexDigitB
-  void $ C.string "_b"
-  return $ "0x" ++ digits
+pHexByte = tokWith $ \t -> case t of
+  TkHexByte s -> Just s
+  _           -> Nothing
 
--- | Parse a hex short literal (0x..._s)
 pHexShort :: Parser String
-pHexShort = lexeme $ try $ do
-  void $ C.string "0x"
-  digits <- C8.unpack <$> takeWhile1P (Just "hex digit") isHexDigitB
-  void $ C.string "_s"
-  return $ "0x" ++ digits
+pHexShort = tokWith $ \t -> case t of
+  TkHexShort s -> Just s
+  _            -> Nothing
 
--- | Parse a hex int literal (0x..._i)
 pHexInt :: Parser String
-pHexInt = lexeme $ try $ do
-  void $ C.string "0x"
-  digits <- C8.unpack <$> takeWhile1P (Just "hex digit") isHexDigitB
-  void $ C.string "_i"
-  return $ "0x" ++ digits
+pHexInt = tokWith $ \t -> case t of
+  TkHexInt s -> Just s
+  _          -> Nothing
 
 
--- String and char literals --
+-- ── String / char literals ────────────────────────────────────────────────────
 
--- | Parse a double-quoted string literal
--- Collects raw content (preserving backslash escape sequences as-is),
--- then processes all escape sequences via processEscapes.
 pStringLiteral :: Parser String
-pStringLiteral = lexeme $ do
-  void $ C.char 34  -- '"'
-  raw <- concat <$> many rawStringChunk
-  void $ C.char 34  -- '"'
-  case processEscapes raw of
-    Left err      -> fail err
-    Right content -> return content
-  where
-    rawStringChunk :: Parser String
-    rawStringChunk =
-      try (do
-        void $ C.char 92  -- '\\'
-        b <- anySingle
-        case chr8' b of
-          'u' -> do
-            rest <- try (do
-                void $ C.char 123  -- '{'
-                hex <- C8.unpack <$> takeWhileP (Just "hex digit") isHexDigitB
-                void $ C.char 125  -- '}'
-                return $ '{' : hex ++ "}")
-              <|> (map chr8' <$> count 4 (satisfy isHexDigitB))
-            return $ '\\' : 'u' : rest
-          'x' -> do
-            hex <- map chr8' <$> count 2 (satisfy isHexDigitB)
-            return $ '\\' : 'x' : hex
-          c -> return ['\\', c])
-      <|> (T.unpack . TE.decodeUtf8 <$> takeWhile1P Nothing (\b -> b /= 34 && b /= 92))  -- not " or \
+pStringLiteral = do
+  isFormatter <- getFormatterMode
+  s <- tokWith $ \t -> case t of
+    TkString s' -> Just s'
+    _           -> Nothing
+  case processHexaEscapes isFormatter s of
+    Left err  -> fail err
+    Right str -> return str
 
-
--- | Parse a character literal
--- Returns the raw string (including escape sequences like "\\n") for the canonicalizer
+-- NOTE: char literals are returned as-is (raw escape sequences preserved),
+-- because Canonicalize.Canonicalize processes char escapes via charParser.
 pCharLiteral :: Parser String
-pCharLiteral = lexeme $ do
-  void $ C.char 39  -- '\''
-  content <- charLiteralContent
-  void $ C.char 39  -- '\''
-  return content
-  where
-    charLiteralContent :: Parser String
-    charLiteralContent = concat <$> many charLiteralChunk
-    -- Returns one or two characters: escape sequences return backslash + char
-    charLiteralChunk :: Parser String
-    charLiteralChunk =
-      (\b -> ['\\', chr8' b]) <$> (C.char 92 *> anySingle)  -- '\\'
-      <|> (T.unpack . TE.decodeUtf8 <$> takeWhile1P Nothing (\b -> b /= 39 && b /= 92))  -- not ' or \
+pCharLiteral = tokWith $ \t -> case t of
+  TkChar s -> Just s
+  _        -> Nothing
 
-
--- | Parse boolean true
 pBoolTrue :: Parser BS.ByteString
-pBoolTrue = pKeyword "true"
+pBoolTrue = kw "true" <$ tok TkTrue
 
-
--- | Parse boolean false
 pBoolFalse :: Parser BS.ByteString
-pBoolFalse = pKeyword "false"
+pBoolFalse = kw "false" <$ tok TkFalse
 
-
--- | Parse a JS block (#- ... -#)
 pJSBlock :: Parser String
-pJSBlock = lexeme $ do
-  void $ C.string "#-"
-  bs <- manyTill anySingle (C.string "-#")
-  return $! T.unpack $ TE.decodeUtf8 $ BS.pack bs
+pJSBlock = tokWith $ \t -> case t of
+  TkJSBlock s -> Just s
+  _           -> Nothing
 
 
--- Operators and symbols --
+-- ── Operators and symbols ─────────────────────────────────────────────────────
 
--- | Parse = (not followed by > or =)
-pEq :: Parser ()
-pEq = void $ lexeme $ try $ C.char 61 <* notFollowedBy (oneOf [62, 61 :: Word8])  -- '=' not followed by '>' or '='
+pEq               :: Parser (); pEq               = tok TkEq
+pMutateEq         :: Parser (); pMutateEq         = tok TkMutateEq
+pDoubleColon      :: Parser (); pDoubleColon      = tok TkDoubleColon
+pColon            :: Parser (); pColon            = tok TkColon
+pComma            :: Parser (); pComma            = tok TkComma
+pSpread           :: Parser (); pSpread           = tok TkSpread
+pDot              :: Parser (); pDot              = tok TkDot
+pLeftParen        :: Parser (); pLeftParen        = tok TkLeftParen
+pRightParen       :: Parser (); pRightParen       = tok TkRightParen
+pLeftCurly        :: Parser (); pLeftCurly        = tok TkLeftCurly
+pRightCurly       :: Parser (); pRightCurly       = tok TkRightCurly
+pLeftDoubleCurly  :: Parser (); pLeftDoubleCurly  = tok TkLeftDoubleCurly
+pLeftSquareBracket  :: Parser (); pLeftSquareBracket  = tok TkLeftSquare
+pRightSquareBracket :: Parser (); pRightSquareBracket = tok TkRightSquare
+pTupleStart       :: Parser (); pTupleStart       = tok TkTupleStart
+pLeftArrow        :: Parser (); pLeftArrow        = tok TkLeftArrow
+pRightArrow       :: Parser (); pRightArrow       = tok TkRightArrow
+pFatArrow         :: Parser (); pFatArrow         = tok TkFatArrow
+pPipeOp           :: Parser (); pPipeOp           = tok TkPipeOp
+pPipeChar         :: Parser (); pPipeChar         = tok TkPipeChar
+pSemicolon        :: Parser (); pSemicolon        = tok TkSemicolon
+pSharp            :: Parser (); pSharp            = tok TkSharp
+pDollar           :: Parser (); pDollar           = tok TkDollar
+pQuestionMark     :: Parser (); pQuestionMark     = tok TkQuestionMark
+pDoubleQuestionMark :: Parser (); pDoubleQuestionMark = tok TkDoubleQuestionMark
+pQuestionDot      :: Parser (); pQuestionDot      = tok TkQuestionDot
+pTypedHole        :: Parser (); pTypedHole        = tok TkTypedHole
 
--- | Parse :=
--- C.string auto-backtracks; no try needed
-pMutateEq :: Parser ()
-pMutateEq = void $ lexeme $ C.string ":="
+-- Arithmetic
+pPlus             :: Parser (); pPlus             = tok TkPlus
+pDoublePlus       :: Parser (); pDoublePlus       = tok TkDoublePlus
+pDash             :: Parser (); pDash             = tok TkDash
+pDashUnary        :: Parser (); pDashUnary        = tok TkDash  -- same token, context is in parser
+pStar             :: Parser (); pStar             = tok TkStar
+pSlash            :: Parser (); pSlash            = tok TkSlash
+pPercent          :: Parser (); pPercent          = tok TkPercent
 
--- | Parse ::
--- try needed: "::" consumes ":" before notFollowedBy can check the next ":"
-pDoubleColon :: Parser ()
-pDoubleColon = void $ lexeme $ try $ C.string "::" <* notFollowedBy (C.char 58)  -- ':'
+-- Comparison
+pDoubleEq         :: Parser (); pDoubleEq         = tok TkDoubleEq
+pNotEq            :: Parser (); pNotEq            = tok TkNotEq
+pLeftChevron      :: Parser (); pLeftChevron      = tok TkLeftChevron
+pRightChevron     :: Parser (); pRightChevron     = tok TkRightChevron
+pLeftChevronEq    :: Parser (); pLeftChevronEq    = tok TkLeftChevronEq
+pRightChevronEq   :: Parser (); pRightChevronEq   = tok TkRightChevronEq
 
--- | Parse : (not followed by : or =)
-pColon :: Parser ()
-pColon = void $ lexeme $ try $ C.char 58 <* notFollowedBy (oneOf [58, 61 :: Word8])  -- ':' not ':' or '='
+-- Logical
+pDoubleAmpersand  :: Parser (); pDoubleAmpersand  = tok TkDoubleAmpersand
+pDoublePipe       :: Parser (); pDoublePipe       = tok TkDoublePipe
+pExclamationMark  :: Parser (); pExclamationMark  = tok TkExclamation
 
--- | Parse ,
-pComma :: Parser ()
-pComma = void $ lexeme $ C.char 44  -- ','
+-- Bitwise
+pAmpersand        :: Parser (); pAmpersand        = tok TkAmpersand
+pXor              :: Parser (); pXor              = tok TkXor
+pTilde            :: Parser (); pTilde            = tok TkTilde
+pDoubleLeftChevron  :: Parser (); pDoubleLeftChevron  = tok TkDoubleLeftChevron
+pDoubleRightChevron :: Parser (); pDoubleRightChevron = tok TkDoubleRightChevron
+pTripleRightChevron :: Parser (); pTripleRightChevron = tok TkTripleRightChevron
 
--- | Parse ... (spread operator)
--- C.string auto-backtracks
-pSpread :: Parser ()
-pSpread = void $ lexeme $ C.string "..."
+-- Misc
+pAlternativeOp    :: Parser (); pAlternativeOp    = tok TkAlternativeOp
 
--- | Parse . (not followed by another .)
-pDot :: Parser ()
-pDot = void $ lexeme $ try $ C.char 46 <* notFollowedBy (C.char 46)  -- '.'
-
--- | Parse (
-pLeftParen :: Parser ()
-pLeftParen = void $ lexeme $ C.char 40  -- '('
-
--- | Parse )
-pRightParen :: Parser ()
-pRightParen = void $ lexeme $ C.char 41  -- ')'
-
--- | Parse { (single)
-pLeftCurly :: Parser ()
-pLeftCurly = void $ lexeme $ try $ C.char 123 <* notFollowedBy (C.char 123)  -- '{' not '{{'
-
--- | Parse }
-pRightCurly :: Parser ()
-pRightCurly = void $ lexeme $ C.char 125  -- '}'
-
--- | Parse {{
--- C.string auto-backtracks
-pLeftDoubleCurly :: Parser ()
-pLeftDoubleCurly = void $ lexeme $ C.string "{{"
-
--- | Parse [
-pLeftSquareBracket :: Parser ()
-pLeftSquareBracket = void $ lexeme $ C.char 91  -- '['
-
--- | Parse ]
-pRightSquareBracket :: Parser ()
-pRightSquareBracket = void $ lexeme $ C.char 93  -- ']'
-
--- | Parse #[
--- C.string auto-backtracks
-pTupleStart :: Parser ()
-pTupleStart = void $ lexeme $ C.string "#["
-
--- | Parse <-
--- C.string auto-backtracks
-pLeftArrow :: Parser ()
-pLeftArrow = void $ lexeme $ C.string "<-"
-
--- | Parse ->
--- C.string auto-backtracks
-pRightArrow :: Parser ()
-pRightArrow = void $ lexeme $ C.string "->"
-
--- | Parse =>
--- C.string auto-backtracks
-pFatArrow :: Parser ()
-pFatArrow = void $ lexeme $ C.string "=>"
-
--- | Parse |> (pipe operator, not followed by >)
--- try needed: "|>" consumes before notFollowedBy check
-pPipeOp :: Parser ()
-pPipeOp = void $ lexeme $ try $ C.string "|>" <* notFollowedBy (C.char 62)  -- '>'
-
--- | Parse | (not followed by > or |)
-pPipeChar :: Parser ()
-pPipeChar = void $ lexeme $ try $ C.char 124 <* notFollowedBy (oneOf [62, 124 :: Word8])  -- '|' not '>' or '|'
-
--- | Parse ;
-pSemicolon :: Parser ()
-pSemicolon = void $ lexeme $ C.char 59  -- ';'
-
--- | Parse #
-pSharp :: Parser ()
-pSharp = void $ lexeme $ try $ C.char 35 <* notFollowedBy (oneOf [45, 91 :: Word8])  -- '#' not '-' or '['
-
--- | Parse $
-pDollar :: Parser ()
-pDollar = void $ lexeme $ try $ C.char 36 <* notFollowedBy (C.char 123)  -- '$' not '{'
-
--- | Parse ?
-pQuestionMark :: Parser ()
-pQuestionMark = void $ lexeme $ try $ C.char 63 <* notFollowedBy (C.char 63)  -- '?' not '?'
-
--- | Parse ?? (not followed by ?)
-pDoubleQuestionMark :: Parser ()
-pDoubleQuestionMark = void $ lexeme $ try $ C.string "??" <* notFollowedBy (C.char 63)
-
--- | Parse ?.
-pQuestionDot :: Parser ()
-pQuestionDot = void $ lexeme $ C.string "?."
-
--- | Parse ???
--- C.string auto-backtracks
-pTypedHole :: Parser ()
-pTypedHole = void $ lexeme $ C.string "???"
-
-
--- Arithmetic operators --
-
--- | Parse + (not followed by +)
-pPlus :: Parser ()
-pPlus = void $ lexeme $ try $ C.char 43 <* notFollowedBy (C.char 43)  -- '+' not '+'
-
--- | Parse ++
--- C.string auto-backtracks
-pDoublePlus :: Parser ()
-pDoublePlus = void $ lexeme $ C.string "++"
-
--- | Parse - as a binary operator (not followed by >)
-pDash :: Parser ()
-pDash = void $ lexeme $ try $ C.char 45 <* notFollowedBy (C.char 62)  -- '-' not '>'
-
--- | Parse unary minus
-pDashUnary :: Parser ()
-pDashUnary = void $ lexeme $ try $ C.char 45 <* notFollowedBy (C.char 62)  -- '-' not '>'
-
--- | Parse *
-pStar :: Parser ()
-pStar = void $ lexeme $ C.char 42  -- '*'
-
--- | Parse /
-pSlash :: Parser ()
-pSlash = void $ lexeme $ try $ C.char 47 <* notFollowedBy (oneOf [47, 42, 62 :: Word8])  -- '/' not '/' '*' '>'
-
--- | Parse %
-pPercent :: Parser ()
-pPercent = void $ lexeme $ C.char 37  -- '%'
-
-
--- Comparison operators --
-
--- | Parse ==
--- C.string auto-backtracks
-pDoubleEq :: Parser ()
-pDoubleEq = void $ lexeme $ C.string "=="
-
--- | Parse !=
--- C.string auto-backtracks
-pNotEq :: Parser ()
-pNotEq = void $ lexeme $ C.string "!="
-
--- | Parse < (not followed by - or < or = or | or /)
-pLeftChevron :: Parser ()
-pLeftChevron = void $ lexeme $ try $ C.char 60 <* notFollowedBy (oneOf [45, 60, 61, 124, 47 :: Word8])  -- '<'
-
--- | Parse > (not followed by > or =)
-pRightChevron :: Parser ()
-pRightChevron = void $ lexeme $ try $ C.char 62 <* notFollowedBy (oneOf [62, 61 :: Word8])  -- '>'
-
--- | Parse <=
--- C.string auto-backtracks
-pLeftChevronEq :: Parser ()
-pLeftChevronEq = void $ lexeme $ C.string "<="
-
--- | Parse >=
--- C.string auto-backtracks
-pRightChevronEq :: Parser ()
-pRightChevronEq = void $ lexeme $ C.string ">="
-
-
--- Logical operators --
-
--- | Parse &&
--- C.string auto-backtracks
-pDoubleAmpersand :: Parser ()
-pDoubleAmpersand = void $ lexeme $ C.string "&&"
-
--- | Parse ||
--- C.string auto-backtracks
-pDoublePipe :: Parser ()
-pDoublePipe = void $ lexeme $ C.string "||"
-
--- | Parse ! (not followed by =)
-pExclamationMark :: Parser ()
-pExclamationMark = void $ lexeme $ try $ C.char 33 <* notFollowedBy (C.char 61)  -- '!' not '='
-
-
--- Bitwise operators --
-
--- | Parse & (not followed by &)
-pAmpersand :: Parser ()
-pAmpersand = void $ lexeme $ try $ C.char 38 <* notFollowedBy (C.char 38)  -- '&' not '&'
-
--- | Parse ^
-pXor :: Parser ()
-pXor = void $ lexeme $ C.char 94  -- '^'
-
--- | Parse ~
-pTilde :: Parser ()
-pTilde = void $ lexeme $ C.char 126  -- '~'
-
--- | Parse <<
--- C.string auto-backtracks
-pDoubleLeftChevron :: Parser ()
-pDoubleLeftChevron = void $ lexeme $ C.string "<<"
-
--- | Parse >> (not followed by >)
--- try needed: ">>" consumes before notFollowedBy check
-pDoubleRightChevron :: Parser ()
-pDoubleRightChevron = void $ lexeme $ try $ C.string ">>" <* notFollowedBy (C.char 62)  -- '>'
-
--- | Parse >>>
--- C.string auto-backtracks
-pTripleRightChevron :: Parser ()
-pTripleRightChevron = void $ lexeme $ C.string ">>>"
-
-
--- | Parse <|> (alternative operator)
--- C.string auto-backtracks
-pAlternativeOp :: Parser ()
-pAlternativeOp = void $ lexeme $ C.string "<|>"
-
-
--- | Parse a newline character
-pNewline :: Parser ()
-pNewline = void C.newline
+-- | Parse a TkNewline token
+pNewline          :: Parser (); pNewline           = tok TkNewline

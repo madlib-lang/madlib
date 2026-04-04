@@ -195,13 +195,7 @@ buildAST options path code = case parseWithStructuredError code of
           Left _ ->
             return astWithAbsoluteImportPaths
 
-  Left parseErr -> return $ Left $ case parseErr of
-    ParseBadEscape area ->
-      CompilationError BadEscapeSequence (Context path area)
-    ParseEmptyChar area ->
-      CompilationError EmptyChar (Context path area)
-    ParseSyntaxError line col msg ->
-      CompilationError (GrammarError path msg) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))))
+  Left parseErr -> return $ Left (parseErrorToCompilationError path parseErr)
 
 
 -- | Build AST directly from a ByteString (avoids String intermediary)
@@ -249,13 +243,7 @@ buildASTFromBS options path bs = case parseWithStructuredErrorBS bs of
           Left _ ->
             return astWithAbsoluteImportPaths
 
-  Left parseErr -> return $ Left $ case parseErr of
-    ParseBadEscape area ->
-      CompilationError BadEscapeSequence (Context path area)
-    ParseEmptyChar area ->
-      CompilationError EmptyChar (Context path area)
-    ParseSyntaxError line col msg ->
-      CompilationError (GrammarError path msg) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))))
+  Left parseErr -> return $ Left (parseErrorToCompilationError path parseErr)
 
 
 -- | Build AST from ByteString with error recovery for LSP mode.
@@ -311,6 +299,8 @@ parseErrorToCompilationError path parseErr = case parseErr of
     CompilationError EmptyChar (Context path area)
   ParseSyntaxError line col msg ->
     CompilationError (GrammarError path msg) (Context path (Area (Loc 0 line col) (Loc 0 line (col + 1))))
+  ParseLexError msg ->
+    CompilationError (GrammarError path msg) (Context path (Area (Loc 0 1 1) (Loc 0 1 2)))
 
 
 setPath :: AST -> FilePath -> AST

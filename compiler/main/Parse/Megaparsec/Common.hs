@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -O2 #-}
 module Parse.Megaparsec.Common
   ( Parser
@@ -22,6 +23,7 @@ module Parse.Megaparsec.Common
   , runMadlibParser
   , runMadlibParserForFormatter
   , runMadlibParserWithState
+  -- Kept for any remaining call sites that import these:
   , chr8
   , chr8'
   , isAlphaB
@@ -31,57 +33,54 @@ module Parse.Megaparsec.Common
   , isLowerB
   , isHexDigitB
   , isIdentB
+  , satisfyTok
   ) where
 
 import           Data.Word                      ( Word8 )
-import qualified Data.ByteString               as BS
-import           Data.Void
 import           Control.Monad                  ( void )
 import           Control.Monad.State.Strict     ( State, evalState, runState, get, gets, modify', lift )
 
 import           Text.Megaparsec                hiding ( State )
-import qualified Text.Megaparsec                as MP
-import qualified Text.Megaparsec.Byte          as C
-import qualified Text.Megaparsec.Byte.Lexer    as L
+import qualified Text.Megaparsec               as MP
 
 import           AST.Source                     ( SourceTarget(..) )
 import           Explain.Location               ( Loc(..), Area(..) )
 import           Parse.Megaparsec.Error
+import           Parse.Lexer.Token              ( Token(..), RangedToken(..) )
+import           Parse.Lexer.TokenStream        ( TokenStream(..) )
 
 
 -- | Error recorded during recovery parsing
 data ParseRecoveryError = ParseRecoveryError
   { preLineStart :: !Int
-  , preColStart :: !Int
-  , preLineEnd :: !Int
-  , preColEnd :: !Int
-  , preMessage :: !String
+  , preColStart  :: !Int
+  , preLineEnd   :: !Int
+  , preColEnd    :: !Int
+  , preMessage   :: !String
   } deriving (Show)
 
--- | Parser state tracking source target and formatter mode
--- psLastTokenEnd: the Loc of the end of the last parsed token (before trailing whitespace).
--- Populated only by `lexeme`.
+-- | Parser state
 data ParserState = ParserState
-  { psSourceTarget :: !SourceTarget
-  , psFormatterMode :: !Bool
-  , psLastTokenEnd :: !Loc
+  { psSourceTarget   :: !SourceTarget
+  , psFormatterMode  :: !Bool
+  , psLastTokenEnd   :: !Loc    -- end of last consumed token
   , psRecoveryErrors :: ![ParseRecoveryError]
   } deriving (Show)
 
 
--- | The main parser type
-type Parser = ParsecT CustomError BS.ByteString (State ParserState)
+-- | The main parser type – operates on a token stream
+type Parser = ParsecT CustomError TokenStream (State ParserState)
 
 
--- | Run a parser
-runMadlibParser :: Parser a -> String -> BS.ByteString -> Either (ParseErrorBundle BS.ByteString CustomError) a
+-- | Run a parser on a TokenStream
+runMadlibParser :: Parser a -> String -> TokenStream -> Either (ParseErrorBundle TokenStream CustomError) a
 runMadlibParser p name input =
   let initialState = ParserState TargetAll False (Loc 0 0 0) []
   in  evalState (runParserT p name input) initialState
 
 
 -- | Run a parser in formatter mode
-runMadlibParserForFormatter :: Parser a -> String -> BS.ByteString -> Either (ParseErrorBundle BS.ByteString CustomError) a
+runMadlibParserForFormatter :: Parser a -> String -> TokenStream -> Either (ParseErrorBundle TokenStream CustomError) a
 runMadlibParserForFormatter p name input =
   let initialState = ParserState TargetAll True (Loc 0 0 0) []
   in  evalState (runParserT p name input) initialState
@@ -109,23 +108,24 @@ addRecoveryError err = lift $ modify' (\s -> s { psRecoveryErrors = err : psReco
 
 
 -- | Run a parser and return both result and final state
-runMadlibParserWithState :: Parser a -> String -> BS.ByteString -> (Either (ParseErrorBundle BS.ByteString CustomError) a, ParserState)
+runMadlibParserWithState :: Parser a -> String -> TokenStream -> (Either (ParseErrorBundle TokenStream CustomError) a, ParserState)
 runMadlibParserWithState p name input =
   let initialState = ParserState TargetAll False (Loc 0 0 0) []
   in  runState (runParserT p name input) initialState
 
 
--- | Get current location as a Loc (calls getSourcePos).
+-- | Get current location from the next token's start position.
+-- At EOF returns the last consumed token's end.
 {-# INLINE getLoc #-}
 getLoc :: Parser Loc
 getLoc = do
-  !offset <- getOffset
-  !pos <- MP.getSourcePos
-  return $! Loc offset (unPos $ sourceLine pos) (unPos $ sourceColumn pos)
+  ms <- optional (lookAhead anySingle)
+  case ms of
+    Just rt -> return (rtStart rt)
+    Nothing -> lift $ gets psLastTokenEnd
 
 
 -- | Run a parser and wrap its result with area information.
--- Captures end position BEFORE trailing whitespace using psLastTokenEnd.
 {-# INLINE withArea #-}
 withArea :: Parser a -> Parser (Area, a)
 withArea p = do
@@ -141,84 +141,59 @@ pSourceTarget :: Parser SourceTarget
 pSourceTarget = getSourceTarget
 
 
--- Space consumers --
+-- ── Whitespace / newline combinators ──────────────────────────────────────────
+-- In the token stream, whitespace has already been stripped by Alex.
+-- Newlines appear as TkNewline tokens.
 
--- | Space consumer that does NOT consume newlines.
--- Fast path: peek first byte to avoid all work when there's no whitespace/comment.
--- In the common case (no trailing whitespace), just one lookAhead + return ().
+-- | No-op: whitespace already stripped by lexer.
 {-# INLINE sc #-}
 sc :: Parser ()
-sc = do
-  mb <- optional (lookAhead anySingle)
-  case mb of
-    Nothing -> return ()
-    Just b
-      | b == 47 ->                        -- '/' : possible comment
-          skipMany scOne
-      | b == 32 || b == 9 || b == 12 || b == 11 || b == 13 ->
-          -- horizontal whitespace: consume then check for more/comments
-          void (takeWhile1P Nothing (\b' -> b' == 32 || b' == 9 || b' == 12 || b' == 11 || b' == 13))
-          *> skipMany scOne
-      | otherwise -> return ()
-  where
-    {-# INLINE scOne #-}
-    scOne :: Parser ()
-    scOne = choice
-      [ void $ takeWhile1P Nothing (\b -> b == 32 || b == 9 || b == 12 || b == 11 || b == 13)
-      , L.skipLineComment "//"
-      , L.skipBlockCommentNested "/*" "*/"
-      ]
+sc = return ()
 
-
--- | Space consumer that DOES consume newlines
+-- | Skip zero or more TkNewline tokens.
+{-# INLINE scn #-}
 scn :: Parser ()
-scn = L.space C.space1 (L.skipLineComment "//") (L.skipBlockCommentNested "/*" "*/")
+scn = skipMany newlineTok
 
-
--- | Wrap a parser to consume trailing whitespace (no newlines).
--- Records end position BEFORE consuming trailing whitespace in psLastTokenEnd.
--- getSourcePos is incremental in megaparsec (scans from last known pos),
--- so this is amortized O(1) per token across the whole file.
+-- | "lexeme" wrapper: a no-op in the token-stream world.
+-- Kept for API compatibility with call sites that use `lexeme p`.
+-- In the token parser, tokens are already "lexemed" by Alex.
+-- We still need to update psLastTokenEnd though — this is done inside
+-- the token-consuming primitives in Lexeme.hs.
 {-# INLINE lexeme #-}
 lexeme :: Parser a -> Parser a
-lexeme p = do
-  result <- p
-  !offset <- getOffset
-  !pos <- MP.getSourcePos
-  lift $! modify' (\s -> s { psLastTokenEnd = Loc offset (unPos $ sourceLine pos) (unPos $ sourceColumn pos) })
-  sc
-  return result
+lexeme = id
 
-
--- | Parse a symbol and consume trailing whitespace (no newlines)
+-- | symbol: no-op kept for API compat
 {-# INLINE symbol #-}
-symbol :: BS.ByteString -> Parser BS.ByteString
-symbol = L.symbol sc
+symbol :: a -> Parser a
+symbol = return
 
-
--- | Parse zero or more newlines (with optional whitespace and comments around them)
+-- | Skip zero or more newlines
 {-# INLINE rets #-}
 rets :: Parser ()
-rets = sc *> skipMany (C.newline *> sc)
+rets = scn
 
-
--- | Parse zero or one newlines (with optional whitespace).
--- Fast path: peek at first byte — skip whole thing if it's not space, '/', or newline.
+-- | Skip at most one newline token
 {-# INLINE maybeRet #-}
 maybeRet :: Parser ()
-maybeRet = do
-  mb <- optional (lookAhead anySingle)
-  case mb of
-    Nothing -> return ()
-    Just b
-      | b == 10 -> void $ C.newline *> sc  -- '\n': consume newline + trailing whitespace
-      | b == 32 || b == 9 || b == 12 || b == 11 || b == 13 || b == 47 ->
-          -- horizontal whitespace or '/': run full sc, then optional newline
-          sc *> (void (C.newline *> sc) <|> pure ())
-      | otherwise -> return ()
+maybeRet = void $ optional newlineTok
+
+-- | Consume a TkNewline token, updating psLastTokenEnd
+{-# INLINE newlineTok #-}
+newlineTok :: Parser ()
+newlineTok = void $ satisfyTok (\rt -> rtToken rt == TkNewline)
+
+-- | Consume any single token that satisfies a predicate, updating psLastTokenEnd.
+{-# INLINE satisfyTok #-}
+satisfyTok :: (RangedToken -> Bool) -> Parser RangedToken
+satisfyTok f = do
+  rt <- satisfy f
+  lift $! modify' (\s -> s { psLastTokenEnd = rtEnd rt })
+  return rt
 
 
--- ASCII range helpers --
+-- ── ASCII range helpers (kept for any remaining import sites) ─────────────────
 
 {-# INLINE chr8 #-}
 chr8 :: Char -> Word8

@@ -25,6 +25,9 @@ import           Explain.Location
 import           Parse.Megaparsec.Common
 import           Parse.Megaparsec.Error
 import           Parse.Megaparsec.Declaration
+import           Parse.Lexer.Lexer              ( scanMany )
+import           Parse.Lexer.Token              ( Token(..), RangedToken(..) )
+import           Parse.Lexer.TokenStream        ( TokenStream(..) )
 
 
 -- | Structured parse error for clean integration with Error.Error
@@ -32,55 +35,76 @@ data ParseError
   = ParseBadEscape Area
   | ParseEmptyChar Area
   | ParseSyntaxError Int Int String  -- line, col, message
+  | ParseLexError String             -- lexer error
   deriving (Show)
 
 
+-- | Lex a ByteString, returning the token stream or an error
+-- Filters out TkEOF so megaparsec's eof parser works correctly
+lexBS :: BS.ByteString -> Either ParseError TokenStream
+lexBS bs = case scanMany bs of
+  Left err -> Left (ParseLexError err)
+  Right ts -> Right (TokenStream (filter (\rt -> rtToken rt /= TkEOF) ts))
+
+
 -- | Parse a Madlib source string, returning either an error string or the AST
--- This matches the API of Parse.Madlib.Grammar.parse
 parse :: String -> Either String Src.AST
-parse s = case runMadlibParser pAST "<input>" (TE.encodeUtf8 (T.pack s)) of
-  Right ast -> Right ast
-  Left err  -> Left (formatError err)
+parse s = case lexBS (TE.encodeUtf8 (T.pack s)) of
+  Left (ParseLexError msg) -> Left ("Lex error: " ++ msg)
+  Left err                 -> Left (show err)
+  Right ts -> case runMadlibParser pAST "<input>" ts of
+    Right ast -> Right ast
+    Left err  -> Left (formatError err)
 
 
 -- | Parse a Madlib source string in formatter mode
--- This matches the API of Parse.Madlib.Grammar.parseForFormatter
 parseForFormatter :: String -> Either String Src.AST
-parseForFormatter s = case runMadlibParserForFormatter pAST "<input>" (TE.encodeUtf8 (T.pack s)) of
-  Right ast -> Right ast
-  Left err  -> Left (formatError err)
+parseForFormatter s = case lexBS (TE.encodeUtf8 (T.pack s)) of
+  Left (ParseLexError msg) -> Left ("Lex error: " ++ msg)
+  Left err                 -> Left (show err)
+  Right ts -> case runMadlibParserForFormatter pAST "<input>" ts of
+    Right ast -> Right ast
+    Left err  -> Left (formatError err)
 
 
--- | Parse with structured error, eliminating the string-parsing hack in AST.hs
+-- | Parse with structured error
 parseWithStructuredError :: String -> Either ParseError Src.AST
-parseWithStructuredError s = case runMadlibParser pAST "<input>" (TE.encodeUtf8 (T.pack s)) of
-  Right ast -> Right ast
-  Left err  -> Left (extractStructuredError err)
+parseWithStructuredError s = do
+  ts <- lexBS (TE.encodeUtf8 (T.pack s))
+  case runMadlibParser pAST "<input>" ts of
+    Right ast -> Right ast
+    Left err  -> Left (extractStructuredError err)
 
 
 -- | Parse for formatter with structured error
 parseForFormatterWithStructuredError :: String -> Either ParseError Src.AST
-parseForFormatterWithStructuredError s = case runMadlibParserForFormatter pAST "<input>" (TE.encodeUtf8 (T.pack s)) of
-  Right ast -> Right ast
-  Left err  -> Left (extractStructuredError err)
+parseForFormatterWithStructuredError s = do
+  ts <- lexBS (TE.encodeUtf8 (T.pack s))
+  case runMadlibParserForFormatter pAST "<input>" ts of
+    Right ast -> Right ast
+    Left err  -> Left (extractStructuredError err)
 
 
--- | Parse directly from ByteString (avoids String->ByteString conversion)
+-- | Parse directly from ByteString
 parseWithStructuredErrorBS :: BS.ByteString -> Either ParseError Src.AST
-parseWithStructuredErrorBS bs = case runMadlibParser pAST "<input>" bs of
-  Right ast -> Right ast
-  Left err  -> Left (extractStructuredError err)
+parseWithStructuredErrorBS bs = do
+  ts <- lexBS bs
+  case runMadlibParser pAST "<input>" ts of
+    Right ast -> Right ast
+    Left err  -> Left (extractStructuredError err)
 
 
 -- | Parse for formatter directly from ByteString
 parseForFormatterWithStructuredErrorBS :: BS.ByteString -> Either ParseError Src.AST
-parseForFormatterWithStructuredErrorBS bs = case runMadlibParserForFormatter pAST "<input>" bs of
-  Right ast -> Right ast
-  Left err  -> Left (extractStructuredError err)
+parseForFormatterWithStructuredErrorBS bs = do
+  ts <- lexBS bs
+  case runMadlibParserForFormatter pAST "<input>" ts of
+    Right ast -> Right ast
+    Left err  -> Left (extractStructuredError err)
 
 
 -- | Extract structured error from a parse error bundle
-extractStructuredError :: ParseErrorBundle BS.ByteString CustomError -> ParseError
+extractStructuredError :: ParseErrorBundle TokenStream CustomError -> ParseError
 extractStructuredError bundle =
   let errs = toList (bundleErrors bundle)
   in  case errs of
@@ -105,16 +129,18 @@ extractStructuredError bundle =
               ParseSyntaxError 1 1 (parseErrorTextPretty err)
 
 
--- | Parse with error recovery, returning a partial AST and accumulated recovery errors.
--- Used only in LSP mode to provide tooling even when the file has syntax errors.
+-- | Parse with error recovery
 parseWithRecoveryBS :: BS.ByteString -> (Either ParseError Src.AST, [ParseRecoveryError])
 parseWithRecoveryBS bs =
-  let (result, finalState) = runMadlibParserWithState pASTWithRecovery "<input>" bs
-  in  case result of
-        Right ast -> (Right ast, psRecoveryErrors finalState)
-        Left err  -> (Left (extractStructuredError err), psRecoveryErrors finalState)
+  case lexBS bs of
+    Left err -> (Left err, [])
+    Right ts ->
+      let (result, finalState) = runMadlibParserWithState pASTWithRecovery "<input>" ts
+      in  case result of
+            Right ast -> (Right ast, psRecoveryErrors finalState)
+            Left err  -> (Left (extractStructuredError err), psRecoveryErrors finalState)
 
 
 -- | Format a parse error bundle into a human-readable string
-formatError :: ParseErrorBundle BS.ByteString CustomError -> String
+formatError :: ParseErrorBundle TokenStream CustomError -> String
 formatError = errorBundlePretty

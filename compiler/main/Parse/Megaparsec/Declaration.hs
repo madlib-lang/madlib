@@ -10,10 +10,7 @@ import qualified Data.Map.Strict                as M
 import           Control.Monad                  ( void, unless )
 import           Data.Maybe                     ( catMaybes )
 
-import           Text.Megaparsec                hiding ( State )
-import qualified Text.Megaparsec.Byte          as C
-
-import qualified Data.ByteString               as BS
+import           Text.Megaparsec                hiding ( State, Token )
 
 import qualified AST.Source                      as Src
 import           Explain.Location
@@ -23,6 +20,13 @@ import           Parse.Megaparsec.Error          ( CustomError )
 import           Parse.Megaparsec.Lexeme
 import           Parse.Megaparsec.Typing
 import           Parse.Megaparsec.Expression
+import           Parse.Lexer.Token              ( Token(..), RangedToken(..) )
+import           Parse.Lexer.TokenStream        ( TokenStream )
+
+
+-- Helper: peek at the next token kind (Nothing at EOF)
+peekTok :: Parser (Maybe Token)
+peekTok = fmap (fmap rtToken) (optional (lookAhead anySingle))
 
 
 -- | Parse a full AST (top-level sequence of declarations and expressions)
@@ -84,7 +88,7 @@ pASTWithRecovery = do
       TopExp e           -> ast { Src.aexps = Src.aexps ast <> [e] }
       TopDerived d        -> ast { Src.aderived = Src.aderived ast <> [d] }
 
-    recoverTopLevel :: ParseError BS.ByteString CustomError -> Parser (Maybe TopLevel)
+    recoverTopLevel :: ParseError TokenStream CustomError -> Parser (Maybe TopLevel)
     recoverTopLevel err = do
       pos <- getLoc
       let errMsg = case err of
@@ -97,17 +101,25 @@ pASTWithRecovery = do
 
     skipToNextTopLevel :: Parser ()
     skipToNextTopLevel = do
-      -- Skip to end of current line
-      _ <- takeWhileP Nothing (/= 10) -- skip until newline
-      _ <- optional (single 10)       -- consume the newline
-      scn                             -- consume blank lines
+      -- Skip tokens until we hit a newline, then skip blank lines
+      -- until we reach a token that could start a top-level declaration
+      _ <- optional $ skipManyTill anySingle (void (satisfyTok (\rt -> rtToken rt == TkNewline)) <|> eof)
+      scn   -- skip blank lines (TkNewline tokens)
       atEnd' <- atEnd
       unless atEnd' $ do
-        w <- lookAhead $ takeWhileP Nothing isIdentB
-        unless (w `elem` topLevelKeywords || BS.null w) skipToNextTopLevel
+        mt <- peekTok
+        unless (isTopLevelStart mt) skipToNextTopLevel
 
-    topLevelKeywords :: [BS.ByteString]
-    topLevelKeywords = ["import", "interface", "instance", "derive", "type", "alias", "export"]
+    isTopLevelStart :: Maybe Token -> Bool
+    isTopLevelStart Nothing           = True   -- EOF
+    isTopLevelStart (Just TkImport)   = True
+    isTopLevelStart (Just TkInterface) = True
+    isTopLevelStart (Just TkInstance) = True
+    isTopLevelStart (Just TkDerive)   = True
+    isTopLevelStart (Just TkType)     = True
+    isTopLevelStart (Just TkAlias)    = True
+    isTopLevelStart (Just TkExport)   = True
+    isTopLevelStart _                 = False
 
     getLine' (Loc _ l _) = l
     getCol' (Loc _ _ c) = c
@@ -123,52 +135,44 @@ data TopLevel
   | TopDerived Src.Derived
 
 
--- | Peek at the next identifier-like word without consuming input.
--- Returns the word as a ByteString, or empty if not starting with alpha/underscore.
-{-# INLINE peekWord #-}
-peekWord :: Parser BS.ByteString
-peekWord = lookAhead $ takeWhileP Nothing isIdentB
-
--- | Peek at a few bytes to check for macro keywords (#iftarget, #elseif, #endif)
-{-# INLINE peekMacroWord #-}
-peekMacroWord :: Parser BS.ByteString
-peekMacroWord = lookAhead $ BS.cons <$> C.char 35 {- '#' -} <*> takeWhileP Nothing isIdentB
-
--- | Parse a single top-level item, using keyword-dispatch to avoid cascading try/backtrack.
+-- | Parse a single top-level item, dispatching on the next token.
 pTopLevel :: Parser TopLevel
 pTopLevel = do
-  w <- peekWord
-  case w of
-    "import"    -> TopImports <$> pImportDecls
-    "interface" -> TopInterface <$> pInterfaceDecl
-    "instance"  -> TopInstance <$> pInstanceDecl
-    "derive"    -> TopDerived <$> pDeriveDecl
-    "type"      -> TopTypeDecl <$> pTypeDecl
-    "alias"     -> TopTypeDecl <$> pTypeDecl
-    "export"    -> pExportTopLevel
-    "" -> do
-      -- Empty word means non-identifier start character; check for macros
-      mw <- optional peekMacroWord
-      case mw of
-        Just "#iftarget" -> TopExp <$> pMacroIfTarget
-        Just "#elseif"   -> TopExp <$> pMacroElseIf
-        Just "#endif"    -> TopExp <$> pMacroEndIf
-        _                -> TopExp <$> pBodyExp
-    _ -> TopExp <$> pBodyExp
+  mt <- peekTok
+  case mt of
+    Just TkImport    -> TopImports <$> pImportDecls
+    Just TkInterface -> TopInterface <$> pInterfaceDecl
+    Just TkInstance  -> TopInstance <$> pInstanceDecl
+    Just TkDerive    -> TopDerived <$> pDeriveDecl
+    Just TkType      -> TopTypeDecl <$> pTypeDecl
+    Just TkAlias     -> TopTypeDecl <$> pTypeDecl
+    Just TkExport    -> pExportTopLevel
+    Just TkSharp     -> pMacroTopLevel
+    _                -> TopExp <$> pBodyExp
+
+
+-- | Parse macro directives: #iftarget, #elseif, #endif
+pMacroTopLevel :: Parser TopLevel
+pMacroTopLevel = do
+  pSharp
+  name <- pNameStr
+  case name of
+    "iftarget" -> TopExp <$> pMacroIfTargetBody
+    "elseif"   -> TopExp <$> pMacroElseIfBody
+    "endif"    -> TopExp <$> pMacroEndIfBody
+    _          -> TopExp <$> pBodyExp
+
 
 -- | Dispatch for items starting with 'export' keyword.
--- Peek at the word after 'export' to avoid cascading try.
 pExportTopLevel :: Parser TopLevel
 pExportTopLevel = do
-  -- Peek past 'export' + whitespace to see the next keyword
-  nextWord <- lookAhead $ do
-    _ <- takeWhileP Nothing isIdentB  -- skip 'export'
-    _ <- takeWhileP Nothing (\b -> b == 32 || b == 9) -- skip spaces/tabs
-    takeWhileP Nothing isIdentB
-  case nextWord of
-    "type" -> try (TopTypeDecl <$> pTypeDecl) <|> (TopExp <$> pExportTypeName)
-    "alias" -> TopTypeDecl <$> pTypeDecl
-    _ -> try (TopExp <$> pExportAssignment) <|> (TopExp <$> pExportName)
+  mt2 <- lookAhead $ do
+    _ <- anySingle  -- skip TkExport
+    fmap (fmap rtToken) (optional anySingle)
+  case mt2 of
+    Just TkType  -> try (TopTypeDecl <$> pTypeDecl) <|> (TopExp <$> pExportTypeName)
+    Just TkAlias -> TopTypeDecl <$> pTypeDecl
+    _            -> try (TopExp <$> pExportAssignment) <|> (TopExp <$> pExportName)
 
 
 -- Import declarations --
@@ -182,9 +186,9 @@ pImportDecl = do
   (startArea, _) <- withArea pImport
   target <- pSourceTarget
   -- Dispatch based on first token after 'import'
-  w <- lookAhead $ takeWhileP Nothing isIdentB
-  case w of
-    "type" -> do
+  mt <- peekTok
+  case mt of
+    Just TkType -> do
       -- import type { names } from "path"
       pType
       pLeftCurly
@@ -197,8 +201,8 @@ pImportDecl = do
       (endArea, path) <- withArea pStringLiteral
       rets
       return $ Src.Source (mergeAreas startArea endArea) target (Src.TypeImport names (sanitizeImportPath path) (sanitizeImportPath path))
-    "" -> do
-      -- import { names } from "path" (starts with '{')
+    Just TkLeftCurly -> do
+      -- import { names } from "path"
       pLeftCurly
       rets
       names <- pImportNames
@@ -210,8 +214,8 @@ pImportDecl = do
       rets
       return $ Src.Source (mergeAreas startArea endArea) target (Src.NamedImport names (sanitizeImportPath path) (sanitizeImportPath path))
     _ -> do
-      -- import name from "path"
-      (nameArea, name) <- withArea pNameStr
+      -- import name from "path" (name can be upper or lower case)
+      (nameArea, name) <- withArea pName
       pFrom
       (endArea, path) <- withArea pStringLiteral
       rets
@@ -228,7 +232,7 @@ pImportNames = option [] $ do
   return $ first : rest
   where
     pImportName = do
-      (area, name) <- withArea pNameStr
+      (area, name) <- withArea pName
       target <- pSourceTarget
       return $ Src.Source area target name
 
@@ -251,19 +255,19 @@ pInterfaceDecl = do
         cs <- pConstraints
         pRightParen
         pFatArrow
-        name <- pNameStr
+        name <- pName
         params <- pNames
         return (cs, name, params)
     , -- interface constraint => Name params
       try $ do
         c <- pConstraint
         pFatArrow
-        name <- pNameStr
+        name <- pName
         params <- pNames
         return ([c], name, params)
     , -- interface Name params
       do
-        name <- pNameStr
+        name <- pName
         params <- pNames
         return ([], name, params)
     ]
@@ -284,11 +288,11 @@ pMethodDefs = do
     pMethodDefsMore :: Parser [(Src.Name, Src.Typing)]
     pMethodDefsMore = do
       rets
-      mb <- optional (lookAhead anySingle)
-      case mb of
-        Nothing  -> return []
-        Just 125 -> return []    -- '}': end of interface block
-        _        -> do
+      mt <- peekTok
+      case mt of
+        Nothing               -> return []
+        Just TkRightCurly     -> return []
+        _                     -> do
           item <- pMethodDef
           more <- pMethodDefsMore
           return (item : more)
@@ -315,24 +319,23 @@ pInstanceDecl = do
         rets
         pRightParen
         pFatArrow
-        name <- pNameStr
+        name <- pName
         args <- pManyTypings
         return (cs, name, args)
     , -- instance constraint => Name typings
       try $ do
         c <- pInstanceConstraint
         pFatArrow
-        name <- pNameStr
+        name <- pName
         args <- pManyTypings
         return ([c], name, args)
     , -- instance Name typings
       do
-        name <- pNameStr
+        name <- pName
         args <- pManyTypings
         return ([], name, args)
     ]
   -- Accept either { or {{ as the instance body opener
-  -- (The old Alex lexer converted { to {{ inside instanceHeader state)
   choice [pLeftDoubleCurly, pLeftCurly]
   rets
   methods <- pMethodImpls
@@ -350,11 +353,11 @@ pMethodImpls = do
     pMethodImplsMore :: Parser [(Src.Name, Src.Exp)]
     pMethodImplsMore = do
       rets
-      mb <- optional (lookAhead anySingle)
-      case mb of
-        Nothing  -> return []
-        Just 125 -> return []    -- '}': end of instance block
-        _        -> do
+      mt <- peekTok
+      case mt of
+        Nothing           -> return []
+        Just TkRightCurly -> return []
+        _                 -> do
           item <- pMethodImpl
           more <- pMethodImplsMore
           return (item : more)
@@ -371,18 +374,16 @@ pMethodImpls = do
 
 pTypeDecl :: Parser Src.TypeDecl
 pTypeDecl = do
-  -- Peek first keyword to dispatch without backtracking
-  w <- peekWord
-  case w of
-    "export" -> do
+  mt <- peekTok
+  case mt of
+    Just TkExport -> do
       (startArea, _) <- withArea pExport
       target <- pSourceTarget
-      -- Peek at keyword after 'export': type or alias
-      w2 <- peekWord
-      case w2 of
-        "type" -> do
+      mt2 <- peekTok
+      case mt2 of
+        Just TkType -> do
           pType
-          name <- pNameStr
+          name <- pName
           params <- pTypeParams
           rets
           pEq
@@ -391,17 +392,17 @@ pTypeDecl = do
             Src.ADT { Src.adtname = name, Src.adtparams = params, Src.adtconstructors = constructors, Src.adtexported = True }
         _ -> do  -- alias
           pAlias
-          name <- pNameStr
+          name <- pName
           params <- pTypeParams
           rets
           pEq
           t <- pTypings
           return $ Src.Source (mergeAreas startArea (Src.getArea t)) target
             Src.Alias { Src.aliasname = name, Src.aliasparams = params, Src.aliastype = t, Src.aliasexported = True }
-    "type" -> do
+    Just TkType -> do
       (startArea, _) <- withArea pType
       target <- pSourceTarget
-      name <- pNameStr
+      name <- pName
       params <- pTypeParams
       rets
       pEq
@@ -411,7 +412,7 @@ pTypeDecl = do
     _ -> do  -- alias
       (startArea, _) <- withArea pAlias
       target <- pSourceTarget
-      name <- pNameStr
+      name <- pName
       params <- pTypeParams
       rets
       pEq
@@ -430,24 +431,22 @@ pAdtConstructors = do
   rest <- pAdtConstructorsMore
   return (first : rest)
   where
-    -- Consume newlines, then check for '|' before attempting to parse next constructor.
-    -- Always succeeds: returns [] when no '|' found.
     pAdtConstructorsMore :: Parser [Src.Constructor]
     pAdtConstructorsMore = do
-      rets  -- consume any newlines/spaces
-      mb <- optional (lookAhead anySingle)
-      case mb of
-        Just 124 -> do  -- '|': parse next constructor
+      rets
+      mt <- peekTok
+      case mt of
+        Just TkPipeChar -> do
           pPipeChar
           item <- pAdtConstructor
           more <- pAdtConstructorsMore
           return (item : more)
-        _ -> return []  -- no '|': done
+        _ -> return []
 
 
 pAdtConstructor :: Parser Src.Constructor
 pAdtConstructor = do
-  (startArea, name) <- withArea pNameStr
+  (startArea, name) <- withArea pName
   target <- pSourceTarget
   args <- option [] $ try $ do
     pLeftParen
@@ -479,7 +478,7 @@ pDeriveDecl :: Parser Src.Derived
 pDeriveDecl = do
   (startArea, _) <- withArea pDerive
   target <- pSourceTarget
-  name <- pNameStr
+  name <- pName
   choice
     [ -- derive Name { fields }
       try $ do
@@ -489,7 +488,7 @@ pDeriveDecl = do
         return $ Src.Source (mergeAreas startArea endArea) target (Src.DerivedRecord name (fst fields))
     , -- derive Name Constructor
       do
-        (endArea, ctor) <- withArea pNameStr
+        (endArea, ctor) <- withArea pName
         return $ Src.Source (mergeAreas startArea endArea) target (Src.DerivedADT name ctor)
     ]
 
@@ -508,17 +507,17 @@ pExportName :: Parser Src.Exp
 pExportName = do
   (startArea, _) <- withArea pExport
   target <- pSourceTarget
-  (endArea, name) <- withArea pNameStr
+  (endArea, name) <- withArea pName
   return $ Src.Source (mergeAreas startArea endArea) target (Src.NameExport name)
 
 
 -- | export type name
 pExportTypeName :: Parser Src.Exp
 pExportTypeName = do
-  (startArea, _) <- withArea (pKeyword "export")
+  (startArea, _) <- withArea pExport
   target <- pSourceTarget
   pType
-  (endArea, name) <- withArea pNameStr
+  (endArea, name) <- withArea pName
   return $ Src.Source (mergeAreas startArea endArea) target (Src.TypeExport name)
 
 
@@ -527,7 +526,7 @@ pExportAssignment :: Parser Src.Exp
 pExportAssignment = do
   (startArea, _) <- withArea pExport
   target <- pSourceTarget
-  name <- pNameStr
+  name <- pName
   pEq
   maybeRet
   body <- pExp
@@ -535,38 +534,38 @@ pExportAssignment = do
   return $ Src.Source assignArea target (Src.Export (Src.Source assignArea target (Src.Assignment name body)))
 
 
--- Target macros --
+-- Target macros (called after '#' has already been consumed) --
 
-pMacroIfTarget :: Parser Src.Exp
-pMacroIfTarget = do
-  (area, _) <- withArea $ lexeme $ C.string "#iftarget"
-  sc
+pMacroIfTargetBody :: Parser Src.Exp
+pMacroIfTargetBody = do
+  (area, _) <- withArea $ return ()
   target <- pTargetName
   setSourceTarget target
   return $ Src.Source area target (Src.IfTarget target)
 
 
-pMacroElseIf :: Parser Src.Exp
-pMacroElseIf = do
-  (area, _) <- withArea $ lexeme $ C.string "#elseif"
-  sc
+pMacroElseIfBody :: Parser Src.Exp
+pMacroElseIfBody = do
+  (area, _) <- withArea $ return ()
   target <- pTargetName
   setSourceTarget target
   return $ Src.Source area target (Src.ElseIfTarget target)
 
 
-pMacroEndIf :: Parser Src.Exp
-pMacroEndIf = do
-  (area, _) <- withArea $ lexeme $ C.string "#endif"
+pMacroEndIfBody :: Parser Src.Exp
+pMacroEndIfBody = do
+  (area, _) <- withArea $ return ()
   setSourceTarget Src.TargetAll
   return $ Src.Source area Src.TargetAll Src.EndIfTarget
 
 
 pTargetName :: Parser Src.SourceTarget
-pTargetName = choice
-  [ Src.TargetLLVM <$ pKeyword "llvm"
-  , Src.TargetJS <$ pKeyword "js"
-  ]
+pTargetName = do
+  name <- pNameStr
+  case name of
+    "llvm" -> return Src.TargetLLVM
+    "js"   -> return Src.TargetJS
+    _      -> fail $ "expected 'llvm' or 'js', got: " ++ name
 
 
 -- Helper --
