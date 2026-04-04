@@ -1,5 +1,5 @@
 {
-{-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-missing-signatures -fno-warn-tabs #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds -fno-warn-missing-signatures -fno-warn-tabs -O2 #-}
 -- Alex-generated lexer for Madlib.
 -- Uses monadUserState-bytestring wrapper.
 -- Template strings: emits TkTemplateInterpolOpen/$Close markers and tracks
@@ -11,8 +11,8 @@ module Parse.Lexer.Lexer
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
+import qualified Data.ByteString.Char8 as BSC
 import qualified Data.ByteString.Lazy as BSL
-import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text as T
 import Explain.Location (Loc(..))
@@ -74,19 +74,19 @@ tokens :-
 <0,interp> "true"      { \inp _ -> do { recordStart inp; return TkTrue } }
 <0,interp> "false"     { \inp _ -> do { recordStart inp; return TkFalse } }
 
-<0,interp> @ident    { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkName    (BSLC.unpack (BSL.take len bs))) } }
-<0,interp> @typeName { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkTypeName (BSLC.unpack (BSL.take len bs))) } }
+<0,interp> @ident    { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkName    (BSC.unpack (BSL.toStrict (BSL.take len bs)))) } }
+<0,interp> @typeName { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkTypeName (BSC.unpack (BSL.toStrict (BSL.take len bs)))) } }
 
-<0,interp> @hexnum "_b" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkHexByte   (BSLC.unpack (BSL.take (len-2) bs))) } }
-<0,interp> @hexnum "_s" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkHexShort  (BSLC.unpack (BSL.take (len-2) bs))) } }
-<0,interp> @hexnum "_i" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkHexInt    (BSLC.unpack (BSL.take (len-2) bs))) } }
-<0,interp> @hexnum      { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkHexNumber (BSLC.unpack (BSL.take len bs))) } }
-<0,interp> @decimal "_b" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkByte  (BSLC.unpack (BSL.take (len-2) bs))) } }
-<0,interp> @decimal "_s" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkShort (BSLC.unpack (BSL.take (len-2) bs))) } }
-<0,interp> @float "_f"  { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkFloat (BSLC.unpack (BSL.take (len-2) bs))) } }
-<0,interp> @float       { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkFloat (BSLC.unpack (BSL.take len bs))) } }
-<0,interp> @decimal "_f" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkFloat (BSLC.unpack (BSL.take (len-2) bs))) } }
-<0,interp> @decimal     { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkInt   (BSLC.unpack (BSL.take len bs))) } }
+<0,interp> @hexnum "_b" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkHexByte   (BSC.unpack (BSL.toStrict (BSL.take (len-2) bs)))) } }
+<0,interp> @hexnum "_s" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkHexShort  (BSC.unpack (BSL.toStrict (BSL.take (len-2) bs)))) } }
+<0,interp> @hexnum "_i" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkHexInt    (BSC.unpack (BSL.toStrict (BSL.take (len-2) bs)))) } }
+<0,interp> @hexnum      { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkHexNumber (BSC.unpack (BSL.toStrict (BSL.take len bs)))) } }
+<0,interp> @decimal "_b" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkByte  (BSC.unpack (BSL.toStrict (BSL.take (len-2) bs)))) } }
+<0,interp> @decimal "_s" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkShort (BSC.unpack (BSL.toStrict (BSL.take (len-2) bs)))) } }
+<0,interp> @float "_f"  { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkFloat (BSC.unpack (BSL.toStrict (BSL.take (len-2) bs)))) } }
+<0,interp> @float       { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkFloat (BSC.unpack (BSL.toStrict (BSL.take len bs)))) } }
+<0,interp> @decimal "_f" { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkFloat (BSC.unpack (BSL.toStrict (BSL.take (len-2) bs)))) } }
+<0,interp> @decimal     { \inp@(_,_,bs,_) len -> do { recordStart inp; return (TkInt   (BSC.unpack (BSL.toStrict (BSL.take len bs)))) } }
 
 -- String literals
 <0,interp> \"        { beginLit string }
@@ -108,7 +108,7 @@ tokens :-
 <tmpl>     [^\`\\\$\n]+ { accumLit }
 <tmpl>     \n        { accumLit }
 <tmpl>     "${"      { emitTmplInterpolOpen }
-<tmpl>     "$"       { \_ _ -> do { modLitVal (++ "$"); alexMonadScan } }
+<tmpl>     "$"       { \_ _ -> do { addLitChunk (BSC.singleton '$'); alexMonadScan } }
 <tmpl>     \`        { emitTmplFull }
 
 -- Template continuation (after interpolation closed by })
@@ -116,7 +116,7 @@ tokens :-
 <tmpl_cont> [^\`\\\$\n]+ { accumLit }
 <tmpl_cont> \n           { accumLit }
 <tmpl_cont> "${"         { emitTmplInterpolOpenCont }
-<tmpl_cont> "$"          { \_ _ -> do { modLitVal (++ "$"); alexMonadScan } }
+<tmpl_cont> "$"          { \_ _ -> do { addLitChunk (BSC.singleton '$'); alexMonadScan } }
 <tmpl_cont> \`           { emitTmplEnd }
 
 -- Interpolation context: normal code but track { } nesting.
@@ -193,24 +193,35 @@ tokens :-
 -- usTmplStack: stack of saved interp depths for nested template strings.
 -- When we start a template inside an interpolation, we save the current depth.
 -- When that inner template ends, we restore the saved depth and go back to interp.
+--
+-- usLitChunks: accumulated literal content as reversed list of strict ByteString chunks.
+-- We prepend each chunk (O(1)) and reverse+decode only when the literal ends.
 data AlexUserState = AlexUserState
-  { usLitVal     :: !String    -- accumulated literal (string/char/template) content
-  , usJSBVal     :: !String    -- accumulated JS block content
-  , usTmplDepth  :: !Int       -- nesting depth inside current template interpolation
-  , usTmplStack  :: ![Int]     -- saved depths for nested templates
-  , usTokenStart :: !AlexPosn  -- start position of current token (set by each token action)
-  , usLitStart   :: !AlexPosn  -- start position of the current literal (string/char/template/jsblock)
+  { usLitChunks  :: ![ByteString] -- accumulated literal chunks (reversed)
+  , usJSBChunks  :: ![ByteString] -- accumulated JS block chunks (reversed)
+  , usTmplDepth  :: !Int          -- nesting depth inside current template interpolation
+  , usTmplStack  :: ![Int]        -- saved depths for nested templates
+  , usTokenStart :: !AlexPosn     -- start position of current token (set by each token action)
+  , usLitStart   :: !AlexPosn     -- start position of the current literal (string/char/template/jsblock)
   }
 
 alexInitUserState :: AlexUserState
 alexInitUserState = AlexUserState
-  { usLitVal     = []
-  , usJSBVal     = []
+  { usLitChunks  = []
+  , usJSBChunks  = []
   , usTmplDepth  = 0
   , usTmplStack  = []
   , usTokenStart = AlexPn 0 1 1
   , usLitStart   = AlexPn 0 1 1
   }
+
+-- | Decode accumulated chunks to a String (UTF-8 decode once at end of literal)
+decodeChunks :: [ByteString] -> String
+decodeChunks chunks = T.unpack (TE.decodeUtf8 (BS.concat (reverse chunks)))
+
+-- | For literals, same decoding
+decodeLitChunks :: [ByteString] -> String
+decodeLitChunks = decodeChunks
 
 -- | Get the user state (not provided by monadUserState-bytestring template)
 alexGetUserState :: Alex AlexUserState
@@ -224,11 +235,11 @@ alexSetUserState ust = Alex $ \s -> Right (s{ alex_ust = ust }, ())
 toLoc :: AlexPosn -> Loc
 toLoc (AlexPn a l c) = Loc a l c
 
--- | Modify accumulated literal value
-modLitVal :: (String -> String) -> Alex ()
-modLitVal f = do
+-- | Prepend a strict ByteString chunk to the literal accumulator (O(1))
+addLitChunk :: ByteString -> Alex ()
+addLitChunk chunk = do
   st <- alexGetUserState
-  alexSetUserState st { usLitVal = f (usLitVal st) }
+  alexSetUserState st { usLitChunks = chunk : usLitChunks st }
 
 -- | Record the start position of the current token from AlexInput.
 -- Call this at the top of every token-producing action.
@@ -250,16 +261,15 @@ beginLit :: Int -> AlexAction Token
 beginLit mode inp@(pn, _, _, _) _ = do
   recordStart inp
   st <- alexGetUserState
-  alexSetUserState st { usLitVal = [], usLitStart = pn }
+  alexSetUserState st { usLitChunks = [], usLitStart = pn }
   alexSetStartCode mode
   alexMonadScan
 
--- | Accumulate literal content (recursive – does NOT produce a token itself,
--- so we do NOT record a start here; the start was recorded when the literal began)
--- Uses UTF-8 decoding to correctly handle multi-byte characters.
+-- | Accumulate literal content as a strict ByteString chunk (O(1) prepend).
+-- UTF-8 decoding happens once at endLit via decodeLitChunks.
 accumLit :: AlexAction Token
 accumLit (_, _, bs, _) len = do
-  modLitVal (++ T.unpack (TE.decodeUtf8 (BSL.toStrict (BSL.take len bs))))
+  addLitChunk (BSL.toStrict (BSL.take len bs))
   alexMonadScan
 
 -- | End a literal: emit token, return to start code 0 or interp if inside interpolation
@@ -267,8 +277,8 @@ accumLit (_, _, bs, _) len = do
 endLit :: (String -> Token) -> AlexAction Token
 endLit mkTk _ _ = do
   st <- alexGetUserState
-  let val = usLitVal st
-  alexSetUserState st { usLitVal = [], usTokenStart = usLitStart st }
+  let val = decodeLitChunks (usLitChunks st)
+  alexSetUserState st { usLitChunks = [], usTokenStart = usLitStart st }
   -- If we are inside a template interpolation, restore to interp mode
   if usTmplDepth st > 0
     then alexSetStartCode interp
@@ -284,7 +294,7 @@ beginTemplate inp@(pn, _, _, _) _ = do
   st <- alexGetUserState
   startCode <- alexGetStartCode
   let newStack = if startCode == interp then usTmplDepth st : usTmplStack st else usTmplStack st
-  alexSetUserState st { usLitVal = [], usTmplStack = newStack, usLitStart = pn }
+  alexSetUserState st { usLitChunks = [], usTmplStack = newStack, usLitStart = pn }
   alexSetStartCode tmpl
   alexMonadScan
 
@@ -292,9 +302,9 @@ beginTemplate inp@(pn, _, _, _) _ = do
 emitTmplInterpolOpen :: AlexAction Token
 emitTmplInterpolOpen _ _ = do
   st <- alexGetUserState
-  let val = usLitVal st
+  let val = decodeLitChunks (usLitChunks st)
   -- Restore usTokenStart to the opening backtick position
-  alexSetUserState st { usLitVal = [], usTmplDepth = 1, usTokenStart = usLitStart st }
+  alexSetUserState st { usLitChunks = [], usTmplDepth = 1, usTokenStart = usLitStart st }
   alexSetStartCode interp
   return (TkTemplateStringStart val)
 
@@ -303,8 +313,8 @@ emitTmplInterpolOpenCont :: AlexAction Token
 emitTmplInterpolOpenCont inp@(pn, _, _, _) _ = do
   recordStart inp
   st <- alexGetUserState
-  let val = usLitVal st
-  alexSetUserState st { usLitVal = [], usTmplDepth = 1, usLitStart = pn }
+  let val = decodeLitChunks (usLitChunks st)
+  alexSetUserState st { usLitChunks = [], usTmplDepth = 1, usLitStart = pn }
   alexSetStartCode interp
   return (TkTemplateStringMid val)
 
@@ -313,14 +323,14 @@ emitTmplInterpolOpenCont inp@(pn, _, _, _) _ = do
 emitTmplFull :: AlexAction Token
 emitTmplFull _ _ = do
   st <- alexGetUserState
-  let val = usLitVal st
+  let val = decodeLitChunks (usLitChunks st)
   case usTmplStack st of
     (savedDepth : rest) -> do
-      alexSetUserState st { usLitVal = [], usTmplDepth = savedDepth, usTmplStack = rest
+      alexSetUserState st { usLitChunks = [], usTmplDepth = savedDepth, usTmplStack = rest
                           , usTokenStart = usLitStart st }
       alexSetStartCode interp
     [] -> do
-      alexSetUserState st { usLitVal = [], usTokenStart = usLitStart st }
+      alexSetUserState st { usLitChunks = [], usTokenStart = usLitStart st }
       alexSetStartCode 0
   return (TkTemplateStringFull val)
 
@@ -328,14 +338,14 @@ emitTmplFull _ _ = do
 emitTmplEnd :: AlexAction Token
 emitTmplEnd _ _ = do
   st <- alexGetUserState
-  let val = usLitVal st
+  let val = decodeLitChunks (usLitChunks st)
   case usTmplStack st of
     (savedDepth : rest) -> do
-      alexSetUserState st { usLitVal = [], usTmplDepth = savedDepth, usTmplStack = rest
+      alexSetUserState st { usLitChunks = [], usTmplDepth = savedDepth, usTmplStack = rest
                           , usTokenStart = usLitStart st }
       alexSetStartCode interp
     [] -> do
-      alexSetUserState st { usLitVal = [], usTokenStart = usLitStart st }
+      alexSetUserState st { usLitChunks = [], usTokenStart = usLitStart st }
       alexSetStartCode 0
   return (TkTemplateStringEnd val)
 
@@ -375,23 +385,23 @@ beginJSBlock :: AlexAction Token
 beginJSBlock inp@(pn, _, _, _) _ = do
   recordStart inp
   st <- alexGetUserState
-  alexSetUserState st { usJSBVal = [], usLitStart = pn }
+  alexSetUserState st { usJSBChunks = [], usLitStart = pn }
   alexSetStartCode jsbl
   alexMonadScan
 
--- | JS block: accumulate
+-- | JS block: accumulate (prepend chunk, O(1))
 accumJSBlock :: AlexAction Token
 accumJSBlock (_, _, bs, _) len = do
   st <- alexGetUserState
-  alexSetUserState st { usJSBVal = usJSBVal st ++ T.unpack (TE.decodeUtf8 (BSL.toStrict (BSL.take len bs))) }
+  alexSetUserState st { usJSBChunks = BSL.toStrict (BSL.take len bs) : usJSBChunks st }
   alexMonadScan
 
--- | JS block: end
+-- | JS block: end (decode once)
 endJSBlock :: AlexAction Token
 endJSBlock _ _ = do
   st <- alexGetUserState
-  let val = usJSBVal st
-  alexSetUserState st { usJSBVal = [], usTokenStart = usLitStart st }
+  let val = decodeChunks (usJSBChunks st)
+  alexSetUserState st { usJSBChunks = [], usTokenStart = usLitStart st }
   alexSetStartCode 0
   return (TkJSBlock val)
 
@@ -418,18 +428,19 @@ alexEOF = return TkEOF
 -- alexMonadScan :: Alex Token (in monadUserState wrapper).
 -- We record position before/after each scan call.
 -- The monadUserState-bytestring wrapper uses lazy ByteString, so we convert.
+-- TkEOF is not included in the output; callers use [] as the end sentinel.
 scanMany :: ByteString -> Either String [RangedToken]
 scanMany input = runAlex (BSL.fromStrict input) loop
   where
     loop :: Alex [RangedToken]
     loop = do
       tok <- alexMonadScan
-      (endPn, _, _, _) <- alexGetInput
-      startPn <- fmap usTokenStart alexGetUserState
-      let rt = RangedToken tok (toLoc startPn) (toLoc endPn)
       if tok == TkEOF
-        then return [rt]
+        then return []
         else do
+          (endPn, _, _, _) <- alexGetInput
+          startPn <- fmap usTokenStart alexGetUserState
+          let rt = RangedToken tok (toLoc startPn) (toLoc endPn)
           rest <- loop
           return (rt : rest)
 }

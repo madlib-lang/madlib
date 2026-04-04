@@ -40,11 +40,11 @@ data ParseError
 
 
 -- | Lex a ByteString, returning the token stream or an error
--- Filters out TkEOF so megaparsec's eof parser works correctly
+-- scanMany already excludes TkEOF tokens.
 lexBS :: BS.ByteString -> Either ParseError TokenStream
 lexBS bs = case scanMany bs of
   Left err -> Left (ParseLexError err)
-  Right ts -> Right (TokenStream (filter (\rt -> rtToken rt /= TkEOF) ts))
+  Right ts -> Right (TokenStream ts)
 
 
 -- | Parse a Madlib source string, returning either an error string or the AST
