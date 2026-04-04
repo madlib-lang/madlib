@@ -1,7 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 module Generate.Javascript.ModuleDoc where
 
-import           Data.Char (isSpace)
 import qualified Data.List as List
 import           Generate.Javascript.Doc
 import qualified Prettyprinter as Pretty
@@ -102,14 +101,11 @@ renderImportDoc imp = case imp of
 
 terminateJSLineDoc :: JSDoc -> JSDoc
 terminateJSLineDoc lineDoc =
-  let rendered = docRender lineDoc
-      stripped  = reverse $ dropWhile isSpace $ reverse rendered
-  in  if null stripped then
-        Pretty.emptyDoc
-      else if ";" `List.isSuffixOf` stripped || "}" `List.isSuffixOf` stripped then
-        lineDoc
-      else
-        lineDoc <> docText ";"
+  case docLastNonSpaceChar lineDoc of
+    Nothing  -> Pretty.emptyDoc
+    Just '}' -> lineDoc
+    Just ';' -> lineDoc
+    _        -> lineDoc <> docText ";"
 
 
 commaSepDocs :: [JSDoc] -> JSDoc

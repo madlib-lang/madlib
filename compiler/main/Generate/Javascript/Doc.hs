@@ -1,8 +1,11 @@
 module Generate.Javascript.Doc where
 
 import qualified Prettyprinter                 as Pretty
+import qualified Prettyprinter.Internal        as PrettyI
 import qualified Prettyprinter.Render.String   as PrettyString
 import qualified Data.Text                     as T
+import           Data.Char                      (isSpace)
+import           Control.Applicative             ((<|>))
 import           Explain.Location               (Area(..), Loc(..), emptyArea,
                                                  getLineFromStart, getColumnFromStart)
 import           Generate.Javascript.SourceMap  (Mapping(..))
@@ -178,3 +181,22 @@ docFromLines = docVsep . fmap docText
 
 rawDoc :: String -> JSDoc
 rawDoc = docFromLines . lines
+
+
+-- | Return the last non-whitespace character of a doc without rendering it
+-- to a String.  Traverses the rightmost path of the Cat tree, which is O(depth).
+-- Returns Nothing if the doc is empty or all-whitespace.
+docLastNonSpaceChar :: JSDoc -> Maybe Char
+docLastNonSpaceChar doc = case doc of
+  PrettyI.Empty          -> Nothing
+  PrettyI.Fail           -> Nothing
+  PrettyI.Char c         -> if isSpace c then Nothing else Just c
+  PrettyI.Text _ t       -> case T.dropWhileEnd isSpace t of
+                              t' | T.null t' -> Nothing
+                                 | otherwise -> Just (T.last t')
+  PrettyI.Line           -> Nothing
+  PrettyI.Cat l r        -> docLastNonSpaceChar r <|> docLastNonSpaceChar l
+  PrettyI.Annotated _ d  -> docLastNonSpaceChar d
+  PrettyI.Nest _ d       -> docLastNonSpaceChar d
+  PrettyI.FlatAlt _ r    -> docLastNonSpaceChar r
+  _                      -> Nothing
