@@ -22,6 +22,7 @@ import           Data.Constraint.Extras.TH (deriveArgDict)
 import           Data.Some
 import           Data.Hashable
 import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.UTF8 as BSU
@@ -70,7 +71,7 @@ data Query a where
 
   -- Monomorphization
   MonomorphizedProgram :: Query
-    ( Map.Map FunctionId MonomorphizationRequest
+    ( HM.HashMap FunctionId MonomorphizationRequest
     , Map.Map FilePath (Map.Map FilePath (Set.Set (String, Type, ImportType)))
     , Set.Set String
     )
