@@ -449,7 +449,7 @@ inferAssignment discardError options env e@(Can.Canonical area (Can.Assignment n
   let t2 = apply s t1
 
   mutationPs <-
-    if name `Set.member` envNamesInScope env && envInBody env && not discardError then do
+    if M.member name (envNamesInScope env) && envInBody env && not discardError then do
       pushError $ CompilationError BadMutation (Context (envCurrentPath env) area)
       return []
     else
@@ -486,7 +486,7 @@ inferMutate discardError options env e@(Can.Canonical area (Can.Mutate lhs exp))
   mutationPs <-
     case Can.getExpName lhs of
       Just name | not discardError ->
-        if name `Set.member` envNamesInScope env && envInBody env then
+        if M.member name (envNamesInScope env) && envInBody env then
           return [makeMutationPred (apply s t3) area]
         else
           throwError $ CompilationError (MutatingNotInScope name) (Context (envCurrentPath env) area)
@@ -1188,7 +1188,7 @@ inferImplicitlyTyped discardError options isLet env exp@(Can.Canonical area _) =
       tv <- newTVar Star
       return (env, tv)
 
-  (s, ps, t, e) <- infer discardError options env' { envNamesInScope = M.keysSet (envVars env) } exp
+  (s, ps, t, e) <- infer discardError options env' { envNamesInScope = envVars env } exp
   let env'' = apply s env'
 
   s' <- contextualUnify' env'' discardError exp (apply s tv) t
@@ -1237,7 +1237,7 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
         Nothing ->
           return env
 
-  (s, ps, t, e) <- infer discardError options env' { envNamesInScope = M.keysSet (envVars env) } exp
+  (s, ps, t, e) <- infer discardError options env' { envNamesInScope = envVars env } exp
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
   let sNorm = s `compose` s -- resolve internal substitution chains
   s'' <- catchError (contextualUnifyWithOrigin (if discardError then Discard else Strict) FromTypeAnnotation env canExp t' (apply sNorm t)) (throwError . limitContextArea 2)

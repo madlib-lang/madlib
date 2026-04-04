@@ -516,10 +516,9 @@ renameAST ast =
       env'                         = populateInitialEnv (aexps ast) env { currentModuleHash = moduleHash }
       (renamedImports, env'')      = renameImports env' $ aimports ast
       (renamedTypeDecls, env''')   = renameTypeDecls env'' $ atypedecls ast
-      (_, env'''')                 = renameTopLevelExps env''' $ aexps ast
-
-      -- we need a second pass as we may need to rename references above the current top level expression
-      (renamedExps, _)             = renameTopLevelExps env'''' $ aexps ast
+      -- populateInitialEnv already added all top-level hashed names to scope,
+      -- so no full first pass is needed to handle forward references.
+      (renamedExps, _)             = renameTopLevelExps env''' $ aexps ast
 
       dedupedImports               = dedupeNamedImports [] renamedImports
   in  ast { aexps = renamedExps, atypedecls = renamedTypeDecls, aimports = dedupedImports }

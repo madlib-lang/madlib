@@ -46,41 +46,47 @@ isNameInImportFast name hasDot ImportInfo { iiType, iiName }
 
 lookupVar :: Env -> String -> Infer Scheme
 lookupVar env name = do
-  let hasDot = '.' `elem` name
-  maybeType <- case List.find (isNameInImportFast name hasDot) $ envImportInfo env of
-    Just (ImportInfo path NameImport name) ->
-      Rock.fetch $ Query.ForeignScheme path name
+  -- Fast path: check local env first. Since solveImport adds all imported names to envVars,
+  -- most lookups (local vars, named imports) can be satisfied without touching envImportInfo.
+  let localResult = M.lookup name (envVars env) <|> M.lookup name (envMethods env)
+  maybeType <- case localResult of
+    Just _ -> return localResult
+    Nothing -> do
+      let hasDot = '.' `elem` name
+      case List.find (isNameInImportFast name hasDot) $ envImportInfo env of
+        Just (ImportInfo path NameImport name) ->
+          Rock.fetch $ Query.ForeignScheme path name
 
-    Just (ImportInfo path NamespaceImport _) ->
-      let afterNamespace = dropWhile (/= '.') name
-      in  if not (null afterNamespace) then do
-            let realName = tail afterNamespace
-            sc <- Rock.fetch $ Query.ForeignFunctionScheme path realName
-            exp <- Rock.fetch $ Query.ForeignExp path realName
-            ctor <- Rock.fetch $ Query.ForeignExportedConstructor path realName
-            (ast, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
-            let nameExports = Maybe.mapMaybe Slv.maybeExportName (Slv.aexps ast)
-            case exp of
-              Just e | Slv.isExport e ->
-                return sc
+        Just (ImportInfo path NamespaceImport _) ->
+          let afterNamespace = dropWhile (/= '.') name
+          in  if not (null afterNamespace) then do
+                let realName = tail afterNamespace
+                sc <- Rock.fetch $ Query.ForeignFunctionScheme path realName
+                exp <- Rock.fetch $ Query.ForeignExp path realName
+                ctor <- Rock.fetch $ Query.ForeignExportedConstructor path realName
+                (ast, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+                let nameExports = Maybe.mapMaybe Slv.maybeExportName (Slv.aexps ast)
+                case exp of
+                  Just e | Slv.isExport e ->
+                    return sc
 
-              _ ->
-                if Maybe.isJust ctor || realName `elem` nameExports then
-                  return sc
-                else
-                  return Nothing
-          else
-            Rock.fetch $ Query.ForeignFunctionScheme path ""
+                  _ ->
+                    if Maybe.isJust ctor || realName `elem` nameExports then
+                      return sc
+                    else
+                      return Nothing
+              else
+                Rock.fetch $ Query.ForeignFunctionScheme path ""
 
-    _ ->
-      return $ M.lookup name (envVars env) <|> M.lookup name (envMethods env)
+        _ ->
+          return Nothing
 
   case maybeType of
     Just sc ->
       return sc
 
     Nothing ->
-      let candidates = Set.toList $ Set.fromList $ M.keys (envVars env) ++ M.keys (envMethods env) ++ Set.toList (envNamesInScope env)
+      let candidates = Set.toList $ Set.fromList $ M.keys (envVars env) ++ M.keys (envMethods env) ++ M.keys (envNamesInScope env)
           suggestions = findSimilar name candidates
       in  throwError $ CompilationError (UnboundVariable name suggestions) NoContext
 
