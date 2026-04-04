@@ -132,8 +132,8 @@ emitConstructorValueDoc ctorName arity =
           <> "})"
   in  if arity == 0 then body else "(" <> docCurriedLambda args body <> ")"
 
-allowedJSNames :: [String]
-allowedJSNames = ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default", "break", "null"]
+allowedJSNames :: S.Set String
+allowedJSNames = S.fromList ["delete", "class", "while", "for", "case", "switch", "try", "length", "var", "default", "break", "null"]
 
 isGeneratedTestsName :: String -> Bool
 isGeneratedTestsName n = "__tests__" `isInfixOf` n
@@ -170,11 +170,11 @@ generateSafeName n =
   if '.' `elem` n then
     let namespace = takeWhile (/= '.') n
         name      = tail $ dropWhile (/= '.') n
-    in  if name `elem` allowedJSNames then
+    in  if name `S.member` allowedJSNames then
           namespace <> "." <> "_$_" <> name <> "_$_"
         else
           n
-  else if n `elem` allowedJSNames then
+  else if n `S.member` allowedJSNames then
     "_$_" <> n <> "_$_"
   else
     n
@@ -257,7 +257,7 @@ trimJS :: String -> String
 trimJS = reverse . dropWhile isSpace . reverse . dropWhile isSpace
 
 isJSIdentifierChar :: Char -> Bool
-isJSIdentifierChar c = c == '_' || c == '$' || c == '\'' || c == '#' || c == '.' || c `elem` ['0' .. '9'] || c `elem` ['A' .. 'Z'] || c `elem` ['a' .. 'z']
+isJSIdentifierChar c = c == '_' || c == '$' || c == '\'' || c == '#' || c == '.' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
 
 stripBindingKeyword :: String -> Maybe String
 stripBindingKeyword s =
@@ -802,7 +802,7 @@ emitExp env config (Typed qt area metadata exp) =
 
                _ ->
                  let content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
-                     needsModifier = notElem safeName $ varsInScope env
+                     needsModifier = not (safeName `S.member` varsInScope env)
                      declKeyword = if inBody env then "let " else "var "
                      assignment = (if needsModifier then declKeyword else "") <> docText safeName <> " = " <> content
                      needsModuleInit =
@@ -1585,7 +1585,7 @@ emitModuleInitBody env config (exp : es) =
       let safeName = generateSafeName name
           nextEnv  = env { varsInScope = S.insert name (varsInScope env) }
           needsInit =
-            notElem safeName (varsInScope env)
+            not (safeName `S.member` varsInScope env)
               && not (isGeneratedTestsName safeName)
               && rhsNeedsModuleInit rhs
           content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config rhs
@@ -1595,7 +1595,7 @@ emitModuleInitBody env config (exp : es) =
       let safeName = generateSafeName name
           nextEnv  = env { varsInScope = S.insert name (varsInScope env) }
           needsInit =
-            notElem safeName (varsInScope env)
+            not (safeName `S.member` varsInScope env)
               && not (isGeneratedTestsName safeName)
               && rhsNeedsModuleInit rhs
           content = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config rhs

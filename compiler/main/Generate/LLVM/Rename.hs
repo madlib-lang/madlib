@@ -25,6 +25,8 @@ data Env
     -- ^ Name of the default import as key set of used names as value, eg. List.filter coming from import List from "List"
     , defaultImportHashes :: Map.Map String String
     -- ^ Keys are the imported namespace eg. import List from "List", and the value is the hash of the module
+    , pathHashes :: Map.Map FilePath String
+    -- ^ Memoized generateHashFromPath results
     }
     deriving(Eq, Show)
 
@@ -43,6 +45,16 @@ addDefaultImportNameUsage defaultImportName objectName env@Env{ usedDefaultImpor
   let setForName = Maybe.fromMaybe Set.empty $ Map.lookup defaultImportName usedDefaultImportNames
       extended   = Set.insert objectName setForName
   in  env { usedDefaultImportNames = Map.insert defaultImportName extended usedDefaultImportNames }
+
+
+-- | Memoized generateHashFromPath: returns hash and updated env with cache entry.
+cachedHashFromPath :: FilePath -> Env -> (String, Env)
+cachedHashFromPath path env@Env{ pathHashes } =
+  case Map.lookup path pathHashes of
+    Just h  -> (h, env)
+    Nothing ->
+      let h = generateHashFromPath path
+      in  (h, env { pathHashes = Map.insert path h pathHashes })
 
 
 hashName :: Env -> String -> String
@@ -106,8 +118,9 @@ renameExp env what = case what of
   Typed qt@(_ :=> t) area metadata (Var name True) ->
     let returnType = getReturnType t
         tcon = getConstructorCon returnType
-        hash = generateHashFromPath (getTConPath tcon)
-    in  (Typed qt area metadata (Var (addHashToName hash name) True), env)
+        path = getTConPath tcon
+        (hash, env') = cachedHashFromPath path env
+    in  (Typed qt area metadata (Var (addHashToName hash name) True), env')
 
   Typed t area metadata (Var name isConstructor) -> case break (== '.') name of
     -- A normal name
@@ -408,8 +421,8 @@ renamePostProcessedNames env hash solvedNames = case solvedNames of
 renameImport :: Env -> Import -> (Import, Env)
 renameImport env imp = case imp of
   Untyped area metadata (NamedImport names relPath absPath) ->
-    let moduleHash           = generateHashFromPath absPath
-        (renamedNames, env') = renamePostProcessedNames env moduleHash names
+    let (moduleHash, env'')  = cachedHashFromPath absPath env
+        (renamedNames, env') = renamePostProcessedNames env'' moduleHash names
     in  (Untyped area metadata (NamedImport renamedNames relPath absPath), env')
 
   _ ->
@@ -497,6 +510,7 @@ renameAST ast =
             , currentModuleHash = ""
             , usedDefaultImportNames = Map.empty
             , defaultImportHashes = Map.empty
+            , pathHashes = Map.empty
             }
       moduleHash                   = hashModulePath ast
       env'                         = populateInitialEnv (aexps ast) env { currentModuleHash = moduleHash }
