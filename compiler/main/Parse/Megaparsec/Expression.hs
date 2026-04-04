@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict #-}
-{-# OPTIONS_GHC -O2 #-}
+{-# OPTIONS_GHC -O3 #-}
 module Parse.Megaparsec.Expression
   ( pExp
   , pBodyExp

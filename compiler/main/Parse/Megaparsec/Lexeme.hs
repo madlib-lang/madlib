@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict #-}
-{-# OPTIONS_GHC -O2 #-}
+{-# OPTIONS_GHC -O3 #-}
 -- | Token-based lexeme parsers for Madlib.
 -- Each combinator matches a specific Token constructor in the RangedToken stream.
 module Parse.Megaparsec.Lexeme

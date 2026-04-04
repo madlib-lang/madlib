@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# OPTIONS_GHC -O2 #-}
+{-# OPTIONS_GHC -O3 #-}
 -- | Megaparsec Stream instance for a list of RangedToken.
 -- Enables using a pre-lexed token list as the input to Megaparsec parsers.
 module Parse.Lexer.TokenStream

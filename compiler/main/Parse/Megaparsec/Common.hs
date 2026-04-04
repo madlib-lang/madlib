@@ -2,7 +2,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# OPTIONS_GHC -O2 #-}
+{-# OPTIONS_GHC -O3 #-}
 module Parse.Megaparsec.Common
   ( Parser
   , ParserState(..)
