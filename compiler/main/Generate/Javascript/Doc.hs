@@ -27,10 +27,11 @@ docVsep = Pretty.vsep
 
 
 -- | Render to a plain String, discarding all source-map annotations.
+-- Note: PrettyString.renderString ignores annotations, so unAnnotate is not needed.
 docRenderWithWidth :: Int -> JSDoc -> String
 docRenderWithWidth width doc =
   let layoutOptions = Pretty.LayoutOptions { Pretty.layoutPageWidth = Pretty.AvailablePerLine width 1.0 }
-      stream = Pretty.layoutPretty layoutOptions (Pretty.unAnnotate doc)
+      stream = Pretty.layoutPretty layoutOptions doc
   in  PrettyString.renderString stream
 
 
