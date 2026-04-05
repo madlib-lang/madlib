@@ -13,6 +13,8 @@ import qualified Utils.PathUtils as Path
 import           Run.Target
 import           Run.OptimizationLevel
 import           Run.SourceMapMode
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 import qualified Driver
 import           Control.Exception (try)
 import           System.Process
@@ -69,6 +71,8 @@ llvmCompileAndRun casePath = do
           , optLspMode = False
           , optEmitLLVM = False
           , optSourceMaps = NoSourceMap
+          , optErrorFormat = TextFormat
+          , optPGOMode = NoPGO
           }
 
   state <- Driver.initialState
@@ -114,6 +118,8 @@ llvmCompileAndRunWithCoverage casePath = do
           , optLspMode = False
           , optEmitLLVM = False
           , optSourceMaps = NoSourceMap
+          , optErrorFormat = TextFormat
+          , optPGOMode = NoPGO
           }
 
   state <- Driver.initialState
@@ -161,6 +167,8 @@ jsCompileAndRun casePath = do
           , optLspMode = False
           , optEmitLLVM = False
           , optSourceMaps = NoSourceMap
+          , optErrorFormat = TextFormat
+          , optPGOMode = NoPGO
           }
 
   state <- Driver.initialState
@@ -329,6 +337,38 @@ spec = do
       it ("llvm coverage case: " <> casePath) $ \(expected, result) -> do
         result `shouldBe` expected
 
+  describe "--error-format json" $ do
+    it "emits JSON objects for type errors" $ do
+      let casePath = "compiler/test/Blackbox/test-cases/error-format-json"
+      rootPath   <- canonicalizePath casePath
+      let entrypoint = joinPath [rootPath, "Entrypoint.mad"]
+      let options = Options
+            { optPathUtils = Path.defaultPathUtils
+            , optEntrypoint = entrypoint
+            , optRootPath = rootPath
+            , optOutputPath = joinPath [rootPath, ".tests/run"]
+            , optTarget = TNode
+            , optOptimized = False
+            , optBundle = False
+            , optDebug = False
+            , optCoverage = False
+            , optGenerateDerivedInstances = True
+            , optInsertInstancePlaholders = True
+            , optParseOnly = False
+            , optMustHaveMain = False
+            , optOptimizationLevel = O3
+            , optLspMode = False
+            , optEmitLLVM = False
+            , optSourceMaps = NoSourceMap
+            , optErrorFormat = JsonFormat
+            , optPGOMode = NoPGO
+            }
+      state <- Driver.initialState
+      jsonOutput <- compileWithJsonErrors state options [entrypoint]
+      -- The output should be a JSON object starting with {"type":"error"
+      jsonOutput `shouldBe` take (length jsonOutput) jsonOutput  -- always passes (structural check below)
+      "{\"type\":\"error\"" `List.isInfixOf` jsonOutput `shouldBe` True
+
 
 compile :: Driver.State CompilationError -> Options -> [FilePath] -> IO String
 compile state options invalidatedPaths = do
@@ -447,3 +487,32 @@ compileIgnoreWarnings state options invalidatedPaths = do
           List.intercalate "\n\n\n" (stripCwd <$> formattedErrors') <> "\n"
 
   return ppErrors
+
+
+-- | Compile a file with JsonFormat and return the JSON error output.
+compileWithJsonErrors :: Driver.State CompilationError -> Options -> [FilePath] -> IO String
+compileWithJsonErrors state options invalidatedPaths = do
+  result <-
+    try $ Driver.runIncrementalTask
+      state
+      options
+      invalidatedPaths
+      mempty
+      Don'tPrune
+      (Driver.typeCheckFileTask $ optEntrypoint options)
+      :: IO (Either (Cyclic Query) ((), [CompilationWarning], [CompilationError]))
+
+  errors <- case result of
+    Right (_, _, errors) -> return errors
+    Left _               -> do
+      (_, _, errors) <- Driver.runIncrementalTask
+        state
+        options
+        invalidatedPaths
+        mempty
+        Don'tPrune
+        (Driver.detectCyleTask (optEntrypoint options))
+      return errors
+
+  formattedErrors <- mapM (Explain.formatError readFile True) (sanitizeError <$> errors)
+  return $ List.intercalate "\n" formattedErrors

@@ -25,7 +25,7 @@ data DocItemPair
   deriving(Eq, Show)
 
 data DocItem
-  = DocItemExpression      { diName :: String, diDescription :: String, diExample :: String, diSince :: String, diType :: String }
+  = DocItemExpression      { diName :: String, diDescription :: String, diExample :: String, diSince :: String, diType :: String, diParamDocs :: [(String, String)], diReturnsDoc :: String, diDeprecatedDoc :: String }
   | DocItemTypeDeclaration { diName :: String, diParams :: String, diConstructors :: [String], diDescription :: String, diExample :: String, diSince :: String }
   | DocItemAlias           { diName :: String, diParams :: String, diAliasedType :: String, diDescription :: String, diExample :: String, diSince :: String }
   | DocItemInterface       { diName :: String, diVars :: String, diConstraints :: String, diMethods :: [String], diDescription :: String, diExample :: String, diSince :: String }
@@ -228,6 +228,22 @@ getSinceForDocItem docString = case docString of
   _ ->
     ""
 
+getParamDocsForDocItem :: Maybe DocString -> [(String, String)]
+getParamDocsForDocItem docString = case docString of
+  Just (FunctionDoc _ _ _ tags) -> findParamTags tags
+  _                             -> []
+
+getReturnsDocForDocItem :: Maybe DocString -> String
+getReturnsDocForDocItem docString = case docString of
+  Just (FunctionDoc _ _ _ tags) -> fromMaybe "" (findReturnsTag tags)
+  _                             -> ""
+
+getDeprecatedDocForDocItem :: Maybe DocString -> String
+getDeprecatedDocForDocItem docString = case docString of
+  Just (FunctionDoc _ _ _ tags) -> fromMaybe "" (findDeprecatedTag tags)
+  _                             -> ""
+
+
 buildExpressionDocItem :: [DocString] -> (String, Slv.Exp) -> DocItem
 buildExpressionDocItem docStrings (name, exp) =
   let typing      = formatType exp
@@ -235,7 +251,10 @@ buildExpressionDocItem docStrings (name, exp) =
       description = getDescriptionForDocItem docString
       example     = getExampleForDocItem docString
       since       = getSinceForDocItem docString
-  in  DocItemExpression { diName = name, diDescription = description, diExample = example, diSince = since, diType = typing }
+      params      = getParamDocsForDocItem docString
+      returns     = getReturnsDocForDocItem docString
+      deprecated  = getDeprecatedDocForDocItem docString
+  in  DocItemExpression { diName = name, diDescription = description, diExample = example, diSince = since, diType = typing, diParamDocs = params, diReturnsDoc = returns, diDeprecatedDoc = deprecated }
 
 
 buildTypeDeclarationDocItem :: [DocString] -> Slv.TypeDecl -> DocItem
@@ -358,8 +377,12 @@ buildDocItemPairs jsDocItems llvmDocItems = case jsDocItems of
 
 generateDocItem :: DocItem -> String
 generateDocItem docItem = case docItem of
-  DocItemExpression { diName, diDescription, diExample, diSince, diType } ->
-    "{\n"
+  DocItemExpression { diName, diDescription, diExample, diSince, diType, diParamDocs, diReturnsDoc, diDeprecatedDoc } ->
+    let paramsJson =
+          "[" <> intercalate ", "
+            ((\(n, d) -> "{\"name\": " <> escapeString n <> ", \"description\": " <> escapeString d <> "}") <$> diParamDocs)
+          <> "]"
+    in "{\n"
     <> indent 6
     <> "\"name\": "
     <> "\"" <> diName <> "\",\n"
@@ -374,7 +397,16 @@ generateDocItem docItem = case docItem of
     <> "\"" <> diSince <> "\",\n"
     <> indent 6
     <> "\"type\": "
-    <> "\"" <> diType <> "\"\n"
+    <> "\"" <> diType <> "\",\n"
+    <> indent 6
+    <> "\"params\": "
+    <> paramsJson <> ",\n"
+    <> indent 6
+    <> "\"returns\": "
+    <> escapeString diReturnsDoc <> ",\n"
+    <> indent 6
+    <> "\"deprecated\": "
+    <> escapeString diDeprecatedDoc <> "\n"
     <> indent 5
     <> "}"
 

@@ -70,9 +70,11 @@ import qualified Driver.Query                 as Query
 import qualified Rock
 import           Run.Options
 import           Run.OptimizationLevel
+import           Run.PGOMode (PGOMode(..))
 import qualified Utils.Path                   as Path
 import qualified Utils.IO                     as IOUtils
-import           Utils.Hash                   (generateHashFromPath)
+import           Utils.Hash                   (generateHashFromPath, hash)
+import qualified Data.ByteString.Lazy.Char8   as BLChar8
 import qualified Data.String.Utils            as ListUtils
 import qualified Canonicalize.Env             as CanEnv
 import qualified AST.Solved                   as Slv
@@ -477,7 +479,13 @@ compileModule mkCtx safeBitcastFn options ast@Core.AST { Core.apath = Just modul
 
 
 buildObjectFile :: Options -> LLVMAST.Module -> IO ByteString.ByteString
-buildObjectFile options astModule = do
+buildObjectFile options astModule = case optPGOMode options of
+  NoPGO -> buildObjectFileNative options astModule
+  pgo   -> buildObjectFileViaCLang options pgo astModule
+
+
+buildObjectFileNative :: Options -> LLVMAST.Module -> IO ByteString.ByteString
+buildObjectFileNative options astModule = do
   let optLevel' =
         case optOptimizationLevel options of
           O0 ->
@@ -516,6 +524,60 @@ buildObjectFile options astModule = do
               runPassManager pm mod'
               return mod'
           moduleObject target mod''
+
+
+-- | Compile via clang with PGO flags.  Runs the standard pass manager first
+-- (same as 'buildObjectFileNative') to lower old-style @ptrtoint@ constant
+-- expressions that clang 17 no longer accepts, then emits the processed IR to
+-- a temp file and calls @clang++ -c@ with the appropriate PGO flag.
+buildObjectFileViaCLang :: Options -> PGOMode -> LLVMAST.Module -> IO ByteString.ByteString
+buildObjectFileViaCLang options pgo astModule = do
+  let pgoFlag = case pgo of
+        PGOInstrument   -> "-fprofile-generate"
+        PGOOptimize f   -> "-fprofile-use=" <> f <> " -fprofile-correction"
+        NoPGO           -> ""
+  let optFlag = case optOptimizationLevel options of
+        O0 -> "-O0"; O1 -> "-O1"; O2 -> "-O2"; O3 -> "-O3"
+  -- Use per-module source filename for unique temp files (avoids race on parallel builds).
+  -- We take 16 hex chars of the MD5 for low collision probability.
+  let modPath    = Char8.unpack $ ShortByteString.fromShort $ LLVMAST.moduleSourceFileName astModule
+      pathHash   = Prelude.take 16 $ hash $ BLChar8.pack modPath
+      tmpIR      = "/tmp/madlib_pgo_" <> pathHash <> ".ll"
+      tmpObj     = "/tmp/madlib_pgo_" <> pathHash <> ".o"
+  let optLevel' = case optOptimizationLevel options of
+        O0 -> Nothing
+        O1 -> Just 1
+        O2 -> Just 2
+        O3 -> Just 3
+  let isO0 = optOptimizationLevel options == O0
+  let inlineThreshold = if optDebug options || isO0 then Nothing else Just 200
+  withContext $ \ctx ->
+    withModuleFromAST ctx astModule $ \mod' -> do
+      -- Run pass manager first so that constant-expression ptrtoint nodes (the
+      -- "sizeof idiom") are lowered to ordinary instructions that clang 17 accepts.
+      mod'' <-
+        withPassManager
+          defaultCuratedPassSetSpec
+            { optLevel                          = optLevel'
+            , useInlinerWithThreshold           = inlineThreshold
+            , simplifyLibCalls                  = if isO0 then Nothing else Just True
+            , loopVectorize                     = if isO0 then Just False else Just True
+            , superwordLevelParallelismVectorize = if isO0 then Just False else Just True
+            }
+          $ \pm -> do
+            runPassManager pm mod'
+            return mod'
+      ir <- moduleLLVMAssembly mod''
+      ByteString.writeFile tmpIR ir
+      -- llvm-hs emits `ptrtoint (i64 N to i64)` no-op constant expressions that
+      -- clang 17 rejects as invalid casts.  Strip the outer wrapper to leave just N.
+      callCommand $ "sed -i '' 's/ptrtoint (i64 \\([0-9][0-9]*\\) to i64)/\\1/g' " <> tmpIR
+      callCommand $ "clang++ -c " <> optFlag <> " " <> pgoFlag
+                    <> " -Wno-override-module"
+                    <> " -x ir " <> tmpIR <> " -o " <> tmpObj
+      result <- ByteString.readFile tmpObj
+      callCommand $ "rm -f " <> tmpIR <> " " <> tmpObj
+      return result
 
 
 emitLLVMIR :: Options -> LLVMAST.Module -> IO ByteString.ByteString
@@ -586,6 +648,11 @@ buildTarget options staticLibs entrypoint = do
           O1 -> "-O1"
           O2 -> "-O2"
           O3 -> "-O3"
+      pgoLinkerFlag         =
+        case optPGOMode options of
+          NoPGO         -> ""
+          PGOInstrument -> " -fprofile-generate"
+          PGOOptimize f -> " -fprofile-use=" <> f <> " -fprofile-correction"
 
   liftIO $ IOUtils.putStrLnAndFlush "Linking.."
 
@@ -600,7 +667,7 @@ buildTarget options staticLibs entrypoint = do
   case DistributionSystem.buildOS of
     DistributionSystem.OSX ->
       liftIO $ callCommand $
-        "clang++ -flto -dead_strip -foptimize-sibling-calls " <> linkerOptFlag <> " "
+        "clang++ -flto -dead_strip -foptimize-sibling-calls " <> linkerOptFlag <> pgoLinkerFlag <> " "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
@@ -612,7 +679,7 @@ buildTarget options staticLibs entrypoint = do
 
     DistributionSystem.Windows ->
       liftIO $ callCommand $
-        "g++ -static " <> linkerOptFlag <> " "
+        "g++ -static " <> linkerOptFlag <> pgoLinkerFlag <> " "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
@@ -623,7 +690,7 @@ buildTarget options staticLibs entrypoint = do
 
     _ ->
       liftIO $ callCommand $
-        "g++ -static " <> linkerOptFlag <> " "
+        "g++ -static " <> linkerOptFlag <> pgoLinkerFlag <> " "
         <> objectFilePathsForCli
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt

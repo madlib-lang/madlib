@@ -24,11 +24,13 @@ import           System.Console.ANSI
 import           Rock (Cyclic)
 import           System.Exit (exitFailure)
 import           Run.OptimizationLevel (OptimizationLevel(O0))
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 import           System.IO (hPutStr, stderr)
 
 
 runCompilation :: Command -> IO ()
-runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized target watchMode coverage optLevel emitLLVM sourceMaps)
+runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized target watchMode coverage optLevel emitLLVM sourceMaps errorFmt pgoMode)
   = do
     canonicalEntrypoint <- canonicalizePath entrypoint
     canonicalOutputPath <- canonicalizePath outputPath
@@ -65,6 +67,8 @@ runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized t
             , optParseOnly = False
             , optEmitLLVM = emitLLVM
             , optSourceMaps = sourceMaps
+            , optErrorFormat = errorFmt
+            , optPGOMode = pgoMode
             }
 
     when verbose $ do
@@ -131,8 +135,9 @@ runCompilationTask watchMode state options invalidatedPaths = do
 
         return (warnings, errors)
 
-    formattedWarnings <- mapM (Explain.formatWarning readFile False) $ removeDuplicates warnings
-    formattedErrors   <- mapM (Explain.formatError readFile False) $ removeDuplicates errors
+    let isJson = optErrorFormat options == JsonFormat
+    formattedWarnings <- mapM (Explain.formatWarning readFile isJson) $ removeDuplicates warnings
+    formattedErrors   <- mapM (Explain.formatError readFile isJson) $ removeDuplicates errors
 
     putStrLn $ List.intercalate "\n" formattedWarnings
     hPutStr stderr $ List.intercalate "\n" formattedErrors

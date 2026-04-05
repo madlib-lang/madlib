@@ -44,6 +44,8 @@ import           GHC.IO.Handle
 import           GHC.IO.Handle.FD
 import           Run.OptimizationLevel (OptimizationLevel)
 import           Run.SourceMapMode
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 
 import           System.IO (hPutStrLn, stderr)
 
@@ -55,8 +57,8 @@ backToTopCode :: String
 backToTopCode = "\x1b[0;0H"
 
 
-runTests :: String -> Target -> Bool -> Bool -> Bool -> OptimizationLevel -> Maybe String -> Maybe Int -> Bool -> IO ()
-runTests entrypoint target debug watchMode coverage optLevel suiteFilter testIndex emitLLVM = do
+runTests :: String -> Target -> Bool -> Bool -> Bool -> OptimizationLevel -> Maybe String -> Maybe Int -> Bool -> ErrorFormat -> IO ()
+runTests entrypoint target debug watchMode coverage optLevel suiteFilter testIndex emitLLVM errorFmt = do
   canonicalEntrypoint <- canonicalizePath entrypoint
   rootPath            <- canonicalizePath "./"
 
@@ -92,6 +94,8 @@ runTests entrypoint target debug watchMode coverage optLevel suiteFilter testInd
           , optLspMode = False
           , optEmitLLVM = emitLLVM
           , optSourceMaps = NoSourceMap
+          , optErrorFormat = errorFmt
+          , optPGOMode = NoPGO
           }
 
   runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint []

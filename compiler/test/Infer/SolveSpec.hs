@@ -23,6 +23,8 @@ import           Error.Error
 import           Run.Target
 import           Run.OptimizationLevel
 import           Run.SourceMapMode
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 import           Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
 import           Error.Warning
@@ -73,6 +75,8 @@ buildOptions entrypoint pathUtils =
     , optLspMode = False
     , optEmitLLVM = False
     , optSourceMaps = NoSourceMap
+    , optErrorFormat = TextFormat
+          , optPGOMode = NoPGO
     }
 
 

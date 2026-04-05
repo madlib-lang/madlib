@@ -125,6 +125,7 @@ library
       Run.CommandLine
       Run.Compile
       Run.Config
+      Run.ErrorFormat
       Run.Format
       Run.GenerateDocumentation
       Run.GeneratePackage
@@ -132,8 +133,10 @@ library
       Run.OptimizationLevel
       Run.Options
       Run.Package
+      Run.PackageAdd
       Run.PackageHash
       Run.PackageInstaller
+      Run.PGOMode
       Run.Repl
       Run.Run
       Run.SourceMapMode
@@ -466,6 +469,7 @@ test-suite madlib-test
   main-is: Spec.hs
   other-modules:
       Blackbox.RunnerSpec
+      DocStringSpec
       Explain.FormatSpec
       FuzzSpec
       Generate.JSInternalsSpec

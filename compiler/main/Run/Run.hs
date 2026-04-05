@@ -26,6 +26,8 @@ import           Run.CommandLine
 import           Utils.Path (computeTargetPath)
 import           Run.OptimizationLevel
 import           Run.SourceMapMode
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 import           System.IO (stdout)
 import           System.IO.Silently
 import           Run.Target
@@ -100,6 +102,8 @@ runModule target input args watchMode exePath = do
           , optLspMode = False
           , optEmitLLVM = False
           , optSourceMaps = NoSourceMap
+          , optErrorFormat = TextFormat
+          , optPGOMode = NoPGO
           , optParseOnly = False
           }
 

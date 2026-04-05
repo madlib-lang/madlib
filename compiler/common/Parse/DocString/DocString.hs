@@ -22,6 +22,9 @@ data DocString
 data DocStringTag
   = ExampleTag SourceTarget String
   | SinceTag SourceTarget String
+  | ParamTag SourceTarget String String   -- ^ parameter name, description
+  | ReturnsTag SourceTarget String        -- ^ description
+  | DeprecatedTag SourceTarget String     -- ^ message
   deriving(Eq, Show, Generic, Hashable)
 
 getTagContent :: DocStringTag -> String
@@ -30,6 +33,15 @@ getTagContent tag = case tag of
     c
 
   SinceTag _ c ->
+    c
+
+  ParamTag _ _ c ->
+    c
+
+  ReturnsTag _ c ->
+    c
+
+  DeprecatedTag _ c ->
     c
 
 isExampleTag :: DocStringTag -> Bool
@@ -57,6 +69,37 @@ findSinceTag :: [DocStringTag] -> Maybe String
 findSinceTag tags =
   let found = find isSinceTag tags
   in  getTagContent <$> found
+
+isParamTag :: DocStringTag -> Bool
+isParamTag tag = case tag of
+  ParamTag _ _ _ -> True
+  _              -> False
+
+findParamTags :: [DocStringTag] -> [(String, String)]
+findParamTags tags =
+  [ (name, desc) | ParamTag _ name desc <- tags ]
+
+isReturnsTag :: DocStringTag -> Bool
+isReturnsTag tag = case tag of
+  ReturnsTag _ _ -> True
+  _              -> False
+
+findReturnsTag :: [DocStringTag] -> Maybe String
+findReturnsTag tags =
+  case find isReturnsTag tags of
+    Just (ReturnsTag _ c) -> Just c
+    _                     -> Nothing
+
+isDeprecatedTag :: DocStringTag -> Bool
+isDeprecatedTag tag = case tag of
+  DeprecatedTag _ _ -> True
+  _                 -> False
+
+findDeprecatedTag :: [DocStringTag] -> Maybe String
+findDeprecatedTag tags =
+  case find isDeprecatedTag tags of
+    Just (DeprecatedTag _ c) -> Just c
+    _                        -> Nothing
 
 
 

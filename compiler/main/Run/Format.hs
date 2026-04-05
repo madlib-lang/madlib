@@ -25,6 +25,8 @@ import           Run.Target
 import Explain.Format (formatError)
 import Run.OptimizationLevel (OptimizationLevel(..))
 import Run.SourceMapMode
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 
 
 
@@ -62,6 +64,8 @@ parseASTsToFormat  (fp : fps)   = do
                               , optLspMode = False
                               , optEmitLLVM = False
                               , optSourceMaps = NoSourceMap
+                              , optErrorFormat = TextFormat
+          , optPGOMode = NoPGO
                               }
         ast <- case parseForFormatter code of
           Right a ->

@@ -58,6 +58,7 @@ import qualified AST.Canonical         as Can
 import qualified Canonicalize.EnvUtils as CanEnv
 import Driver.Query (Query(CanonicalizedASTWithEnv))
 import qualified AST.Source as Src
+import           Parse.DocString.DocString (DocString(..), DocStringTag(..), findParamTags, findReturnsTag, findDeprecatedTag)
 import qualified Canonicalize.Typing as Can
 import qualified Infer.Typing as Slv
 import qualified Canonicalize.Env as CanEnv
@@ -66,6 +67,8 @@ import System.FilePath (takeFileName, dropExtension, takeExtension, (</>))
 import qualified Data.HashMap.Strict as HashMap
 import Run.OptimizationLevel
 import Run.SourceMapMode
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 import Data.Maybe (isJust)
 import GHC.Base (when)
 import Language.LSP.VFS (virtualFileText)
@@ -182,6 +185,48 @@ handlers state autocompletionState = mconcat
             responder $ Right $ Aeson.toJSON hints
           Nothing ->
             responder $ Right $ Aeson.toJSON ([] :: [Aeson.Value])
+
+  -- Feature 5: Semantic tokens (textDocument/semanticTokens/full)
+  , requestHandler (SCustomMethod "textDocument/semanticTokens/full") $ \req responder ->
+      recordAndPrintDuration "semanticTokens" $ do
+        let RequestMessage _ _ _ reqParams = req
+        case Aeson.parseMaybe parseSemanticTokensParams reqParams of
+          Just uri -> do
+            tokens <- getSemanticTokens state (uriToPath uri)
+            responder $ Right $ Aeson.toJSON tokens
+          Nothing ->
+            responder $ Right $ Aeson.object ["data" .= ([] :: [Int])]
+
+  -- Feature 9: Call hierarchy
+  , requestHandler (SCustomMethod "textDocument/prepareCallHierarchy") $ \req responder ->
+      recordAndPrintDuration "prepareCallHierarchy" $ do
+        let RequestMessage _ _ _ reqParams = req
+        case Aeson.parseMaybe parsePositionParams reqParams of
+          Just (uri, line, col) -> do
+            items <- prepareCallHierarchy state (uriToPath uri) line col
+            responder $ Right $ Aeson.toJSON items
+          Nothing ->
+            responder $ Right $ Aeson.toJSON ([] :: [Aeson.Value])
+
+  , requestHandler (SCustomMethod "callHierarchy/incomingCalls") $ \req responder ->
+      recordAndPrintDuration "callHierarchyIncoming" $ do
+        let RequestMessage _ _ _ reqParams = req
+        case Aeson.parseMaybe parseCallHierarchyItemParam reqParams of
+          Just (itemName, itemUri) -> do
+            calls <- getIncomingCalls state itemName itemUri
+            responder $ Right $ Aeson.toJSON calls
+          Nothing ->
+            responder $ Right $ Aeson.toJSON ([] :: [Aeson.Value])
+
+  , requestHandler (SCustomMethod "callHierarchy/outgoingCalls") $ \req responder ->
+      recordAndPrintDuration "callHierarchyOutgoing" $ do
+        let RequestMessage _ _ _ reqParams = req
+        case Aeson.parseMaybe parseCallHierarchyItemParam reqParams of
+          Just (itemName, itemUri) -> do
+            calls <- getOutgoingCalls state itemName itemUri
+            responder $ Right $ Aeson.toJSON calls
+          Nothing ->
+            responder $ Right $ Aeson.toJSON ([] :: [Aeson.Value])
   ]
 
 
@@ -244,6 +289,8 @@ buildOptions target = do
       , Options.optEmitLLVM = False
       , Options.optSourceMaps = NoSourceMap
       , Options.optDebug = False
+      , Options.optErrorFormat = TextFormat
+      , Options.optPGOMode = NoPGO
       }
 
 
@@ -728,6 +775,12 @@ isSyntheticName name = "__" `List.isPrefixOf` name
 nodeToHoverInfo :: Rock.MonadFetch Query.Query m => FilePath -> Node -> m String
 nodeToHoverInfo modulePath node = do
   (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
+  docStrings <- Rock.fetch $ Query.DocStrings modulePath
+  let findDocTags name =
+        let found = List.find (\ds -> case ds of { FunctionDoc _ n _ _ -> n == name; _ -> False }) docStrings
+        in case found of
+          Just (FunctionDoc _ _ _ tags) -> tags
+          _                             -> []
   nodeInfo <- case node of
     ExpNode topLevel (Slv.Typed qt _ (Slv.Assignment name _)) ->
       return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
@@ -867,6 +920,29 @@ nodeToHoverInfo modulePath node = do
     _ ->
       return ""
 
+  let maybeName = case node of
+        ExpNode _ (Slv.Typed _ _ (Slv.Assignment name _)) -> Just name
+        ExpNode _ (Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _)) -> Just name
+        ExpNode _ (Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _)) -> Just name
+        NameNode _ (Slv.Typed _ _ name) -> Just name
+        _ -> Nothing
+      docTagsSection = case maybeName of
+        Just name ->
+          let tags       = findDocTags name
+              params     = findParamTags tags
+              returns    = findReturnsTag tags
+              deprecated = findDeprecatedTag tags
+              paramLines =
+                if null params then ""
+                else "\n\n**Parameters:**\n" <> List.intercalate "\n" ((\(n, d) -> "- `" <> n <> "` — " <> d) <$> params)
+              returnsLine = case returns of
+                Just r  -> "\n\n**Returns:** " <> r
+                Nothing -> ""
+              deprecatedLine = case deprecated of
+                Just d  -> "\n\n⚠️ *Deprecated: " <> d <> "*"
+                Nothing -> ""
+          in  paramLines <> returnsLine <> deprecatedLine
+        Nothing -> ""
   return $
     "```madlib\n"
     <> nodeInfo
@@ -877,6 +953,7 @@ nodeToHoverInfo modulePath node = do
     <> "' at line "
     <> show (getNodeLine node)
     <> "*"
+    <> docTagsSection
 
 
 getAutocompletionSuggestions :: State -> Loc -> FilePath -> String -> LspM () [(String, String, CompletionItemKind)]
@@ -1089,6 +1166,238 @@ inlayHintTask :: Int -> Int -> FilePath -> Rock.Task Query.Query [Aeson.Value]
 inlayHintTask startLine endLine path = do
   (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
   return $ collectInlayHints startLine endLine (Slv.aexps typedAst)
+
+
+-- Semantic Tokens (Feature 5)
+
+-- Token type indices (must match legend advertised to client)
+tokenTypeFunction, tokenTypeVariable, tokenTypeEnumMember, tokenTypeType :: Int
+tokenTypeFunction   = 0
+tokenTypeVariable   = 1
+tokenTypeEnumMember = 2
+tokenTypeType       = 3
+
+parseSemanticTokensParams :: Aeson.Value -> Aeson.Parser Uri
+parseSemanticTokensParams = Aeson.withObject "SemanticTokensParams" $ \o -> do
+  td  <- o .: "textDocument"
+  uri <- td .: "uri"
+  return (Uri uri)
+
+-- | Encode a list of (line, col, len, tokenType, modifiers) as LSP delta-encoded data
+encodeSemanticTokens :: [(Int, Int, Int, Int, Int)] -> [Int]
+encodeSemanticTokens tokens = go 0 0 (List.sortOn (\(l,c,_,_,_) -> (l,c)) tokens)
+  where
+    go _ _ [] = []
+    go prevLine prevChar ((line, char, len, ttype, mods) : rest) =
+      let deltaLine = line - prevLine
+          deltaChar = if deltaLine == 0 then char - prevChar else char
+      in  deltaLine : deltaChar : len : ttype : mods : go line char rest
+
+collectSemanticTokens :: [Slv.Exp] -> [(Int, Int, Int, Int, Int)]
+collectSemanticTokens = concatMap collectFromExp
+  where
+    collectFromExp exp = case exp of
+      Slv.Typed _ area (Slv.Assignment name body)
+        | not (isSyntheticName name) ->
+          let line = Loc.getLine (getStartLoc area) - 1
+              col  = Loc.getCol (getStartLoc area) - 1
+              len  = length (sanitizeName name)
+          in  (line, col, len, tokenTypeFunction, 0) : collectFromBody body
+
+      Slv.Typed _ _ (Slv.Export inner) ->
+        collectFromExp inner
+
+      Slv.Typed _ _ (Slv.TypedExp inner _ _) ->
+        collectFromExp inner
+
+      _ ->
+        []
+
+    collectFromBody body = case body of
+      Slv.Typed _ _ (Slv.Abs _ exps) ->
+        concatMap collectFromExp exps
+      Slv.Typed _ _ (Slv.Do exps) ->
+        concatMap collectFromExp exps
+      _ ->
+        []
+
+semanticTokensTask :: FilePath -> Rock.Task Query.Query [Int]
+semanticTokensTask path = do
+  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+  let raw = collectSemanticTokens (Slv.aexps typedAst)
+  return $ encodeSemanticTokens raw
+
+getSemanticTokens :: State -> FilePath -> LspM () Aeson.Value
+getSemanticTokens state path = do
+  options <- buildOptions TNode
+  result <- liftIO $ safeRunTask state options { optEntrypoint = path }
+              Driver.Don'tPrune mempty mempty (semanticTokensTask path)
+  case result of
+    Just (tokenData, _, _) ->
+      return $ Aeson.object ["data" .= tokenData]
+    Nothing ->
+      return $ Aeson.object ["data" .= ([] :: [Int])]
+
+
+-- Call Hierarchy (Feature 9)
+
+parsePositionParams :: Aeson.Value -> Aeson.Parser (Uri, Int, Int)
+parsePositionParams = Aeson.withObject "CallHierarchyPrepareParams" $ \o -> do
+  td  <- o .: "textDocument"
+  uri <- td .: "uri"
+  pos <- o .: "position"
+  line <- pos .: "line"
+  col  <- pos .: "character"
+  return (Uri uri, line, col)
+
+parseCallHierarchyItemParam :: Aeson.Value -> Aeson.Parser (String, String)
+parseCallHierarchyItemParam = Aeson.withObject "CallHierarchyParams" $ \o -> do
+  item <- o .: "item"
+  name <- item .: "name"
+  uri  <- item .: "uri"
+  return (name, uri)
+
+callHierarchyItem :: String -> String -> Int -> Int -> Aeson.Value
+callHierarchyItem name uri line col =
+  Aeson.object
+    [ "name"           .= name
+    , "kind"           .= (12 :: Int)  -- SymbolKind.Function = 12
+    , "uri"            .= uri
+    , "range"          .= Aeson.object
+        [ "start" .= Aeson.object ["line" .= line, "character" .= col]
+        , "end"   .= Aeson.object ["line" .= line, "character" .= (col + length name)]
+        ]
+    , "selectionRange" .= Aeson.object
+        [ "start" .= Aeson.object ["line" .= line, "character" .= col]
+        , "end"   .= Aeson.object ["line" .= line, "character" .= (col + length name)]
+        ]
+    ]
+
+-- | Find the top-level function at the given position and return a CallHierarchyItem
+prepareCallHierarchy :: State -> FilePath -> Int -> Int -> LspM () [Aeson.Value]
+prepareCallHierarchy state path line col = do
+  options <- buildOptions TNode
+  let uriStr = T.unpack $ getUri $ pathToUri path
+  result <- liftIO $ safeRunTask state options { optEntrypoint = path }
+              Driver.Don'tPrune mempty mempty $ do
+    (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+    let loc = Loc 0 (line + 1) (col + 1)
+    return $ Maybe.mapMaybe (findTopLevelFnAt loc uriStr) (Slv.aexps typedAst)
+  case result of
+    Just (items, _, _) -> return items
+    Nothing            -> return []
+
+findTopLevelFnAt :: Loc -> String -> Slv.Exp -> Maybe Aeson.Value
+findTopLevelFnAt loc uriStr exp = case exp of
+  Slv.Typed _ area (Slv.Assignment name _)
+    | not (isSyntheticName name) && areaContainsLoc area loc ->
+      let l = Loc.getLine (getStartLoc area) - 1
+          c = Loc.getCol (getStartLoc area) - 1
+      in  Just $ callHierarchyItem (sanitizeName name) uriStr l c
+
+  Slv.Typed _ _ (Slv.Export inner) ->
+    findTopLevelFnAt loc uriStr inner
+
+  Slv.Typed _ _ (Slv.TypedExp inner _ _) ->
+    findTopLevelFnAt loc uriStr inner
+
+  _ ->
+    Nothing
+
+areaContainsLoc :: Area -> Loc -> Bool
+areaContainsLoc (Area (Loc _ sl sc) (Loc _ el ec)) (Loc _ line col) =
+  (line > sl || (line == sl && col >= sc)) &&
+  (line < el || (line == el && col <= ec))
+
+-- | Find all top-level functions that call the given function name
+getIncomingCalls :: State -> String -> String -> LspM () [Aeson.Value]
+getIncomingCalls state targetName _targetUri = do
+  options <- buildOptions TNode
+  allPaths <- liftIO $ Set.toList <$> readIORef (_allModulePaths state)
+  results <- forM allPaths $ \modPath -> do
+    let uriStr = T.unpack $ getUri $ pathToUri modPath
+    result <- liftIO $ safeRunTask state options { optEntrypoint = modPath }
+                Driver.Don'tPrune mempty mempty $ do
+      (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv modPath
+      return $ findCallersOf targetName uriStr (Slv.aexps typedAst)
+    case result of
+      Just (calls, _, _) -> return calls
+      Nothing            -> return []
+  return $ concat results
+
+findCallersOf :: String -> String -> [Slv.Exp] -> [Aeson.Value]
+findCallersOf targetName uriStr exps = Maybe.mapMaybe check exps
+  where
+    check exp = case exp of
+      Slv.Typed _ area (Slv.Assignment name body)
+        | not (isSyntheticName name) && expCallsName targetName body ->
+          let l = Loc.getLine (getStartLoc area) - 1
+              c = Loc.getCol (getStartLoc area) - 1
+              item = callHierarchyItem (sanitizeName name) uriStr l c
+          in  Just $ Aeson.object
+                [ "from"       .= item
+                , "fromRanges" .= ([] :: [Aeson.Value])
+                ]
+      Slv.Typed _ _ (Slv.Export inner) -> check inner
+      Slv.Typed _ _ (Slv.TypedExp inner _ _) -> check inner
+      _ -> Nothing
+
+expCallsName :: String -> Slv.Exp -> Bool
+expCallsName name exp = case exp of
+  Slv.Typed _ _ (Slv.Var n _) -> n == name
+  Slv.Typed _ _ (Slv.App f arg _) -> expCallsName name f || expCallsName name arg
+  Slv.Typed _ _ (Slv.Abs _ body) -> any (expCallsName name) body
+  Slv.Typed _ _ (Slv.Do body) -> any (expCallsName name) body
+  Slv.Typed _ _ (Slv.Assignment _ body) -> expCallsName name body
+  Slv.Typed _ _ (Slv.Export inner) -> expCallsName name inner
+  Slv.Typed _ _ (Slv.TypedExp inner _ _) -> expCallsName name inner
+  Slv.Typed _ _ (Slv.If c t f) -> expCallsName name c || expCallsName name t || expCallsName name f
+  Slv.Typed _ _ (Slv.Where body _) -> expCallsName name body
+  _ -> False
+
+-- | Find all top-level functions called from the given function body
+getOutgoingCalls :: State -> String -> String -> LspM () [Aeson.Value]
+getOutgoingCalls state callerName callerUri = do
+  options <- buildOptions TNode
+  let path = uriToPath (Uri (T.pack callerUri))
+  result <- liftIO $ safeRunTask state options { optEntrypoint = path }
+              Driver.Don'tPrune mempty mempty $ do
+    (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+    let callerBody = Maybe.mapMaybe (findFnBody callerName) (Slv.aexps typedAst)
+    let uriStr = callerUri
+    return $ case callerBody of
+      body : _ -> collectCallees uriStr body
+      []       -> []
+  case result of
+    Just (calls, _, _) -> return calls
+    Nothing            -> return []
+
+findFnBody :: String -> Slv.Exp -> Maybe Slv.Exp
+findFnBody name exp = case exp of
+  Slv.Typed _ _ (Slv.Assignment n body) | n == name -> Just body
+  Slv.Typed _ _ (Slv.Export inner) -> findFnBody name inner
+  Slv.Typed _ _ (Slv.TypedExp inner _ _) -> findFnBody name inner
+  _ -> Nothing
+
+collectCallees :: String -> Slv.Exp -> [Aeson.Value]
+collectCallees uriStr exp = Map.elems $ go Map.empty exp
+  where
+    go seen e = case e of
+      Slv.Typed _ area (Slv.Var n False)
+        | not (isSyntheticName n) && not (Map.member n seen) ->
+          let l    = Loc.getLine (getStartLoc area) - 1
+              c    = Loc.getCol (getStartLoc area) - 1
+              item = Aeson.object
+                       [ "to"         .= callHierarchyItem (sanitizeName n) uriStr l c
+                       , "fromRanges" .= ([] :: [Aeson.Value])
+                       ]
+          in  Map.insert n item seen
+      Slv.Typed _ _ (Slv.App f arg _) -> go (go seen f) arg
+      Slv.Typed _ _ (Slv.Abs _ body) -> foldl go seen body
+      Slv.Typed _ _ (Slv.Do body) -> foldl go seen body
+      Slv.Typed _ _ (Slv.If c t f) -> go (go (go seen c) t) f
+      Slv.Typed _ _ (Slv.Where body _) -> go seen body
+      _ -> seen
 
 
 -- Folding Ranges
@@ -1798,6 +2107,18 @@ generateDiagnostics invalidatePath state autocompletionState uri fileUpdates = d
   let path = uriToPath uri
   (_couldParseJs, jsWarnings, jsErrors)     <- runTypeCheck invalidatePath state TNode path fileUpdates
   (_couldParseLlvm, llvmWarnings, llvmErrors) <- runTypeCheck invalidatePath state TLLVM path fileUpdates
+  -- Improvement 1: Update interface snapshot after successful type-check.
+  -- This snapshot is used to detect whether the exported interface has changed
+  -- on the next save, so we can skip cascading invalidation when it hasn't.
+  when (null jsErrors && invalidatePath) $ do
+    options <- buildOptions TNode
+    maybeResult <- liftIO $ safeRunTask state options { optEntrypoint = path } Driver.Don'tPrune mempty fileUpdates $ do
+      (_, env) <- Rock.fetch $ Query.SolvedASTWithEnv path
+      return (SlvEnv.envVars env, SlvEnv.envMethods env)
+    case maybeResult of
+      Just ((newVars, newMethods), _, _) ->
+        liftIO $ modifyIORef' (_interfaceSnapshots state) (Map.insert path (newVars, newMethods))
+      _ -> return ()
   let allWarnings = jsWarnings `List.union` llvmWarnings
   let allErrors   = jsErrors `List.union` llvmErrors
 
@@ -1954,6 +2275,7 @@ data State = State
   , _stateLock :: MVar ()
   , _allModulePaths :: IORef (Set.Set FilePath)
   , _backgroundDone :: IORef Bool
+  , _interfaceSnapshots :: IORef (Map.Map FilePath (SlvEnv.Vars, SlvEnv.Methods))
   }
 
 
@@ -2090,7 +2412,8 @@ runLanguageServer = do
   stateLock <- newMVar ()
   allModulePaths <- newIORef Set.empty
   backgroundDone <- newIORef False
-  let state = State jsDriverState llvmDriverState openFiles mempty debounceRef stateLock allModulePaths backgroundDone
+  interfaceSnapshots <- newIORef Map.empty
+  let state = State jsDriverState llvmDriverState openFiles mempty debounceRef stateLock allModulePaths backgroundDone interfaceSnapshots
 
   autocompletionJsDriverState <- Driver.initialState
   autocompletionLlvmDriverState <- Driver.initialState
@@ -2099,7 +2422,8 @@ runLanguageServer = do
   autocompletionStateLock <- newMVar ()
   autocompletionAllModulePaths <- newIORef Set.empty
   autocompletionBackgroundDone <- newIORef False
-  let autocompletionState = State autocompletionJsDriverState autocompletionLlvmDriverState autocompletionOpenFiles mempty autocompletionDebounceRef autocompletionStateLock autocompletionAllModulePaths autocompletionBackgroundDone
+  autocompletionInterfaceSnapshots <- newIORef Map.empty
+  let autocompletionState = State autocompletionJsDriverState autocompletionLlvmDriverState autocompletionOpenFiles mempty autocompletionDebounceRef autocompletionStateLock autocompletionAllModulePaths autocompletionBackgroundDone autocompletionInterfaceSnapshots
   runServer $ ServerDefinition
     { defaultConfig = ()
     , onConfigurationChange = const $ pure $ Right ()

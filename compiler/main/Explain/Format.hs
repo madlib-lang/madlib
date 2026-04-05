@@ -31,6 +31,8 @@ import qualified Data.List as List
 import qualified Prettyprinter.Internal.Type as Pretty
 import Debug.Trace
 import           Utils.EditDistance (findSimilar)
+import           Data.Char (ord)
+import           Numeric (showHex)
 
 
 letters :: [Char]
@@ -508,23 +510,59 @@ createWarningDiagnostic _ context warning = case warning of
 
 
 formatError :: (FilePath -> IO String) -> Bool -> CompilationError -> IO String
-formatError rf json (CompilationError err ctx) = do
-  noColor       <- lookupEnv "NO_COLOR"
-  moduleContent <- getModuleContent rf ctx
-  let isColorEnabled =  not json && not (noColor /= Just "" && Maybe.isJust noColor)
-      modulePath     = getCtxPath' ctx
-      report         = createErrorDiagnostic isColorEnabled ctx err
-      diagnostic     = Diagnose.addFile Diagnose.def modulePath moduleContent
-      diagnostic'    = Diagnose.addReport diagnostic report
-      diagnosticDoc  =
-        if isColorEnabled then
-          Diagnose.defaultStyle $ Diagnose.prettyDiagnostic True 2 diagnostic'
-        else
-          Pretty.unAnnotate $ Diagnose.prettyDiagnostic True 2 diagnostic'
-      layoutOptions = Pretty.LayoutOptions { Pretty.layoutPageWidth = Pretty.AvailablePerLine 80 1.0 }
-      s = Terminal.renderStrict (Pretty.layoutPretty layoutOptions diagnosticDoc)
+formatError rf json err@(CompilationError typeErr ctx)
+  | json = return $ formatErrorJson err
+  | otherwise = do
+      noColor       <- lookupEnv "NO_COLOR"
+      moduleContent <- getModuleContent rf ctx
+      let isColorEnabled =  not (noColor /= Just "" && Maybe.isJust noColor)
+          modulePath     = getCtxPath' ctx
+          report         = createErrorDiagnostic isColorEnabled ctx typeErr
+          diagnostic     = Diagnose.addFile Diagnose.def modulePath moduleContent
+          diagnostic'    = Diagnose.addReport diagnostic report
+          diagnosticDoc  =
+            if isColorEnabled then
+              Diagnose.defaultStyle $ Diagnose.prettyDiagnostic True 2 diagnostic'
+            else
+              Pretty.unAnnotate $ Diagnose.prettyDiagnostic True 2 diagnostic'
+          layoutOptions = Pretty.LayoutOptions { Pretty.layoutPageWidth = Pretty.AvailablePerLine 80 1.0 }
+          s = Terminal.renderStrict (Pretty.layoutPretty layoutOptions diagnosticDoc)
+      return $ Text.unpack s
 
-  return $ Text.unpack s
+
+-- | Format a 'CompilationError' as a newline-delimited JSON object.
+-- Suitable for machine consumption (e.g. CI tools, editor integrations).
+formatErrorJson :: CompilationError -> String
+formatErrorJson (CompilationError typeErr ctx) =
+  let path    = getCtxPath' ctx
+      (line, col) = case ctx of
+        Context _ (Area (Loc _ l c) _) -> (l, c)
+        _                              -> (0, 0)
+      msg = createSimpleErrorDiagnostic False ctx typeErr
+      -- Remove newlines from message for JSON single-line embedding
+      msgOneLine = List.intercalate "\\n" (lines msg)
+  in  "{\"type\":\"error\""
+      <> ",\"file\":" <> jsonString path
+      <> ",\"line\":" <> show line
+      <> ",\"col\":" <> show col
+      <> ",\"message\":" <> jsonString msgOneLine
+      <> "}"
+
+
+-- | Escape a string for JSON embedding.
+jsonString :: String -> String
+jsonString s = "\"" <> concatMap escapeChar s <> "\""
+  where
+    escapeChar '"'  = "\\\""
+    escapeChar '\\' = "\\\\"
+    escapeChar '\n' = "\\n"
+    escapeChar '\r' = "\\r"
+    escapeChar '\t' = "\\t"
+    escapeChar c
+      | ord c < 0x20 = let h = showHex (ord c) ""
+                           padded = replicate (4 - length h) '0' <> h
+                       in  "\\u" <> padded
+      | otherwise    = [c]
 
 
 simpleFormatError :: Bool -> CompilationError -> IO String
