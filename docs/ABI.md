@@ -3,6 +3,31 @@
 This document describes how Madlib types are represented at runtime for both the LLVM and JavaScript backends. This is essential knowledge for writing FFI code and understanding how Madlib interoperates with C or JavaScript.
 
 
+## Quick reference
+
+| Madlib type | JavaScript | LLVM IR | C type |
+|---|---|---|---|
+| `Integer` | `number` | `i64` | `int64_t` |
+| `Float` | `number` | `double` | `double` |
+| `Byte` | `number` | `i8` | `uint8_t` |
+| `Short` | `number` | `i32` | `int32_t` |
+| `Char` | `string` (length 1) | `i32` | `int32_t` (Unicode code point) |
+| `Boolean` | `boolean` | `i1` | `bool` |
+| `String` | `string` | `i8*` | `char*` (null-terminated) |
+| `Unit` (`{}`) | `{ __constructor: "Unit", __args: [] }` | `i8*` (null) | `void*` (NULL) |
+| `List a` | `{ v, n }` linked list / `null` | `{ i8*, i8* }*` | `madlib__list__Node_t*` |
+| `Array a` | `Array` | `{ i64, i64, i8** }*` | `madlib__array__Array_t*` |
+| `ByteArray` | `Array` of numbers | `{ i64, i64, i8* }*` | `madlib__bytearray__ByteArray_t*` |
+| `#[a, b, ...]` (Tuple) | `Array` | `{ fieldTypes... }*` | (anonymous struct pointer) |
+| `{ f: a, ... }` (Record) | plain object | `{ fieldTypes... }*` (alphabetical) | (anonymous struct pointer) |
+| Enum ADT | `{ __constructor, __args: [] }` | `i64` (tag index) | `int64_t` |
+| Newtype ADT | `{ __constructor, __args: [v] }` | inner type (erased) | inner type |
+| Single-constructor ADT | `{ __constructor, __args: [...] }` | `{ i8*... }*` (no tag) | (anonymous struct pointer) |
+| Multi-constructor ADT | `{ __constructor, __args: [...] }` | `{ i64, i8*... }*` (tagged) | (anonymous tagged struct pointer) |
+| Function (full application) | curried arrow `a => b => ...` | `i8* (i8*, ...)` | function pointer |
+| Function (partial application) | curried arrow | `{ i8*, i32, i32, i8* }*` | `PAP_t*` |
+
+
 ## Primitive types
 
 ### Integer

@@ -123,6 +123,29 @@ Bytes are 8-bit unsigned numbers.
 (255 :: Byte)
 ```
 
+Byte literals can also be written with the `_b` suffix when the type is already known from
+context:
+```madlib
+10_b + 20_b
+```
+
+## Short
+### with JS backend
+Shorts are represented as JS numbers.
+
+### with LLVM backend
+Shorts are 32-bit signed numbers.
+
+### Examples
+```madlib
+(3 :: Short)
+```
+
+Short literals can also be written with the `_s` suffix:
+```madlib
+range(3_s, 6_s) // [3_s, 4_s, 5_s]
+```
+
 ## Number interface
 The `Number` `interface` defines operations that can be used with numbers. It is implemented for the following types:
 - Integer
@@ -231,7 +254,115 @@ Array.fromList([1, 2, 3])
 ```
 
 
-## TO ADD:
-- Records
-- ADTs
-- Aliases
+## Records
+A record is a collection of named fields. It is analogous to an object in JavaScript or a
+struct in C.
+
+### Syntax
+```madlib
+{ fieldName: value, otherField: otherValue }
+```
+
+An empty record `{}` is also the `Unit` value.
+
+### Field access
+```madlib
+user = { name: "Alice", age: 30 }
+user.name // "Alice"
+```
+
+### Record update
+Use the spread syntax to create a new record based on an existing one:
+```madlib
+updated = { ...user, age: 31 }
+```
+
+### Extensible records (open row types)
+Functions can accept any record that has at least a given set of fields using the
+row-polymorphism syntax `{ ...a }`:
+```madlib
+addFourthDimension :: { ...a } -> { ...a, time :: DateTime }
+addFourthDimension = (input) => ({ ...input, time: Date.now() })
+```
+
+### Record patterns
+Records can be destructured in `where` expressions:
+```madlib
+greet :: { name :: String } -> String
+greet = (user) => where(user) {
+  { name } =>
+    `Hello ${name}!`
+}
+```
+
+### with LLVM backend
+A record is compiled to a flat struct pointer with fields laid out in **alphabetical order**
+by field name. See [ABI.md](ABI.md) for details.
+
+### with JS backend
+A record is a plain JavaScript object.
+
+
+## ADTs (Algebraic Data Types)
+ADTs let you define a type that can take one of several distinct shapes, each introduced by
+a *constructor*.
+
+### Syntax
+```madlib
+type Maybe a
+  = Just(a)
+  | Nothing
+```
+
+Constructors can have zero or more fields:
+```madlib
+type Shape
+  = Circle(Float)           // one field: radius
+  | Rectangle(Float, Float) // two fields: width, height
+  | Point                   // no fields
+```
+
+ADTs can have multiple type parameters:
+```madlib
+type Either e a = Left(e) | Right(a)
+```
+
+### Pattern matching
+ADT values are consumed by pattern matching in `where` expressions:
+```madlib
+area :: Shape -> Float
+area = where {
+  Circle(r)       => 3.14159 * r * r
+  Rectangle(w, h) => w * h
+  Point           => 0.0
+}
+```
+
+### with LLVM backend
+The LLVM representation varies by shape — see the ADT section in [ABI.md](ABI.md) for the
+exact struct layout for each case (enum, newtype, single-constructor, multi-constructor).
+
+### with JS backend
+Every constructed value is an object `{ __constructor: "Name", __args: [...] }`.
+
+
+## Type aliases
+A type alias introduces a new name for an existing type. It is purely a compile-time
+shorthand and has no runtime cost.
+
+### Syntax
+```madlib
+alias FilePath = String
+alias Point2D  = #[Float, Float]
+alias Handler  = Request -> Wish Error Response
+```
+
+Aliases can be exported:
+```madlib
+export alias FilePath = String
+```
+
+Parameterized aliases are also supported:
+```madlib
+alias Stack a = StateT Integer (WriterT (List String) Identity) a
+```
