@@ -2,14 +2,13 @@
      │
    3 │   return a + \"\"
      •            ┬ 
-     •            ╰╸ No instance for 'Number String' was found.
-     •               
+     •            ╰╸ 'Number String' is required here, but no instance was found for 'String'.
      •
-     │ Hint: Strings are not numbers. Use '<>' for string concatenation instead of '+'.
-     │ Hint: Verify that you imported the module where the Number
-     │       instance for 'String' is defined
-     │ Note: Remember that instance methods are automatically imported when the module
-     │       is imported, directly, or indirectly.
+     │ Hint: Strings are not numbers. Use '<>' to concatenate strings instead of '+'.
+     │ Note: To parse a String as a number, use Number.fromString which returns a Maybe Number.
+     │ Hint: Make sure 'String' implements the 'Number' interface.
+     │ Note: Instance methods are automatically in scope when their module is imported,
+     │       directly or transitively.
 ─────╯
 
 
@@ -25,6 +24,7 @@
      •                  String
      •              
      •
-     │ Hint: Both sides of '&&' must have the same type
+     │ Hint: '&&' requires Boolean, not String. Did you mean to compare with '=='?
+     │ Note: Example: instead of 'cond && str', write 'cond && str == expectedValue'
 ─────╯
 

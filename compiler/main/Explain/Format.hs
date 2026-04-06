@@ -31,7 +31,7 @@ import qualified Data.List as List
 import qualified Prettyprinter.Internal.Type as Pretty
 import Debug.Trace
 import           Utils.EditDistance (findSimilar)
-import           Data.Char (ord)
+import           Data.Char (ord, toUpper, toLower)
 import           Numeric (showHex)
 
 
@@ -635,13 +635,14 @@ renderScheme sc =
 
 createSimpleErrorDiagnostic :: Bool -> Context -> TypeError -> String
 createSimpleErrorDiagnostic color _ typeError = case typeError of
-  UnificationError t1 t2 _ ->
+  UnificationError t1 t2 origin ->
     let (pretty1', pretty2') = renderTypesWithDiff color t1 t2
         pretty1'' = unlines $ ("  "<>) <$> lines pretty1'
         pretty2'' = unlines $ ("  "<>) <$> lines pretty2'
         expectedStr = if color then "\x1b[0mexpected:\n" else "expected:\n"
         foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n"
-    in  "Type error\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1''
+        title = mkUnificationTitle t1 t2 origin
+    in  title <> "\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1''
 
   TestNotValid t ->
     let prettyType = renderType t
@@ -670,12 +671,16 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "Note: Characters can't be empty"
 
   NoMain ->
-    "You forgot to define a 'main' function in your main module\n\n"
-    <> "Hint: Add a main method"
+    "Missing 'main' function\n\n"
+    <> "Your entry module must define a 'main' function.\n\n"
+    <> "Hint: Add a 'main' function, for example:\n"
+    <> "  main = () => { IO.log(\"Hello!\") }"
 
   MainInvalidTyping ->
-    "The main function has a wrong type signature\n\n"
-    <> "Hint: The typing of the main function should be 'List String -> {}'"
+    "Invalid 'main' signature\n\n"
+    <> "The 'main' function must accept 'List String' and return '{}'.\n\n"
+    <> "Hint: Use:  main :: List String -> {}\n"
+    <> "Note: You can also omit the type annotation and let it be inferred."
 
   MutationRestriction ->
     "This value depends on a closure doing mutation and can't be generic\n\n"
@@ -718,22 +723,28 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "Hint: Give it a name if you intend to use it"
 
   UnboundVariable n suggestions ->
-    "Unbound variable\n\n"
-    <> "The variable '" <> n <> "' has not been declared\n\n"
-    <> case suggestions of
-         []  -> "Hint: Verify that you don't have a typo."
-         [s] -> "Hint: Did you mean '" <> s <> "'?"
-         _   -> "Hint: Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
+    let typoStr = case suggestions of
+                    []  -> "Hint: Check for a typo in the name.\n"
+                    [s] -> "Hint: Did you mean '" <> s <> "'?\n"
+                    _   -> "Hint: Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?\n"
+        stdlibStr = case List.lookup n stdlibMap of
+                      Just modName -> "Note: '" <> n <> "' is defined in the '" <> modName <> "' module. Add: import " <> modName <> " from \"" <> modName <> "\""
+                      Nothing      -> "Note: If '" <> n <> "' is from another module, make sure you have imported it."
+    in  "Unbound variable\n\n"
+        <> "'" <> n <> "' is not defined in this scope.\n\n"
+        <> typoStr
+        <> stdlibStr
 
   UnboundUnknownTypeVariable ->
     "Unbound type variable\n\n"
     <> "A type variable has not been declared\n\n"
-    <> "Hint: Verify that you don't have a typo."
+    <> "Type variables must be declared in the enclosing function's type signature.\n"
+    <> "Hint: For example: myFn :: a -> a (here 'a' is declared in the signature)"
 
   UnboundVariableFromNamespace namespace name ->
-    "Name not exported\n\n"
-    <> "Function '" <> name <> "' not found in\ndefault import '" <> namespace <> "'\n\n"
-    <> "Hint: Verify that it is exported or that you spelled it correctly."
+    "Name not in module\n\n"
+    <> "'" <> name <> "' was not found in '" <> namespace <> "'.\n\n"
+    <> "Hint: Check the exports of '" <> namespace <> "' or use the full import form."
 
   CapitalizedADTTVar adtname param ->
     "Capitalized ADT variable\n\n"
@@ -814,48 +825,50 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "'\nwas expected."
 
   ImportCycle paths ->
-    "Import cycle\n\n"
-    <> "I found an import cycle:\n"
-    <> buildCycleOutput (length paths) 0 paths
-    <> "\n\n"
-    <> "Note: Import cycles are not allowed and usually show a design issue.\n"
-    <> "Hint: Consider splitting things in more modules in order to have\n"
-    <> "both modules import a common dependency instead of having\n"
-    <> "them being co-dependent.\n"
-    <> "Hint: Another solution would be to move\n"
-    <> "things that depend on the other module from the cycle into\n"
-    <> "the other in order to collocate things that depend on each\nother."
-    where
-      buildCycleOutput :: Int -> Int -> [FilePath] -> String
-      buildCycleOutput total current paths =
-        let amountOfSpaces = current * 2
-            spaces         = concat $ replicate amountOfSpaces " "
-            prefix         = spaces <> if current /= 0 then "-> " else ""
-            next           = if current < (total - 1) then buildCycleOutput total (current + 1) paths else ""
-        in  prefix <> paths !! current <> "\n" <> next
+    let loop [] = ""
+        loop [p]    = "  " <> p <> "\n  ↓  (loops back to start)"
+        loop (p:rest) = "  " <> p <> "\n  ↓\n" <> loop rest
+    in  "Circular import\n\n"
+        <> "This import creates a cycle:\n\n"
+        <> loop paths <> "\n\n"
+        <> "Note: Circular imports are not allowed because there is no valid initialization order.\n"
+        <> "Hint: Extract the shared types or functions into a third module that both can import.\n"
+        <> "Hint: Alternatively, move the code that causes the cycle into one of the two modules."
 
   TypeAnnotationNameMismatch typingName expName ->
-    "The name of type annotation ( " <> typingName <> " ) does not match the name of definition ( " <> expName <> " )"
+    "Type annotation name mismatch\n\n"
+    <> "The type annotation is for '" <> typingName <> "' but the following definition is for '" <> expName <> "'.\n\n"
+    <> "Hint: Rename the annotation to match: '" <> expName <> " :: <type>'\n"
+    <> "Note: A type annotation must immediately precede the definition it annotates and share the same name."
 
-  GrammarError _ _ ->
-    "Grammar error\n\n"
-    <> "Unexpected character"
+  GrammarError _ msg ->
+    let trimmed = List.dropWhileEnd (\c -> c == '\n' || c == '\r') msg
+        detail  = if null trimmed then "Unexpected token" else trimmed
+    in  "Syntax error\n\n"
+        <> detail <> "\n\n"
+        <> "Hint: Check for a missing bracket, parenthesis, or operator near this location.\n"
+        <> "Note: Common causes: unclosed '(', '{', or '['; a missing '->' in a function; or a typo in a keyword."
 
   ByteOutOfBounds x ->
     "Byte out of bounds\n\n"
-    <> "The literal '" <> x <> "_b' is too big, the maximum value for bytes is 255"
+    <> "The literal '" <> x <> "_b' is too big, the maximum value for bytes is 255\n\n"
+    <> "Hint: Use a value between 0 and 255, or use 'Integer' for larger numbers."
 
   ShortOutOfBounds x ->
     "Short out of bounds\n\n"
-    <> "The literal '" <> x <> "_s' is too big, the maximum value for shorts is "<> show (2^31 - 1)
+    <> "The literal '" <> x <> "_s' is too big, the maximum value for shorts is "<> show (2^31 - 1 :: Integer) <> "\n\n"
+    <> "Hint: Use a value within the short range, or use 'Integer' for larger numbers."
 
   IntOutOfBounds x ->
     "Integer out of bounds\n\n"
-    <> "The literal '" <> x <> "_i' is too big, the maximum value for integers is "<> show (2^63 - 1)
+    <> "The literal '" <> x <> "_i' is too big, the maximum value for integers is "<> show (2^63 - 1 :: Integer) <> "\n\n"
+    <> "Hint: Use a Float for very large numbers, or restructure the computation."
 
   NegatedByte ->
     "Negated byte\n\n"
-    <> "Bytes can't be negated"
+    <> "Bytes can't be negated\n\n"
+    <> "Note: Bytes are unsigned (0-255) and cannot be negated.\n"
+    <> "Hint: Use 'Integer' or 'Short' if you need negative numbers."
 
   UnknownType t suggestions ->
     "Unknown type\n\n"
@@ -881,12 +894,13 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
   ImportCollision name ->
     "Import collision\n\n"
     <> "The imported name '" <> name <> "' is already used\n\n"
+    <> "Hint: Use a selective import to rename one: import { " <> name <> " as " <> name <> "2 } from \"./Module\"\n"
+    <> "Hint: Or use a qualified import to disambiguate."
 
   NameAlreadyExported name ->
     "Already exported\n\n"
-    <> "Export already defined. You are trying to export the\n"
-    <> "name '" <> name <> "' but it\n"
-    <> "appears that you have already exported it."
+    <> "'" <> name <> "' appears more than once in the export list.\n\n"
+    <> "Hint: Remove the duplicate export."
 
   NotExported name path suggestions ->
     "Not exported\n\n"
@@ -940,22 +954,28 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "it a type annotation."
 
   NotCapitalizedADTName name ->
-    "ADT name not capitalized\n\n"
-    <> "The name '" <> name <> "' of this type is not capitalized\n\n"
-    <> "Note: This is incorrect and all types in madlib should start with\n"
-    <> "an uppercased letter."
+    let capitalized = if null name then name else toUpper (head name) : tail name
+    in  "ADT name not capitalized\n\n"
+        <> "The name '" <> name <> "' of this type is not capitalized\n\n"
+        <> "Note: This is incorrect and all types in madlib should start with\n"
+        <> "an uppercased letter.\n"
+        <> "Hint: Change it to '" <> capitalized <> "'"
 
   NotCapitalizedAliasName name ->
-    "Alias name not capitalized\n\n"
-    <> "The name '" <> name <> "' of this type alias is not capitalized\n\n"
-    <> "Note: This is incorrect and all types in madlib should start with\n"
-    <> "an uppercased letter."
+    let capitalized = if null name then name else toUpper (head name) : tail name
+    in  "Alias name not capitalized\n\n"
+        <> "The name '" <> name <> "' of this type alias is not capitalized\n\n"
+        <> "Note: This is incorrect and all types in madlib should start with\n"
+        <> "an uppercased letter.\n"
+        <> "Hint: Change it to '" <> capitalized <> "'"
 
   NotCapitalizedConstructorName name ->
-    "Constructor name not capitalized\n\n"
-    <> "The name '" <> name <> "' of this type constructor is not capitalized\n\n"
-    <> "Note: This is incorrect and all types in madlib should start with\n"
-              <> "an uppercased letter."
+    let capitalized = if null name then name else toUpper (head name) : tail name
+    in  "Constructor name not capitalized\n\n"
+        <> "The name '" <> name <> "' of this type constructor is not capitalized\n\n"
+        <> "Note: This is incorrect and all types in madlib should start with\n"
+        <> "an uppercased letter.\n"
+        <> "Hint: Change it to '" <> capitalized <> "'"
 
   ContextTooWeak preds ->
     "Context too weak\n\n"
@@ -983,27 +1003,33 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
           "Hint: Add the missing '" <> show (expected - actual) <> "' argument(s)"
 
   ImportNotFound importName ->
-    "Import not found\n\n"
-    <> "You tried to import the module '" <> importName <> "',\n"
-    <> "but it could not be found\n\n"
-    <> "Hint: Verify that you don't have a typo."
+    let isRelative = List.isPrefixOf "./" importName || List.isPrefixOf "../" importName
+    in  "Import not found\n\n"
+        <> "The module '" <> importName <> "' could not be found.\n\n"
+        <> if isRelative then
+             "Hint: The file '" <> importName <> ".mad' was not found relative to this module.\n"
+             <> "Note: Check the file path and make sure the file exists."
+           else
+             "Hint: The package '" <> importName <> "' could not be found.\n"
+             <> "Note: Run 'madlib install' to install missing dependencies, or check 'madlib.json'."
 
   InterfaceAlreadyDefined interfaceName ->
     "Interface already defined\n\n"
     <> "You defined the interface '" <> interfaceName <> "',\n"
     <> "but it already exists\n\n"
-    <> "Hint: Verify that you don't have a typo."
+    <> "Hint: Choose a different name for this interface, or remove the duplicate definition."
 
   ADTAlreadyDefined adtType ->
     let adtName = renderType adtType
     in  "Type already defined\n\n"
         <> "You defined the type '" <> adtName <> "',\n"
         <> "but it already exists\n\n"
-        <> "Hint: Verify that you don't have a typo."
+        <> "Hint: Choose a different name for this type, or remove the duplicate definition."
 
   WrongSpreadType t ->
     "Type error\n\n" <> t <> "\n\n"
-    <> "Hint: Verify that you don't have a typo."
+    <> "Note: The spread operator '...' is only valid on record types.\n"
+    <> "Hint: Check that the value you are spreading is a record, or remove the spread."
 
   RecordDuplicateFields fs ->
     "Record duplicate fields\n\n"
@@ -1022,7 +1048,8 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
   InvalidLhs ->
     "Invalid left hand side\n\n"
-    <> "It is not a valid left hand side expression."
+    <> "The left-hand side of an assignment must be a variable name, a record pattern, or a list pattern.\n\n"
+    <> "Hint: Valid examples: x = 5, { name } = person, [first] = list"
 
   BadMutation ->
     "Bad mutation\n\n"
@@ -1032,6 +1059,7 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
   MutatingNotInScope name ->
     "Not in scope\n\n"
     <> "You are trying to mutate the value of '" <> name <> "' but it is not in scope.\n\n"
+    <> "Hint: Declare the variable before mutating it, or check for a typo in the name."
 
   MutatingPatternBoundVariable name ->
     "Cannot mutate pattern-bound variable\n\n"
@@ -1039,13 +1067,21 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "Hint: Introduce a local let binding first: " <> name <> " = <patternVar>, then use ':=' on that."
 
   FatalError ->
-    "Fatal error"
+    "Internal compiler error\n\n"
+    <> "The compiler encountered an unexpected internal state and could not continue.\n\n"
+    <> "Hint: This is likely a compiler bug. Please report it with the code that triggered it.\n"
+    <> "Note: Try adding a type annotation or reorganizing the problematic expression."
 
   Error ->
-    "Unknown error"
+    "Compilation error\n\n"
+    <> "An error occurred during compilation.\n\n"
+    <> "Hint: Check the surrounding code for type mismatches or missing imports."
 
   ASTHasNoPath ->
-    "A module could not be found or loaded"
+    "Module not found\n\n"
+    <> "A required module could not be located or loaded.\n\n"
+    <> "Hint: Verify that all imports resolve to existing files.\n"
+    <> "Note: If this is a package dependency, run 'madlib install' to fetch it."
 
   ConstructorAccessBadIndex typeName constructorName arity index ->
     "You want to access the parameter at index '" <> show index <> "' for the constructor '" <> constructorName <> "'\n"
@@ -1058,25 +1094,267 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
   ConstructorAccessTooManyConstructors typeName _ ->
     "You can't access a value from the constructor of the type '" <> typeName <> "' because it has more than one constructor."
 
+  RecordDuplicateRestPattern ->
+    "Duplicate rest pattern\n\n"
+    <> "A record pattern can only have one rest/spread pattern ('...').\n\n"
+    <> "Hint: Remove the extra '...' and keep only one.\n"
+    <> "Note: Example:  { x, ...rest } = myRecord  -- only one spread allowed"
 
+
+
+-- | Generate a descriptive title for a UnificationError based on the origin and types involved.
+-- Instead of the generic "Type error", this produces context-specific titles like
+-- "'+' requires numbers, not String" or "Branches return different types".
+mkUnificationTitle :: Type -> Type -> ErrorOrigin -> String
+mkUnificationTitle found expected origin =
+  let foundName  = shortTypeName found
+      expectName = shortTypeName expected
+  in  case origin of
+    FromOperator "+" ->
+      case (found, expected) of
+        (TCon (TC "String" _) _ _, _) -> "Cannot use '+' with String — did you mean '<>'?"
+        (_, TCon (TC "String" _) _ _) -> "Cannot use '+' with String — did you mean '<>'?"
+        _ -> "Operands of '+' must have the same type"
+    FromOperator "&&" ->
+      "Both sides of '&&' must be Boolean"
+    FromOperator "||" ->
+      "Both sides of '||' must be Boolean"
+    FromOperator "<>" ->
+      "Both sides of '<>' must have the same type"
+    FromOperator "++" ->
+      "Both sides of '++' must be the same List type"
+    FromOperator op ->
+      "Operands of '" <> op <> "' must have the same type"
+    FromFunctionArgument fn 1 ->
+      "Wrong type for the 1st argument to '" <> fn <> "'"
+    FromFunctionArgument fn 2 ->
+      "Wrong type for the 2nd argument to '" <> fn <> "'"
+    FromFunctionArgument fn 3 ->
+      "Wrong type for the 3rd argument to '" <> fn <> "'"
+    FromFunctionArgument fn n ->
+      "Wrong type for the " <> toOrdinal n <> " argument to '" <> fn <> "'"
+    FromFunctionReturn fn ->
+      "Return type of '" <> fn <> "' doesn't match its annotation"
+    FromIfCondition ->
+      "The 'if' condition must be Boolean, not " <> foundName
+    FromIfBranches ->
+      "The 'then' and 'else' branches return different types"
+    FromListElement ->
+      "All list elements must have the same type"
+    FromTypeAnnotation ->
+      "Type mismatch: " <> foundName <> " is not " <> expectName
+    FromPatternMatch ->
+      "Branches of 'where' return different types"
+    FromAssignment name ->
+      "Cannot assign " <> foundName <> " to '" <> name <> "'"
+    NoOrigin ->
+      if foundName /= expectName
+        then "Type mismatch: " <> foundName <> " is not " <> expectName
+        else "Type mismatch"
+
+
+-- | Returns a short human-readable type name for use in error titles.
+shortTypeName :: Type -> String
+shortTypeName t = case t of
+  TCon (TC name _) _ _                              -> name
+  TApp (TCon (TC "List" _) _ _) inner               -> "List " <> shortTypeName inner
+  TApp (TApp (TCon (TC "(->)" _) _ _) _) _          -> "Function"
+  TApp (TCon (TC "(,)" _) _ _) _                    -> "Tuple"
+  TVar _                                            -> "a type variable"
+  _                                                 -> prettyPrintType False t
 
 
 -- | Helper to build an Err diagnostic with a primary location.
 -- When context is present, adds a source span; otherwise builds a span-free error.
+-- | Format an integer as an English ordinal: 1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th" ...
+toOrdinal :: Int -> String
+toOrdinal n =
+  let suffix = case n `mod` 100 of
+        11 -> "th"  -- 11th, 111th, ...
+        12 -> "th"  -- 12th
+        13 -> "th"  -- 13th
+        _  -> case n `mod` 10 of
+                1 -> "st"
+                2 -> "nd"
+                3 -> "rd"
+                _ -> "th"
+  in  show n <> suffix
+
+
+-- | Maps commonly-used stdlib names to their module.
+stdlibMap :: [(String, String)]
+stdlibMap =
+  [ ("map",        "List")
+  , ("filter",     "List")
+  , ("reduce",     "List")
+  , ("length",     "List")
+  , ("head",       "List")
+  , ("last",       "List")
+  , ("tail",       "List")
+  , ("reverse",    "List")
+  , ("concat",     "List")
+  , ("append",     "List")
+  , ("zip",        "List")
+  , ("unzip",      "List")
+  , ("find",       "List")
+  , ("any",        "List")
+  , ("all",        "List")
+  , ("sum",        "List")
+  , ("product",    "List")
+  , ("sort",       "List")
+  , ("sortBy",     "List")
+  , ("log",        "IO")
+  , ("print",      "IO")
+  , ("readLine",   "IO")
+  , ("fromMaybe",  "Maybe")
+  , ("isJust",     "Maybe")
+  , ("isNothing",  "Maybe")
+  , ("fromJust",   "Maybe")
+  , ("just",       "Maybe")
+  , ("nothing",    "Maybe")
+  , ("catMaybes",  "Maybe")
+  , ("split",      "String")
+  , ("join",       "String")
+  , ("trim",       "String")
+  , ("toLower",    "String")
+  , ("toUpper",    "String")
+  , ("replace",    "String")
+  , ("slice",      "String")
+  , ("parseInt",   "Number")
+  , ("parseFloat", "Number")
+  , ("fromString", "Number")
+  , ("toString",   "Show")
+  , ("floor",      "Math")
+  , ("ceil",       "Math")
+  , ("round",      "Math")
+  , ("sqrt",       "Math")
+  , ("abs",        "Math")
+  , ("min",        "Math")
+  , ("max",        "Math")
+  , ("pow",        "Math")
+  , ("random",     "Random")
+  ]
+
+
 -- | Generate context-aware hints for NoInstanceFound errors.
+-- These are shown in addition to the standard "implement the interface" hint.
 noInstanceSmartHints :: String -> [Type] -> [Diagnose.Note String]
 noInstanceSmartHints cls ts = case (cls, ts) of
+  -- Number interface — concrete actionable fixes
   ("Number", [TCon (TC "String" _) _ _]) ->
-    [Diagnose.Hint "Strings are not numbers. Use '<>' for string concatenation instead of '+'."]
+    [ Diagnose.Hint "Strings are not numbers. Use '<>' to concatenate strings instead of '+'."
+    , Diagnose.Note "To parse a String as a number, use Number.fromString which returns a Maybe Number."
+    ]
   ("Number", [TCon (TC "Boolean" _) _ _]) ->
-    [Diagnose.Hint "Booleans are not numbers. Did you mean to use '&&' or '||'?"]
+    [ Diagnose.Hint "Booleans are not numbers. Use '&&' or '||' for boolean logic."
+    , Diagnose.Note "To convert Boolean to Int, write: if condition then 1 else 0"
+    ]
+  ("Number", [TCon (TC "Char" _) _ _]) ->
+    [ Diagnose.Hint "Characters are not numbers. Use 'Char.toInt' to get the Unicode code point."
+    , Diagnose.Note "Example: Char.toInt('A') == 65"
+    ]
+  ("Number", [TApp (TCon (TC "List" _) _ _) _]) ->
+    [ Diagnose.Hint "Lists are not numbers. Did you mean 'List.length' to count elements?"
+    , Diagnose.Note "Or 'List.sum' / 'List.product' if you want to reduce numeric elements."
+    ]
+  ("Number", [TApp (TApp (TCon (TC "(->)" _) _ _) _) _]) ->
+    [ Diagnose.Hint "A function is not a number — you may have forgotten to apply it to its arguments."
+    , Diagnose.Note "Example: instead of 'compute + 1', write 'compute(input) + 1'"
+    ]
+  -- Eq interface
+  ("Eq", [TCon (TC name _) _ _]) ->
+    [ Diagnose.Hint $ "Add 'derive Eq' to the '" <> name <> "' type definition to get equality for free."
+    , Diagnose.Note $ "Example:  type " <> name <> " = " <> name <> " { ... } deriving Eq"
+    ]
   ("Eq", _) ->
-    [Diagnose.Hint "You can derive an Eq instance with 'derive Eq' on the type definition."]
+    [ Diagnose.Hint "Add 'derive Eq' to your type definition to auto-generate equality."
+    , Diagnose.Note "All built-in types (Number, String, Boolean, Char) already implement Eq."
+    ]
+  -- Show interface
+  ("Show", [TCon (TC name _) _ _]) ->
+    [ Diagnose.Hint $ "Add 'derive Show' to the '" <> name <> "' type definition to enable string conversion."
+    , Diagnose.Note $ "Example:  type " <> name <> " = " <> name <> " { ... } deriving Show"
+    ]
   ("Show", _) ->
-    [Diagnose.Hint "You can derive a Show instance with 'derive Show' on the type definition."]
+    [ Diagnose.Hint "Add 'derive Show' to your type definition to auto-generate Show."
+    , Diagnose.Note "All built-in types already implement Show."
+    ]
+  -- Comparable interface
+  ("Comparable", [TCon (TC name _) _ _]) ->
+    [ Diagnose.Hint $ "Add 'derive Comparable' to '" <> name <> "' to enable sorting and ordering."
+    , Diagnose.Note $ "This allows using '" <> name <> "' with '<', '>', 'List.sortBy', 'List.minimum', etc."
+    ]
   ("Comparable", _) ->
-    [Diagnose.Hint "You can derive a Comparable instance with 'derive Comparable' on the type definition."]
+    [ Diagnose.Hint "Add 'derive Comparable' to your type to enable ordering operators."
+    , Diagnose.Note "Comparable is needed for: '<', '>', '<=', '>=', 'List.sortBy', 'List.minimum', 'List.maximum'."
+    ]
+  -- Monad/Apply/Functor
+  ("Functor", _) ->
+    [ Diagnose.Hint "Implement 'instance Functor YourType' with a 'map' method."
+    , Diagnose.Note "Functor is required for 'map', which applies a function to the value inside a container."
+    ]
+  ("Monad", _) ->
+    [ Diagnose.Hint "Implement 'instance Monad YourType' with 'of' and 'chain' methods."
+    , Diagnose.Note "'chain' is equivalent to 'flatMap'/'bind'. 'of' wraps a value in the monad."
+    ]
+  ("Apply", _) ->
+    [ Diagnose.Hint "Implement 'instance Apply YourType' with an 'ap' method."
+    , Diagnose.Note "'ap' applies a function inside a container to a value inside a container."
+    ]
   _ -> []
+
+
+-- | Generate extra hints based on the megaparsec error message text.
+grammarSmartHints :: String -> [Diagnose.Note String]
+grammarSmartHints msg
+  | "unexpected end of input" `List.isInfixOf` msg =
+      [Diagnose.Hint "Something is missing — a closing bracket, a missing expression, or an incomplete statement."]
+  | "unexpected whitespace" `List.isInfixOf` msg =
+      [Diagnose.Note "The indentation or spacing here is unexpected."]
+  | "unexpected =\n" `List.isInfixOf` msg || msg == "unexpected =\n         expecting end of input" || "unexpected =" `List.isPrefixOf` msg =
+      [ Diagnose.Hint "If you are trying to mutate a variable, use ':=' instead of '='."
+      , Diagnose.Note "Top-level bindings use '='. Inside a block, use ':=' to reassign."
+      ]
+  | "unexpected :" `List.isPrefixOf` msg && not ("::" `List.isInfixOf` msg) =
+      [Diagnose.Hint "Did you mean '::' for a type annotation, or ':=' for mutation?"]
+  | "unexpected identifier" `List.isInfixOf` msg =
+      [Diagnose.Note "An identifier appeared where it wasn't expected. Check for a missing operator or comma."]
+  | otherwise = []
+
+
+-- | Generate operator-specific hints for UnificationError.
+operatorHints :: String -> Type -> Type -> [Diagnose.Note String]
+operatorHints op found _expected = case op of
+  "&&" -> boolOpHints "&&" found
+  "||" -> boolOpHints "||" found
+  "+"  ->
+    case found of
+      TCon (TC "String" _) _ _ ->
+        [ Diagnose.Hint "Use '<>' to concatenate strings: a <> b"
+        , Diagnose.Note "'+' only works on numeric types (Number, Integer, Float, Short, Byte)."
+        ]
+      _ ->
+        [ Diagnose.Hint "Both sides of '+' must have the same numeric type."
+        , Diagnose.Note "Use '<>' to concatenate strings."
+        ]
+  "++" -> [ Diagnose.Hint "Both sides of '++' must be lists of the same element type." ]
+  "<>" -> [ Diagnose.Hint "Both sides of '<>' must have the same type (e.g. both String, or both List)." ]
+  _    -> [ Diagnose.Hint $ "Both operands of '" <> op <> "' must be the same type." ]
+  where
+    boolOpHints :: String -> Type -> [Diagnose.Note String]
+    boolOpHints opName t = case t of
+      TCon (TC "String" _) _ _ ->
+        [ Diagnose.Hint $ "'" <> opName <> "' requires Boolean, not String. Did you mean to compare with '=='?"
+        , Diagnose.Note "Example: instead of 'cond && str', write 'cond && str == expectedValue'"
+        ]
+      TCon (TC "Integer" _) _ _ ->
+        [ Diagnose.Hint $ "'" <> opName <> "' requires Boolean, not Integer. Did you mean to compare with '== 0'?"
+        , Diagnose.Note "Example: instead of 'cond && n', write 'cond && n != 0'"
+        ]
+      TCon (TC tname _) _ _ ->
+        [ Diagnose.Hint $ "'" <> opName <> "' requires Boolean on both sides, but got " <> tname <> "." ]
+      _ ->
+        [ Diagnose.Hint $ "Both sides of '" <> opName <> "' must be Boolean." ]
 
 
 mkError :: String -> Context -> String -> [Diagnose.Note String] -> Diagnose.Report String
@@ -1103,25 +1381,44 @@ createErrorDiagnostic color context typeError = case typeError of
         expectedStr = if color then "\x1b[0mexpected:\n" else "expected:\n  "
         foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n  "
         originHint = case origin of
-          FromFunctionArgument fn 1 -> [Diagnose.Hint $ "The 1st argument to '" <> fn <> "' has the wrong type"]
-          FromFunctionArgument fn 2 -> [Diagnose.Hint $ "The 2nd argument to '" <> fn <> "' has the wrong type"]
-          FromFunctionArgument fn 3 -> [Diagnose.Hint $ "The 3rd argument to '" <> fn <> "' has the wrong type"]
-          FromFunctionArgument fn n -> [Diagnose.Hint $ "The " <> show n <> "th argument to '" <> fn <> "' has the wrong type"]
-          FromFunctionReturn fn     -> [Diagnose.Hint $ "The return type of '" <> fn <> "' doesn't match the annotation"]
-          FromOperator op           -> [Diagnose.Hint $ "Both sides of '" <> op <> "' must have the same type"]
-          FromIfCondition           -> [Diagnose.Hint "The condition of an 'if' expression must be Boolean"]
-          FromIfBranches            -> [Diagnose.Hint "The 'then' and 'else' branches must have the same type"]
-          FromWhileCondition        -> [Diagnose.Hint "The condition of a 'while' loop must be Boolean"]
-          FromListElement           -> [Diagnose.Hint "All elements of a list must have the same type"]
-          FromTypeAnnotation        -> [Diagnose.Hint "The expression doesn't match its type annotation"]
-          FromPatternMatch          -> [Diagnose.Hint "All branches of a pattern match must have the same type"]
-          FromAssignment name       -> [Diagnose.Hint $ "The value assigned to '" <> name <> "' doesn't match its declared type"]
-          NoOrigin                  -> []
+          FromFunctionArgument fn n ->
+            [ Diagnose.Hint $ "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type." ]
+          FromFunctionReturn fn ->
+            [ Diagnose.Hint $ "The return value of '" <> fn <> "' doesn't match its type annotation."
+            , Diagnose.Note "Check that all branches of the function body return the same type."
+            ]
+          FromOperator op -> operatorHints op t1 t2
+          FromIfCondition ->
+            [ Diagnose.Hint "The condition of an 'if' expression must be Boolean."
+            , Diagnose.Note "Boolean values are 'true' and 'false'. Did you forget a comparison?"
+            ]
+          FromIfBranches ->
+            [ Diagnose.Hint "The 'then' and 'else' branches must return the same type."
+            , Diagnose.Note "If you only need one branch, consider returning '{}' in the other."
+            ]
+          FromWhileCondition ->
+            [ Diagnose.Hint "The condition of a 'while' loop must be Boolean." ]
+          FromListElement ->
+            [ Diagnose.Hint "All elements in a list literal must have the same type."
+            , Diagnose.Note "If you need a heterogeneous collection, consider a custom type or a tuple."
+            ]
+          FromTypeAnnotation ->
+            [ Diagnose.Hint "The expression's type doesn't match its annotation."
+            , Diagnose.Note "Check whether the annotation is too specific, or the expression is wrong."
+            ]
+          FromPatternMatch ->
+            [ Diagnose.Hint "All branches of a 'where' expression must return the same type."
+            , Diagnose.Note "Make sure every branch has the same return type."
+            ]
+          FromAssignment name ->
+            [ Diagnose.Hint $ "The right-hand side doesn't match the declared type of '" <> name <> "'." ]
+          NoOrigin -> []
+        title = mkUnificationTitle t1 t2 origin
     in  case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
         Diagnose.Err
           Nothing
-          "Type error"
+          title
           [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
             , Diagnose.This $ expectedStr <> pretty2'' <> foundStr <> pretty1''
             )
@@ -1131,7 +1428,7 @@ createErrorDiagnostic color context typeError = case typeError of
       NoContext ->
         Diagnose.Err
           Nothing
-          ("Type error\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1'')
+          (title <> "\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1'')
           []
           originHint
 
@@ -1161,20 +1458,25 @@ createErrorDiagnostic color context typeError = case typeError of
   NoMain ->
     Diagnose.Err
       Nothing
-      "You forgot to define a 'main' function in your main module."
+      "Missing 'main' function"
       []
-      [Diagnose.Hint "Add a main method"]
+      [ Diagnose.Hint "Add a 'main' function to your entry module."
+      , Diagnose.Note "The simplest valid main:\n  main = () => { IO.log(\"Hello!\") }"
+      ]
 
   MainInvalidTyping ->
-    mkError "Main invalid typing" context "The main function has a wrong type signature"
-      [ Diagnose.Hint "The typing of the main function should be 'List String -> {}'"
-      , Diagnose.Note "You can omit the typing for the main function"
+    mkError "Invalid 'main' signature" context
+      "The 'main' function has the wrong type. It must accept 'List String' and return '{}'."
+      [ Diagnose.Hint "Change the signature to:  main :: List String -> {}"
+      , Diagnose.Note "You can also omit the type annotation entirely and let it be inferred."
       ]
 
   MutationRestriction ->
     mkError "Mutation restriction" context
-      "This value depends on a closure doing mutation and can't be generic"
-      [Diagnose.Hint "Add a type definition with concrete types"]
+      "This binding depends on a closure that performs mutation and cannot be made polymorphic."
+      [ Diagnose.Hint "Add an explicit type annotation with concrete (non-polymorphic) types."
+      , Diagnose.Note "Mutation requires a fixed memory location; polymorphic types would create separate copies."
+      ]
 
   MutatingFunction n ->
     mkError "Mutation function" context
@@ -1184,10 +1486,18 @@ createErrorDiagnostic color context typeError = case typeError of
       ]
 
   NotAConstructor n ->
-    mkError "Not a constructor" context
-      ("You are trying to match '" <> n <> "', but it is not a constructor")
-      [ Diagnose.Hint "Only constructors can be used in patterns"
-      ]
+    let capitalHint =
+          if not (null n) && (head n >= 'a' && head n <= 'z') then
+            [Diagnose.Note $ "'" <> n <> "' starts with a lowercase letter. Constructors must be capitalized (e.g. 'Just', 'Nothing', 'Left')."]
+          else
+            []
+    in  mkError "Not a constructor" context
+          ("'" <> n <> "' is used in a pattern but is not a constructor.")
+          ( capitalHint ++
+            [ Diagnose.Hint "Only data constructors (capitalized names) can appear in patterns."
+            , Diagnose.Note "Example pattern:  where | Just x => ...   | Nothing => ..."
+            ]
+          )
 
   MethodNameAlreadyDefined ->
     mkError "Method name already defined" context "You are trying to redefine a method name"
@@ -1201,35 +1511,42 @@ createErrorDiagnostic color context typeError = case typeError of
       ]
 
   ConstructorAccessBadIndex typeName constructorName arity index ->
-    mkError "Constructor access - bad index" context
-      (    "You want to access the parameter at index '" <> show index <> "' for the constructor '" <> constructorName <> "'\n"
-        <> "from type '" <> typeName <> "' but it has only " <> show arity <> " parameters."
+    mkError "Constructor index out of range" context
+      (    "The constructor '" <> constructorName <> "' from '" <> typeName <> "' has "
+        <> show arity <> " parameter" <> (if arity == 1 then "" else "s")
+        <> ", but you are trying to access index " <> show index <> "."
       )
-      [ Diagnose.Hint $ "Verify the arity of '" <> constructorName <> "'" ]
+      [ Diagnose.Hint $ "Valid indices for '" <> constructorName <> "' are 0 to " <> show (arity - 1) <> "."
+      , Diagnose.Note "Constructor parameter access uses zero-based indexing."
+      ]
 
   ConstructorAccessNoConstructorFound typeName ->
     mkError "Constructor not found" context
-      ("No constructor found for the type '" <> typeName <> "'.")
-      []
+      ("The type '" <> typeName <> "' has no constructors that can be accessed this way.")
+      [ Diagnose.Hint "Use pattern matching to destructure the value instead." ]
 
   ConstructorAccessTooManyConstructors typeName _ ->
-    mkError "Constructor access - too many constructors" context
-      (    "You can't access a value from the constructor of the type '"
-        <> typeName <> "'\nbecause it has more than one constructor."
-      )
-      []
+    mkError "Ambiguous constructor access" context
+      ("Cannot access a constructor parameter of '" <> typeName <> "' because it has more than one constructor.")
+      [ Diagnose.Hint "Use pattern matching to safely handle each constructor case."
+      , Diagnose.Note "Constructor parameter access only works on types with a single constructor."
+      ]
 
   InfiniteType tv t ->
     let (vars, hkVars, printedT) = prettyPrintType' True (mempty, mempty) t
         (_, _, printedN)         = prettyPrintType' True (vars, hkVars) (TVar tv)
     in  mkError "Infinite type" context
-          (    "I can't construct this type because it would be infinite.\n"
-            <> "The type variable '" <> printedN <> "' appears in its own definition: "
-            <> printedN <> " = " <> printedT
+          (    "I can't construct the type '" <> printedN <> "' because it would need to contain itself:\n"
+            <> "  " <> printedN <> " = " <> printedT
           )
-          [ Diagnose.Hint $
-              "This usually happens when a function is applied to itself\n"
-              <> "or when a recursive type needs an explicit type alias."
+          [ Diagnose.Note $
+              "This happens when the type checker tries to unify a type variable with\n"
+              <> "a type that contains that same variable, creating an infinite loop."
+          , Diagnose.Hint "Common causes:"
+          , Diagnose.Note $
+              "  1. A function applied to itself: f(f) — wrap it in a lambda: f((_) => f)\n"
+              <> "  2. A recursive data structure without a type alias\n"
+              <> "  3. A missing type annotation on a recursive function"
           ]
 
   IllegalSkipAccess ->
@@ -1241,52 +1558,69 @@ createErrorDiagnostic color context typeError = case typeError of
       [Diagnose.Hint "Give it a name if you intend to use it"]
 
   UnboundVariable n suggestions ->
-    let hint = case suggestions of
-                 []  -> Diagnose.Hint "Verify that you don't have a typo"
-                 [s] -> Diagnose.Hint $ "Did you mean '" <> s <> "'?"
-                 _   -> Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
-    in  mkError "Unbound variable" context ("The variable '" <> n <> "' has not been declared") [hint]
+    let typoHint = case suggestions of
+                     []  -> [Diagnose.Hint "Check for a typo in the name."]
+                     [s] -> [Diagnose.Hint $ "Did you mean '" <> s <> "'?"]
+                     _   -> [Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"]
+        stdlibHint = case List.lookup n stdlibMap of
+                       Just modName -> [Diagnose.Note $ "'" <> n <> "' is defined in the '" <> modName <> "' module. Add: import " <> modName <> " from \"" <> modName <> "\""]
+                       Nothing      -> [Diagnose.Note $ "If '" <> n <> "' is from another module, make sure you have imported it."]
+    in  mkError "Unbound variable" context
+          ("'" <> n <> "' is not defined in this scope.")
+          (typoHint ++ stdlibHint)
 
   UnboundUnknownTypeVariable ->
     mkError "Unbound type variable" context "A type variable has not been declared"
       [Diagnose.Hint "Verify that you don't have a typo"]
 
   UnboundVariableFromNamespace namespace name ->
-    mkError "Name not exported" context
-      ("Function '" <> name <> "' not found in\ndefault import '" <> namespace <> "'")
-      [Diagnose.Hint "Verify that it is exported or that you spelled it correctly."]
+    mkError "Name not in module" context
+      ("'" <> name <> "' was not found in '" <> namespace <> "'.")
+      [ Diagnose.Hint $ "Check that '" <> name <> "' is exported from the module you imported as '" <> namespace <> "'."
+      , Diagnose.Note $ "With a default import 'import List from \"List\"', use 'List.map', 'List.length', etc."
+      ]
 
   CapitalizedADTTVar adtname param ->
-    mkError "Capitalized ADT variable" context
-      (    "The type parameter '" <> param <> "' in the type declaration\n"
-        <> "'" <> adtname <> "' is capitalized. Type parameters can't be capitalized."
-      )
-      [Diagnose.Hint "Either remove it if you don't need the type variable, or\nmake its first letter lowercase."]
+    let lowered = if null param then param else map toLower param
+    in  mkError "Capitalized ADT variable" context
+          (    "The type parameter '" <> param <> "' in the type declaration\n"
+            <> "'" <> adtname <> "' is capitalized. Type parameters can't be capitalized."
+          )
+          [ Diagnose.Hint "Either remove it if you don't need the type variable, or\nmake its first letter lowercase."
+          , Diagnose.Hint $ "Change '" <> param <> "' to '" <> lowered <> "'"
+          ]
 
   UnboundType n suggestions ->
-    let hint = case suggestions of
-                 []  -> [Diagnose.Hint "Maybe you forgot to import it?", Diagnose.Hint "Maybe you have a typo?"]
-                 [s] -> [Diagnose.Hint $ "Did you mean '" <> s <> "'?"]
-                 _   -> [Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"]
-    in  mkError "Unbound Type" context ("The type '" <> n <> "' has not been declared") hint
+    let typoHint = case suggestions of
+                     []  -> [ Diagnose.Hint "Check for a typo in the type name."
+                             , Diagnose.Note $ "If '" <> n <> "' is defined in another module, import it: 'import Type from \"./Module\"'"
+                             ]
+                     [s] -> [Diagnose.Hint $ "Did you mean '" <> s <> "'?"]
+                     _   -> [Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"]
+    in  mkError "Unknown type" context
+          ("The type '" <> n <> "' is not defined in this scope.")
+          typoHint
 
   ByteOutOfBounds n ->
     mkError "Byte out of bounds" context
       ("The literal '" <> n <> "_b' is too big, the maximum value for bytes is 255")
-      []
+      [ Diagnose.Hint "Use a value between 0 and 255, or use 'Integer' for larger numbers." ]
 
   ShortOutOfBounds n ->
     mkError "Short out of bounds" context
-      ("The literal '" <> n <> "_s' is too big, the maximum value for shorts is "<> show (2^31 - 1) <>".")
-      []
+      ("The literal '" <> n <> "_s' is too big, the maximum value for shorts is "<> show (2^31 - 1 :: Integer) <>".")
+      [ Diagnose.Hint "Use a value within the short range, or use 'Integer' for larger numbers." ]
 
   IntOutOfBounds n ->
     mkError "Integer out of bounds" context
-      ("The literal '" <> n <> "_s' is too big, the maximum value for integers is "<> show (2^63 - 1) <>".")
-      []
+      ("The literal '" <> n <> "_i' is too big, the maximum value for integers is "<> show (2^63 - 1 :: Integer) <>".")
+      [ Diagnose.Hint "Use a Float for very large numbers, or restructure the computation." ]
 
   NegatedByte ->
-    mkError "Negated byte" context "Bytes can't be negated" []
+    mkError "Negated byte" context "Bytes can't be negated"
+      [ Diagnose.Note "Bytes are unsigned integers in range 0-255 and cannot be negative."
+      , Diagnose.Hint "Use 'Integer' or 'Short' if you need signed numbers."
+      ]
 
   DerivingAliasNotAllowed n ->
     mkError "Deriving Alias Not Allowed" context ("The type '" <> n <> "' is an alias.")
@@ -1304,17 +1638,22 @@ createErrorDiagnostic color context typeError = case typeError of
         inferredStr  = if color then "\n\x1b[0mType inferred:\n" else "\nType inferred:\n  "
     in  mkError "Signature too general" context
           (givenStr <> scGiven'' <> inferredStr <> scInferred'')
-          []
+          [ Diagnose.Note $
+              "The annotation claims the function is more polymorphic than the implementation allows.\n"
+              <> "The inferred type is more specific — it uses concrete types or fewer type variables."
+          , Diagnose.Hint "Update the type annotation to match the inferred type shown above."
+          ]
 
   NoInstanceFound cls ts ->
     let typeStr    = unwords (prettyPrintType True <$> ts)
+        predStr    = lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing))
         smartHints = noInstanceSmartHints cls ts
         stdHints   =
-          [ Diagnose.Hint $ "Verify that you imported the module where the " <> cls <> "\ninstance for '" <> typeStr <> "' is defined"
-          , Diagnose.Note "Remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly."
+          [ Diagnose.Hint $ "Make sure '" <> typeStr <> "' implements the '" <> cls <> "' interface."
+          , Diagnose.Note $ "Instance methods are automatically in scope when their module is imported,\ndirectly or transitively."
           ]
-    in  mkError "Instance not found" context
-          ("No instance for '" <> lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing)) <> "' was found.\n")
+    in  mkError "No instance found" context
+          ("'" <> predStr <> "' is required here, but no instance was found for '" <> typeStr <> "'.")
           (smartHints ++ stdHints)
 
   AmbiguousType (TV _ _, IsIn cls _ maybeArea : _) ->
@@ -1355,84 +1694,83 @@ createErrorDiagnostic color context typeError = case typeError of
       [Diagnose.Hint "Make sure you imported the module defining it,\nor a module that imports it."]
 
   KindError (t, k) (t', k') ->
-    mkError "Kind error" context
-      (    "The kind of types don't match, '"
-        <> prettyPrintType True t
-        <> "' has kind "
-        <> kindToStr k
-        <> " and "
-        <> prettyPrintType True t'
-        <> " has kind "
-        <> kindToStr k'
-        <> "."
+    mkError "Kind mismatch" context
+      (    "'" <> prettyPrintType True t <> "' has kind " <> kindToStr k
+        <> ",\nbut '" <> prettyPrintType True t' <> "' has kind " <> kindToStr k' <> "."
       )
-      []
+      [ Diagnose.Note $
+          "Kinds describe how many type arguments a type constructor takes.\n"
+          <> "'*' means a fully-applied type (like 'Int' or 'String').\n"
+          <> "'* -> *' means a type that takes one argument (like 'List' or 'Maybe')."
+      , Diagnose.Hint "Check whether you applied too many or too few type arguments."
+      ]
 
   InstancePredicateError pInstance pWrong pCorrect ->
-    mkError "Instance predicate error" context
-      (    "A constraint in the instance declaration '"
-        <> lst (predToStr True (mempty, mempty) pInstance)
-        <> " is not correct.\n"
-        <> "You gave the constraint '"
-        <> lst (predToStr True (mempty, mempty) pWrong)
-        <> "' but a constraint of the form '"
-        <> lst (predToStr True (mempty, mempty) pCorrect)
-        <> "'\nwas expected."
-      )
-      []
+    let instStr    = lst (predToStr True (mempty, mempty) pInstance)
+        wrongStr   = lst (predToStr True (mempty, mempty) pWrong)
+        correctStr = lst (predToStr True (mempty, mempty) pCorrect)
+    in  mkError "Instance constraint error" context
+          (    "The instance '" <> instStr <> "' has an incorrect constraint.\n"
+            <> "  Given:    " <> wrongStr <> "\n"
+            <> "  Expected: " <> correctStr
+          )
+          [ Diagnose.Hint $ "Replace '" <> wrongStr <> "' with '" <> correctStr <> "' in the instance declaration."
+          , Diagnose.Note $
+              "Instance constraints must use the same type variables as the instance head,\n"
+              <> "and must match the shape required by the interface definition."
+          ]
 
   ImportCycle paths ->
     case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
         Diagnose.Err
           Nothing
-          "Import cycle"
+          "Circular import"
           [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
             , Diagnose.This $
-                "I found an import cycle:\n\n"
-                <> buildCycleOutput (length paths) 0 paths
+                "This import creates a cycle:\n\n"
+                <> buildCycleOutput paths
             )
           ]
-          [ Diagnose.Note "Import cycles are not allowed and usually show a design issue."
-          , Diagnose.Hint $
-              "Consider splitting things in more modules in order to have\n"
-              <> "both modules import a common dependency instead of having\n"
-              <> "them being co-dependent."
-          , Diagnose.Hint $
-              "Another solution would be to move\n"
-              <> "things that depend on the other module from the cycle into\n"
-              <> "the other in order to collocate things that depend on each\nother."
+          [ Diagnose.Note "Circular imports are not allowed because there is no valid initialization order."
+          , Diagnose.Hint "Extract the shared types or functions into a third module that both can import."
+          , Diagnose.Hint "Alternatively, move the code that causes the cycle into one of the two modules."
           ]
 
       NoContext ->
         Diagnose.Err
           Nothing
-          "Import cycle"
+          "Circular import"
           []
-          [Diagnose.Hint $
-            "Import cycles are not allowed and usually show a design issue.\n"
-            <> "Consider splitting things in more modules in order to have\n"
-            <> "both modules import a common dependency instead of having\n"
-            <> "them being co-dependent. Another solution would be to move\n"
-            <> "things that depend on the other module from the cycle into\n"
-            <> "the other in order to collocate things that depend on each\nother."
+          [ Diagnose.Note "Circular imports are not allowed because there is no valid initialization order."
+          , Diagnose.Hint "Extract the shared types or functions into a third module that both can import."
           ]
    where
-    buildCycleOutput :: Int -> Int -> [FilePath] -> String
-    buildCycleOutput total current paths =
-      let amountOfSpaces = current * 2
-          spaces         = concat $ replicate amountOfSpaces " "
-          prefix         = spaces <> if current /= 0 then "-> " else ""
-          next           = if current < (total - 1) then buildCycleOutput total (current + 1) paths else ""
-      in  prefix <> paths !! current <> "\n" <> next
+    buildCycleOutput :: [FilePath] -> String
+    buildCycleOutput [] = ""
+    buildCycleOutput ps =
+      let loop [] = ""
+          loop [p]    = "  " <> p <> "\n  ↓  (loops back to start)"
+          loop (p:rest) = "  " <> p <> "\n  ↓\n" <> loop rest
+      in  loop ps
 
   TypeAnnotationNameMismatch typingName expName ->
-    mkError "Type annotation error" context
-      ("The name of type annotation ( " <> typingName <> " ) does not match the name of definition ( " <> expName <> " )")
-      []
+    mkError "Type annotation name mismatch" context
+      (    "The type annotation is for '" <> typingName <> "' but the following definition is for '" <> expName <> "'."
+      )
+      [ Diagnose.Hint $ "Rename the annotation to match: '" <> expName <> " :: <type>'"
+      , Diagnose.Note "A type annotation must immediately precede the definition it annotates and share the same name."
+      ]
 
-  GrammarError _ _ ->
-    mkError "Grammar error" context "Unexpected character" []
+  GrammarError _ msg ->
+    let cleanMsg = if null msg then "Unexpected token" else msg
+        trimmed  = List.dropWhileEnd (\c -> c == '\n' || c == '\r') cleanMsg
+        smartHints = grammarSmartHints trimmed
+        stdHints =
+          [ Diagnose.Hint "Check for a missing bracket, parenthesis, or operator near this location."
+          , Diagnose.Note "Common causes: unclosed '(', '{', or '['; a missing '->' in a function; or a typo in a keyword."
+          ]
+    in  mkError "Syntax error" context trimmed (smartHints ++ stdHints)
 
   BadEscapeSequence ->
     mkError "Bad escape sequence" context "This escape sequence is not valid"
@@ -1471,15 +1809,16 @@ createErrorDiagnostic color context typeError = case typeError of
 
   NameAlreadyExported name ->
     mkError "Already exported" context
-      (    "Export already defined. You are trying to export the\n"
-        <> "name '" <> name <> "' but it\n"
-        <> "appears that you have already exported it."
-      )
-      []
+      ("'" <> name <> "' appears more than once in the export list.")
+      [ Diagnose.Hint $ "Remove the duplicate export of '" <> name <> "'."
+      , Diagnose.Note "Each name can only be exported once from a module."
+      ]
 
   NotExported name path suggestions ->
     let hint = case suggestions of
-                 []  -> [Diagnose.Hint "Verify that you spelled it correctly or add the export to the module if you can."]
+                 []  -> [ Diagnose.Hint $ "Add 'export { " <> name <> " }' to the module at '" <> path <> "' if you own it."
+                        , Diagnose.Note "Or check the module's documentation to find the correct exported name."
+                        ]
                  [s] -> [Diagnose.Hint $ "Did you mean '" <> s <> "'?"]
                  _   -> [Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"]
     in  mkError "Not exported" context
@@ -1543,28 +1882,34 @@ createErrorDiagnostic color context typeError = case typeError of
       ]
 
   NotCapitalizedADTName name ->
-    mkError "ADT name not capitalized" context
-      ("The name '" <> name <> "' of this type is not capitalized")
-      [ Diagnose.Note $
-          "This is incorrect and all types in madlib should start with\n"
-          <> "an uppercased letter."
-      ]
+    let capitalized = if null name then name else toUpper (head name) : tail name
+    in  mkError "ADT name not capitalized" context
+          ("The name '" <> name <> "' of this type is not capitalized")
+          [ Diagnose.Note $
+              "This is incorrect and all types in madlib should start with\n"
+              <> "an uppercased letter."
+          , Diagnose.Hint $ "Change it to '" <> capitalized <> "'"
+          ]
 
   NotCapitalizedAliasName name ->
-    mkError "Alias name not capitalized" context
-      ("The name '" <> name <> "' of this type alias is not capitalized")
-      [ Diagnose.Note $
-          "This is incorrect and all types in madlib should start with\n"
-          <> "an uppercased letter."
-      ]
+    let capitalized = if null name then name else toUpper (head name) : tail name
+    in  mkError "Alias name not capitalized" context
+          ("The name '" <> name <> "' of this type alias is not capitalized")
+          [ Diagnose.Note $
+              "This is incorrect and all types in madlib should start with\n"
+              <> "an uppercased letter."
+          , Diagnose.Hint $ "Change it to '" <> capitalized <> "'"
+          ]
 
   NotCapitalizedConstructorName name ->
-    mkError "Constructor name not capitalized" context
-      ("The name '" <> name <> "' of this type constructor is not capitalized")
-      [ Diagnose.Note $
-          "This is incorrect and all types in madlib should start with\n"
-          <> "an uppercased letter."
-      ]
+    let capitalized = if null name then name else toUpper (head name) : tail name
+    in  mkError "Constructor name not capitalized" context
+          ("The name '" <> name <> "' of this type constructor is not capitalized")
+          [ Diagnose.Note $
+              "This is incorrect and all types in madlib should start with\n"
+              <> "an uppercased letter."
+          , Diagnose.Hint $ "Change it to '" <> capitalized <> "'"
+          ]
 
   ContextTooWeak preds ->
     case context of
@@ -1596,39 +1941,62 @@ createErrorDiagnostic color context typeError = case typeError of
                   )
                 ] ++ positionInfos
               )
-              [Diagnose.Hint  "Add the missing interface constraints to the type annotation."]
+          [ Diagnose.Hint  "Add the missing interface constraints to the type annotation."
+          , Diagnose.Note $
+              "Example: if the constraint 'Eq a' is missing, change\n"
+              <> "  'myFn :: a -> Boolean'  to  'myFn :: Eq a => a -> Boolean'"
+          ]
 
       NoContext ->
         Diagnose.Err
           Nothing
           "Context too weak"
           []
-          [Diagnose.Hint  "Add the missing interface constraints to the type annotation."]
+          [ Diagnose.Hint "Add the missing interface constraints to the type annotation."
+          , Diagnose.Note $
+              "Example: if the constraint 'Eq a' is missing, change\n"
+              <> "  'myFn :: a -> Boolean'  to  'myFn :: Eq a => a -> Boolean'"
+          ]
 
-  OverloadedMutation n _ ->
-    mkError "Mutation in overloaded context" context
-      ("You are mutating the variable '" <> n <> "' in a function that has constraints")
-      [ Diagnose.Note $ "This will not work as it'll always generate a new reference for the closure\n"
-          <> "leading to the value not being changed."
-      , Diagnose.Hint "Add or change type annotations to suppress the constraints."
-      ]
+  OverloadedMutation n preds ->
+    let predNames = intercalate ", " (predClass <$> preds)
+    in  mkError "Mutation in overloaded context" context
+          ("Cannot mutate '" <> n <> "' because this function has type class constraints (" <> predNames <> ").")
+          [ Diagnose.Note $
+              "In an overloaded function, each specialisation creates a new closure copy,\n"
+              <> "so mutations to '" <> n <> "' would be invisible to callers."
+          , Diagnose.Hint "Add a concrete type annotation to remove the polymorphism, or refactor to avoid mutation here."
+          ]
 
   WrongAliasArgCount aliasName expected actual ->
-    mkError "Wrong alias argument count" context
-      (    "The alias '" <> aliasName <> "' was expected to have " <> show expected <> " argument" <> (if expected > 1 then "s" else "") <> ",\nbut "
-        <> show actual <> " "<> (if actual > 1 then "were" else "was") <>" given"
-      )
-      [ Diagnose.Hint $
-          if actual > expected then
-            "Remove " <> show (actual - expected) <> " argument(s)"
-          else
-            "Add the missing '" <> show (expected - actual) <> "' argument(s)"
-      ]
+    let exampleArgs = unwords (map (\i -> "Type" <> show i) [1..expected])
+        exampleNote = "Example: if '" <> aliasName <> "' takes " <> show expected <> " argument(s), write: " <> aliasName <> " " <> exampleArgs
+    in  mkError "Wrong alias argument count" context
+          (    "The alias '" <> aliasName <> "' was expected to have " <> show expected <> " argument" <> (if expected > 1 then "s" else "") <> ",\nbut "
+            <> show actual <> " "<> (if actual > 1 then "were" else "was") <>" given"
+          )
+          [ Diagnose.Hint $
+              if actual > expected then
+                "Remove " <> show (actual - expected) <> " argument(s)"
+              else
+                "Add the missing '" <> show (expected - actual) <> "' argument(s)"
+          , Diagnose.Note exampleNote
+          ]
 
   ImportNotFound importName ->
-    mkError "Import not found" context
-      ("You tried to import the module '" <> importName <> "',\nbut it could not be found")
-      [Diagnose.Hint "Verify that you don't have a typo."]
+    let isRelative = List.isPrefixOf "./" importName || List.isPrefixOf "../" importName
+        hints =
+          if isRelative then
+            [ Diagnose.Hint $ "The file '" <> importName <> ".mad' could not be found relative to this module."
+            , Diagnose.Note "Check the file path and make sure the file exists."
+            ]
+          else
+            [ Diagnose.Hint $ "The package '" <> importName <> "' could not be found."
+            , Diagnose.Note "Run 'madlib install' to install missing dependencies, or check 'madlib.json'."
+            ]
+    in  mkError "Import not found" context
+          ("The module '" <> importName <> "' could not be found.")
+          hints
 
   InterfaceAlreadyDefined interfaceName ->
     mkError "Interface already defined" context
@@ -1636,17 +2004,24 @@ createErrorDiagnostic color context typeError = case typeError of
       [Diagnose.Hint "Verify that you don't have a typo."]
 
   InvalidLhs ->
-    mkError "Invalid left hand side" context "It is not a valid left hand side expression." []
+    mkError "Invalid left hand side" context "It is not a valid left hand side expression."
+      [ Diagnose.Note "The left-hand side of '=' must be a variable name, a record pattern, or a list pattern."
+      , Diagnose.Hint "Valid forms: x = expr, { field } = record, [first] = list"
+      ]
 
   BadMutation ->
     mkError "Bad mutation" context
-      "You are trying to change a value with the assignment operator."
-      [Diagnose.Hint "Use the mutation operator ':='"]
+      "You are trying to reassign a variable that was already defined. Use ':=' to mutate, not '='."
+      [ Diagnose.Hint "Use the mutation operator ':=' to change an existing value."
+      , Diagnose.Note "Example:  x = 0         // initial binding\n         x := x + 1    // mutation"
+      ]
 
   MutatingNotInScope name ->
     mkError "Not in scope" context
       ("You are trying to mutate the value of '" <> name <> "' but it is not in scope.")
-      []
+      [ Diagnose.Hint $ "Declare '" <> name <> "' before mutating it, or check for a typo."
+      , Diagnose.Note "The variable must be in scope (declared earlier in the same block or outer scope)."
+      ]
 
   MutatingPatternBoundVariable name ->
     mkError "Cannot mutate pattern-bound variable" context
@@ -1666,10 +2041,12 @@ createErrorDiagnostic color context typeError = case typeError of
           [Diagnose.Hint "Define each field only once."]
 
   RecordMissingFields fs ->
-    let fieldList = intercalate ", " (map (\f -> "'" <> f <> "'") fs)
+    let fieldList  = intercalate ", " (map (\f -> "'" <> f <> "'") fs)
+        (one, were, them) = if length fs == 1 then ("field", "was", "it") else ("fields", "were", "them")
     in  mkError "Record missing fields" context
-          ("The record is missing the following fields: " <> fieldList)
-          [Diagnose.Hint "Add the missing fields to the record."]
+          ("The record " <> were <> " missing the " <> one <> ": " <> fieldList)
+          [ Diagnose.Hint $ "Add " <> them <> " to the record literal, for example: { " <> List.intercalate ", " (map (\f -> f <> ": <value>") fs) <> " }"
+          ]
 
   RecordExtraFields fs availableFields ->
     let fieldList = intercalate ", " (map (\f -> "'" <> f <> "'") fs)
@@ -1687,33 +2064,36 @@ createErrorDiagnostic color context typeError = case typeError of
           ("The record has unexpected fields: " <> fieldList)
           hint
 
+  RecordDuplicateRestPattern ->
+    mkError "Duplicate rest pattern" context
+      "A record pattern can only have one rest/spread pattern ('...')."
+      [ Diagnose.Hint "Remove the extra '...' and keep only one."
+      , Diagnose.Note "Example:  { x, ...rest } = myRecord  -- only one spread allowed"
+      ]
+
   WrongSpreadType t ->
-    Diagnose.Err
-      Nothing
-      ("Type error\n\n" <> t)
-      []
-      [Diagnose.Hint "Verify that you don't have a typo."]
+    mkError "Type error" context t
+      [ Diagnose.Note "The spread operator '...' is only valid on record types."
+      , Diagnose.Hint "Check that the value you are spreading is a record, or remove the spread."
+      ]
 
   FatalError ->
-    Diagnose.Err
-      Nothing
-      "Fatal error"
-      []
-      []
+    mkError "Internal compiler error" context
+      "The compiler encountered an unexpected internal state and could not continue."
+      [ Diagnose.Hint "This is likely a compiler bug. Please report it with the code that triggered it."
+      , Diagnose.Note "You can try reorganizing the problematic expression or adding a type annotation."
+      ]
 
   Error ->
-    Diagnose.Err
-      Nothing
-      "Unknown error"
-      []
-      []
+    mkError "Error" context "An error occurred during compilation."
+      [ Diagnose.Hint "Check the surrounding code for type mismatches or missing imports." ]
 
   ASTHasNoPath ->
-    Diagnose.Err
-      Nothing
-      "A module could not be found or loaded"
-      []
-      []
+    mkError "Module not found" context
+      "A required module could not be located or loaded."
+      [ Diagnose.Hint "Verify that all imports resolve to existing files."
+      , Diagnose.Note "If this is a package dependency, run 'madlib install' to fetch it."
+      ]
 
 
 -- computeLinesToShow : returns the first line and the last line to show

@@ -2,12 +2,10 @@
      │
   19 │   f({ y: { name: \"\" } })
      •   ┬─────────────────────
-     •   ╰╸ No instance for 'ShowX String' was found.
-     •      
+     •   ╰╸ 'ShowX String' is required here, but no instance was found for 'String'.
      •
-     │ Hint: Verify that you imported the module where the ShowX
-     │       instance for 'String' is defined
-     │ Note: Remember that instance methods are automatically imported when the module
-     │       is imported, directly, or indirectly.
+     │ Hint: Make sure 'String' implements the 'ShowX' interface.
+     │ Note: Instance methods are automatically in scope when their module is imported,
+     │       directly or transitively.
 ─────╯
 

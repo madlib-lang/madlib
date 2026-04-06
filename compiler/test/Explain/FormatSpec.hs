@@ -4,497 +4,400 @@ import           Test.Hspec                     ( describe
                                                 , it
                                                 , Spec
                                                 , shouldBe
+                                                , shouldSatisfy
                                                 )
-import qualified Data.Text.IO                  as T
-import           Data.Text                      ( Text
-                                                , pack
-                                                , replace
-                                                , unpack
-                                                )
-import Explain.Format
-import Error.Error
-import Explain.Location
-import GHC.IO (unsafePerformIO)
-import Infer.Type
-import Error.Context
-import qualified Data.Map as Map
-import qualified AST.Solved as Slv
-import qualified Data.List as List
+import           Data.List                      ( isInfixOf )
+import           Explain.Format
+import           Error.Error
+import           Explain.Location
+import           Infer.Type
+import           Error.Context
+import qualified Data.Map                      as Map
+import qualified AST.Solved                    as Slv
 
 
-makeReadFile :: String -> (FilePath -> IO String)
-makeReadFile content =
-  const $ return content
+-- ---------------------------------------------------------------------------
+-- Helpers
+-- ---------------------------------------------------------------------------
+
+makeCtx :: Context
+makeCtx = Context "test/Module.mad" (Area (Loc 0 1 1) (Loc 0 1 20))
+
+noCtx :: Context
+noCtx = NoContext
+
+-- Run simpleFormatError synchronously (no color, no JSON).
+fmt :: TypeError -> Context -> IO String
+fmt e ctx = simpleFormatError False (CompilationError e ctx)
+
+-- Infix contains check that works like shouldContain but uses shouldSatisfy.
+contains :: String -> String -> IO ()
+contains result needle =
+  result `shouldSatisfy` isInfixOf needle
 
 
-sourceFile :: String
-sourceFile = "// here is the error\n"
-
-mockedReadFile :: FilePath -> IO String
-mockedReadFile = makeReadFile sourceFile
-
-
-errorArea :: Area
-errorArea = Area (Loc 1 1 1) (Loc 21 1 21)
-
+-- ---------------------------------------------------------------------------
+-- Spec
+-- ---------------------------------------------------------------------------
 
 spec :: Spec
 spec = do
-  -- describe "format error" $ do
-  --   it "should format InfiniteType errors" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (InfiniteType (TV "a" Star) (TVar (TV "a" Star))) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ Infinite type a -> a"
-  --             ]
-  --     actual `shouldBe` expected
+  -- -------------------------------------------------------------------------
+  describe "Type errors" $ do
+    it "UnificationError shows expected and found types" $ do
+      result <- fmt (UnificationError tStr tFloat NoOrigin) makeCtx
+      result `contains` "expected"
+      result `contains` "found"
 
-  --   it "should format illegal skip access" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError IllegalSkipAccess (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ You accessed the skip symbol '_'. This is not permitted as it does not hold any value"
-  --             , "│ and only serves to indicate that you are not interested in whatever it may contain."
-  --             ]
-  --     actual `shouldBe` expected
+    it "InfiniteType mentions infinite" $ do
+      result <- fmt (InfiniteType (TV 1 Star) (TVar (TV 1 Star))) makeCtx
+      result `contains` "nfinite"
 
-  --   it "should format unbound variable" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (UnboundVariable "name") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The variable 'name' has not been declared, you might have a typo."
-  --             ]
-  --     actual `shouldBe` expected
+    it "SignatureTooGeneral shows given and inferred" $ do
+      result <- fmt (SignatureTooGeneral (Forall [] ([] :=> TVar (TV 1 Star))) (Forall [] ([] :=> tFloat))) makeCtx
+      result `contains` "given"
+      result `contains` "inferred"
 
-  --   it "should format unbound variable from namespace" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (UnboundVariableFromNamespace "Namespace" "name") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The default import 'Namespace' does not export the function 'name'."
-  --             , "│ "
-  --             , "│ Hint: Verify that it is exported or that you spelled it correctly."
-  --             ]
-  --     actual `shouldBe` expected
+    it "ContextTooWeak names the missing constraints" $ do
+      result <- fmt (ContextTooWeak [IsIn "Eq" [tStr] Nothing]) makeCtx
+      result `contains` "Eq"
 
-  --   it "should format capitalized adt type variable" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (CapitalizedADTTVar "Maybe" "Var") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The type parameter 'Var' in the type declaration 'Maybe' is capitalized."
-  --             , "│ Type parameters can't be capitalized."
-  --             , "│ "
-  --             , "│ Hint: Either remove it if you don't need the type variable, or make its first letter lowercase."
-  --             ]
-  --     actual `shouldBe` expected
+    it "AmbiguousType with constraint names the interface" $ do
+      result <- fmt (AmbiguousType (TV 1 Star, [IsIn "Show" [TVar (TV 1 Star)] Nothing])) makeCtx
+      result `contains` "Show"
 
-  --   it "should format unbound types" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (UnboundType "Maybe") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The type 'Maybe' has not been declared, you might have a typo!"
-  --             , "│ "
-  --             , "│ Hint: Maybe you forgot to import it?"
-  --             ]
-  --     actual `shouldBe` expected
+    it "AmbiguousType with no constraints mentions type variable" $ do
+      result <- fmt (AmbiguousType (TV 5 Star, [])) makeCtx
+      result `contains` "mbiguous"
 
-  --   it "should format signature too general" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (SignatureTooGeneral (Forall [] ([] :=> TVar (TV "a" Star))) (Forall [] ([] :=> tFloat))) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The signature given is too general"
-  --             , "│ Type signature given:"
-  --             , "│     a"
-  --             , "│ "
-  --             , "│ Type inferred:"
-  --             , "│     Float"
-  --             ]
-  --     actual `shouldBe` expected
+    it "KindError shows kind symbols" $ do
+      result <- fmt (KindError (tStr, Star) (mkTCon (TC "List" (Kfun Star Star)) "List.mad", Kfun Star Star)) makeCtx
+      result `contains` "*"
 
-  --   it "should format unification error" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (UnificationError tStr tFloat) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ I found a type error!"
-  --             , "│ expected:"
-  --             , "│     \ESC[32mFloat\ESC[0m"
-  --             , "│ but found:"
-  --             , "│     \ESC[31mString\ESC[0m"
-  --             ]
-  --     actual `shouldBe` expected
+    it "TypingHasWrongKind mentions kind" $ do
+      result <- fmt (TypingHasWrongKind tStr (Kfun Star Star) Star) makeCtx
+      result `contains` "kind"
 
-  --   it "should format no instance found" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (NoInstanceFound "Number" [tStr]) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ I could not find any instance for 'Number String'. Verify that you imported the module"
-  --             , "│ where the Number instance for 'String' is defined."
-  --             , "│ "
-  --             , "│ NB: remember that instance methods are automatically imported when the module"
-  --             , "│ is imported, directly, or indirectly."
-  --             ]
-  --     actual `shouldBe` expected
+  -- -------------------------------------------------------------------------
+  describe "Binding errors" $ do
+    it "UnboundVariable with no suggestions prompts for typo check" $ do
+      result <- fmt (UnboundVariable "myVar" []) makeCtx
+      result `contains` "myVar"
 
-  --   it "should format ambiguous type" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (AmbiguousType (TV "a" Star, [])) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ An ambiguity for the type variable 'a' could not be resolved!"
-  --             ]
-  --     actual `shouldBe` expected
+    it "UnboundVariable with suggestions shows them" $ do
+      result <- fmt (UnboundVariable "fliter" ["filter"]) makeCtx
+      result `contains` "filter"
 
-  --   it "should format ambiguous type - known interface" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (AmbiguousType (TV "a" Star, [IsIn "Monoid" [TVar (TV "a" Star)] Nothing])) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ I am looking for an instance of 'Monoid' but could not resolve it."
-  --             , "│ "
-  --             , "│ "
-  --             , "│ Hint: You might want to add a type annotation to make it resolvable."
-  --             ]
-  --     actual `shouldBe` expected
+    it "UnboundType with no suggestions shows type name" $ do
+      result <- fmt (UnboundType "MyType" []) makeCtx
+      result `contains` "MyType"
 
-  --   it "should format interface not existing" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (InterfaceNotExisting "Comonad") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The interface 'Comonad' is not defined. Make sure you imported the module"
-  --             , "│ defining it, or a module that imports it."
-  --             ]
-  --     actual `shouldBe` expected
+    it "UnboundType with suggestion shows it" $ do
+      result <- fmt (UnboundType "Mabye" ["Maybe"]) makeCtx
+      result `contains` "Maybe"
 
-  --   it "should format kind error" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (KindError (tListOf tBool, Star) (tListOf (tTuple2Of tUnit tChar), Kfun Star Star)) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The kind of types don't match, 'List Boolean' has kind * and List #[{}, Char] has kind * -> *."
-  --             ]
-  --     actual `shouldBe` expected
+    it "UnboundUnknownTypeVariable mentions type variable" $ do
+      result <- fmt UnboundUnknownTypeVariable makeCtx
+      result `contains` "type variable"
 
-  --   it "should format instance predicate error" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (InstancePredicateError (IsIn "Monoid" [TVar (TV "a" Star)] Nothing) (IsIn "Monoid" [TVar (TV "a" Star), TVar (TV "a" Star)] Nothing) (IsIn "Monoid" [TVar (TV "a" Star)] Nothing)) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ A constraint in the instance declaration 'Monoid a is not correct."
-  --             , "│ You gave the constraint 'Monoid a a' but a constraint of the form 'Monoid a'"
-  --             , "│ was expected."
-  --             ]
-  --     actual `shouldBe` expected
+    it "UnboundVariableFromNamespace names namespace and function" $ do
+      result <- fmt (UnboundVariableFromNamespace "List" "fliter") makeCtx
+      result `contains` "fliter"
+      result `contains` "List"
 
-  --   it "should format import cycle" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (ImportCycle ["path1", "path2", "path1"]) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ I found an import cycle:"
-  --             , "│ "
-  --             , "│ path1"
-  --             , "│   -> path2"
-  --             , "│     -> path1"
-  --             , "│ "
-  --             , "│ Hint: Import cycles are not allowed and usually show a design issue. Consider splitting things in more"
-  --             , "│ modules in order to have both modules import a common dependency instead of having them being co-dependent."
-  --             , "│ Another solution would be to move things that depend on the other module from the cycle into the other in"
-  --             , "│ order to collocate things that depend on each other."
-  --             ]
-  --     actual `shouldBe` expected
+    it "NameAlreadyDefined identifies the variable" $ do
+      result <- fmt (NameAlreadyDefined "x") makeCtx
+      result `contains` "x"
 
-  --   it "should format grammar error" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (GrammarError "path" "Error at token xyz") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ Error at token xyz"
-  --             ]
-  --     actual `shouldBe` expected
+    it "TypeAlreadyDefined identifies the type" $ do
+      result <- fmt (TypeAlreadyDefined "User") makeCtx
+      result `contains` "User"
 
-  --   it "should format unknown type" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (UnknownType "Optional") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ Type Error, the type 'Optional' is not found."
-  --             , "│ "
-  --             , "│ Hint: Verify that you imported it!"
-  --             ]
-  --     actual `shouldBe` expected
+    it "NameAlreadyExported identifies the name" $ do
+      result <- fmt (NameAlreadyExported "greet") makeCtx
+      result `contains` "greet"
 
-  --   it "should format name already defined" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (NameAlreadyDefined "x") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ Illegal shadowing, the variable 'x' is already defined. Shadowing is not permitted in madlib."
-  --             , "│ "
-  --             , "│ Hint: Change the name of the variable."
-  --             , "│ Also note that the variable might be defined further down. All top level assignments share the scope and using a local name"
-  --             , "│ that is defined in the global scope of a module is not allowed."
-  --             ]
-  --     actual `shouldBe` expected
+    it "TypeAnnotationNameMismatch shows both names" $ do
+      result <- fmt (TypeAnnotationNameMismatch "foo" "bar") makeCtx
+      result `contains` "foo"
+      result `contains` "bar"
 
-  --   it "should format name already exported" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (NameAlreadyExported "filter") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ Export already defined. You are trying to export the name 'filter' but it"
-  --             , "│ appears that you have already exported it."
-  --             ]
-  --     actual `shouldBe` expected
+    it "ShouldBeTypedOrAbove names the binding" $ do
+      result <- fmt (ShouldBeTypedOrAbove "parse") makeCtx
+      result `contains` "parse"
 
-  --   it "should format not exported" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (NotExported "List.mad" "filter") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ You are trying to import 'List.mad' from the module located here:"
-  --             , "│ 'filter'"
-  --             , "│ Unfortunately, that module does not export 'List.mad'!"
-  --             , "│ "
-  --             , "│ Hint: Verify that you spelled it correctly or add the export to the module if you can."
-  --             ]
-  --     actual `shouldBe` expected
+    it "NotInScope names the variable" $ do
+      result <- fmt (NotInScope "handler" (Loc 0 5 1)) makeCtx
+      result `contains` "handler"
 
-  --   it "should format recursive access" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (RecursiveVarAccess "filter") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ You are using a variable that is recursively accessing itself and is thus not yet initialized."
-  --             , "│ This is not allowed and can only work if there exists a function in between, let me show you"
-  --             , "│ some examples that should make this clearer:"
-  --             , "│ parser = J.map(Title, J.field(\"title\", parser)) // this is not allowed because parser is directly refering to itself"
-  --             , "│ parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser))) // this works because now the recursive accessed is wrapped in a function"
-  --             ]
-  --     actual `shouldBe` expected
+    it "RecursiveVarAccess names the variable" $ do
+      result <- fmt (RecursiveVarAccess "parser") makeCtx
+      result `contains` "parser"
 
-  --   it "should format not in scope" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (NotInScope "filter" (Loc 0 0 0)) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ This expression relies on an expression that accesses the variable 'filter' at line 0."
-  --             , "│ All variables need to have been defined by the time they are accessed and this access is thus not allowed."
-  --             , "│ "
-  --             , "│ Hint: Move that call further down in the module so that the name is defined when you access it."
-  --             ]
-  --     actual `shouldBe` expected
+  -- -------------------------------------------------------------------------
+  describe "Type definition errors" $ do
+    it "NotCapitalizedADTName shows the name" $ do
+      result <- fmt (NotCapitalizedADTName "maybe") makeCtx
+      result `contains` "maybe"
 
-  --   it "should format types have different origin" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (TypesHaveDifferentOrigin "Maybe" "prelude/Maybe.mad" "lib/Maybe.mad") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ Types do not match. You try to use a type that seems similar but comes from two different locations."
-  --             , "│ The type 'Maybe' is used from:"
-  --             , "│   - 'prelude/Maybe.mad'"
-  --             , "│   - 'lib/Maybe.mad'"
-  --             , "│ "
-  --             , "│ Hint: Import it only from one place, or if you meant to use both, make sure to convert from one to the other"
-  --             , "│ correctly."
-  --             ]
-  --     actual `shouldBe` expected
+    it "NotCapitalizedAliasName shows the name" $ do
+      result <- fmt (NotCapitalizedAliasName "user") makeCtx
+      result `contains` "user"
 
-  --   it "should format should be typed or above" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (ShouldBeTypedOrAbove "parse") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ You access the name 'parse' before it is defined. This is fine, but in that case you must"
-  --             , "│ give it a type annotation."
-  --             , "│ "
-  --             , "│ Hint: Place that declaration above the place you use it, or give it a type annotation."
-  --             ]
-  --     actual `shouldBe` expected
+    it "NotCapitalizedConstructorName shows the name" $ do
+      result <- fmt (NotCapitalizedConstructorName "just") makeCtx
+      result `contains` "just"
 
-  --   it "should format not capitalized adt name" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (NotCapitalizedADTName "maybe") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The name 'maybe' of this type is not capitalized. This is incorrect and all types in madlib should start with"
-  --             , "│ an uppercased letter."
-  --             ]
-  --     actual `shouldBe` expected
+    it "CapitalizedADTTVar shows the type and parameter" $ do
+      result <- fmt (CapitalizedADTTVar "Maybe" "Val") makeCtx
+      result `contains` "Val"
 
-  --   it "should format not capitalized alias name" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (NotCapitalizedAliasName "maybe") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The name 'maybe' of this type alias is not capitalized. This is incorrect and all types in madlib should start with"
-  --             , "│ an uppercased letter."
-  --             ]
-  --     actual `shouldBe` expected
+    it "ADTAlreadyDefined says already" $ do
+      result <- fmt (ADTAlreadyDefined tStr) makeCtx
+      result `contains` "already"
 
-  --   it "should format not capitalized constructor name" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (NotCapitalizedConstructorName "maybe") (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The name 'maybe' of this type constructor is not capitalized. This is incorrect and all types in madlib should start with"
-  --             , "│ an uppercased letter."
-  --             ]
-  --     actual `shouldBe` expected
+    it "WrongAliasArgCount shows alias name and counts" $ do
+      result <- fmt (WrongAliasArgCount "Pair" 2 1) makeCtx
+      result `contains` "Pair"
+      result `contains` "2"
+      result `contains` "1"
 
-  --   it "should format typing has wrong kind" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (TypingHasWrongKind (TCon (TC "Maybe" Star) "Maybe.mad") (Kfun Star Star) Star) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The type annotation 'Maybe' has a wrong kind."
-  --             , "│ expected:"
-  --             , "│     \ESC[32m* -> *\ESC[0m"
-  --             , "│ But found:"
-  --             , "│     \ESC[31m*\ESC[0m"
-  --             ]
-  --     actual `shouldBe` expected
+    it "UnknownType names the type" $ do
+      result <- fmt (UnknownType "Optional" []) makeCtx
+      result `contains` "Optional"
 
-  --   it "should format context too weak" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (ContextTooWeak [IsIn "Monad" [TVar (TV "m" (Kfun Star Star))] Nothing]) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The context of the type annotation is too weak. The type inferred for the implementation"
-  --             , "│ has the following constraints: Monad."
-  --             , "│ "
-  --             , "│ Hint: Add the missing interface constraints to the type annotation."
-  --             ]
-  --     actual `shouldBe` expected
+    it "UnknownType with suggestion shows it" $ do
+      result <- fmt (UnknownType "Mabye" ["Maybe"]) makeCtx
+      result `contains` "Maybe"
 
-  --   it "should format wrong alias arg count" $ do
-  --     let actual   = unsafePerformIO $ format mockedReadFile False (CompilationError (WrongAliasArgCount "User" 2 1) (Context "path" errorArea))
-  --         expected =
-  --           unlines
-  --             [ "│ \ESC[41mError\ESC[0m in module 'path' at line 1:"
-  --             , "│ 1|// here is the error"
-  --             , "│   ^^^^^^^^^^^^^^^^^^^^"
-  --             , "│ "
-  --             , "│ The alias 'User' was expected to have 2 arguments, but"
-  --             , "│ 1 was given."
-  --             , "│ "
-  --             , "│ Hint: add the missing '1' argument(s)"
-  --             ]
-  --     actual `shouldBe` expected
+    it "TypesHaveDifferentOrigin names the type and origins" $ do
+      result <- fmt (TypesHaveDifferentOrigin "User" "a/User.mad" "b/User.mad") makeCtx
+      result `contains` "User"
+      result `contains` "a/User.mad"
 
+    it "TypingHasWrongKind mentions the kind" $ do
+      result <- fmt (TypingHasWrongKind tStr (Kfun Star Star) Star) makeCtx
+      result `contains` "kind"
+
+  -- -------------------------------------------------------------------------
+  describe "Interface errors" $ do
+    it "NoInstanceFound names the interface and type" $ do
+      result <- fmt (NoInstanceFound "Eq" [tStr]) makeCtx
+      result `contains` "Eq"
+      result `contains` "String"
+
+    it "NoInstanceFound Number+String names the interface and type" $ do
+      result <- fmt (NoInstanceFound "Number" [tStr]) makeCtx
+      result `contains` "Number"
+      result `contains` "String"
+
+    it "InterfaceNotExisting names the interface" $ do
+      result <- fmt (InterfaceNotExisting "Comonad") makeCtx
+      result `contains` "Comonad"
+
+    it "InterfaceAlreadyDefined names the interface" $ do
+      result <- fmt (InterfaceAlreadyDefined "Show") makeCtx
+      result `contains` "Show"
+
+    it "InstancePredicateError shows the interface name" $ do
+      result <- fmt (InstancePredicateError
+        (IsIn "Show" [TVar (TV 1 Star)] Nothing)
+        (IsIn "Show" [TVar (TV 1 Star), TVar (TV 2 Star)] Nothing)
+        (IsIn "Show" [TVar (TV 1 Star)] Nothing)) makeCtx
+      result `contains` "Show"
+
+    it "DerivingAliasNotAllowed names the alias" $ do
+      result <- fmt (DerivingAliasNotAllowed "Name") makeCtx
+      result `contains` "Name"
+
+    it "InvalidInterfaceDerived names the interface" $ do
+      result <- fmt (InvalidInterfaceDerived "Functor") makeCtx
+      result `contains` "Functor"
+
+    it "MethodNameAlreadyDefined mentions method" $ do
+      result <- fmt MethodNameAlreadyDefined makeCtx
+      result `contains` "method"
+
+  -- -------------------------------------------------------------------------
+  describe "Import errors" $ do
+    it "ImportNotFound names the module" $ do
+      result <- fmt (ImportNotFound "List") makeCtx
+      result `contains` "List"
+
+    it "ImportNotFound relative path" $ do
+      result <- fmt (ImportNotFound "./Utils") makeCtx
+      result `contains` "Utils"
+
+    it "ImportCollision names the colliding name" $ do
+      result <- fmt (ImportCollision "map") makeCtx
+      result `contains` "map"
+
+    it "NotExported names the name and path" $ do
+      result <- fmt (NotExported "filter" "List.mad" []) makeCtx
+      result `contains` "filter"
+
+    it "NotExported with suggestion shows it" $ do
+      result <- fmt (NotExported "fliter" "List.mad" ["filter"]) makeCtx
+      result `contains` "filter"
+
+    it "ImportCycle shows all modules" $ do
+      result <- fmt (ImportCycle ["A.mad", "B.mad", "A.mad"]) makeCtx
+      result `contains` "A.mad"
+      result `contains` "B.mad"
+
+  -- -------------------------------------------------------------------------
+  describe "Mutation errors" $ do
+    it "BadMutation mentions ':='" $ do
+      result <- fmt BadMutation makeCtx
+      result `contains` ":="
+
+    it "MutatingNotInScope names the variable" $ do
+      result <- fmt (MutatingNotInScope "counter") makeCtx
+      result `contains` "counter"
+
+    it "MutatingPatternBoundVariable names the variable" $ do
+      result <- fmt (MutatingPatternBoundVariable "x") makeCtx
+      result `contains` "x"
+
+    it "MutationRestriction mentions type" $ do
+      result <- fmt MutationRestriction makeCtx
+      result `contains` "type"
+
+    it "MutatingFunction names the function" $ do
+      result <- fmt (MutatingFunction "myFn") makeCtx
+      result `contains` "myFn"
+
+    it "OverloadedMutation names the variable" $ do
+      result <- fmt (OverloadedMutation "x" [IsIn "Show" [tStr] Nothing]) makeCtx
+      result `contains` "x"
+
+  -- -------------------------------------------------------------------------
+  describe "Record errors" $ do
+    it "RecordDuplicateFields names the duplicate fields" $ do
+      result <- fmt (RecordDuplicateFields ["name", "age"]) makeCtx
+      result `contains` "name"
+
+    it "RecordMissingFields names the missing fields" $ do
+      result <- fmt (RecordMissingFields ["email", "phone"]) makeCtx
+      result `contains` "email"
+
+    it "RecordExtraFields names the extra fields" $ do
+      result <- fmt (RecordExtraFields ["extra"] ["name", "age"]) makeCtx
+      result `contains` "extra"
+
+    it "RecordDuplicateRestPattern mentions rest/spread" $ do
+      result <- fmt RecordDuplicateRestPattern makeCtx
+      result `contains` "rest"
+
+    it "InvalidLhs mentions valid forms" $ do
+      result <- fmt InvalidLhs makeCtx
+      result `contains` "left"
+
+  -- -------------------------------------------------------------------------
+  describe "Literal errors" $ do
+    it "BadEscapeSequence mentions escape" $ do
+      result <- fmt BadEscapeSequence makeCtx
+      result `contains` "escape"
+
+    it "EmptyChar mentions empty" $ do
+      result <- fmt EmptyChar makeCtx
+      result `contains` "mpty"
+
+    it "ByteOutOfBounds shows the literal and limit" $ do
+      result <- fmt (ByteOutOfBounds "300") makeCtx
+      result `contains` "300"
+      result `contains` "255"
+
+    it "ShortOutOfBounds shows the literal" $ do
+      result <- fmt (ShortOutOfBounds "99999999999") makeCtx
+      result `contains` "99999999999"
+
+    it "IntOutOfBounds shows the literal" $ do
+      result <- fmt (IntOutOfBounds "99999999999999999999") makeCtx
+      result `contains` "99999999999999999999"
+
+    it "NegatedByte mentions negat" $ do
+      result <- fmt NegatedByte makeCtx
+      result `contains` "negat"
+
+  -- -------------------------------------------------------------------------
+  describe "Other errors" $ do
+    it "GrammarError shows the parse message" $ do
+      result <- fmt (GrammarError "test.mad" "unexpected token '}'") makeCtx
+      result `contains` "unexpected token"
+
+    it "GrammarError with empty message shows Syntax" $ do
+      result <- fmt (GrammarError "test.mad" "") makeCtx
+      result `contains` "Syntax"
+
+    it "NotADefinition mentions top" $ do
+      result <- fmt NotADefinition makeCtx
+      result `contains` "top"
+
+    it "NotAConstructor names the identifier" $ do
+      result <- fmt (NotAConstructor "myVar") makeCtx
+      result `contains` "myVar"
+
+    it "IllegalSkipAccess mentions '_'" $ do
+      result <- fmt IllegalSkipAccess makeCtx
+      result `contains` "_"
+
+    it "NoMain mentions 'main'" $ do
+      result <- fmt NoMain makeCtx
+      result `contains` "main"
+
+    it "MainInvalidTyping shows List String" $ do
+      result <- fmt MainInvalidTyping makeCtx
+      result `contains` "List String"
+
+    it "TestNotValid shows Wish" $ do
+      result <- fmt (TestNotValid tStr) makeCtx
+      result `contains` "Wish"
+
+    it "WrongSpreadType mentions spread" $ do
+      result <- fmt (WrongSpreadType "Cannot spread Integer") makeCtx
+      result `contains` "spread"
+
+    it "ConstructorAccessBadIndex shows constructor name and arity" $ do
+      result <- fmt (ConstructorAccessBadIndex "Maybe" "Just" 5 10) makeCtx
+      result `contains` "Just"
+      result `contains` "5"
+
+    it "ConstructorAccessNoConstructorFound names the type" $ do
+      result <- fmt (ConstructorAccessNoConstructorFound "EmptyType") makeCtx
+      result `contains` "EmptyType"
+
+    it "ConstructorAccessTooManyConstructors names the type" $ do
+      result <- fmt (ConstructorAccessTooManyConstructors "Shape" 3) makeCtx
+      result `contains` "Shape"
+
+    it "FatalError mentions compiler" $ do
+      result <- fmt FatalError makeCtx
+      result `contains` "compiler"
+
+    it "ASTHasNoPath mentions module" $ do
+      result <- fmt ASTHasNoPath makeCtx
+      result `contains` "module"
+
+    it "GrammarError is included in full formatted output" $ do
+      let stubReader _ = return "x = 1\n"
+      full <- formatError stubReader False (CompilationError (GrammarError "test/Module.mad" "unexpected '}'") makeCtx)
+      full `contains` "unexpected"
+
+  -- -------------------------------------------------------------------------
   describe "prettyPrintQualType" $ do
-    it "should pretty print a qualified type with multiple constraints" $ do
-      let qt   = ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing, IsIn "Monoid" [TVar $ TV 100 Star] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` tTuple2Of tBool tStr))
-          actual   = prettyPrintQualType qt
-          expected = "(Monad m, Monoid a) => m -> { ...base, x :: Integer } -> #[Boolean, String]"
-      actual `shouldBe` expected
+    it "renders multiple constraints" $ do
+      let qt = ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing, IsIn "Monoid" [TVar $ TV 100 Star] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` tTuple2Of tBool tStr))
+      prettyPrintQualType qt `shouldBe` "(Monad m, Monoid a) => m -> { ...base, x :: Integer } -> #[Boolean, String]"
 
-    it "should pretty print a qualified type with one constraint" $ do
-      let scheme   = Forall [] ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` (tStr `fn` tTuple4Of tByte tBool tBool tBool) `fn` tTuple3Of tBool tStr (TApp (TApp (mkTCon (TC "Either" (Kfun (Kfun Star Star) Star)) "Either.mad") tByteArray) (tListOf tStr))))
-          actual   = schemeToStr scheme
-          expected = "Monad m => m -> { ...base, x :: Integer } -> (String -> #[Byte, Boolean, Boolean, Boolean]) -> #[Boolean, String, Either ByteArray (List String)]"
-      actual `shouldBe` expected
+    it "renders a single constraint" $ do
+      let scheme = Forall [] ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` (tStr `fn` tTuple4Of tByte tBool tBool tBool) `fn` tTuple3Of tBool tStr (TApp (TApp (mkTCon (TC "Either" (Kfun (Kfun Star Star) Star)) "Either.mad") tByteArray) (tListOf tStr))))
+      schemeToStr scheme `shouldBe` "Monad m => m -> { ...base, x :: Integer } -> (String -> #[Byte, Boolean, Boolean, Boolean]) -> #[Boolean, String, Either ByteArray (List String)]"
 
-    it "should render many type variables without crashing" $ do
+    it "renders many type variables without crashing" $ do
       let mkVar i = TVar (TV i Star)
           longFn = foldr1 fn (mkVar <$> [1..30])
-          actual = prettyPrintType True longFn
-      actual `shouldBe` "a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q -> r -> s -> t -> u -> v -> w -> x -> y -> z -> a1 -> b1 -> c1 -> d1"
+      prettyPrintType True longFn `shouldBe` "a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> l -> m -> n -> o -> p -> q -> r -> s -> t -> u -> v -> w -> x -> y -> z -> a1 -> b1 -> c1 -> d1"
 
   describe "prettyPrintTyping" $ do
     it "should pretty print a typing" $ do
