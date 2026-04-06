@@ -10,7 +10,13 @@
 {-# HLINT ignore "Use list comprehension" #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-module Run.LanguageServer where
+module Run.LanguageServer
+  ( runLanguageServer
+  , module Run.LanguageServer.State
+  , module Run.LanguageServer.Diagnostics
+  , module Run.LanguageServer.Hover
+  , module Run.LanguageServer.Completion
+  ) where
 
 import Language.LSP.Server
 import Language.LSP.Types
@@ -21,7 +27,6 @@ import Control.Monad.Base
 import qualified Rock
 import Driver.Rules
 import qualified Driver.Query as Query
-import Text.Show.Pretty (ppShow)
 import qualified Driver
 import Error.Error
 import qualified Data.Map as Map
@@ -29,9 +34,8 @@ import qualified Data.Set as Set
 import Error.Context
 import Explain.Location
 import qualified Explain.Location as Loc
-import Language.LSP.Diagnostics
 import qualified Explain.Format as Explain
-import           Data.List (group, foldl')
+import           Data.List (foldl')
 import qualified Data.List as List
 import           Control.Monad (forM_, join, forM, unless, void)
 import           Data.IORef
@@ -80,6 +84,11 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
 import           Data.Aeson ((.=), (.:))
 import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
+
+import Run.LanguageServer.State
+import Run.LanguageServer.Diagnostics
+import Run.LanguageServer.Hover
+import Run.LanguageServer.Completion
 
 
 
@@ -230,741 +239,7 @@ handlers state autocompletionState = mconcat
   ]
 
 
-data AutocompletionKind
-  = AutocompletingName String
-  | AutocompletingRecordAccess String String
-  | AutocompletingNamespaceAccess String
-  deriving(Eq, Show)
-
-
-computeAutocompletionKind :: String -> AutocompletionKind
-computeAutocompletionKind reversedCurrentLine =
-  let consumeChars chars = case chars of
-        c : cs | isAlphaNum c ->
-          c : consumeChars cs
-
-        _ ->
-          []
-      readName chars =
-        let _name = reverse $ consumeChars chars
-            _rest = drop (length _name) chars
-        in  (dropWhile isDigit _name, _rest)
-      (name, rest) = readName reversedCurrentLine
-  in  case rest of
-        '.' : afterDot ->
-          let (recordName, rest') = readName afterDot
-          in  case rest' of
-                _ | not (null recordName) && isUpper (head recordName) ->
-                  AutocompletingNamespaceAccess recordName
-
-
-                _ ->
-                  AutocompletingRecordAccess recordName name
-
-        _ ->
-          AutocompletingName name
-
-
-
-buildOptions :: Target -> LspM () Options.Options
-buildOptions target = do
-  maybeRootPath <- getRootPath
-  let rootPath = Maybe.fromMaybe "./" maybeRootPath
-  return
-    Options.Options
-      { Options.optEntrypoint = ""
-      , Options.optTarget = target
-      , Options.optRootPath = rootPath
-      , Options.optOutputPath = ""
-      , Options.optOptimized = False
-      , Options.optPathUtils = PathUtils.defaultPathUtils
-      , Options.optBundle = False
-      , Options.optCoverage = False
-      , Options.optGenerateDerivedInstances = False
-      , Options.optInsertInstancePlaholders = False
-      , Options.optMustHaveMain = False
-      , Options.optParseOnly = False
-      , Options.optOptimizationLevel = O1
-      , Options.optLspMode = True
-      , Options.optEmitLLVM = False
-      , Options.optSourceMaps = NoSourceMap
-      , Options.optDebug = False
-      , Options.optErrorFormat = TextFormat
-      , Options.optPGOMode = NoPGO
-      }
-
-
-recordAndPrintDuration :: T.Text -> LspM a b -> LspM a b
-recordAndPrintDuration title action = do
-  startT       <- liftIO getCurrentTime
-  actionResult <- action
-  endT         <- liftIO getCurrentTime
-  let diff = diffUTCTime endT startT
-  let (ms, _) = properFraction $ diff * 1000
-  sendNotification SWindowLogMessage $ LogMessageParams MtInfo (title <> " - duration: " <> T.pack (show ms <> "ms"))
-  return actionResult
-
-
-isInRange :: Loc -> Area -> Bool
-isInRange (Loc _ l c) (Area (Loc _ lstart cstart) (Loc _ lend cend)) =
-  (l >= lstart && l <= lend)
-  && (not (l == lstart && c < cstart) && not (l == lend && c > cend))
-
-
-isLocAfter :: Loc -> Area -> Bool
-isLocAfter (Loc _ l _) (Area _ (Loc _ lend _)) =
-  l > lend
-
-isLocAfterStart :: Loc -> Area -> Bool
-isLocAfterStart (Loc _ l _) (Area (Loc _ lstart _) _) =
-  l > lstart
-
-
-prettyQt :: Bool -> Qual Type -> String
-prettyQt topLevel qt@(_ :=> t)
-  | qt == failedQt = "_"
-  | topLevel       = let (r, _) = renderSchemesWithDiff False (Forall [] qt) (Forall [] qt) in r
-  | otherwise      = let (r, _) = renderSchemesWithDiff False (Forall [] ([] :=> t)) (Forall [] ([] :=> t)) in r
-
-
-prettyScheme :: Scheme -> String
-prettyScheme sc =
-  let (r, _) = renderSchemesWithDiff False sc sc in r
-
-
-data Node
-  = ExpNode Bool Slv.Exp
-  | NameNode Bool (Slv.Solved String)
-  | PatternNode Slv.Pattern
-  | TypingNode (Maybe Slv.Typing) Slv.Typing
-  | RecordFieldAnnotation Area String Slv.Typing
-  | ADTNode String Area Kind
-  | DefaultImportNode Area FilePath
-  | NamedImportNode Area String FilePath
-  | TypeImportNode Area String FilePath
-  deriving(Eq, Show)
-
-
--- Inlay Hints
-
-inlayHintToJSON :: Int -> Int -> String -> Aeson.Value
-inlayHintToJSON line char label =
-  Aeson.object
-    [ "position" .= Aeson.object ["line" .= line, "character" .= char]
-    , "label"    .= label
-    , "kind"     .= (1 :: Int)  -- InlayHintKind.Type = 1
-    , "paddingLeft" .= True
-    ]
-
-
-parseInlayHintParams :: Aeson.Value -> Aeson.Parser (Uri, Int, Int)
-parseInlayHintParams = Aeson.withObject "InlayHintParams" $ \o -> do
-  td    <- o .: "textDocument"
-  uri   <- td .: "uri"
-  range <- o .: "range"
-  start <- range .: "start"
-  end'  <- range .: "end"
-  startLine <- start .: "line"
-  endLine   <- end' .: "line"
-  return (Uri uri, startLine, endLine)
-
-
-collectInlayHints :: Int -> Int -> [Slv.Exp] -> [Aeson.Value]
-collectInlayHints startLine endLine = concatMap (collectFromExp True)
-  where
-    inRange area =
-      let line = Loc.getLine (getStartLoc area) - 1
-      in  line >= startLine && line <= endLine
-
-    collectFromExp topLevel exp = case exp of
-      -- Skip explicitly typed bindings
-      Slv.Typed _ _ (Slv.TypedExp _ _ _) ->
-        []
-
-      -- Top-level or let-binding assignment (inferred type)
-      Slv.Typed qt area (Slv.Assignment name body)
-        | inRange area && not (isSyntheticName name) ->
-          let line0 = Loc.getLine (getStartLoc area) - 1
-          in  inlayHintToJSON line0 0 (sanitizeName name <> " :: " <> prettyQt topLevel qt)
-              : collectFromBody body
-
-      -- Exported assignment (inferred type)
-      Slv.Typed _ _ (Slv.Export (Slv.Typed qt' innerArea (Slv.Assignment name body)))
-        | inRange innerArea && not (isSyntheticName name) ->
-          let line0 = Loc.getLine (getStartLoc innerArea) - 1
-          in  inlayHintToJSON line0 0 (sanitizeName name <> " :: " <> prettyQt topLevel qt')
-              : collectFromBody body
-
-      -- Exported with annotation — skip
-      Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.TypedExp _ _ _))) ->
-        []
-
-      _ ->
-        []
-
-    collectFromBody exp = case exp of
-      Slv.Typed _ _ (Slv.Abs _ body) ->
-        concatMap (collectFromExp False) body
-      Slv.Typed _ _ (Slv.Do body) ->
-        concatMap (collectFromExp False) body
-      _ ->
-        []
-
-
-getNodeLine :: Node -> Int
-getNodeLine n = case n of
-  ExpNode _ (Slv.Typed _ (Area (Loc _ l _) _) _) ->
-    l
-
-  ExpNode _ (Slv.Untyped (Area (Loc _ l _) _) _) ->
-    l
-
-  NameNode _ (Slv.Typed _ (Area (Loc _ l _) _) _) ->
-    l
-
-  NameNode _ (Slv.Untyped (Area (Loc _ l _) _) _) ->
-    l
-
-  PatternNode (Slv.Typed _ (Area (Loc _ l _) _) _) ->
-    l
-
-  PatternNode (Slv.Untyped (Area (Loc _ l _) _) _) ->
-    l
-
-  TypingNode _ (Slv.Typed _ (Area (Loc _ l _) _) _) ->
-    l
-
-  TypingNode _ (Slv.Untyped (Area (Loc _ l _) _) _) ->
-    l
-
-  ADTNode _ (Area (Loc _ l _) _) _ ->
-    l
-
-  RecordFieldAnnotation (Area (Loc _ l _) _) _ _ ->
-    l
-
-  DefaultImportNode (Area (Loc _ l _) _) _ ->
-    l
-
-  NamedImportNode (Area (Loc _ l _) _) _ _ ->
-    l
-
-  TypeImportNode (Area (Loc _ l _) _) _ _ ->
-    l
-
-
-
-findNodeAtLocInListItem :: Loc -> Slv.ListItem -> Maybe Node
-findNodeAtLocInListItem loc li = case li of
-  Slv.Typed _ _ (Slv.ListItem exp) ->
-    findNodeAtLoc False loc exp
-
-  Slv.Typed _ _ (Slv.ListSpread exp) ->
-    findNodeAtLoc False loc exp
-
-  _ ->
-    Nothing
-
-
-findNodeAtLocInField :: Loc -> Slv.Field -> Maybe Node
-findNodeAtLocInField loc field = case field of
-  Slv.Typed _ _ (Slv.Field (_, exp)) ->
-    findNodeAtLoc False loc exp
-
-  Slv.Typed _ _ (Slv.FieldSpread exp) ->
-    findNodeAtLoc False loc exp
-
-  _ ->
-    Nothing
-
-
-findNodeAtLocInPattern :: Loc -> Slv.Pattern -> Maybe Node
-findNodeAtLocInPattern _ (Slv.Untyped _ _) = Nothing
-findNodeAtLocInPattern loc input@(Slv.Typed _ area pat) =
-  if isInRange loc area then
-    let deeper =
-          case pat of
-            Slv.PCon _ pats ->
-              foldl' (<|>) Nothing $ findNodeAtLocInPattern loc <$> pats
-
-            Slv.PList pats ->
-              foldl' (<|>) Nothing $ findNodeAtLocInPattern loc <$> pats
-
-            Slv.PTuple pats ->
-              foldl' (<|>) Nothing $ findNodeAtLocInPattern loc <$> pats
-
-            Slv.PRecord pats _ ->
-              foldl' (<|>) Nothing $ findNodeAtLocInPattern loc <$> pats
-
-            Slv.PSpread pat ->
-              findNodeAtLocInPattern loc pat
-
-            _ ->
-              Nothing
-    in  case deeper of
-          Nothing ->
-            Just $ PatternNode input
-
-          Just _ ->
-            deeper
-  else
-    Nothing
-
-
-findNodeAtLocInIs :: Loc -> Slv.Is -> Maybe Node
-findNodeAtLocInIs _ (Slv.Untyped _ _) = Nothing
-findNodeAtLocInIs loc (Slv.Typed _ _ (Slv.Is pat exp)) =
-  findNodeAtLocInPattern loc pat <|> findNodeAtLoc False loc exp
-
-
-findNodeInRecordFieldTypeAnnotation :: Loc -> (String, (Area, Slv.Typing)) -> Maybe Node
-findNodeInRecordFieldTypeAnnotation loc (fieldName, (area, typing)) =
-  if isInRange loc area then
-    Just $ RecordFieldAnnotation area fieldName typing
-  else
-    Nothing
-
-
-findNodeInTypeAnnotation :: Loc -> Maybe Slv.Typing -> Slv.Typing -> Maybe Node
-findNodeInTypeAnnotation loc maybeRoot typing =
-  if isInRange loc (Slv.getArea typing) then
-    let deeper =
-          case Slv.getValue typing of
-            Slv.TRComp _ typings ->
-              foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc (Just typing) <$> typings
-
-            Slv.TRArr l r ->
-              findNodeInTypeAnnotation loc Nothing l <|> findNodeInTypeAnnotation loc Nothing r
-
-            Slv.TRRecord fields _ ->
-              foldl' (<|>) Nothing (findNodeInRecordFieldTypeAnnotation loc <$> Map.toList fields)
-              <|> foldl' (<|>) Nothing (findNodeInTypeAnnotation loc Nothing <$> Map.elems (snd <$> fields))
-
-            Slv.TRTuple items ->
-              foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc Nothing <$> items
-
-            Slv.TRConstrained constraints subTyping ->
-              foldl' (<|>) Nothing (findNodeInTypeAnnotation loc Nothing <$> constraints) <|> findNodeInTypeAnnotation loc Nothing subTyping
-
-            _ ->
-              Nothing
-    in  deeper <|> Just (TypingNode maybeRoot typing)
-  else
-    Nothing
-
-
-findNodeAtLoc :: Bool -> Loc -> Slv.Exp -> Maybe Node
-findNodeAtLoc topLevel loc input@(Slv.Typed qt area exp) =
-  if isInRange loc area then
-    let deeper =
-          case exp of
-            Slv.App fn arg _ ->
-              findNodeAtLoc False loc arg <|> findNodeAtLoc False loc fn
-
-            Slv.Abs param@(Slv.Typed _ paramArea _) body ->
-              if isInRange loc paramArea then
-                Just $ NameNode False param
-              else
-                foldl' (<|>) Nothing $ findNodeAtLoc False loc <$> body
-
-            Slv.Do body ->
-              foldl' (<|>) Nothing $ findNodeAtLoc False loc <$> body
-
-            Slv.Assignment _ exp ->
-              findNodeAtLoc False loc exp
-
-            Slv.Mutate lhs exp ->
-              findNodeAtLoc False loc lhs <|> findNodeAtLoc False loc exp
-
-            Slv.Access rec field ->
-              -- Nothing
-              findNodeAtLoc False loc rec <|> findNodeAtLoc False loc field
-
-            Slv.ArrayAccess arr index ->
-              findNodeAtLoc False loc arr <|> findNodeAtLoc False loc index
-
-            Slv.If cond truthy falsy ->
-              findNodeAtLoc False loc cond
-              <|> findNodeAtLoc False loc truthy
-              <|> findNodeAtLoc False loc falsy
-
-            Slv.While cond body ->
-              findNodeAtLoc False loc cond
-              <|> findNodeAtLoc False loc body
-
-            Slv.Export exp' ->
-              findNodeAtLoc True loc exp'
-
-            Slv.TypedExp exp' typing _ ->
-              findNodeInTypeAnnotation loc Nothing typing
-              <|> findNodeAtLoc False loc exp'
-
-            Slv.Var name _ ->
-              Just $ NameNode topLevel (Slv.Typed qt area name)
-
-            Slv.Extern _ name _ ->
-              Just $ NameNode topLevel (Slv.Typed qt area name)
-
-            Slv.TemplateString exps ->
-              foldl' (<|>) Nothing $ findNodeAtLoc False loc <$> exps
-
-            Slv.TupleConstructor items ->
-              foldl' (<|>) Nothing $ findNodeAtLoc False loc <$> items
-
-            Slv.ListConstructor items ->
-              foldl' (<|>) Nothing $ findNodeAtLocInListItem loc <$> items
-
-            Slv.Record fields ->
-              foldl' (<|>) Nothing $ findNodeAtLocInField loc <$> fields
-
-            Slv.Where exp iss ->
-              findNodeAtLoc False loc exp
-              <|> foldl' (<|>) Nothing (findNodeAtLocInIs loc <$> iss)
-
-            _ ->
-              Nothing
-    in  case deeper of
-          Nothing ->
-            Just $ ExpNode topLevel input
-
-          Just _ ->
-            deeper
-  else
-    Nothing
-findNodeAtLoc _ _ (Slv.Untyped _ _) =
-  Nothing
-
-
-findNodeInAst :: Loc -> Src.AST -> Slv.AST -> Maybe Node
-findNodeInAst loc srcAst slvAst =
-  findNodeInExps loc (Slv.aexps slvAst ++ Slv.getAllMethods slvAst)
-  <|> findNodeInTypeDeclarations loc (Slv.atypedecls slvAst)
-  <|> findNodeInInstanceHeaders loc (Src.ainstances srcAst)
-  <|> findNodeInImports loc (Src.aimports srcAst)
-
-
-findNodeInImports :: Loc -> [Src.Import] -> Maybe Node
-findNodeInImports loc imports =
-  foldl' (<|>) Nothing $ findNodeInImport loc <$> imports
-
-
-findNodeInImport :: Loc -> Src.Import -> Maybe Node
-findNodeInImport loc imp =
-  if isInRange loc $ Src.getArea imp then
-    case imp of
-      Src.Source impArea _ (Src.DefaultImport _ _ filepath) ->
-        Just $ DefaultImportNode impArea filepath
-
-      Src.Source impArea _ (Src.NamedImport names _ filepath) ->
-        foldl' (<|>) Nothing (findNamedImportNode loc filepath NamedImportNode <$> names)
-        <|> Just (DefaultImportNode impArea filepath)
-
-      Src.Source impArea _ (Src.TypeImport typeNames _ filepath) ->
-        foldl' (<|>) Nothing (findNamedImportNode loc filepath TypeImportNode <$> typeNames)
-        <|> Just (DefaultImportNode impArea filepath)
-  else
-    Nothing
-
-findNamedImportNode :: Loc -> FilePath -> (Area -> String -> FilePath -> Node) -> Src.Source Src.Name -> Maybe Node
-findNamedImportNode loc importPath ctor (Src.Source area _ n) =
-  if isInRange loc area then
-    Just $ ctor area n importPath
-  else
-    Nothing
-
-
-findNodeInTypeDeclarations :: Loc -> [Slv.TypeDecl] -> Maybe Node
-findNodeInTypeDeclarations loc typeDecls = case typeDecls of
-  typeDeclaration : next ->
-    findNodeInTypeDeclaration loc typeDeclaration
-    <|> findNodeInTypeDeclarations loc next
-
-  [] ->
-    Nothing
-
-
-findNodeInConstructor :: Loc -> Slv.Constructor -> Maybe Node
-findNodeInConstructor loc constructor =
-  if isInRange loc (Slv.getArea constructor) then
-    foldl' (<|>) Nothing (findNodeInTypeAnnotation loc Nothing <$> Slv.getConstructorTypings constructor)
-    <|> Just (NameNode False (Slv.Typed ([] :=> Slv.getConstructorType constructor) (Slv.getArea constructor) $ Slv.getConstructorName constructor))
-  else
-    Nothing
-
-
-findNodeInTypeDeclaration :: Loc -> Slv.TypeDecl -> Maybe Node
-findNodeInTypeDeclaration loc typeDeclaration = case typeDeclaration of
-  Slv.Untyped area Slv.ADT { Slv.adtname, Slv.adtconstructors, Slv.adtparams } ->
-    -- TODO: look in constructors as well and make it a prio as it should be deeper in the AST if found
-    if isInRange loc area then
-      foldl' (<|>) Nothing (findNodeInConstructor loc <$> adtconstructors)
-      <|> Just (ADTNode adtname area (buildKind $ length adtparams))
-    else
-      Nothing
-
-  Slv.Untyped area Slv.Alias { Slv.aliasname, Slv.aliasparams, Slv.aliastype } ->
-    -- TODO: look in typing as well and make it a prio as it should be deeper in the AST if found
-    if isInRange loc area then
-      findNodeInTypeAnnotation loc Nothing aliastype
-      <|> Just (ADTNode aliasname area (buildKind $ length aliasparams))
-    else
-      Nothing
-
-  _ ->
-    Nothing
-
-
-findNodeInExps :: Loc -> [Slv.Exp] -> Maybe Node
-findNodeInExps loc exps = case exps of
-  exp : next ->
-    findNodeAtLoc True loc exp <|> findNodeInExps loc next
-
-  [] ->
-    Nothing
-
-
-findNodeInInstanceHeaders :: Loc -> [Src.Instance] -> Maybe Node
-findNodeInInstanceHeaders loc instances =
-  let srcTypings = concatMap (\i -> Src.getInstanceConstraintTypings i ++ Src.getInstanceTypings i) instances
-      -- srcTypings = findNodeInExps loc $ Slv.aexps ast ++ Slv.getAllMethods ast
-      canTypings = Can.canonicalizeTyping' <$> srcTypings
-      slvTypings = Slv.updateTyping <$> canTypings
-  in  foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc Nothing <$> slvTypings
-
-
-retrieveKind :: Type -> Kind
-retrieveKind t = case t of
-  TCon (TC _ k) _ _ ->
-    k
-
-  TApp l _ ->
-    retrieveKind l
-
-  TVar (TV _ k) ->
-    k
-
-  _ ->
-    kind t
-
-
-failedQt :: Qual Type
-failedQt = [] :=> TVar (TV (-1) Star)
-
-
-sanitizeName :: String -> String
-sanitizeName s = case s of
-  "_P_" ->
-    "pipe"
-
-  '_':'_':'$':'P':'H':_ ->
-    "$"
-
-  or ->
-    or
-
-
-internalNames :: [String]
-internalNames =
-  [ "_P_" ]
-
-
-isSyntheticName :: String -> Bool
-isSyntheticName name = "__" `List.isPrefixOf` name
-
-
-nodeToHoverInfo :: Rock.MonadFetch Query.Query m => FilePath -> Node -> m String
-nodeToHoverInfo modulePath node = do
-  (_, canEnv, _) <- Rock.fetch $ CanonicalizedASTWithEnv modulePath
-  docStrings <- Rock.fetch $ Query.DocStrings modulePath
-  let findDocTags name =
-        let found = List.find (\ds -> case ds of { FunctionDoc _ n _ _ -> n == name; _ -> False }) docStrings
-        in case found of
-          Just (FunctionDoc _ _ _ tags) -> tags
-          _                             -> []
-  nodeInfo <- case node of
-    ExpNode topLevel (Slv.Typed qt _ (Slv.Assignment name _)) ->
-      return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
-
-    ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _)) ->
-      return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
-
-    ExpNode topLevel (Slv.Typed qt _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _)) ->
-      return $ sanitizeName name <> " :: " <> prettyQt topLevel qt
-
-    NameNode topLevel (Slv.Typed qt _ name) -> do
-      let prefix =
-            if name `elem` internalNames then
-              ""
-            else
-              sanitizeName name <> " :: "
-      return $ prefix <> prettyQt topLevel qt
-
-    ExpNode topLevel (Slv.Typed qt _ _) ->
-      return $ prettyQt topLevel qt
-
-    PatternNode (Slv.Typed qt _ (Slv.PVar name)) ->
-      return $ name <> " :: " <> prettyQt False qt
-
-    PatternNode (Slv.Typed qt _ _) ->
-      return $ prettyQt False qt
-
-    ADTNode name _ k ->
-      return $ name <> " :: " <> kindToStr k
-
-    RecordFieldAnnotation _ name typing ->
-      return $ name <> " :: " <> prettyPrintTyping' False typing
-
-    -- TODO: make dry with case for TRSingle
-    TypingNode _ (Slv.Untyped _ (Slv.TRComp name ts)) -> do
-      maybeType <- CanEnv.lookupADT' canEnv name
-      case maybeType of
-        Just t ->
-          return $ name <> " :: " <> kindToStr (retrieveKind t)
-
-        Nothing ->
-          return $ name <> " :: " <> List.intercalate " -> " (replicate (length ts + 1) "*")
-
-    -- TypingNode maybeRootTyping typing@(Slv.Untyped _ (Slv.TRSingle name)) -> do
-    --   case maybeRootTyping of
-    --     Just (Slv.Untyped _ (Slv.TRComp rootTypingName typings)) -> do
-    --       maybeInterface <- Rock.fetch $ Query.CanonicalizedInterface modulePath rootTypingName
-    --       return $ "root: " <> ppShow maybeRootTyping <> "\ntyping: " <> ppShow typing <> "\nmaybe interface: " <> ppShow maybeInterface
-    TypingNode maybeRootTyping typing@(Slv.Untyped _ (Slv.TRSingle name)) -> do
-      maybeKind <- case maybeRootTyping of
-        Just (Slv.Untyped _ (Slv.TRComp rootTypingName typings)) -> do
-          -- first we try to find a var in an adt
-          maybeRootType <- CanEnv.lookupADT' canEnv rootTypingName
-          case maybeRootType of
-            Just t -> do
-              let allVars = collectVars t
-              case findTRSingleIndex typings typing of
-                Just i ->
-                  if i < length allVars then
-                    return $ Just $ kind $ allVars !! i
-                  else
-                    return Nothing
-                _ ->
-                  return Nothing
-
-            _ -> do
-              -- otherwise we try to find a var in an interface declaration
-              -- maybeInterface <- Rock.fetch $ Query.CanonicalizedInterface modulePath rootTypingName
-              maybeInterface <- Can.lookupInterface' canEnv rootTypingName
-              return $ maybeInterface >>= \(CanEnv.Interface vars _ _) -> do
-                case findTRSingleIndex typings typing of
-                  Just i ->
-                    if i < length vars then
-                      Just $ kind $ vars !! i
-                    else
-                      Nothing
-
-                  _ ->
-                    Nothing
-            where
-              findTRSingleIndex :: [Slv.Typing] -> Slv.Typing -> Maybe Int
-              findTRSingleIndex trCompVars trSingle = case trCompVars of
-                (trc : _) | trc == trSingle ->
-                  Just 0
-
-                (_ : next) ->
-                  (+ 1) <$> findTRSingleIndex next trSingle
-
-                _ ->
-                  Nothing
-
-        _ ->
-          return Nothing
-
-      case maybeKind of
-        Just k ->
-          return $ name <> " :: " <> kindToStr k
-
-        Nothing -> do
-          maybeType <- CanEnv.lookupADT' canEnv name
-          case maybeType of
-            Just t ->
-              return $ name <> " :: " <> kindToStr (retrieveKind t)
-
-            Nothing ->
-              return $ name <> " :: *"
-
-    TypingNode _ (Slv.Untyped _ (Slv.TRArr _ _)) ->
-      return "(->) :: * -> * -> *"
-
-    TypingNode _ _ ->
-      return "*"
-
-    -- TODO: add docstring for the module here
-    DefaultImportNode _ filepath ->
-      return $ dropExtension (takeFileName filepath)
-
-    NamedImportNode _ name filepath -> do
-      maybeExp <- Rock.fetch $ Query.ForeignExp filepath name
-      case maybeExp of
-        Just exp ->
-          let qt = Slv.getQualType exp
-          in  return $ name <> " :: " <> prettyQt False qt
-
-        Nothing ->
-          return name
-
-    TypeImportNode _ name _ -> do
-      maybeType <- CanEnv.lookupADT' canEnv name
-      case maybeType of
-        Just t ->
-          return $ name <> " :: " <> kindToStr (retrieveKind t)
-
-        Nothing ->
-          return name
-
-    _ ->
-      return ""
-
-  let maybeName = case node of
-        ExpNode _ (Slv.Typed _ _ (Slv.Assignment name _)) -> Just name
-        ExpNode _ (Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _)) -> Just name
-        ExpNode _ (Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _)) -> Just name
-        NameNode _ (Slv.Typed _ _ name) -> Just name
-        _ -> Nothing
-      docTagsSection = case maybeName of
-        Just name ->
-          let tags       = findDocTags name
-              params     = findParamTags tags
-              returns    = findReturnsTag tags
-              deprecated = findDeprecatedTag tags
-              paramLines =
-                if null params then ""
-                else "\n\n**Parameters:**\n" <> List.intercalate "\n" ((\(n, d) -> "- `" <> n <> "` — " <> d) <$> params)
-              returnsLine = case returns of
-                Just r  -> "\n\n**Returns:** " <> r
-                Nothing -> ""
-              deprecatedLine = case deprecated of
-                Just d  -> "\n\n⚠️ *Deprecated: " <> d <> "*"
-                Nothing -> ""
-          in  paramLines <> returnsLine <> deprecatedLine
-        Nothing -> ""
-  return $
-    "```madlib\n"
-    <> nodeInfo
-    <> "\n"
-    <> "```\n\n"
-    <> "*Defined in '"
-    <> modulePath
-    <> "' at line "
-    <> show (getNodeLine node)
-    <> "*"
-    <> docTagsSection
-
-
-getAutocompletionSuggestions :: State -> Loc -> FilePath -> String -> LspM () [(String, String, CompletionItemKind)]
-getAutocompletionSuggestions autocompletionState loc path moduleContent = do
-  -- Use single target for completion — types are target-independent for the vast majority of code
-  jsOptions <- buildOptions TNode
-  jsResult <- liftIO $ safeRunTask autocompletionState jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (completionSuggestionsTask loc path moduleContent)
-  return $ case jsResult of
-    Just (suggestions, _, _) -> suggestions
-    Nothing                  -> []
-
+-- Definition Links --
 
 getDefinitionLinks :: State -> Loc -> FilePath -> LspM () [Location]
 getDefinitionLinks state loc path = do
@@ -987,19 +262,82 @@ getDefinitionLinks state loc path = do
         return []
 
 
-getHoverInformation :: State -> Loc -> FilePath -> LspM () (Maybe String)
-getHoverInformation state loc path = do
-  jsOptions <- buildOptions TNode
-  jsResult <- liftIO $ safeRunTask state jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
-  case jsResult of
-    Just (Just info, _, _) -> return (Just info)
-    _ -> do
-      llvmOptions <- buildOptions TLLVM
-      llvmResult <- liftIO $ safeRunTask state llvmOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (hoverInfoTask loc path)
-      return $ case llvmResult of
-        Just (r, _, _) -> r
-        Nothing        -> Nothing
+definitionLocationTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe (FilePath, Area))
+definitionLocationTask loc path = do
+  -- hasCycle <- Rock.fetch $ Query.DetectImportCycle [] path
+  -- if hasCycle then
+  --   return Nothing
+  -- else do
+    (typedAst, _)  <- Rock.fetch $ Query.SolvedASTWithEnv path
+    (canAst, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
+    srcAst         <- Rock.fetch $ Query.ParsedAST path
 
+    let foundNode = findNodeInAst loc srcAst typedAst
+    case findNameInNode foundNode of
+      Just name -> do
+        maybeExp         <- Rock.fetch $ Query.ForeignExp path name
+        maybeConstructor <- Rock.fetch $ Query.ForeignConstructor path name
+        maybeTypeDecl    <- Rock.fetch $ Query.ForeignTypeDeclaration path name
+        case Slv.getArea <$> maybeExp <|> Slv.getArea <$> maybeConstructor <|> Slv.getArea <$> maybeTypeDecl of
+          Just area ->
+            return $ Just (path, area)
+
+          _ -> do
+            case findForeignAstForName name (Can.aimports canAst) of
+              Just fp -> do
+                let name' =
+                      if '.' `elem` name then
+                        case dropWhile (/= '.') name of
+                          '.' : name ->
+                            name
+
+                          or ->
+                            or
+                      else
+                        name
+
+                maybeExp'         <- Rock.fetch $ Query.ForeignExp fp name'
+                maybeConstructor' <- Rock.fetch $ Query.ForeignConstructor fp name'
+                maybeTypeDecl'    <- Rock.fetch $ Query.ForeignTypeDeclaration fp name'
+                case Slv.getArea <$> maybeExp' <|> Slv.getArea <$> maybeConstructor' <|> Slv.getArea <$> maybeTypeDecl' of
+                  Just area' ->
+                    return $ Just (fp, area')
+
+                  _ ->
+                    return Nothing
+
+              Nothing ->
+                return Nothing
+
+      _ ->
+        case foundNode of
+          Just (NamedImportNode _ importName importPath) -> do
+            maybeExp'         <- Rock.fetch $ Query.ForeignExp importPath importName
+            maybeConstructor' <- Rock.fetch $ Query.ForeignConstructor importPath importName
+            case Slv.getArea <$> maybeExp' <|> Slv.getArea <$> maybeConstructor' of
+              Just area' ->
+                return $ Just (importPath, area')
+
+              _ ->
+                return Nothing
+
+          Just (TypeImportNode _ importName importPath) -> do
+            maybeTypeDecl'    <- Rock.fetch $ Query.ForeignTypeDeclaration importPath importName
+            case Slv.getArea <$> maybeTypeDecl' of
+              Just area' ->
+                return $ Just (importPath, area')
+
+              _ ->
+                return Nothing
+
+          Just (DefaultImportNode area filepath) ->
+            return $ Just (filepath, area)
+
+          _ ->
+            return Nothing
+
+
+-- Document Symbols --
 
 getDocumentSymbols :: State -> FilePath -> LspM () [DocumentSymbol]
 getDocumentSymbols state path = do
@@ -1148,9 +486,71 @@ mkSymInfo name symbolKind area fileUri =
   SymbolInformation name symbolKind Nothing Nothing (Location fileUri (areaToRange area)) Nothing
 
 
--- Folding Ranges --
+-- Inlay Hints --
 
--- Inlay Hints
+inlayHintToJSON :: Int -> Int -> String -> Aeson.Value
+inlayHintToJSON line char label =
+  Aeson.object
+    [ "position" .= Aeson.object ["line" .= line, "character" .= char]
+    , "label"    .= label
+    , "kind"     .= (1 :: Int)  -- InlayHintKind.Type = 1
+    , "paddingLeft" .= True
+    ]
+
+
+parseInlayHintParams :: Aeson.Value -> Aeson.Parser (Uri, Int, Int)
+parseInlayHintParams = Aeson.withObject "InlayHintParams" $ \o -> do
+  td    <- o .: "textDocument"
+  uri   <- td .: "uri"
+  range <- o .: "range"
+  start <- range .: "start"
+  end'  <- range .: "end"
+  startLine <- start .: "line"
+  endLine   <- end' .: "line"
+  return (Uri uri, startLine, endLine)
+
+
+collectInlayHints :: Int -> Int -> [Slv.Exp] -> [Aeson.Value]
+collectInlayHints startLine endLine = concatMap (collectFromExp True)
+  where
+    inRange area =
+      let line = Loc.getLine (getStartLoc area) - 1
+      in  line >= startLine && line <= endLine
+
+    collectFromExp topLevel exp = case exp of
+      -- Skip explicitly typed bindings
+      Slv.Typed _ _ (Slv.TypedExp _ _ _) ->
+        []
+
+      -- Top-level or let-binding assignment (inferred type)
+      Slv.Typed qt area (Slv.Assignment name body)
+        | inRange area && not (isSyntheticName name) ->
+          let line0 = Loc.getLine (getStartLoc area) - 1
+          in  inlayHintToJSON line0 0 (sanitizeName name <> " :: " <> prettyQt topLevel qt)
+              : collectFromBody body
+
+      -- Exported assignment (inferred type)
+      Slv.Typed _ _ (Slv.Export (Slv.Typed qt' innerArea (Slv.Assignment name body)))
+        | inRange innerArea && not (isSyntheticName name) ->
+          let line0 = Loc.getLine (getStartLoc innerArea) - 1
+          in  inlayHintToJSON line0 0 (sanitizeName name <> " :: " <> prettyQt topLevel qt')
+              : collectFromBody body
+
+      -- Exported with annotation — skip
+      Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.TypedExp _ _ _))) ->
+        []
+
+      _ ->
+        []
+
+    collectFromBody exp = case exp of
+      Slv.Typed _ _ (Slv.Abs _ body) ->
+        concatMap (collectFromExp False) body
+      Slv.Typed _ _ (Slv.Do body) ->
+        concatMap (collectFromExp False) body
+      _ ->
+        []
+
 
 getInlayHints :: State -> FilePath -> Int -> Int -> LspM () [Aeson.Value]
 getInlayHints state path startLine endLine = do
@@ -1168,7 +568,7 @@ inlayHintTask startLine endLine path = do
   return $ collectInlayHints startLine endLine (Slv.aexps typedAst)
 
 
--- Semantic Tokens (Feature 5)
+-- Semantic Tokens (Feature 5) --
 
 -- Token type indices (must match legend advertised to client)
 tokenTypeFunction, tokenTypeVariable, tokenTypeEnumMember, tokenTypeType :: Int
@@ -1239,7 +639,7 @@ getSemanticTokens state path = do
       return $ Aeson.object ["data" .= ([] :: [Int])]
 
 
--- Call Hierarchy (Feature 9)
+-- Call Hierarchy (Feature 9) --
 
 parsePositionParams :: Aeson.Value -> Aeson.Parser (Uri, Int, Int)
 parsePositionParams = Aeson.withObject "CallHierarchyPrepareParams" $ \o -> do
@@ -1400,7 +800,7 @@ collectCallees uriStr exp = Map.elems $ go Map.empty exp
       _ -> seen
 
 
--- Folding Ranges
+-- Folding Ranges --
 
 getFoldingRanges :: State -> FilePath -> LspM () [FoldingRange]
 getFoldingRanges state path = do
@@ -2009,304 +1409,7 @@ collectInPattern matches pat = case pat of
   _ -> []
 
 
-pathToUri :: FilePath -> Uri
-pathToUri path =
-  Uri $ T.pack ("file://" <> path)
-
-
-uriToPath :: Uri -> FilePath
-uriToPath uri =
-  let unpacked = T.unpack $ getUri uri
-  in  if take 7 unpacked == "file://" then
-        drop 7 unpacked
-      else
-        unpacked
-
-
-typeCheckFileTask :: FilePath -> Rock.Task Query.Query Bool
-typeCheckFileTask path = do
-  parsedAst <- Rock.fetch $ Query.ParsedAST path
-  Rock.fetch $ Query.SolvedASTWithEnv path
-  return $ isJust (Src.apath parsedAst)
-
-
-runTypeCheckIO :: Bool -> State -> FilePath -> Map.Map FilePath String -> Options.Options -> IO (Bool, [CompilationWarning], [CompilationError])
-runTypeCheckIO invalidatePath state path fileUpdates options = do
-  let changedFiles =
-        if invalidatePath then
-          [path]
-        else
-          []
-  result <- try $
-    runTask
-      state
-      options { optEntrypoint = path }
-      Driver.Don'tPrune
-      changedFiles
-      fileUpdates
-      (typeCheckFileTask path)
-      :: IO (Either (Cyclic Query.Query) (Bool, [CompilationWarning], [CompilationError]))
-
-  case result of
-    Left _ -> do
-      (_, warnings, errors) <- runTask
-        state
-        options { optEntrypoint = path }
-        Driver.Don'tPrune
-        changedFiles
-        fileUpdates
-        (Driver.detectCyleTask path)
-
-      return (False, warnings, errors)
-
-    Right (couldParse, warnings, errors) ->
-      return (couldParse, warnings, errors)
-
-
-runTypeCheck :: Bool -> State -> Target -> FilePath -> Map.Map FilePath String -> LspM () (Bool, [CompilationWarning], [CompilationError])
-runTypeCheck invalidatePath state target path fileUpdates = do
-  options <- buildOptions target
-  liftIO $ runTypeCheckIO invalidatePath state path fileUpdates options
-
-
-sendDiagnosticsForWarningsAndErrors :: [CompilationWarning] -> [CompilationError] -> LspM () ()
-sendDiagnosticsForWarningsAndErrors warnings errors = do
-  let errsByModule = groupErrsByModule errors
-  let warnsByModule = groupWarnsByModule warnings
-
-  errorDiagnostics <- liftIO $ mapM
-    (\(p, errs) -> do
-      diagnostics <- mapM errorToDiagnostic errs
-      return (p, diagnostics)
-    )
-    $ Map.toList errsByModule
-
-  warningDiagnostics <- liftIO $ mapM
-    (\(p, warnings) -> do
-      diagnostics <- mapM warningToDiagnostic warnings
-      return (p, diagnostics)
-    )
-    $ Map.toList warnsByModule
-
-  flushDiagnosticsBySource 100 (Just "Madlib")
-
-  let allDiagnostics =
-        Map.toList $ Map.unionWith
-          (<>)
-          (Map.fromList errorDiagnostics)
-          (Map.fromList warningDiagnostics)
-
-  forM_ allDiagnostics $ \(modulePath, diagnostics) -> do
-    let moduleUri = pathToUri modulePath
-    let diagnosticsBySource = partitionBySource diagnostics
-    publishDiagnostics 100 (toNormalizedUri moduleUri) Nothing diagnosticsBySource
-
-
-generateDiagnostics :: Bool -> State -> State -> Uri -> Map.Map FilePath String -> LspM () ()
-generateDiagnostics invalidatePath state autocompletionState uri fileUpdates = do
-  let path = uriToPath uri
-  (_couldParseJs, jsWarnings, jsErrors)     <- runTypeCheck invalidatePath state TNode path fileUpdates
-  (_couldParseLlvm, llvmWarnings, llvmErrors) <- runTypeCheck invalidatePath state TLLVM path fileUpdates
-  -- Improvement 1: Update interface snapshot after successful type-check.
-  -- This snapshot is used to detect whether the exported interface has changed
-  -- on the next save, so we can skip cascading invalidation when it hasn't.
-  when (null jsErrors && invalidatePath) $ do
-    options <- buildOptions TNode
-    maybeResult <- liftIO $ safeRunTask state options { optEntrypoint = path } Driver.Don'tPrune mempty fileUpdates $ do
-      (_, env) <- Rock.fetch $ Query.SolvedASTWithEnv path
-      return (SlvEnv.envVars env, SlvEnv.envMethods env)
-    case maybeResult of
-      Just ((newVars, newMethods), _, _) ->
-        liftIO $ modifyIORef' (_interfaceSnapshots state) (Map.insert path (newVars, newMethods))
-      _ -> return ()
-  let allWarnings = jsWarnings `List.union` llvmWarnings
-  let allErrors   = jsErrors `List.union` llvmErrors
-
-  when (null jsErrors) $ do
-    liftIO $ copyStateTo (_jsDriverState state) (_jsDriverState autocompletionState)
-
-  when (null llvmErrors) $ do
-    liftIO $ copyStateTo (_llvmDriverState state) (_llvmDriverState autocompletionState)
-
-  sendDiagnosticsForWarningsAndErrors allWarnings allErrors
-
-
-uriOfError :: CompilationError -> Uri
-uriOfError err = case Error.getContext err of
-  Context path _ ->
-    Uri $ T.pack ("file://" <> path)
-  NoContext ->
-    Uri $ T.pack "file://"
-
-
-uriOfWarning :: CompilationWarning -> Uri
-uriOfWarning warning = case Warning.getContext warning of
-  Context path _ ->
-    Uri $ T.pack ("file://" <> path)
-  NoContext ->
-    Uri $ T.pack "file://"
-
-
-areErrorsFromSameModule :: CompilationError -> CompilationError -> Bool
-areErrorsFromSameModule a b = case (a, b) of
-  (CompilationError _ (Context pathA _), CompilationError _ (Context pathB _)) ->
-    pathA == pathB
-
-  _ ->
-    False
-
-
-isErrorFromModule :: FilePath -> CompilationError -> Bool
-isErrorFromModule path err = case err of
-  CompilationError _ (Context ctxPath _) ->
-    ctxPath == path
-
-  _ ->
-    False
-
-
-errorsForModule :: [CompilationError] -> FilePath -> [CompilationError]
-errorsForModule errs path =
-  filter (isErrorFromModule path) errs
-
-
-areWarningsFromSameModule :: CompilationWarning -> CompilationWarning -> Bool
-areWarningsFromSameModule a b = case (a, b) of
-  (CompilationWarning _ (Context pathA _), CompilationWarning _ (Context pathB _)) ->
-    pathA == pathB
-
-  _ ->
-    False
-
-
-isWarningFromModule :: FilePath -> CompilationWarning -> Bool
-isWarningFromModule path err = case err of
-  CompilationWarning _ (Context ctxPath _) ->
-    ctxPath == path
-
-  _ ->
-    False
-
-
-warningsForModule :: [CompilationWarning] -> FilePath -> [CompilationWarning]
-warningsForModule errs path =
-  filter (isWarningFromModule path) errs
-
-
-groupErrsByModule :: [CompilationError] -> Map.Map FilePath [CompilationError]
-groupErrsByModule errs =
-  let errs' = filter ((/= NoContext) . Error.getContext) errs
-  in  Map.fromListWith (<>) $ map (\e -> (Error.getPath e, [e])) errs'
-
-
-groupWarnsByModule :: [CompilationWarning] -> Map.Map FilePath [CompilationWarning]
-groupWarnsByModule warnings =
-  let warnings' = filter ((/= NoContext) . Warning.getContext) warnings
-  in  Map.fromListWith (<>) $ map (\w -> (Warning.getPath w, [w])) warnings'
-
-
-
-warningToDiagnostic :: CompilationWarning -> IO Diagnostic
-warningToDiagnostic warning = do
-  formattedWarning <- Explain.simpleFormatWarning True warning
-  case warning of
-    CompilationWarning _ (Context _ area) ->
-      return $ Diagnostic
-        (areaToRange area)        -- _range
-        (Just DsWarning)            -- _severity
-        Nothing                   -- _code
-        (Just "Madlib")           -- _source
-        (T.pack formattedWarning)   -- _message
-        (if Warning.isUnusedWarning warning then Just $ List [DtUnnecessary] else Nothing)                   -- _tags
-        Nothing                   -- _relatedInformation
-
-    _ ->
-      return $ Diagnostic
-        noRange
-        (Just DsWarning)
-        Nothing
-        (Just "Madlib")
-        (T.pack formattedWarning)
-        Nothing
-        Nothing
-
-
-errorToDiagnostic :: CompilationError -> IO Diagnostic
-errorToDiagnostic err = do
-  formattedError <- Explain.simpleFormatError True err
-  case err of
-    CompilationError _ (Context _ area) ->
-      return $ Diagnostic
-        (areaToRange area)        -- _range
-        (Just DsError)            -- _severity
-        Nothing                   -- _code
-        (Just "Madlib")           -- _source
-        (T.pack formattedError)   -- _message
-        Nothing                   -- _tags
-        Nothing                   -- _relatedInformation
-
-    _ ->
-      return $ Diagnostic
-        noRange
-        (Just DsError)
-        Nothing
-        (Just "Madlib")
-        (T.pack formattedError)
-        Nothing
-        Nothing
-
-noRange :: Range
-noRange =
-  Range (Position 0 0) (Position 0 0)
-
-areaToRange :: Area -> Range
-areaToRange area =
-  Range
-    (Position (max 0 (Loc.getLine (Loc.getStartLoc area) - 1)) (max 0 (Loc.getCol (Loc.getStartLoc area) - 1)))
-    (Position (max 0 (Loc.getLine (Loc.getEndLoc area) - 1)) (max 0 (Loc.getCol (Loc.getEndLoc area) - 1)))
-
-
-data State = State
-  { _jsDriverState :: Driver.State CompilationError
-  , _llvmDriverState :: Driver.State CompilationError
-  , _openFiles :: IORef (Map.Map FilePath String)
-  , _changedFiles :: Set.Set FilePath
-  , _debounceRef :: IORef (Maybe UTCTime)
-  , _stateLock :: MVar ()
-  , _allModulePaths :: IORef (Set.Set FilePath)
-  , _backgroundDone :: IORef Bool
-  , _interfaceSnapshots :: IORef (Map.Map FilePath (SlvEnv.Vars, SlvEnv.Methods))
-  }
-
-
-textDocumentSyncOptions :: TextDocumentSyncOptions
-textDocumentSyncOptions =
-  TextDocumentSyncOptions
-    (Just True)       -- _openClose
-    (Just TdSyncFull) -- _change
-    Nothing           -- _willSave
-    Nothing           -- _willSaveWaitUntil
-    (Just $ InL True) -- _save
-
-
-copyStateTo :: Driver.State err -> Driver.State err -> IO ()
-copyStateTo from to = do
-  _startedVar <- readIORef (Driver._startedVar from)
-  _hashesVar <- readIORef (Driver._hashesVar from)
-  _reverseDependenciesVar <- readIORef (Driver._reverseDependenciesVar from)
-  _tracesVar <- readIORef (Driver._tracesVar from)
-  _errorsVar <- readIORef (Driver._errorsVar from)
-  _warningsVar <- readIORef (Driver._warningsVar from)
-
-  atomicWriteIORef (Driver._startedVar to) _startedVar
-  atomicWriteIORef (Driver._hashesVar to) _hashesVar
-  atomicWriteIORef (Driver._reverseDependenciesVar to) _reverseDependenciesVar
-  atomicWriteIORef (Driver._tracesVar to) _tracesVar
-  atomicWriteIORef (Driver._errorsVar to) _errorsVar
-  atomicWriteIORef (Driver._warningsVar to) _warningsVar
-
-  return ()
-
+-- Background Compilation --
 
 -- | Recursively find all .mad files under a directory
 discoverProjectModules :: FilePath -> IO [FilePath]
@@ -2403,6 +1506,8 @@ chunksOf _ [] = []
 chunksOf n xs = let (h, t) = splitAt n xs in h : chunksOf n t
 
 
+-- Server Entry Point --
+
 runLanguageServer :: IO ()
 runLanguageServer = do
   jsDriverState <- Driver.initialState
@@ -2435,248 +1540,7 @@ runLanguageServer = do
   return ()
 
 
-hoverInfoTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe String)
-hoverInfoTask loc path = do
-  -- hasCycle <- Rock.fetch $ Query.DetectImportCycle [] path
-  -- if hasCycle then
-  --   return Nothing
-  -- else do
-    srcAst        <- Rock.fetch $ Query.ParsedAST path
-    (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
-    mapM (nodeToHoverInfo path) (findNodeInAst loc srcAst typedAst)
-
-
-findForeignAstForName :: String -> [Can.Import] -> Maybe FilePath
-findForeignAstForName name imports = case imports of
-  [] ->
-    Nothing
-
-  (Can.Canonical _ (Can.NamedImport names _ path) : _) | name `elem` (Can.getCanonicalContent <$> names) ->
-    Just path
-
-  (Can.Canonical _ (Can.DefaultImport namespace _ path) : _) | takeWhile (/= '.') name == Can.getCanonicalContent namespace ->
-    Just path
-
-  (Can.Canonical _ (Can.TypeImport names _ path) : _) | name `elem` (Can.getCanonicalContent <$> names) ->
-    Just path
-
-  (_ : next) ->
-    findForeignAstForName name next
-
-
-findNameInNode :: Maybe Node -> Maybe String
-findNameInNode node = case node of
-  Just (NameNode _ (Slv.Typed _ _ name)) ->
-    Just name
-
-  Just (PatternNode (Slv.Typed _ _ (Slv.PVar name))) ->
-    Just name
-
-  Just (PatternNode (Slv.Typed _ _ (Slv.PCon name _))) ->
-    Just name
-
-  Just (TypingNode _ (Slv.Untyped _ (Slv.TRComp name _))) ->
-    return name
-
-  Just (TypingNode _ (Slv.Untyped _ (Slv.TRSingle name))) ->
-    return name
-
-  _ ->
-    Nothing
-
-
-findTopLevelExp :: Loc -> [Slv.Exp] -> Maybe Slv.Exp
-findTopLevelExp loc exps = case exps of
-  e@(Slv.Typed _ area _) : next ->
-    if isInRange loc area then
-      Just e
-    else
-      findTopLevelExp loc next
-
-  _ : next ->
-    findTopLevelExp loc next
-
-  [] ->
-    Nothing
-
-
-getLocalNames :: Loc -> Slv.Exp -> [(String, Type)]
-getLocalNames loc exp = case exp of
-  Slv.Typed _ area (Slv.Assignment _ e) | not (isLocAfter loc area) ->
-    getLocalNames loc e
-
-  Slv.Typed (_ :=> t) _ (Slv.Assignment n e) ->
-    (n, t) : getLocalNames loc e
-
-  Slv.Typed _ area (Slv.Abs _ body) | not (isLocAfterStart loc area) ->
-    body >>= getLocalNames loc
-
-  Slv.Typed (_ :=> t) _ (Slv.Abs param body) ->
-    let paramType = case getParamTypes t of
-          (pt : _) -> pt
-          []       -> TVar (TV (-1) Star)
-    in  (Slv.getValue param, paramType) : (body >>= getLocalNames loc)
-
-  Slv.Typed _ _ (Slv.Export e) ->
-    getLocalNames loc e
-
-  Slv.Typed _ _ (Slv.TypedExp e _ _) ->
-    getLocalNames loc e
-
-  _ ->
-    []
-
-
-completionSuggestionsTask :: Loc -> FilePath -> String -> Rock.Task Query.Query [(String, String, CompletionItemKind)]
-completionSuggestionsTask loc@(Loc _ line col) modulePath moduleContent = do
-  (typedAst, env)  <- Rock.fetch $ Query.SolvedASTWithEnv modulePath
-
-  let contentLines = lines moduleContent
-  let foundLine = if line - 1 >= 0 && line - 1 < length contentLines
-                  then take (col - 1) (contentLines !! (line - 1))
-                  else ""
-  let autocompletionKind = computeAutocompletionKind (reverse foundLine)
-
-  let topLevelExp = findTopLevelExp loc (Slv.aexps typedAst)
-  let localNames = map (\(n, t) -> (n, Forall [] ([] :=> t))) $ Maybe.fromMaybe [] $ (getLocalNames loc) <$> topLevelExp
-  let namesInEnv = Map.toList $ SlvEnv.envVars env
-  let methodsInEnv = Map.toList $ SlvEnv.envMethods env
-  case autocompletionKind of
-    AutocompletingNamespaceAccess namespace ->
-      return
-        $ map (\(n, qt) -> (if '.' `List.elem` n then List.tail $ dropWhile (/= '.') n else n, prettyScheme qt, CiFunction))
-        $ filter (List.isPrefixOf namespace . fst) namesInEnv
-
-    AutocompletingName _ ->
-      return
-        $ map (\(n, qt) -> (n, prettyScheme qt, CiFunction))
-        $ localNames ++ namesInEnv ++ methodsInEnv
-
-    AutocompletingRecordAccess recordName fieldName -> do
-      let updatedLoc = Loc 0 line (col - length fieldName - 1)
-      case findNodeInExps updatedLoc (Slv.aexps typedAst ++ Slv.getAllMethods typedAst) of
-        Just (ExpNode _ (Slv.Typed (_ :=> TRecord fields _ extraFields) _ _)) ->
-          return
-            $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
-            $ Map.toList $ fields <> extraFields
-
-        Just (NameNode _ (Slv.Typed (_ :=> TApp _ (TRecord fields _ extraFields)) _ _)) ->
-          return
-            $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
-            $ Map.toList $ fields <> extraFields
-
-        _ ->
-          case List.find (\(n, _) -> n == recordName) localNames of
-            Just (_, Forall _ (_ :=> TRecord fields _ extraFields)) ->
-              return
-                $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
-                $ Map.toList
-                $ fields <> extraFields
-
-            _ ->
-              return $ map (\(n, qt) -> (n, prettyScheme qt, CiField)) $ localNames ++ namesInEnv ++ methodsInEnv
-
-
-definitionLocationTask :: Loc -> FilePath -> Rock.Task Query.Query (Maybe (FilePath, Area))
-definitionLocationTask loc path = do
-  -- hasCycle <- Rock.fetch $ Query.DetectImportCycle [] path
-  -- if hasCycle then
-  --   return Nothing
-  -- else do
-    (typedAst, _)  <- Rock.fetch $ Query.SolvedASTWithEnv path
-    (canAst, _, _) <- Rock.fetch $ Query.CanonicalizedASTWithEnv path
-    srcAst         <- Rock.fetch $ Query.ParsedAST path
-
-    let foundNode = findNodeInAst loc srcAst typedAst
-    case findNameInNode foundNode of
-      Just name -> do
-        maybeExp         <- Rock.fetch $ Query.ForeignExp path name
-        maybeConstructor <- Rock.fetch $ Query.ForeignConstructor path name
-        maybeTypeDecl    <- Rock.fetch $ Query.ForeignTypeDeclaration path name
-        case Slv.getArea <$> maybeExp <|> Slv.getArea <$> maybeConstructor <|> Slv.getArea <$> maybeTypeDecl of
-          Just area ->
-            return $ Just (path, area)
-
-          _ -> do
-            case findForeignAstForName name (Can.aimports canAst) of
-              Just fp -> do
-                let name' =
-                      if '.' `elem` name then
-                        case dropWhile (/= '.') name of
-                          '.' : name ->
-                            name
-
-                          or ->
-                            or
-                      else
-                        name
-
-                maybeExp'         <- Rock.fetch $ Query.ForeignExp fp name'
-                maybeConstructor' <- Rock.fetch $ Query.ForeignConstructor fp name'
-                maybeTypeDecl'    <- Rock.fetch $ Query.ForeignTypeDeclaration fp name'
-                case Slv.getArea <$> maybeExp' <|> Slv.getArea <$> maybeConstructor' <|> Slv.getArea <$> maybeTypeDecl' of
-                  Just area' ->
-                    return $ Just (fp, area')
-
-                  _ ->
-                    return Nothing
-
-              Nothing ->
-                return Nothing
-
-      _ ->
-        case foundNode of
-          Just (NamedImportNode _ importName importPath) -> do
-            maybeExp'         <- Rock.fetch $ Query.ForeignExp importPath importName
-            maybeConstructor' <- Rock.fetch $ Query.ForeignConstructor importPath importName
-            case Slv.getArea <$> maybeExp' <|> Slv.getArea <$> maybeConstructor' of
-              Just area' ->
-                return $ Just (importPath, area')
-
-              _ ->
-                return Nothing
-
-          Just (TypeImportNode _ importName importPath) -> do
-            maybeTypeDecl'    <- Rock.fetch $ Query.ForeignTypeDeclaration importPath importName
-            case Slv.getArea <$> maybeTypeDecl' of
-              Just area' ->
-                return $ Just (importPath, area')
-
-              _ ->
-                return Nothing
-
-          Just (DefaultImportNode area filepath) ->
-            return $ Just (filepath, area)
-
-          _ ->
-            return Nothing
-
-
-safeRunTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (Maybe (a, [CompilationWarning], [CompilationError]))
-safeRunTask state options prune invalidatedPaths fileUpdates task = do
-  result <- try $ runTask state options prune invalidatedPaths fileUpdates task
-  case result of
-    Right r  -> return (Just r)
-    Left (_ :: SomeException) ->
-      return Nothing
-
-
-runTask :: State -> Options.Options -> Driver.Prune -> [FilePath] -> Map.Map FilePath String -> Rock.Task Query.Query a -> IO (a, [CompilationWarning], [CompilationError])
-runTask state options prune invalidatedPaths fileUpdates task = do
-  withMVar (_stateLock state) $ \_ -> do
-    let driverState =
-          if Options.optTarget options == TLLVM then
-            _llvmDriverState state
-          else
-            _jsDriverState state
-    Driver.runIncrementalTask
-      driverState
-      options
-      invalidatedPaths
-      fileUpdates
-      prune
-      task
-
+-- Concurrency Utilities --
 
 pooledForConcurrently_ ::
   (Foldable t, MonadBaseControl IO m) =>

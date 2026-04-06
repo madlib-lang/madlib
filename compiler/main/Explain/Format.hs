@@ -2,8 +2,10 @@
 {-# HLINT ignore "Use :" #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-module Explain.Format where
+module Explain.Format (module Explain.Format, module Explain.Format.Hints, module Explain.Format.TypeDiff) where
 
+import           Explain.Format.Hints
+import           Explain.Format.TypeDiff
 import           Error.Error
 import           Error.Warning
 import           Error.Context
@@ -13,71 +15,22 @@ import qualified AST.Canonical                 as Can
 import qualified AST.Solved                    as Slv
 import           Infer.Type
 import           Data.List                      ( intercalate
-                                                , foldl'
                                                 , isInfixOf
                                                 )
 import qualified Data.Map                      as M
 import           Text.Show.Pretty               ( ppShow )
-import           Control.Monad                  ( replicateM )
 import           Utils.Tuple
 import qualified Data.Maybe                    as Maybe
-import           Infer.Exp (dedupePreds)
 import           System.Environment (lookupEnv)
 import qualified Error.Diagnose                as Diagnose
 import qualified Prettyprinter.Render.Terminal as Terminal
 import qualified Data.Text as Text
 import qualified Prettyprinter as Pretty
 import qualified Data.List as List
-import qualified Prettyprinter.Internal.Type as Pretty
 import Debug.Trace
 import           Utils.EditDistance (findSimilar)
 import           Data.Char (ord, toUpper, toLower)
 import           Numeric (showHex)
-
-
-letters :: [Char]
-letters = ['a' .. 'z']
-
-
-renderIndexedLetter :: Int -> String
-renderIndexedLetter n =
-  let alphabetSize = length letters
-      base = [letters !! (n `mod` alphabetSize)]
-      suffix = n `div` alphabetSize
-  in  if suffix == 0 then base else base <> show suffix
-
-renderTVar :: Int -> String
-renderTVar s = letters !! (s `mod` 26) : show s
-
-
-indentationSize :: Int
-indentationSize = 2
-
-data Color = Green | Yellow | Red | Grey | WhiteOnRed | WhiteOnYellow
-
-colorWhen :: Bool -> Color -> String -> String
-colorWhen when c s | when      = color c s
-                   | otherwise = s
-
-color :: Color -> String -> String
-color c s = case c of
-  Green ->
-    "\x1b[92m" <> s <> "\x1b[0m"
-
-  Yellow ->
-    "\x1b[93m" <> s <> "\x1b[0m"
-
-  Red ->
-    "\x1b[91m" <> s <> "\x1b[0m"
-
-  Grey ->
-    "\x1b[90m" <> s <> "\x1b[0m"
-
-  WhiteOnRed ->
-    "\x1b[41m" <> s <> "\x1b[0m"
-
-  WhiteOnYellow ->
-    "\x1b[43m" <> s <> "\x1b[0m"
 
 
 underlineWhen :: Bool -> String -> String
@@ -572,65 +525,38 @@ simpleFormatError json (CompilationError err ctx) = do
   return $ createSimpleErrorDiagnostic isColorEnabled ctx err
 
 
-renderTypesWithDiff :: Bool -> Type -> Type -> (String, String)
-renderTypesWithDiff color t1 t2 =
-  let (_, _, docT1, docT2) = typesToDocWithDiff (mempty, mempty) (mempty, mempty) t1 t2
-      (docT1', docT2')  =
-        if color then
-          (docT1, docT2)
-        else
-          (Pretty.unAnnotate docT1, Pretty.unAnnotate docT2)
-      layoutOptions = Pretty.LayoutOptions { Pretty.layoutPageWidth = Pretty.AvailablePerLine 50 1.0 }
-      s1 = Terminal.renderStrict (Pretty.layoutPretty layoutOptions docT1')
-      s2 = Terminal.renderStrict (Pretty.layoutPretty layoutOptions docT2')
-  in  ( if color then
-          "\x1b[0m" <> Text.unpack s1
-        else
-          Text.unpack s1
-      , if color then
-          "\x1b[0m" <> Text.unpack s2
-        else
-          Text.unpack s2
-      )
-
-renderSchemesWithDiff :: Bool -> Scheme -> Scheme -> (String, String)
-renderSchemesWithDiff color sc1 sc2 =
-  let (_, _, docT1, docT2) = schemesToDocWithDiff (mempty, mempty) (mempty, mempty) sc1 sc2
-      (docT1', docT2')  =
-        if color then
-          (docT1, docT2)
-        else
-          (Pretty.unAnnotate docT1, Pretty.unAnnotate docT2)
-      layoutOptions = Pretty.LayoutOptions { Pretty.layoutPageWidth = Pretty.AvailablePerLine 50 1.0 }
-      s1            = Terminal.renderStrict (Pretty.layoutPretty layoutOptions docT1')
-      s2            = Terminal.renderStrict (Pretty.layoutPretty layoutOptions docT2')
-  in  ( if color then
-          "\x1b[0m" <> Text.unpack s1
-        else
-          Text.unpack s1
-      , if color then
-          "\x1b[0m" <> Text.unpack s2
-        else
-          Text.unpack s2
-      )
+-- | Format an error with hints and notes included, for LSP display.
+simpleFormatErrorWithHints :: Bool -> CompilationError -> IO String
+simpleFormatErrorWithHints json (CompilationError err ctx) = do
+  noColor <- lookupEnv "NO_COLOR"
+  let isColorEnabled = not json && not (noColor /= Just "" && Maybe.isJust noColor)
+      baseMsg   = createSimpleErrorDiagnostic isColorEnabled ctx err
+      notes     = reportNotes (createErrorDiagnostic isColorEnabled ctx err)
+      noteLines = map noteToString notes
+  return $ if null noteLines then baseMsg else baseMsg <> "\n" <> unlines noteLines
 
 
-renderType :: Type -> String
-renderType t =
-  let (_, _, docT)  = typeToDoc (mempty, mempty) t
-      docT'         = Pretty.unAnnotate docT
-      layoutOptions = Pretty.LayoutOptions { Pretty.layoutPageWidth = Pretty.AvailablePerLine 50 1.0 }
-      s             = Terminal.renderStrict (Pretty.layoutPretty layoutOptions docT')
-  in  Text.unpack s
+-- | Format a warning with hints and notes included, for LSP display.
+simpleFormatWarningWithHints :: Bool -> CompilationWarning -> IO String
+simpleFormatWarningWithHints json (CompilationWarning warning ctx) = do
+  noColor <- lookupEnv "NO_COLOR"
+  let isColorEnabled = not json && not (noColor /= Just "" && Maybe.isJust noColor)
+      baseMsg   = createSimpleWarningDiagnostic isColorEnabled ctx warning
+      notes     = reportNotes (createWarningDiagnostic isColorEnabled ctx warning)
+      noteLines = map noteToString notes
+  return $ if null noteLines then baseMsg else baseMsg <> "\n" <> unlines noteLines
 
 
-renderScheme :: Scheme -> String
-renderScheme sc =
-  let (_, _, docT)  = schemeToDoc (mempty, mempty) sc
-      docT'         = Pretty.unAnnotate docT
-      layoutOptions = Pretty.LayoutOptions { Pretty.layoutPageWidth = Pretty.AvailablePerLine 50 1.0 }
-      s             = Terminal.renderStrict (Pretty.layoutPretty layoutOptions docT')
-  in  Text.unpack s
+-- | Extract notes from a Diagnose.Report.
+reportNotes :: Diagnose.Report String -> [Diagnose.Note String]
+reportNotes (Diagnose.Err _ _ _ notes) = notes
+reportNotes (Diagnose.Warn _ _ _ notes) = notes
+
+
+-- | Convert a Diagnose.Note to a plain string.
+noteToString :: Diagnose.Note String -> String
+noteToString (Diagnose.Hint msg) = "Hint: " <> msg
+noteToString (Diagnose.Note msg) = "Note: " <> msg
 
 
 createSimpleErrorDiagnostic :: Bool -> Context -> TypeError -> String
@@ -647,16 +573,17 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
   TestNotValid t ->
     let prettyType = renderType t
         prettyType' = unlines $ ("  "<>) <$> lines prettyType
-    in  "Test not valid\n\n" <> "The test has type\n" <> prettyType'
-              <> "\nIt should be one of the following:\n"
-              <> "- Wish TestResult TestResult\n"
-              <> "- List (Wish TestResult TestResult)"
+    in  "Invalid test type\n\n" <> "This test expression has type:\n" <> prettyType'
+              <> "\nbut tests must return one of:\n"
+              <> "  Wish TestResult TestResult\n"
+              <> "  List (Wish TestResult TestResult)"
 
   TypingHasWrongKind t expectedKind actualKind ->
     let expectedStr = if color then "\x1b[0mexpected:\n  " else "expected:\n  "
         foundStr = if color then "\n\x1b[0mbut found:\n  " else "\nbut found:\n  "
-    in  "Typing has wrong kind\n\n"
-        <> "The type annotation '" <> prettyPrintType False t <> "' has a wrong kind.\n"
+    in  "Kind mismatch in type annotation\n\n"
+        <> "The type '" <> prettyPrintType False t <> "' has kind " <> kindToStr actualKind
+        <> ", but kind " <> kindToStr expectedKind <> " was expected.\n"
         <> expectedStr
         <> colorWhen color Green (kindToStr expectedKind)
         <> foundStr
@@ -1102,259 +1029,6 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
 
 
--- | Generate a descriptive title for a UnificationError based on the origin and types involved.
--- Instead of the generic "Type error", this produces context-specific titles like
--- "'+' requires numbers, not String" or "Branches return different types".
-mkUnificationTitle :: Type -> Type -> ErrorOrigin -> String
-mkUnificationTitle found expected origin =
-  let foundName  = shortTypeName found
-      expectName = shortTypeName expected
-  in  case origin of
-    FromOperator "+" ->
-      case (found, expected) of
-        (TCon (TC "String" _) _ _, _) -> "Cannot use '+' with String — did you mean '<>'?"
-        (_, TCon (TC "String" _) _ _) -> "Cannot use '+' with String — did you mean '<>'?"
-        _ -> "Operands of '+' must have the same type"
-    FromOperator "&&" ->
-      "Both sides of '&&' must be Boolean"
-    FromOperator "||" ->
-      "Both sides of '||' must be Boolean"
-    FromOperator "<>" ->
-      "Both sides of '<>' must have the same type"
-    FromOperator "++" ->
-      "Both sides of '++' must be the same List type"
-    FromOperator op ->
-      "Operands of '" <> op <> "' must have the same type"
-    FromFunctionArgument fn 1 ->
-      "Wrong type for the 1st argument to '" <> fn <> "'"
-    FromFunctionArgument fn 2 ->
-      "Wrong type for the 2nd argument to '" <> fn <> "'"
-    FromFunctionArgument fn 3 ->
-      "Wrong type for the 3rd argument to '" <> fn <> "'"
-    FromFunctionArgument fn n ->
-      "Wrong type for the " <> toOrdinal n <> " argument to '" <> fn <> "'"
-    FromFunctionReturn fn ->
-      "Return type of '" <> fn <> "' doesn't match its annotation"
-    FromIfCondition ->
-      "The 'if' condition must be Boolean, not " <> foundName
-    FromIfBranches ->
-      "The 'then' and 'else' branches return different types"
-    FromListElement ->
-      "All list elements must have the same type"
-    FromTypeAnnotation ->
-      "Type mismatch: " <> foundName <> " is not " <> expectName
-    FromPatternMatch ->
-      "Branches of 'where' return different types"
-    FromAssignment name ->
-      "Cannot assign " <> foundName <> " to '" <> name <> "'"
-    NoOrigin ->
-      if foundName /= expectName
-        then "Type mismatch: " <> foundName <> " is not " <> expectName
-        else "Type mismatch"
-
-
--- | Returns a short human-readable type name for use in error titles.
-shortTypeName :: Type -> String
-shortTypeName t = case t of
-  TCon (TC name _) _ _                              -> name
-  TApp (TCon (TC "List" _) _ _) inner               -> "List " <> shortTypeName inner
-  TApp (TApp (TCon (TC "(->)" _) _ _) _) _          -> "Function"
-  TApp (TCon (TC "(,)" _) _ _) _                    -> "Tuple"
-  TVar _                                            -> "a type variable"
-  _                                                 -> prettyPrintType False t
-
-
--- | Helper to build an Err diagnostic with a primary location.
--- When context is present, adds a source span; otherwise builds a span-free error.
--- | Format an integer as an English ordinal: 1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th" ...
-toOrdinal :: Int -> String
-toOrdinal n =
-  let suffix = case n `mod` 100 of
-        11 -> "th"  -- 11th, 111th, ...
-        12 -> "th"  -- 12th
-        13 -> "th"  -- 13th
-        _  -> case n `mod` 10 of
-                1 -> "st"
-                2 -> "nd"
-                3 -> "rd"
-                _ -> "th"
-  in  show n <> suffix
-
-
--- | Maps commonly-used stdlib names to their module.
-stdlibMap :: [(String, String)]
-stdlibMap =
-  [ ("map",        "List")
-  , ("filter",     "List")
-  , ("reduce",     "List")
-  , ("length",     "List")
-  , ("head",       "List")
-  , ("last",       "List")
-  , ("tail",       "List")
-  , ("reverse",    "List")
-  , ("concat",     "List")
-  , ("append",     "List")
-  , ("zip",        "List")
-  , ("unzip",      "List")
-  , ("find",       "List")
-  , ("any",        "List")
-  , ("all",        "List")
-  , ("sum",        "List")
-  , ("product",    "List")
-  , ("sort",       "List")
-  , ("sortBy",     "List")
-  , ("log",        "IO")
-  , ("print",      "IO")
-  , ("readLine",   "IO")
-  , ("fromMaybe",  "Maybe")
-  , ("isJust",     "Maybe")
-  , ("isNothing",  "Maybe")
-  , ("fromJust",   "Maybe")
-  , ("just",       "Maybe")
-  , ("nothing",    "Maybe")
-  , ("catMaybes",  "Maybe")
-  , ("split",      "String")
-  , ("join",       "String")
-  , ("trim",       "String")
-  , ("toLower",    "String")
-  , ("toUpper",    "String")
-  , ("replace",    "String")
-  , ("slice",      "String")
-  , ("parseInt",   "Number")
-  , ("parseFloat", "Number")
-  , ("fromString", "Number")
-  , ("toString",   "Show")
-  , ("floor",      "Math")
-  , ("ceil",       "Math")
-  , ("round",      "Math")
-  , ("sqrt",       "Math")
-  , ("abs",        "Math")
-  , ("min",        "Math")
-  , ("max",        "Math")
-  , ("pow",        "Math")
-  , ("random",     "Random")
-  ]
-
-
--- | Generate context-aware hints for NoInstanceFound errors.
--- These are shown in addition to the standard "implement the interface" hint.
-noInstanceSmartHints :: String -> [Type] -> [Diagnose.Note String]
-noInstanceSmartHints cls ts = case (cls, ts) of
-  -- Number interface — concrete actionable fixes
-  ("Number", [TCon (TC "String" _) _ _]) ->
-    [ Diagnose.Hint "Strings are not numbers. Use '<>' to concatenate strings instead of '+'."
-    , Diagnose.Note "To parse a String as a number, use Number.fromString which returns a Maybe Number."
-    ]
-  ("Number", [TCon (TC "Boolean" _) _ _]) ->
-    [ Diagnose.Hint "Booleans are not numbers. Use '&&' or '||' for boolean logic."
-    , Diagnose.Note "To convert Boolean to Int, write: if condition then 1 else 0"
-    ]
-  ("Number", [TCon (TC "Char" _) _ _]) ->
-    [ Diagnose.Hint "Characters are not numbers. Use 'Char.toInt' to get the Unicode code point."
-    , Diagnose.Note "Example: Char.toInt('A') == 65"
-    ]
-  ("Number", [TApp (TCon (TC "List" _) _ _) _]) ->
-    [ Diagnose.Hint "Lists are not numbers. Did you mean 'List.length' to count elements?"
-    , Diagnose.Note "Or 'List.sum' / 'List.product' if you want to reduce numeric elements."
-    ]
-  ("Number", [TApp (TApp (TCon (TC "(->)" _) _ _) _) _]) ->
-    [ Diagnose.Hint "A function is not a number — you may have forgotten to apply it to its arguments."
-    , Diagnose.Note "Example: instead of 'compute + 1', write 'compute(input) + 1'"
-    ]
-  -- Eq interface
-  ("Eq", [TCon (TC name _) _ _]) ->
-    [ Diagnose.Hint $ "Add 'derive Eq' to the '" <> name <> "' type definition to get equality for free."
-    , Diagnose.Note $ "Example:  type " <> name <> " = " <> name <> " { ... } deriving Eq"
-    ]
-  ("Eq", _) ->
-    [ Diagnose.Hint "Add 'derive Eq' to your type definition to auto-generate equality."
-    , Diagnose.Note "All built-in types (Number, String, Boolean, Char) already implement Eq."
-    ]
-  -- Show interface
-  ("Show", [TCon (TC name _) _ _]) ->
-    [ Diagnose.Hint $ "Add 'derive Show' to the '" <> name <> "' type definition to enable string conversion."
-    , Diagnose.Note $ "Example:  type " <> name <> " = " <> name <> " { ... } deriving Show"
-    ]
-  ("Show", _) ->
-    [ Diagnose.Hint "Add 'derive Show' to your type definition to auto-generate Show."
-    , Diagnose.Note "All built-in types already implement Show."
-    ]
-  -- Comparable interface
-  ("Comparable", [TCon (TC name _) _ _]) ->
-    [ Diagnose.Hint $ "Add 'derive Comparable' to '" <> name <> "' to enable sorting and ordering."
-    , Diagnose.Note $ "This allows using '" <> name <> "' with '<', '>', 'List.sortBy', 'List.minimum', etc."
-    ]
-  ("Comparable", _) ->
-    [ Diagnose.Hint "Add 'derive Comparable' to your type to enable ordering operators."
-    , Diagnose.Note "Comparable is needed for: '<', '>', '<=', '>=', 'List.sortBy', 'List.minimum', 'List.maximum'."
-    ]
-  -- Monad/Apply/Functor
-  ("Functor", _) ->
-    [ Diagnose.Hint "Implement 'instance Functor YourType' with a 'map' method."
-    , Diagnose.Note "Functor is required for 'map', which applies a function to the value inside a container."
-    ]
-  ("Monad", _) ->
-    [ Diagnose.Hint "Implement 'instance Monad YourType' with 'of' and 'chain' methods."
-    , Diagnose.Note "'chain' is equivalent to 'flatMap'/'bind'. 'of' wraps a value in the monad."
-    ]
-  ("Apply", _) ->
-    [ Diagnose.Hint "Implement 'instance Apply YourType' with an 'ap' method."
-    , Diagnose.Note "'ap' applies a function inside a container to a value inside a container."
-    ]
-  _ -> []
-
-
--- | Generate extra hints based on the megaparsec error message text.
-grammarSmartHints :: String -> [Diagnose.Note String]
-grammarSmartHints msg
-  | "unexpected end of input" `List.isInfixOf` msg =
-      [Diagnose.Hint "Something is missing — a closing bracket, a missing expression, or an incomplete statement."]
-  | "unexpected whitespace" `List.isInfixOf` msg =
-      [Diagnose.Note "The indentation or spacing here is unexpected."]
-  | "unexpected =\n" `List.isInfixOf` msg || msg == "unexpected =\n         expecting end of input" || "unexpected =" `List.isPrefixOf` msg =
-      [ Diagnose.Hint "If you are trying to mutate a variable, use ':=' instead of '='."
-      , Diagnose.Note "Top-level bindings use '='. Inside a block, use ':=' to reassign."
-      ]
-  | "unexpected :" `List.isPrefixOf` msg && not ("::" `List.isInfixOf` msg) =
-      [Diagnose.Hint "Did you mean '::' for a type annotation, or ':=' for mutation?"]
-  | "unexpected identifier" `List.isInfixOf` msg =
-      [Diagnose.Note "An identifier appeared where it wasn't expected. Check for a missing operator or comma."]
-  | otherwise = []
-
-
--- | Generate operator-specific hints for UnificationError.
-operatorHints :: String -> Type -> Type -> [Diagnose.Note String]
-operatorHints op found _expected = case op of
-  "&&" -> boolOpHints "&&" found
-  "||" -> boolOpHints "||" found
-  "+"  ->
-    case found of
-      TCon (TC "String" _) _ _ ->
-        [ Diagnose.Hint "Use '<>' to concatenate strings: a <> b"
-        , Diagnose.Note "'+' only works on numeric types (Number, Integer, Float, Short, Byte)."
-        ]
-      _ ->
-        [ Diagnose.Hint "Both sides of '+' must have the same numeric type."
-        , Diagnose.Note "Use '<>' to concatenate strings."
-        ]
-  "++" -> [ Diagnose.Hint "Both sides of '++' must be lists of the same element type." ]
-  "<>" -> [ Diagnose.Hint "Both sides of '<>' must have the same type (e.g. both String, or both List)." ]
-  _    -> [ Diagnose.Hint $ "Both operands of '" <> op <> "' must be the same type." ]
-  where
-    boolOpHints :: String -> Type -> [Diagnose.Note String]
-    boolOpHints opName t = case t of
-      TCon (TC "String" _) _ _ ->
-        [ Diagnose.Hint $ "'" <> opName <> "' requires Boolean, not String. Did you mean to compare with '=='?"
-        , Diagnose.Note "Example: instead of 'cond && str', write 'cond && str == expectedValue'"
-        ]
-      TCon (TC "Integer" _) _ _ ->
-        [ Diagnose.Hint $ "'" <> opName <> "' requires Boolean, not Integer. Did you mean to compare with '== 0'?"
-        , Diagnose.Note "Example: instead of 'cond && n', write 'cond && n != 0'"
-        ]
-      TCon (TC tname _) _ _ ->
-        [ Diagnose.Hint $ "'" <> opName <> "' requires Boolean on both sides, but got " <> tname <> "." ]
-      _ ->
-        [ Diagnose.Hint $ "Both sides of '" <> opName <> "' must be Boolean." ]
 
 
 mkError :: String -> Context -> String -> [Diagnose.Note String] -> Diagnose.Report String
@@ -1435,25 +1109,37 @@ createErrorDiagnostic color context typeError = case typeError of
   TestNotValid t ->
     let prettyType = renderType t
         prettyType' = unlines $ ("  "<>) <$> lines prettyType
-    in  mkError "Test not valid" context
-          (    "The test has type\n" <> prettyType'
-            <> "\nIt should be one of the following:\n"
-            <> "- Wish TestResult TestResult\n"
-            <> "- List (Wish TestResult TestResult)"
+    in  mkError "Invalid test type" context
+          (    "This test expression has type:\n" <> prettyType'
+            <> "\nbut tests must return one of:\n"
+            <> "  Wish TestResult TestResult\n"
+            <> "  List (Wish TestResult TestResult)"
           )
-          []
+          [ Diagnose.Hint "A test must evaluate to a Wish that resolves to a TestResult."
+          , Diagnose.Note "Use 'assertEqual' or 'test' from the Test module to build test values."
+          ]
 
   TypingHasWrongKind t expectedKind actualKind ->
     let expectedStr = if color then "\x1b[0mexpected:\n  " else "expected:\n  "
         foundStr = if color then "\n\x1b[0mbut found:\n  " else "\nbut found:\n  "
-    in  mkError "Typing has wrong kind" context
-          (    "The type annotation '" <> prettyPrintType False t <> "' has a wrong kind.\n"
+        prettyT = prettyPrintType False t
+    in  mkError "Kind mismatch in type annotation" context
+          (    "The type '" <> prettyT <> "' has kind " <> kindToStr actualKind
+            <> ", but kind " <> kindToStr expectedKind <> " was expected.\n"
             <> expectedStr
             <> colorWhen color Green (kindToStr expectedKind)
             <> foundStr
             <> colorWhen color Red (kindToStr actualKind)
           )
-          []
+          [ Diagnose.Note $
+              "Kinds describe how many type arguments a type constructor takes.\n"
+              <> "'*' means a concrete type (like 'Int').\n"
+              <> "'* -> *' means it takes one argument (like 'List' or 'Maybe')."
+          , Diagnose.Hint $ "'" <> prettyT <> "' needs "
+              <> (if actualKind == Star then "no" else "fewer")
+              <> " type arguments, but "
+              <> kindToStr expectedKind <> " was expected here."
+          ]
 
   NoMain ->
     Diagnose.Err
@@ -1479,10 +1165,12 @@ createErrorDiagnostic color context typeError = case typeError of
       ]
 
   MutatingFunction n ->
-    mkError "Mutation function" context
-      ("You are trying to mutate the function '" <> n <> "'. It is currently not allowed.")
-      [ Diagnose.Hint "Wrap it in a record"
-      , Diagnose.Hint "Use a closure that returns a setter and getter to mutate it"
+    mkError "Cannot mutate function" context
+      ("'" <> n <> "' is a function and cannot be mutated with ':='.")
+      [ Diagnose.Note "Functions are immutable values. You cannot reassign them."
+      , Diagnose.Hint $ "To make '" <> n <> "' swappable, wrap it in a mutable record:\n"
+          <> "  ref = { fn: " <> n <> " }\n"
+          <> "  ref.fn := newFunction    // mutate the record field"
       ]
 
   NotAConstructor n ->
@@ -1500,14 +1188,17 @@ createErrorDiagnostic color context typeError = case typeError of
           )
 
   MethodNameAlreadyDefined ->
-    mkError "Method name already defined" context "You are trying to redefine a method name"
-      [ Diagnose.Hint "Use a different name for the method"
+    mkError "Method name already defined" context
+      "This method name is already used by another interface."
+      [ Diagnose.Note "Two interfaces cannot define methods with the same name."
+      , Diagnose.Hint "Choose a different name, or prefix it with the interface name to avoid collisions."
       ]
 
   NotADefinition ->
-    mkError "Not a definition" context "It is not a definition and is not allowed"
-      [ Diagnose.Note "Top level expressions are not allowed in Madlib."
-      , Diagnose.Hint "You may want to assign it to a top level variable."
+    mkError "Not a definition" context
+      "This expression appears at the top level, but only definitions are allowed here."
+      [ Diagnose.Note "A module's top level can only contain: type definitions, assignments, imports, exports, and interface/instance declarations."
+      , Diagnose.Hint "Assign it to a name:  myValue = <expression>"
       ]
 
   ConstructorAccessBadIndex typeName constructorName arity index ->
@@ -1550,12 +1241,11 @@ createErrorDiagnostic color context typeError = case typeError of
           ]
 
   IllegalSkipAccess ->
-    mkError "Illegal skip access" context
-      (    "You accessed the skip symbol '_'. This is not permitted as\n"
-        <> "it does not hold any value and only serves to indicate that\n"
-        <> "you are not interested in whatever it may contain."
-      )
-      [Diagnose.Hint "Give it a name if you intend to use it"]
+    mkError "Cannot use '_' as a value" context
+      "The skip symbol '_' is a placeholder for values you don't need. It cannot be read."
+      [ Diagnose.Hint "Give it a name if you need to use the value:  (x) => x  instead of  (_) => _"
+      , Diagnose.Note "'_' means 'I don't care about this value'. To use it, replace '_' with a named variable."
+      ]
 
   UnboundVariable n suggestions ->
     let typoHint = case suggestions of
@@ -1623,12 +1313,18 @@ createErrorDiagnostic color context typeError = case typeError of
       ]
 
   DerivingAliasNotAllowed n ->
-    mkError "Deriving Alias Not Allowed" context ("The type '" <> n <> "' is an alias.")
-      [Diagnose.Hint "Aliases can't be derived, use the aliased type instead"]
+    mkError "Cannot derive for type alias" context
+      ("'" <> n <> "' is a type alias, not a concrete type. You cannot derive instances for aliases.")
+      [ Diagnose.Hint "Derive the instance on the underlying type that the alias refers to."
+      , Diagnose.Note "Type aliases are transparent — instances on the underlying type apply automatically."
+      ]
 
   InvalidInterfaceDerived n ->
-    mkError "Invalid Interface Derived" context ("The interface '" <> n <> "' can't be derived.")
-      [Diagnose.Note "Eq and Show are automatically derived", Diagnose.Hint "Currently only Comparable can be derived"]
+    mkError ("Cannot derive '" <> n <> "'") context
+      ("The interface '" <> n <> "' does not support automatic derivation.")
+      [ Diagnose.Note "Only these interfaces can be derived: Eq, Show, Comparable."
+      , Diagnose.Hint $ "Write a manual instance instead:\n  instance " <> n <> " YourType { ... }"
+      ]
 
   SignatureTooGeneral scGiven scInferred ->
     let (scInferred', scGiven') = renderSchemesWithDiff color scInferred scGiven
@@ -2136,1242 +1832,6 @@ showAreaInSource' before after json start end code =
   in  unlines $ before' ++ expContent ++ [formattedArea] ++ after'
 
 
-hkLetters :: [Char]
-hkLetters = ['m' ..]
-
-
-kindToStr :: Kind -> String
-kindToStr k = case k of
-  Star     ->
-    "*"
-
-  Kfun l r ->
-    kindToStr l <> " -> " <> kindToStr r
-
-
-schemeToStr :: Scheme -> String
-schemeToStr (Forall _ ([] :=> t)) = prettyPrintType True t
-schemeToStr (Forall _ (ps :=> t)) =
-  let (vars, hkVars, predStr) = predsToStr True (mempty, mempty) (dedupePreds ps)
-      (_, _, typeStr)         = prettyPrintType' True (vars, hkVars) t
-  in
-    if length ps > 1 then
-      "(" <> predStr <> ")" <> " => " <> typeStr
-    else
-      predStr <> " => " <> typeStr
-
-
-predsToStr :: Bool -> (M.Map Int Int, M.Map Int Int) -> [Pred] -> (M.Map Int Int, M.Map Int Int, String)
-predsToStr _ (vars, hkVars) [] = (vars, hkVars, "")
-predsToStr rewrite (vars, hkVars) [p] = predToStr rewrite (vars, hkVars) p
-predsToStr rewrite (vars, hkVars) (p:ps)  =
-  let (vars', hkVars', predStr) = predToStr rewrite (vars, hkVars) p
-  in
-    if null ps then
-     (vars', hkVars', predStr)
-    else
-      let (vars'', hkVars'', predStr'') = predsToStr rewrite (vars', hkVars') ps
-      in  (vars'', hkVars'', predStr <> ", " <> predStr'')
-
-
-predToStr :: Bool -> (M.Map Int Int, M.Map Int Int) -> Pred -> (M.Map Int Int, M.Map Int Int, String)
-predToStr rewrite (vars, hkVars) p@(IsIn cls _ _) =
-  let (vars', hkVars', predStr) = predToStr' rewrite (vars, hkVars) p
-  in  (vars', hkVars', cls <> " " <> predStr)
-
-predToStr' :: Bool -> (M.Map Int Int, M.Map Int Int) -> Pred -> (M.Map Int Int, M.Map Int Int, String)
-predToStr' _ (vars, hkVars) (IsIn _ [] _) = (vars, hkVars, "")
-predToStr' rewrite (vars, hkVars) (IsIn cls (t:ts) _) =
-  let (vars', hkVars', typeStr) = typeToParenWrappedStr rewrite (vars, hkVars) t
-  in
-    if null ts then
-      (vars', hkVars', typeStr)
-    else
-      let (vars'', hkVars'', typeStr'') = predToStr' rewrite (vars', hkVars') (IsIn cls ts Nothing)
-      in  (vars'', hkVars'', typeStr <> " " <> typeStr'')
-
-typeToParenWrappedStr :: Bool -> (M.Map Int Int, M.Map Int Int) -> Type -> (M.Map Int Int, M.Map Int Int, String)
-typeToParenWrappedStr rewrite (vars, hkVars) t =
-  let (vars', hkVars', typeStr) = prettyPrintType' rewrite (vars, hkVars) t
-  in  case t of
-    TApp _ _ -> (vars', hkVars', "(" <> typeStr <> ")")
-    _        -> (vars', hkVars', typeStr)
-
-
-prettyPrintQualType :: Qual Type -> String
-prettyPrintQualType qt =
-  schemeToStr (Forall [] qt)
-
-
-pushAnnotation :: ann -> Pretty.Doc ann -> Pretty.Doc ann
-pushAnnotation ann doc = case doc of
-  Pretty.Fail     -> Pretty.Annotated ann Pretty.Fail
-  Pretty.Empty    -> Pretty.Annotated ann Pretty.Empty
-  Pretty.Char c   -> Pretty.Annotated ann $ Pretty.Char c
-  Pretty.Text l t -> Pretty.Annotated ann $ Pretty.Text l t
-  Pretty.Line     -> Pretty.Annotated ann Pretty.Line
-
-  Pretty.FlatAlt x y     -> Pretty.Annotated ann $ Pretty.FlatAlt (pushAnnotation ann x) (pushAnnotation ann y)
-  Pretty.Cat x y         -> Pretty.Annotated ann $ Pretty.Cat (pushAnnotation ann x) (pushAnnotation ann y)
-  Pretty.Nest i x        -> Pretty.Annotated ann $ Pretty.Nest i (pushAnnotation ann x)
-  Pretty.Union x y       -> Pretty.Annotated ann $ Pretty.Union (pushAnnotation ann x) (pushAnnotation ann y)
-  Pretty.Column f        -> Pretty.Annotated ann $ Pretty.Column (pushAnnotation ann . f)
-  Pretty.WithPageWidth f -> Pretty.Annotated ann $ Pretty.WithPageWidth (pushAnnotation ann . f)
-  Pretty.Nesting f       -> Pretty.Annotated ann $ Pretty.Nesting (pushAnnotation ann . f)
-  Pretty.Annotated _ x   -> Pretty.Annotated ann (pushAnnotation ann x)
-
-
-gatherAllFnArgsForDiff :: Type -> Type -> [(Type, Type)]
-gatherAllFnArgsForDiff t1 t2 = case (t1, t2) of
-  (TApp (TApp (TCon (TC "(->)" _) _ _) tl1) tr1, TApp (TApp (TCon (TC "(->)" _) _ _) tl2) tr2) ->
-    (tl1, tl2) : gatherAllFnArgsForDiff tr1 tr2
-
-  _ ->
-    [(t1, t2)]
-
-
-constructorAndFunctionArgsToDocsWithDiff :: Bool -> (M.Map Int Int, M.Map Int Int) -> (M.Map Int Int, M.Map Int Int) -> [(Type, Type)] -> ((M.Map Int Int, M.Map Int Int), (M.Map Int Int, M.Map Int Int), [Pretty.Doc Terminal.AnsiStyle], [Pretty.Doc Terminal.AnsiStyle])
-constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1 vars2 ts = case ts of
-  ((t1@(TApp _ _), t2@(TApp _ _)) : next) | not (isTuple t1 || isTuple t2) ->
-    let (vars1', vars2', t1', t2')       = typesToDocWithDiff vars1 vars2 t1 t2
-        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1' vars2' next
-    in  ( vars1''
-        , vars2''
-        , if isFunctionArg && not (isFunctionType t1) then
-            t1' : next1
-          else
-            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t1') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next1
-        , if isFunctionArg&& not (isFunctionType t2) then
-            t2' : next2
-          else
-            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t2') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next2
-        )
-
-  ((t1@(TApp _ _), t2) : next) | not (isTuple t1) ->
-    let (vars1', vars2', t1', t2')       = typesToDocWithDiff vars1 vars2 t1 t2
-        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1' vars2' next
-    in  ( vars1''
-        , vars2''
-        , if isFunctionArg && not (isFunctionType t1) then
-            t1' : next1
-          else
-            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t1') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next1
-        , t2' : next2
-        )
-
-  ((t1, t2@(TApp _ _)) : next) | not (isTuple t2) ->
-    let (vars1', vars2', t1', t2')       = typesToDocWithDiff vars1 vars2 t1 t2
-        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1' vars2' next
-    in  ( vars1''
-        , vars2''
-        , t1' : next1
-        , if isFunctionArg && not (isFunctionType t2) then
-            t2' : next2
-          else
-            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t2') <> Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen) : next2
-        )
-
-  ((t1, t2) : next) ->
-    let (vars1', vars2', t1', t2')       = typesToDocWithDiff vars1 vars2 t1 t2
-        (vars1'', vars2'', next1, next2) = constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1' vars2' next
-    in  (vars1'', vars2'', t1' : next1, t2' : next2)
-
-  [] ->
-    (vars1, vars2, [], [])
-
-
-gatherAllConstructorArgsForDiff :: Type -> Type -> [(Type, Type)]
-gatherAllConstructorArgsForDiff t1 t2 = case (t1, t2) of
-  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
-    [(t1, t2)]
-
-  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, _) ->
-    [(t1, t2)]
-
-  (_, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
-    [(t1, t2)]
-
-  (TApp l1 r1, TApp l2 r2) ->
-    gatherAllConstructorArgsForDiff l1 l2 ++ [(r1, r2)]
-
-  _ ->
-    [(t1, t2)]
-
-
-predsToDocsWithDiff :: (M.Map Int Int, M.Map Int Int)
-  -> (M.Map Int Int, M.Map Int Int)
-  -> [Pred]
-  -> [Pred]
-  -> ((M.Map Int Int, M.Map Int Int), (M.Map Int Int, M.Map Int Int), [Pretty.Doc Terminal.AnsiStyle], [Pretty.Doc Terminal.AnsiStyle])
-predsToDocsWithDiff (vars1, hkVars1) (vars2, hkVars2) ps1 ps2 = case (ps1, ps2) of
-  (IsIn cls1 ts1 _ : more1, IsIn cls2 ts2 _ : more2) ->
-    let (vars1', hkVars1', ts1')             = constructorAndFunctionArgsToDocs False (vars1, hkVars1) ts1
-        (vars2', hkVars2', ts2')             = constructorAndFunctionArgsToDocs False (vars2, hkVars2) ts2
-        (allVars1, allVars2, more1', more2') = predsToDocsWithDiff (vars1', hkVars1') (vars2', hkVars2') more1 more2
-        areEqual = cls1 == cls2 && ts1 == ts2
-    in  ( allVars1
-        , allVars2
-        , (
-            Pretty.group (
-              Pretty.nest indentationSize (
-                Pretty.annotate (if areEqual then Terminal.color Terminal.Black else Terminal.color Terminal.Red) (Pretty.pretty cls1)
-                <> Pretty.hcat ((Pretty.line <>) . (Pretty.annotate (if areEqual then Terminal.color Terminal.Black else Terminal.color Terminal.Red)) <$> ts1')
-              )
-              <> Pretty.line'
-            )
-          ) : more1'
-        , (
-            Pretty.group (
-              Pretty.nest indentationSize (
-                Pretty.annotate (if areEqual then Terminal.color Terminal.Black else Terminal.color Terminal.Green) (Pretty.pretty cls1)
-                <> Pretty.hcat ((Pretty.line <>) . (Pretty.annotate (if areEqual then Terminal.color Terminal.Black else Terminal.color Terminal.Green)) <$> ts2')
-              )
-              <> Pretty.line'
-            )
-          ) : more2'
-        )
-
-  (IsIn cls1 ts1 _ : more1, []) ->
-    let (vars1', hkVars1', ts1')             = constructorAndFunctionArgsToDocs False (vars1, hkVars1) ts1
-        (allVars1, allVars2, more1', _) = predsToDocsWithDiff (vars1', hkVars1') (vars2, hkVars2) more1 []
-    in  ( allVars1
-        , allVars2
-        , (
-            Pretty.group (
-              Pretty.nest indentationSize (
-                Pretty.annotate (Terminal.color Terminal.Red) (Pretty.pretty cls1)
-                <> Pretty.hcat ((Pretty.line <>) . (Pretty.annotate (Terminal.color Terminal.Red)) <$> ts1')
-              )
-              <> Pretty.line'
-            )
-          ) : more1'
-        , []
-        )
-
-  ([], IsIn cls2 ts2 _ : more2) ->
-    let (vars2', hkVars2', ts2')        = constructorAndFunctionArgsToDocs False (vars1, hkVars1) ts2
-        (allVars1, allVars2, _, more2') = predsToDocsWithDiff (vars1, hkVars1) (vars2', hkVars2') more2 []
-    in  ( allVars1
-        , allVars2
-        , []
-        , (
-            Pretty.group (
-              Pretty.nest indentationSize (
-                Pretty.annotate (Terminal.color Terminal.Green) (Pretty.pretty cls2)
-                <> Pretty.hcat ((Pretty.line <>) . (Pretty.annotate (Terminal.color Terminal.Green)) <$> ts2')
-              )
-              <> Pretty.line'
-            )
-          ) : more2'
-        )
-
-  ([], []) ->
-    ((vars1, hkVars1), (vars2, hkVars2), [], [])
-
-
-schemesToDocWithDiff :: (M.Map Int Int, M.Map Int Int)
-  -> (M.Map Int Int, M.Map Int Int)
-  -> Scheme
-  -> Scheme
-  -> ((M.Map Int Int, M.Map Int Int), (M.Map Int Int, M.Map Int Int), Pretty.Doc Terminal.AnsiStyle, Pretty.Doc Terminal.AnsiStyle)
-schemesToDocWithDiff (vars1, hkVars1) (vars2, hkVars2) sc1 sc2 = case (sc1, sc2) of
-  (Forall _ ([] :=> t1), Forall _ ([] :=> t2)) ->
-    typesToDocWithDiff (vars1, hkVars1) (vars2, hkVars2) t1 t2
-
-  (Forall _ (ps1 :=> t1), Forall _ (ps2 :=> t2)) ->
-    let (vars1', vars2', ps1', ps2')  = predsToDocsWithDiff (vars1, hkVars1) (vars2, hkVars2) (dedupePreds ps1) (dedupePreds ps2)
-        (vars1'', vars2'', t1', t2') = typesToDocWithDiff vars1' vars2' t1 t2
-    in
-        ( vars1''
-        , vars2''
-        , if length ps1 > 1 then
-            Pretty.group (
-              Pretty.annotate (Terminal.color Terminal.Black) Pretty.lparen
-              <> Pretty.hcat (List.intersperse (Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.space) ps1')
-              <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen
-              <> Pretty.nest indentationSize (
-                    Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty " =>" <> Pretty.line)
-                    <> t1'
-                )
-            )
-          else
-            Pretty.group (
-              Pretty.hcat (List.intersperse (Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.space) ps1')
-              <> Pretty.nest indentationSize (
-                    Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty " =>" <> Pretty.line)
-                    <> t1'
-                )
-            )
-        , if length ps2 > 1 then
-            Pretty.group (
-              Pretty.annotate (Terminal.color Terminal.Black) Pretty.lparen
-              <> Pretty.hcat (List.intersperse (Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.space) ps2')
-              <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rparen
-              <> Pretty.nest indentationSize (
-                    Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty " =>" <> Pretty.line)
-                    <> t2'
-                )
-            )
-          else
-            Pretty.group (
-              Pretty.hcat (List.intersperse (Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.space) ps2')
-              <> Pretty.nest indentationSize (
-                    Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty " =>" <> Pretty.line)
-                    <> t2'
-                )
-            )
-        )
-
-
-typesToDocWithDiff :: (M.Map Int Int, M.Map Int Int)
-  -> (M.Map Int Int, M.Map Int Int)
-  -> Type
-  -> Type
-  -> ((M.Map Int Int, M.Map Int Int), (M.Map Int Int, M.Map Int Int), Pretty.Doc Terminal.AnsiStyle, Pretty.Doc Terminal.AnsiStyle)
-typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
-  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
-    let allArgs = gatherAllFnArgsForDiff t1 t2
-        (vars1', vars2', ts1, ts2) = constructorAndFunctionArgsToDocsWithDiff True vars1 vars2 allArgs
-    in  ( vars1'
-        , vars2'
-        , Pretty.group $ Pretty.hcat $ List.intersperse (Pretty.line <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "-> ")) (Pretty.annotate (Terminal.color Terminal.Black) <$> ts1)
-        , Pretty.group $ Pretty.hcat $ List.intersperse (Pretty.line <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "-> ")) (Pretty.annotate (Terminal.color Terminal.Black) <$> ts2)
-        )
-
-  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, _) ->
-    let (vars1', hkVars1', pretty1) = typeToDoc vars1 t1
-        (vars2', hkVars2', pretty2) = typeToDoc vars2 t2
-    in  ((vars1', hkVars1'), (vars2', hkVars2'), pushAnnotation (Terminal.color Terminal.Red <> Terminal.bold) pretty1, pushAnnotation (Terminal.color Terminal.Green <> Terminal.bold) pretty2)
-
-  (_, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
-    let (vars1', hkVars1', pretty1) = typeToDoc vars1 t1
-        (vars2', hkVars2', pretty2) = typeToDoc vars2 t2
-    in  ((vars1', hkVars1'), (vars2', hkVars2'), pushAnnotation (Terminal.color Terminal.Red <> Terminal.bold) pretty1, pushAnnotation (Terminal.color Terminal.Green <> Terminal.bold) pretty2)
-
-  (TApp (TApp (TCon (TC "(,)" _) _ _) tl1) tr1, TApp (TApp (TCon (TC "(,)" _) _ _) tl2) tr2) ->
-    let (vars1', vars2', tl1', tl2')   = typesToDocWithDiff vars1 vars2 tl1 tl2
-        (vars1'', vars2'', tr1', tr2') = typesToDocWithDiff vars1' vars2' tr1 tr2
-        openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
-        closeTuple = Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "]")
-        separator  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.line
-    in  ( vars1''
-        , vars2''
-        , Pretty.group (
-            Pretty.nest indentationSize (openTuple <> Pretty.annotate (Terminal.color Terminal.Black) tl1' <> separator <> Pretty.annotate (Terminal.color Terminal.Black) tr1')
-            <> closeTuple
-          )
-        ,  Pretty.group (
-            Pretty.nest indentationSize (openTuple <> Pretty.annotate (Terminal.color Terminal.Black) tl2' <> separator <> Pretty.annotate (Terminal.color Terminal.Black) tr2')
-            <> closeTuple
-          )
-        )
-
-  (TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) t11) t12) t13, TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) t21) t22) t23) ->
-    let (vars1', vars2', t11', t21')     = typesToDocWithDiff vars1 vars2 t11 t21
-        (vars1'', vars2'', t12', t22')   = typesToDocWithDiff vars1' vars2' t12 t22
-        (vars1''', vars2''', t13', t23') = typesToDocWithDiff vars1'' vars2'' t13 t23
-        openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
-        closeTuple = Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "]")
-        separator  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.line
-    in  ( vars1'''
-        , vars2'''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t11' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t12' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t13'
-            )
-            <> closeTuple
-          )
-        ,  Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t21' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t22' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t23'
-            )
-            <> closeTuple
-          )
-        )
-
-  (TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) t11) t12) t13) t14, TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) t21) t22) t23) t24) ->
-    let (vars1', vars2', t11', t21')       = typesToDocWithDiff vars1 vars2 t11 t21
-        (vars1'', vars2'', t12', t22')     = typesToDocWithDiff vars1' vars2' t12 t22
-        (vars1''', vars2''', t13', t23')   = typesToDocWithDiff vars1'' vars2'' t13 t23
-        (vars1'''', vars2'''', t14', t24') = typesToDocWithDiff vars1''' vars2''' t14 t24
-        openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
-        closeTuple = Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "]")
-        separator  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.line
-    in  ( vars1''''
-        , vars2''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t11' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t12' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t13' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t14'
-            )
-            <> closeTuple
-          )
-        ,  Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t21' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t22' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t23' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t24'
-            )
-            <> closeTuple
-          )
-        )
-
-  (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _ _) t11) t12) t13) t14) t15, TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _ _) t21) t22) t23) t24) t25) ->
-    let (vars1', vars2', t11', t21')         = typesToDocWithDiff vars1 vars2 t11 t21
-        (vars1'', vars2'', t12', t22')       = typesToDocWithDiff vars1' vars2' t12 t22
-        (vars1''', vars2''', t13', t23')     = typesToDocWithDiff vars1'' vars2'' t13 t23
-        (vars1'''', vars2'''', t14', t24')   = typesToDocWithDiff vars1''' vars2''' t14 t24
-        (vars1''''', vars2''''', t15', t25') = typesToDocWithDiff vars1'''' vars2'''' t15 t25
-        openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
-        closeTuple = Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "]")
-        separator  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.line
-    in  ( vars1'''''
-        , vars2'''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t11' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t12' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t13' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t14' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t15'
-            )
-            <> closeTuple
-          )
-        ,  Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t21' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t22' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t23' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t24' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t25'
-            )
-            <> closeTuple
-          )
-        )
-
-  (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16, TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) ->
-    let (vars1', vars2', t11', t21')           = typesToDocWithDiff vars1 vars2 t11 t21
-        (vars1'', vars2'', t12', t22')         = typesToDocWithDiff vars1' vars2' t12 t22
-        (vars1''', vars2''', t13', t23')       = typesToDocWithDiff vars1'' vars2'' t13 t23
-        (vars1'''', vars2'''', t14', t24')     = typesToDocWithDiff vars1''' vars2''' t14 t24
-        (vars1''''', vars2''''', t15', t25')   = typesToDocWithDiff vars1'''' vars2'''' t15 t25
-        (vars1'''''', vars2'''''', t16', t26') = typesToDocWithDiff vars1''''' vars2''''' t16 t26
-        openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
-        closeTuple = Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "]")
-        separator  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.line
-    in  ( vars1''''''
-        , vars2''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t11' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t12' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t13' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t14' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t15' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t16'
-            )
-            <> closeTuple
-          )
-        ,  Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t21' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t22' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t23' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t24' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t25' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t26'
-            )
-            <> closeTuple
-          )
-        )
-
-  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16) t17, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) t27) ->
-    let (vars1', vars2', t11', t21')             = typesToDocWithDiff vars1 vars2 t11 t21
-        (vars1'', vars2'', t12', t22')           = typesToDocWithDiff vars1' vars2' t12 t22
-        (vars1''', vars2''', t13', t23')         = typesToDocWithDiff vars1'' vars2'' t13 t23
-        (vars1'''', vars2'''', t14', t24')       = typesToDocWithDiff vars1''' vars2''' t14 t24
-        (vars1''''', vars2''''', t15', t25')     = typesToDocWithDiff vars1'''' vars2'''' t15 t25
-        (vars1'''''', vars2'''''', t16', t26')   = typesToDocWithDiff vars1''''' vars2''''' t16 t26
-        (vars1''''''', vars2''''''', t17', t27') = typesToDocWithDiff vars1'''''' vars2'''''' t17 t27
-        openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
-        closeTuple = Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "]")
-        separator  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.line
-    in  ( vars1'''''''
-        , vars2'''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t11' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t12' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t13' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t14' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t15' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t16' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t17'
-            )
-            <> closeTuple
-          )
-        ,  Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t21' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t22' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t23' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t24' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t25' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t26' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t27'
-            )
-            <> closeTuple
-          )
-        )
-
-  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16) t17) t18, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) t27) t28) ->
-    let (vars1', vars2', t11', t21')               = typesToDocWithDiff vars1 vars2 t11 t21
-        (vars1'', vars2'', t12', t22')             = typesToDocWithDiff vars1' vars2' t12 t22
-        (vars1''', vars2''', t13', t23')           = typesToDocWithDiff vars1'' vars2'' t13 t23
-        (vars1'''', vars2'''', t14', t24')         = typesToDocWithDiff vars1''' vars2''' t14 t24
-        (vars1''''', vars2''''', t15', t25')       = typesToDocWithDiff vars1'''' vars2'''' t15 t25
-        (vars1'''''', vars2'''''', t16', t26')     = typesToDocWithDiff vars1''''' vars2''''' t16 t26
-        (vars1''''''', vars2''''''', t17', t27')   = typesToDocWithDiff vars1'''''' vars2'''''' t17 t27
-        (vars1'''''''', vars2'''''''', t18', t28') = typesToDocWithDiff vars1''''''' vars2''''''' t18 t28
-        openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
-        closeTuple = Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "]")
-        separator  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.line
-    in  ( vars1''''''''
-        , vars2''''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t11' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t12' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t13' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t14' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t15' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t16' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t17' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t18'
-            )
-            <> closeTuple
-          )
-        ,  Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t21' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t22' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t23' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t24' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t25' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t26' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t27' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t28'
-            )
-            <> closeTuple
-          )
-        )
-
-  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16) t17) t18) t19, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) t27) t28) t29) ->
-    let (vars1', vars2', t11', t21')                 = typesToDocWithDiff vars1 vars2 t11 t21
-        (vars1'', vars2'', t12', t22')               = typesToDocWithDiff vars1' vars2' t12 t22
-        (vars1''', vars2''', t13', t23')             = typesToDocWithDiff vars1'' vars2'' t13 t23
-        (vars1'''', vars2'''', t14', t24')           = typesToDocWithDiff vars1''' vars2''' t14 t24
-        (vars1''''', vars2''''', t15', t25')         = typesToDocWithDiff vars1'''' vars2'''' t15 t25
-        (vars1'''''', vars2'''''', t16', t26')       = typesToDocWithDiff vars1''''' vars2''''' t16 t26
-        (vars1''''''', vars2''''''', t17', t27')     = typesToDocWithDiff vars1'''''' vars2'''''' t17 t27
-        (vars1'''''''', vars2'''''''', t18', t28')   = typesToDocWithDiff vars1''''''' vars2''''''' t18 t28
-        (vars1''''''''', vars2''''''''', t19', t29') = typesToDocWithDiff vars1'''''''' vars2'''''''' t19 t29
-        openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
-        closeTuple = Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "]")
-        separator  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.line
-    in  ( vars1'''''''''
-        , vars2'''''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t11' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t12' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t13' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t14' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t15' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t16' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t17' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t18' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t19'
-            )
-            <> closeTuple
-          )
-        ,  Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t21' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t22' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t23' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t24' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t25' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t26' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t27' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t28' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t29'
-            )
-            <> closeTuple
-          )
-        )
-
-  (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,,)" _) _ _) t11) t12) t13) t14) t15) t16) t17) t18) t19) t110, TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _ _) t21) t22) t23) t24) t25) t26) t27) t28) t29) t210) ->
-    let (vars1', vars2', t11', t21')                     = typesToDocWithDiff vars1 vars2 t11 t21
-        (vars1'', vars2'', t12', t22')                   = typesToDocWithDiff vars1' vars2' t12 t22
-        (vars1''', vars2''', t13', t23')                 = typesToDocWithDiff vars1'' vars2'' t13 t23
-        (vars1'''', vars2'''', t14', t24')               = typesToDocWithDiff vars1''' vars2''' t14 t24
-        (vars1''''', vars2''''', t15', t25')             = typesToDocWithDiff vars1'''' vars2'''' t15 t25
-        (vars1'''''', vars2'''''', t16', t26')           = typesToDocWithDiff vars1''''' vars2''''' t16 t26
-        (vars1''''''', vars2''''''', t17', t27')         = typesToDocWithDiff vars1'''''' vars2'''''' t17 t27
-        (vars1'''''''', vars2'''''''', t18', t28')       = typesToDocWithDiff vars1''''''' vars2''''''' t18 t28
-        (vars1''''''''', vars2''''''''', t19', t29')     = typesToDocWithDiff vars1'''''''' vars2'''''''' t19 t29
-        (vars1'''''''''', vars2'''''''''', t110', t210') = typesToDocWithDiff vars1''''''''' vars2''''''''' t110 t210
-        openTuple  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.pretty "#[" <> Pretty.line'
-        closeTuple = Pretty.line' <> Pretty.annotate (Terminal.color Terminal.Black) (Pretty.pretty "]")
-        separator  = Pretty.annotate (Terminal.color Terminal.Black) $ Pretty.comma <> Pretty.line
-    in  ( vars1''''''''''
-        , vars2''''''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t11' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t12' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t13' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t14' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t15' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t16' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t17' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t18' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t19' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t110' 
-            )
-            <> closeTuple
-          )
-        ,  Pretty.group (
-            Pretty.nest indentationSize (
-              openTuple
-              <> Pretty.annotate (Terminal.color Terminal.Black) t21' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t22' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t23' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t24' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t25' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t26' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t27' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t28' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t29' <> separator
-              <> Pretty.annotate (Terminal.color Terminal.Black) t210' 
-            )
-            <> closeTuple
-          )
-        )
-
-  (t1@(TApp _ _), t2@(TApp _ _)) | length (gatherAllConstructorArgs t1) /= length (gatherAllConstructorArgs t2) ->
-    let (vars1', hkVars1', pretty1) = typeToDoc vars1 t1
-        (vars2', hkVars2', pretty2) = typeToDoc vars2 t2
-    in  ((vars1', hkVars1'), (vars2', hkVars2'), pushAnnotation (Terminal.color Terminal.Red <> Terminal.bold) pretty1, pushAnnotation (Terminal.color Terminal.Green <> Terminal.bold) pretty2)
-
-  (TApp _ _, TApp _ _) ->
-    let allArgs = gatherAllConstructorArgsForDiff t1 t2
-        (vars1', vars2', ctor1 : args1, ctor2 : args2) = constructorAndFunctionArgsToDocsWithDiff False vars1 vars2 allArgs
-    in  ( vars1'
-        , vars2'
-        , Pretty.group (
-            Pretty.annotate (Terminal.color Terminal.Black) ctor1
-            <> Pretty.nest indentationSize
-                (
-                  Pretty.line <> Pretty.hcat (List.intersperse Pretty.line (Pretty.annotate (Terminal.color Terminal.Black) <$> args1))
-                )
-          )
-        , Pretty.group (
-            Pretty.annotate (Terminal.color Terminal.Black) ctor2
-            <> Pretty.nest indentationSize
-                (
-                  Pretty.line <> Pretty.hcat (List.intersperse Pretty.line (Pretty.annotate (Terminal.color Terminal.Black) <$> args2))
-                )
-          )
-        )
-
-  (TRecord fields1 base1 _, TRecord fields2 base2 _) ->
-    let allFields1 = case base1 of
-          Just (TRecord fields _ _) ->
-            fields <> fields1
-          _ ->
-            fields1
-        allFields2 = case base2 of
-          Just (TRecord fields _ _) ->
-            fields <> fields2
-          _ ->
-            fields2
-        ((finalVars1, finalHkVars1), (finalVars2, finalHkVars2), compiledFields1, compiledFields2) =
-            foldl'
-                (\(allVars1, allVars2, compiledFields1', compiledFields2') (fieldName, fieldType1) ->
-                    case M.lookup fieldName allFields2 of
-                      Just fieldType2 ->
-                        let (allVars1', allVars2', pretty1, pretty2) = typesToDocWithDiff allVars1 allVars2 fieldType1 fieldType2
-                        in  (allVars1', allVars2', compiledFields1' ++ [Pretty.pretty fieldName <> Pretty.pretty " :: " <> pretty1], compiledFields2' ++ [Pretty.pretty fieldName <> Pretty.pretty " :: " <> pretty2])
-
-                      Nothing ->
-                        let (vars1', hkVars1', pretty1) = typeToDoc allVars1 fieldType1
-                        in  ((vars1', hkVars1'), allVars2, compiledFields1' ++ [Pretty.annotate (Terminal.color Terminal.Red) $ Pretty.pretty fieldName <> Pretty.pretty " :: " <> pretty1], compiledFields2')
-                )
-                (vars1, vars2, [], [])
-              $ M.toList allFields1
-
-        missingFields = allFields2 M.\\ allFields1
-        ((finalVars2', finalHkVars2'), compiledMissingFields') =
-            foldl'
-                (\(allVars2, compiledFields2') (fieldName, fieldType2) ->
-                    let (vars2', hkVars2', pretty2) = typeToDoc allVars2 fieldType2
-                    in  ((vars2', hkVars2'), compiledFields2' ++ [pushAnnotation (Terminal.color Terminal.Green) $ Pretty.pretty fieldName <> Pretty.pretty " :: " <> pretty2])
-                )
-                ((finalVars2, finalHkVars2), [])
-              $ M.toList missingFields
-        (finalVars1', formattedBase1)   = case base1 of
-          Just t1  ->
-            let (vars, hkVars, pretty) = typeToDoc (finalVars1, finalHkVars1) t1
-            in ((vars, hkVars), pushAnnotation (Terminal.color Terminal.Red) $ Pretty.pretty "..." <> pretty <> Pretty.comma <> Pretty.line)
-
-          Nothing ->
-            ((finalVars1, finalHkVars1), Pretty.emptyDoc)
-
-        (finalVars2'', formattedBase2)   = case base2 of
-          Just t2  ->
-            let (vars, hkVars, pretty) = typeToDoc (finalVars2', finalHkVars2') t2
-            in ((vars, hkVars), pushAnnotation (Terminal.color Terminal.Green) $ Pretty.pretty "..." <> pretty <> Pretty.comma <> Pretty.line)
-
-          Nothing ->
-            ((finalVars2', finalHkVars2'), Pretty.emptyDoc)
-
-        compiled1 = Pretty.annotate (Terminal.color Terminal.Black) $
-            Pretty.group (
-              Pretty.lbrace <> Pretty.nest indentationSize (
-                Pretty.line
-                <> formattedBase1
-                <> Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.line) (Pretty.annotate (Terminal.color Terminal.Black) <$> compiledFields1))
-              )
-              <> (if null compiledFields1 then Pretty.emptyDoc else Pretty.line)
-              <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rbrace
-            )
-        compiled2 = Pretty.annotate (Terminal.color Terminal.Black) $
-            Pretty.group (
-              Pretty.lbrace <> Pretty.nest indentationSize (
-                Pretty.line
-                <> formattedBase2
-                <> Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.line) (Pretty.annotate (Terminal.color Terminal.Black) <$> (compiledFields2 ++ compiledMissingFields')))
-              )
-              <> (if null compiledFields2 then Pretty.emptyDoc else Pretty.line)
-              <> Pretty.annotate (Terminal.color Terminal.Black) Pretty.rbrace
-            )
-    in  (finalVars1', finalVars2'', compiled1, compiled2)
-
-  (t1, t2) ->
-    let (vars1', hkVars1', pretty1) = typeToDoc vars1 t1
-        (vars2', hkVars2', pretty2) = typeToDoc vars2 t2
-    in if t1 /= t2 then
-      ((vars1', hkVars1'), (vars2', hkVars2'), pushAnnotation (Terminal.color Terminal.Red <> Terminal.bold) pretty1, pushAnnotation (Terminal.color Terminal.Green <> Terminal.bold) pretty2)
-    else
-      ((vars1', hkVars1'), (vars2', hkVars2'), pretty1, pretty2)
-
-
-
-prettyPrintType :: Bool -> Type -> String
-prettyPrintType rewrite =
-  lst . prettyPrintType' rewrite (mempty, mempty)
-
-
-prettyPrintType' :: Bool -> (M.Map Int Int, M.Map Int Int) -> Type -> (M.Map Int Int, M.Map Int Int, String)
-prettyPrintType' rewrite (vars, hkVars) t = case t of
-  TCon (TC n _) _ _ ->
-    (vars, hkVars, n)
-
-  TVar (TV n k)   ->
-    if not rewrite then
-      (vars, hkVars, renderTVar n)
-    else
-      case k of
-        Star -> case M.lookup n vars of
-          Just x ->
-            (vars, hkVars, renderIndexedLetter x)
-
-          Nothing ->
-            let newIndex = M.size vars
-            in  (M.insert n newIndex vars, hkVars, renderIndexedLetter newIndex)
-
-        Kfun _ _ -> case M.lookup n hkVars of
-          Just x ->
-            (vars, hkVars, [hkLetters !! x])
-
-          Nothing ->
-            let newIndex = M.size hkVars
-            in  (vars, M.insert n newIndex hkVars, [hkLetters !! newIndex])
-
-  TApp (TApp (TCon (TC "(,)" _) _ _) tl) tr ->
-    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' rewrite (vars, hkVars) tl
-        (varsRight, hkVarsRight, right) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
-    in  (varsRight, hkVarsRight, "#[" <> left <> ", " <> right <> "]")
-
-  TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) tl) tr) trr ->
-    let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
-        (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
-        (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
-    in  (varsRightRight, hkVarsRightRight, "#[" <> left <> ", " <> right <> ", " <> rightRight <> "]")
-
-  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) tl) tr) trr) trrr ->
-    let (varsLeft      , hkVarsLeft      , left      ) = prettyPrintType' rewrite (vars, hkVars) tl
-        (varsRight     , hkVarsRight     , right     ) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
-        (varsRightRight, hkVarsRightRight, rightRight) = prettyPrintType' rewrite (varsRight, hkVarsRight) trr
-        (_, _, rightRightRight) =
-            prettyPrintType' rewrite (varsRightRight, hkVarsRightRight) trrr
-    in  ( varsRightRight
-        , hkVarsRightRight
-        , "#[" <> left <> ", " <> right <> ", " <> rightRight <> ", " <> rightRightRight <> "]"
-        )
-
-  TApp (TApp (TCon (TC "(->)" _) _ _) tl) tr ->
-    let (varsLeft, hkVarsLeft, left) = case tl of
-          TApp (TApp (TCon (TC "(->)" _) _ _) tl') tr' ->
-            let (varsLeft' , hkVarsLeft' , left' ) = prettyPrintType' rewrite (vars, hkVars) tl'
-                (varsRight', hkVarsRight', right') = prettyPrintType' rewrite (varsLeft', hkVarsLeft') tr'
-                leftParenthesis                    = case tl' of
-                  TApp (TApp (TCon (TC "(->)" _) _ _) _) _ ->
-                    True
-
-                  _ ->
-                    False
-                left'' = if leftParenthesis then "(" <> left' <> ")" else left'
-            in  (varsRight', hkVarsRight', "(" <> left'' <> " -> " <> right' <> ")")
-
-          _ -> prettyPrintType' rewrite (vars, hkVars) tl
-
-        (varsRight, hkVarsRight, right) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
-    in  (varsRight, hkVarsRight, left <> " -> " <> right)
-
-  TApp tl tr ->
-    let (varsLeft , hkVarsLeft , left ) = prettyPrintType' rewrite (vars, hkVars) tl
-        (varsRight, hkVarsRight, right) = case tr of
-          TApp _ _ ->
-            let (varsRight', hkVarsRight', right') = prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
-            in  if not (isTuple tr)
-                  then (varsRight', hkVarsRight', "(" <> right' <> ")")
-                  else (varsRight', hkVarsRight', right')
-          _ -> prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
-    in  (varsRight, hkVarsRight, left <> " " <> right)
-
-  -- TODO: Add spreads display
-  TRecord fields base _ ->
-    let (finalVars, finalHkVars, compiledFields) =
-            foldl'
-                (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
-                  let (vars'', hkVars'', compiledField) = prettyPrintType' rewrite (vars', hkVars') fieldType
-                  in  (vars'', hkVars'', compiledFields' ++ [(fieldName, compiledField)])
-                )
-                (vars, hkVars, [])
-              $ M.toList fields
-        compiledFields' = (\(fieldName, fieldType) -> fieldName <> " :: " <> fieldType) <$> compiledFields
-        formattedBase   = case base of
-          Just _  -> "...base, "
-          Nothing -> ""
-        compiled = "{ " <> formattedBase <> intercalate ", " compiledFields' <> " }"
-    in  (finalVars, finalHkVars, compiled)
-
-  TGen n ->
-    if not rewrite then
-      (vars, hkVars, "T" <> show n)
-    else
-      case M.lookup (n - 1000) vars of
-        Just x  ->
-          (vars, hkVars, renderIndexedLetter x)
-
-        Nothing ->
-          let newIndex = M.size vars
-          in  (M.insert (n - 1000) newIndex vars, hkVars, renderIndexedLetter newIndex)
-
-  _ ->
-    (vars, hkVars, "")
-
-
-gatherAllFnArgs :: Type -> [Type]
-gatherAllFnArgs t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _ _) tl) tr ->
-    tl : gatherAllFnArgs tr
-
-  _ ->
-    [t]
-
-
-gatherAllConstructorArgs :: Type -> [Type]
-gatherAllConstructorArgs t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _ _) _) _ ->
-    [t]
-
-  TApp l r ->
-    gatherAllConstructorArgs l ++ [r]
-
-  _ ->
-    [t]
-
-
-constructorAndFunctionArgsToDocs :: Bool -> (M.Map Int Int, M.Map Int Int) -> [Type] -> (M.Map Int Int, M.Map Int Int, [Pretty.Doc ann])
-constructorAndFunctionArgsToDocs isFunctionArg (vars, hkVars) ts = case ts of
-  (t@(TApp _ _) : next) | not (isTuple t) ->
-    let (vars', hkVvars', t')     = typeToDoc (vars, hkVars) t
-        (vars'', hkVars'', next') = constructorAndFunctionArgsToDocs isFunctionArg (vars', hkVvars') next
-    in  ( vars'', hkVars''
-        , if isFunctionArg && not (isFunctionType t) then
-            t' : next'
-          else
-            Pretty.group (Pretty.lparen <> Pretty.nest indentationSize (Pretty.line' <> t') <> Pretty.line' <> Pretty.rparen) : next'
-        )
-
-  (t : next) ->
-    let (vars', hkVars', t')      = typeToDoc (vars, hkVars) t
-        (vars'', hkVars'', next') = constructorAndFunctionArgsToDocs isFunctionArg (vars', hkVars') next
-    in  (vars'', hkVars'', t' : next')
-
-  [] ->
-    (vars, hkVars, [])
-
-
-
-predsToDocs :: (M.Map Int Int, M.Map Int Int) -> [Pred] -> (M.Map Int Int, M.Map Int Int, [Pretty.Doc ann])
-predsToDocs (vars, hkVars) ps = case ps of
-  (IsIn cls ts _ : more) ->
-    let (vars', hkVars', ts')     = constructorAndFunctionArgsToDocs False (vars, hkVars) ts
-        (vars'', hkVars'', more') = predsToDocs (vars', hkVars') more
-    in  ( vars''
-        , hkVars''
-        , (
-            Pretty.group (
-              Pretty.nest indentationSize (
-                Pretty.pretty cls
-                <> Pretty.hcat ((Pretty.line <>) <$> ts')
-              )
-              <> Pretty.line'
-            )
-          ) : more'
-        )
-
-  [] ->
-    (vars, hkVars, [])
-
-
-schemeToDoc :: (M.Map Int Int, M.Map Int Int) -> Scheme -> (M.Map Int Int, M.Map Int Int, Pretty.Doc ann)
-schemeToDoc (vars, hkVars) sc = case sc of
-  Forall _ ([] :=> t) ->
-    typeToDoc (vars, hkVars) t
-
-  Forall _ (ps :=> t) ->
-    let (vars', hkVars', ps')  = predsToDocs (vars, hkVars) (dedupePreds ps)
-        (vars'', hkVars'', t') = typeToDoc (vars', hkVars') t
-    in
-      if length ps > 1 then
-        ( vars''
-        , hkVars''
-        , Pretty.lparen <> Pretty.hcat ps' <> Pretty.rparen <> Pretty.pretty " => " <> t'
-        )
-      else
-        ( vars''
-        , hkVars''
-        , Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.space) ps') <> Pretty.pretty " => " <> t'
-        )
-
-
-typeToDoc :: (M.Map Int Int, M.Map Int Int) -> Type -> (M.Map Int Int, M.Map Int Int, Pretty.Doc ann)
-typeToDoc (vars, hkVars) t = case t of
-  TCon (TC n _) _ _ ->
-    (vars, hkVars, Pretty.pretty n)
-
-  TVar (TV n k)   ->
-    case k of
-      Star -> case M.lookup n vars of
-        Just x ->
-          (vars, hkVars, Pretty.pretty (renderIndexedLetter x))
-
-        Nothing ->
-          let newIndex = M.size vars
-          in  (M.insert n newIndex vars, hkVars, Pretty.pretty (renderIndexedLetter newIndex))
-
-      Kfun _ _ -> case M.lookup n hkVars of
-        Just x ->
-          (vars, hkVars, Pretty.pretty [hkLetters !! x])
-
-        Nothing ->
-          let newIndex = M.size hkVars
-          in  (vars, M.insert n newIndex hkVars, Pretty.pretty [hkLetters !! newIndex])
-
-  TApp (TApp (TCon (TC "(,)" _) _ _) tl) tr ->
-    let (varsLeft , hkVarsLeft , left ) = typeToDoc (vars, hkVars) tl
-        (varsRight, hkVarsRight, right) = typeToDoc (varsLeft, hkVarsLeft) tr
-    in  ( varsRight
-        , hkVarsRight
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              Pretty.pretty "#[" <> Pretty.line' <> left <> Pretty.comma <> Pretty.line <> right
-            )
-            <> Pretty.line' <> Pretty.pretty "]"
-          )
-        )
-
-  TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) t1) t2) t3 ->
-    let (vars' , hkVars' , t1')   = typeToDoc (vars, hkVars) t1
-        (vars'', hkVars'', t2')   = typeToDoc (vars', hkVars') t2
-        (vars''', hkVars''', t3') = typeToDoc (vars'', hkVars'') t3
-    in  ( vars'''
-        , hkVars'''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              Pretty.pretty "#[" <> Pretty.line' <> t1' <> Pretty.comma <> Pretty.line <> t2' <> Pretty.comma <> Pretty.line <> t3'
-            )
-            <> Pretty.line' <> Pretty.pretty "]"
-          )
-        )
-
-  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) t1) t2) t3) t4 ->
-    let (vars' , hkVars' , t1')   = typeToDoc (vars, hkVars) t1
-        (vars'', hkVars'', t2')   = typeToDoc (vars', hkVars') t2
-        (vars''', hkVars''', t3') = typeToDoc (vars'', hkVars'') t3
-        (vars'''', hkVars'''', t4') = typeToDoc (vars''', hkVars''') t4
-    in  ( vars''''
-        , hkVars''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              Pretty.pretty "#[" <> Pretty.line' <> t1' <> Pretty.comma <> Pretty.line <> t2' <> Pretty.comma <> Pretty.line <> t3' <> Pretty.comma <> Pretty.line <> t4'
-            )
-            <> Pretty.line' <> Pretty.pretty "]"
-          )
-        )
-
-  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _ _) t1) t2) t3) t4) t5 ->
-    let (vars' , hkVars' , t1')   = typeToDoc (vars, hkVars) t1
-        (vars'', hkVars'', t2')   = typeToDoc (vars', hkVars') t2
-        (vars''', hkVars''', t3') = typeToDoc (vars'', hkVars'') t3
-        (vars'''', hkVars'''', t4') = typeToDoc (vars''', hkVars''') t4
-        (vars''''', hkVars''''', t5') = typeToDoc (vars'''', hkVars'''') t5
-    in  ( vars'''''
-        , hkVars'''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              Pretty.pretty "#["
-              <> Pretty.line' <> t1' <> Pretty.comma
-              <> Pretty.line <> t2' <> Pretty.comma
-              <> Pretty.line <> t3' <> Pretty.comma
-              <> Pretty.line <> t4' <> Pretty.comma
-              <> Pretty.line <> t5'
-            )
-            <> Pretty.line' <> Pretty.pretty "]"
-          )
-        )
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6 ->
-    let (vars' , hkVars' , t1')         = typeToDoc (vars, hkVars) t1
-        (vars'', hkVars'', t2')         = typeToDoc (vars', hkVars') t2
-        (vars''', hkVars''', t3')       = typeToDoc (vars'', hkVars'') t3
-        (vars'''', hkVars'''', t4')     = typeToDoc (vars''', hkVars''') t4
-        (vars''''', hkVars''''', t5')   = typeToDoc (vars'''', hkVars'''') t5
-        (vars'''''', hkVars'''''', t6') = typeToDoc (vars''''', hkVars''''') t6
-    in  ( vars''''''
-        , hkVars''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              Pretty.pretty "#["
-              <> Pretty.line' <> t1' <> Pretty.comma
-              <> Pretty.line <> t2' <> Pretty.comma
-              <> Pretty.line <> t3' <> Pretty.comma
-              <> Pretty.line <> t4' <> Pretty.comma
-              <> Pretty.line <> t5' <> Pretty.comma
-              <> Pretty.line <> t6'
-            )
-            <> Pretty.line' <> Pretty.pretty "]"
-          )
-        )
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6) t7 ->
-    let (vars' , hkVars' , t1')           = typeToDoc (vars, hkVars) t1
-        (vars'', hkVars'', t2')           = typeToDoc (vars', hkVars') t2
-        (vars''', hkVars''', t3')         = typeToDoc (vars'', hkVars'') t3
-        (vars'''', hkVars'''', t4')       = typeToDoc (vars''', hkVars''') t4
-        (vars''''', hkVars''''', t5')     = typeToDoc (vars'''', hkVars'''') t5
-        (vars'''''', hkVars'''''', t6')   = typeToDoc (vars''''', hkVars''''') t6
-        (vars''''''', hkVars''''''', t7') = typeToDoc (vars'''''', hkVars'''''') t7
-    in  ( vars'''''''
-        , hkVars'''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              Pretty.pretty "#["
-              <> Pretty.line' <> t1' <> Pretty.comma
-              <> Pretty.line <> t2' <> Pretty.comma
-              <> Pretty.line <> t3' <> Pretty.comma
-              <> Pretty.line <> t4' <> Pretty.comma
-              <> Pretty.line <> t5' <> Pretty.comma
-              <> Pretty.line <> t6' <> Pretty.comma
-              <> Pretty.line <> t7'
-            )
-            <> Pretty.line' <> Pretty.pretty "]"
-          )
-        )
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6) t7) t8 ->
-    let (vars' , hkVars' , t1')             = typeToDoc (vars, hkVars) t1
-        (vars'', hkVars'', t2')             = typeToDoc (vars', hkVars') t2
-        (vars''', hkVars''', t3')           = typeToDoc (vars'', hkVars'') t3
-        (vars'''', hkVars'''', t4')         = typeToDoc (vars''', hkVars''') t4
-        (vars''''', hkVars''''', t5')       = typeToDoc (vars'''', hkVars'''') t5
-        (vars'''''', hkVars'''''', t6')     = typeToDoc (vars''''', hkVars''''') t6
-        (vars''''''', hkVars''''''', t7')   = typeToDoc (vars'''''', hkVars'''''') t7
-        (vars'''''''', hkVars'''''''', t8') = typeToDoc (vars''''''', hkVars''''''') t8
-    in  ( vars''''''''
-        , hkVars''''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              Pretty.pretty "#["
-              <> Pretty.line' <> t1' <> Pretty.comma
-              <> Pretty.line <> t2' <> Pretty.comma
-              <> Pretty.line <> t3' <> Pretty.comma
-              <> Pretty.line <> t4' <> Pretty.comma
-              <> Pretty.line <> t5' <> Pretty.comma
-              <> Pretty.line <> t6' <> Pretty.comma
-              <> Pretty.line <> t7' <> Pretty.comma
-              <> Pretty.line <> t8'
-            )
-            <> Pretty.line' <> Pretty.pretty "]"
-          )
-        )
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6) t7) t8) t9 ->
-    let (vars' , hkVars' , t1')               = typeToDoc (vars, hkVars) t1
-        (vars'', hkVars'', t2')               = typeToDoc (vars', hkVars') t2
-        (vars''', hkVars''', t3')             = typeToDoc (vars'', hkVars'') t3
-        (vars'''', hkVars'''', t4')           = typeToDoc (vars''', hkVars''') t4
-        (vars''''', hkVars''''', t5')         = typeToDoc (vars'''', hkVars'''') t5
-        (vars'''''', hkVars'''''', t6')       = typeToDoc (vars''''', hkVars''''') t6
-        (vars''''''', hkVars''''''', t7')     = typeToDoc (vars'''''', hkVars'''''') t7
-        (vars'''''''', hkVars'''''''', t8')   = typeToDoc (vars''''''', hkVars''''''') t8
-        (vars''''''''', hkVars''''''''', t9') = typeToDoc (vars'''''''', hkVars'''''''') t9
-    in  ( vars'''''''''
-        , hkVars'''''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              Pretty.pretty "#["
-              <> Pretty.line' <> t1' <> Pretty.comma
-              <> Pretty.line <> t2' <> Pretty.comma
-              <> Pretty.line <> t3' <> Pretty.comma
-              <> Pretty.line <> t4' <> Pretty.comma
-              <> Pretty.line <> t5' <> Pretty.comma
-              <> Pretty.line <> t6' <> Pretty.comma
-              <> Pretty.line <> t7' <> Pretty.comma
-              <> Pretty.line <> t8' <> Pretty.comma
-              <> Pretty.line <> t9'
-            )
-            <> Pretty.line' <> Pretty.pretty "]"
-          )
-        )
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) t1) t2) t3) t4) t5) t6) t7) t8) t9) t10 ->
-    let (vars' , hkVars' , t1')                  = typeToDoc (vars, hkVars) t1
-        (vars'', hkVars'', t2')                  = typeToDoc (vars', hkVars') t2
-        (vars''', hkVars''', t3')                = typeToDoc (vars'', hkVars'') t3
-        (vars'''', hkVars'''', t4')              = typeToDoc (vars''', hkVars''') t4
-        (vars''''', hkVars''''', t5')            = typeToDoc (vars'''', hkVars'''') t5
-        (vars'''''', hkVars'''''', t6')          = typeToDoc (vars''''', hkVars''''') t6
-        (vars''''''', hkVars''''''', t7')        = typeToDoc (vars'''''', hkVars'''''') t7
-        (vars'''''''', hkVars'''''''', t8')      = typeToDoc (vars''''''', hkVars''''''') t8
-        (vars''''''''', hkVars''''''''', t9')    = typeToDoc (vars'''''''', hkVars'''''''') t9
-        (vars'''''''''', hkVars'''''''''', t10') = typeToDoc (vars''''''''', hkVars''''''''') t10
-    in  ( vars''''''''''
-        , hkVars''''''''''
-        , Pretty.group (
-            Pretty.nest indentationSize (
-              Pretty.pretty "#["
-              <> Pretty.line' <> t1' <> Pretty.comma
-              <> Pretty.line <> t2' <> Pretty.comma
-              <> Pretty.line <> t3' <> Pretty.comma
-              <> Pretty.line <> t4' <> Pretty.comma
-              <> Pretty.line <> t5' <> Pretty.comma
-              <> Pretty.line <> t6' <> Pretty.comma
-              <> Pretty.line <> t7' <> Pretty.comma
-              <> Pretty.line <> t8' <> Pretty.comma
-              <> Pretty.line <> t9' <> Pretty.comma
-              <> Pretty.line <> t10'
-            )
-            <> Pretty.line' <> Pretty.pretty "]"
-          )
-        )
-
-  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
-    let allArgs = gatherAllFnArgs t
-        (vars', hkVars', args) = constructorAndFunctionArgsToDocs True (vars, hkVars) allArgs
-    in  ( vars'
-        , hkVars'
-        , Pretty.hcat $ List.intersperse (Pretty.softline <> Pretty.pretty "-> ") args
-        )
-
-  (TApp _ _) ->
-    let allArgs = gatherAllConstructorArgs t
-        (vars', hkVars', ctor : args) = constructorAndFunctionArgsToDocs False (vars, hkVars) allArgs
-    in  ( vars'
-        , hkVars'
-        , Pretty.group (
-            ctor
-            <> Pretty.nest indentationSize
-                (
-                  Pretty.line <> Pretty.hcat (List.intersperse Pretty.line args)
-                )
-          )
-        )
-
-  TRecord fields base _ ->
-    let (finalVars, finalHkVars, compiledFields) =
-            foldl'
-                (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
-                  let (vars'', hkVars'', compiledField) = typeToDoc (vars', hkVars') fieldType
-                  in  (vars'', hkVars'', compiledFields' ++ [(fieldName, compiledField)])
-                )
-                (vars, hkVars, [])
-              $ M.toList fields
-        compiledFields' = (\(fieldName, fieldType) -> Pretty.pretty fieldName <> Pretty.pretty " :: " <> fieldType) <$> compiledFields
-        formattedBase   = case base of
-          Just _  -> Pretty.pretty "...base," <> Pretty.line
-          Nothing -> Pretty.emptyDoc
-        compiled = Pretty.group (
-            Pretty.lbrace <> Pretty.nest indentationSize (
-              Pretty.line
-              <> formattedBase
-              <> Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.line) compiledFields')
-            )
-            <> Pretty.line
-            <> Pretty.rbrace
-          )
-    in  (finalVars, finalHkVars, compiled)
-
-  TGen n ->
-    case M.lookup (n - 1000) vars of
-      Just x  ->
-        (vars, hkVars, Pretty.pretty (renderIndexedLetter x))
-
-      Nothing ->
-        let newIndex = M.size vars
-        in  (M.insert (n - 1000) newIndex vars, hkVars, Pretty.pretty (renderIndexedLetter newIndex))
-
-  _ ->
-    (vars, hkVars, Pretty.emptyDoc)
-
 
 removeNamespace :: String -> String
 removeNamespace name =
@@ -3449,38 +1909,6 @@ isTRArrOrTRCompWithArgs (Slv.Untyped _ typing) = case typing of
 
   _               ->
     False
-
-
-isTuple :: Type -> Bool
-isTuple t = case t of
-  TApp (TApp (TCon (TC "(,)" _) _ _) _) _ ->
-    True
-
-  TApp (TApp (TApp (TCon (TC "(,,)" _) _ _) _) _) _ ->
-    True
-
-  TApp (TApp (TApp (TApp (TCon (TC "(,,,)" _) _ _) _) _) _) _ ->
-    True
-
-  TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,)" _) _ _) _) _) _) _) _ ->
-    True
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,)" _) _ _) _) _) _) _) _) _ ->
-    True
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,)" _) _ _) _) _) _) _) _) _) _ ->
-    True
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,)" _) _ _) _) _) _) _) _) _) _) _ ->
-    True
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,)" _) _ _) _) _) _) _) _) _) _) _) _ ->
-    True
-
-  TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TApp (TCon (TC "(,,,,,,,,,)" _) _ _) _) _) _) _) _) _) _) _) _) _ ->
-    True
-
-  _ -> False
 
 
 slice :: Int -> Int -> [a] -> [a]

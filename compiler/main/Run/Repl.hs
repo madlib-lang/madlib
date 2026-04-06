@@ -42,6 +42,8 @@ import           Paths_madlib                   ( version )
 import           Data.Version                   ( showVersion )
 import qualified Data.Maybe as Maybe
 import System.Environment (lookupEnv)
+import System.Directory (getHomeDirectory)
+import System.FilePath ((</>))
 import           Parse.DocString.DocString (DocString(..), DocStringTag(..), findParamTags, findReturnsTag, findDeprecatedTag, findExampleTag)
 
 
@@ -541,7 +543,8 @@ start target = do
   hSilence [stdout, stderr] $ liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath startCode) $ do
     Rock.fetch $ Query.BuiltTarget replModulePath
 
-  let replSettings = Haskeline.defaultSettings { Haskeline.historyFile = Just "~/.madlib_history" }
+  homeDir <- getHomeDirectory
+  let replSettings = Haskeline.defaultSettings { Haskeline.historyFile = Just (homeDir </> ".madlib_history") }
   Haskeline.runInputT replSettings $ loop isColorful options state
   -- Haskeline.runInputT replSettings $ Haskeline.withInterrupt $ loop state
   return ()

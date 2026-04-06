@@ -385,6 +385,91 @@ spec = do
       full `contains` "unexpected"
 
   -- -------------------------------------------------------------------------
+  describe "Descriptive unification titles" $ do
+    it "UnificationError with NoOrigin shows type names in title" $ do
+      result <- fmt (UnificationError tStr tFloat NoOrigin) makeCtx
+      result `contains` "String"
+      result `contains` "Float"
+
+    it "UnificationError with FromOperator && shows operator in title" $ do
+      result <- fmt (UnificationError tStr tBool (FromOperator "&&")) makeCtx
+      result `contains` "&&"
+      result `contains` "Boolean"
+
+    it "UnificationError with FromIfCondition shows 'if' in title" $ do
+      result <- fmt (UnificationError tStr tBool FromIfCondition) makeCtx
+      result `contains` "if"
+
+    it "UnificationError with FromIfBranches mentions branches" $ do
+      result <- fmt (UnificationError tStr tFloat FromIfBranches) makeCtx
+      result `contains` "branches"
+
+    it "UnificationError with FromListElement mentions list" $ do
+      result <- fmt (UnificationError tStr tFloat FromListElement) makeCtx
+      result `contains` "list"
+
+    it "UnificationError with FromFunctionArgument shows ordinal and function name" $ do
+      result <- fmt (UnificationError tStr tFloat (FromFunctionArgument "map" 2)) makeCtx
+      result `contains` "2nd"
+      result `contains` "map"
+
+    it "UnificationError with FromPatternMatch mentions where" $ do
+      result <- fmt (UnificationError tStr tFloat FromPatternMatch) makeCtx
+      result `contains` "where"
+
+  -- -------------------------------------------------------------------------
+  describe "Smart operator hints" $ do
+    it "Operator && with String suggests == comparison" $ do
+      let stubReader _ = return "x = true && str\n"
+      full <- formatError stubReader False (CompilationError (UnificationError tStr tBool (FromOperator "&&")) makeCtx)
+      full `contains` "=="
+
+    it "Operator + with String suggests <>" $ do
+      let stubReader _ = return "x = 1 + str\n"
+      full <- formatError stubReader False (CompilationError (UnificationError tStr tFloat (FromOperator "+")) makeCtx)
+      full `contains` "<>"
+
+  -- -------------------------------------------------------------------------
+  describe "Stdlib-aware unbound variable hints" $ do
+    it "UnboundVariable for 'map' suggests List module" $ do
+      result <- fmt (UnboundVariable "map" []) makeCtx
+      result `contains` "List"
+
+    it "UnboundVariable for 'log' suggests IO module" $ do
+      result <- fmt (UnboundVariable "log" []) makeCtx
+      result `contains` "IO"
+
+    it "UnboundVariable for unknown name gives generic hint" $ do
+      result <- fmt (UnboundVariable "myCustomFn" []) makeCtx
+      result `contains` "import"
+
+  -- -------------------------------------------------------------------------
+  describe "Improved error quality" $ do
+    it "TypingHasWrongKind explains kinds" $ do
+      let stubReader _ = return "type X = X\n"
+      full <- formatError stubReader False (CompilationError (TypingHasWrongKind tStr (Kfun Star Star) Star) makeCtx)
+      full `contains` "Kind mismatch"
+      full `contains` "concrete type"
+
+    it "TestNotValid suggests test functions" $ do
+      result <- fmt (TestNotValid tStr) makeCtx
+      result `contains` "Wish"
+
+    it "MutatingFunction suggests record wrapping" $ do
+      let stubReader _ = return "f = () => {}\n"
+      full <- formatError stubReader False (CompilationError (MutatingFunction "myFn") makeCtx)
+      full `contains` "record"
+
+    it "DerivingAliasNotAllowed mentions alias" $ do
+      result <- fmt (DerivingAliasNotAllowed "Name") makeCtx
+      result `contains` "alias"
+      result `contains` "Name"
+
+    it "InvalidInterfaceDerived lists derivable interfaces" $ do
+      result <- fmt (InvalidInterfaceDerived "Functor") makeCtx
+      result `contains` "Comparable"
+
+  -- -------------------------------------------------------------------------
   describe "prettyPrintQualType" $ do
     it "renders multiple constraints" $ do
       let qt = ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing, IsIn "Monoid" [TVar $ TV 100 Star] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` tTuple2Of tBool tStr))
