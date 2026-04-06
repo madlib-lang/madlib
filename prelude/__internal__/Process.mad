@@ -239,13 +239,25 @@ export onExit = extern "madlib__eventloop__onExit"
 
 #endif
 
-// TODO: this is mainly broken and will not always work but should be fine
-// for node. We need to find a more robust solution.
-// Also note that for llvm backend it generates whatever it's called with
-// and can be a relative or absolute path, or simply a name that needs to
-// be resolved via PATH or other means for windows.
+/**
+ * Returns the path of the current executable.
+ *
+ * @since 0.23.13
+ */
+#iftarget llvm
+
+getExecutablePathFFI :: {} -> String
+getExecutablePathFFI = extern "madlib__process__internal__getExecutablePath"
+
+getExecutablePath :: a -> String
+export getExecutablePath = () => getExecutablePathFFI({})
+
+#elseif js
+
 getExecutablePath :: a -> String
 export getExecutablePath = () => fromMaybe("", List.nth(0, Argv))
+
+#endif
 
 getEnv :: String -> Maybe String
 export getEnv = (name) => Dictionary.get(name, Env)

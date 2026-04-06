@@ -521,9 +521,7 @@ char *madlib__string__mapChars(PAP_t *pap, char *str) {
     i++;
   }
 
-  // TODO: Seems to be bad here
   char **encodedChars = (char **)GC_MALLOC(sizeof(char *) * i);
-  int j = 0;
   size_t fullLength = 0;
   for (int j = 0; j < i; j++) {
     char *encoded = utf8EncodeChar(chars[j]);
@@ -532,7 +530,6 @@ char *madlib__string__mapChars(PAP_t *pap, char *str) {
   }
 
   char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (fullLength + 1));
-  j = 0;
   size_t offset = 0;
   for (int j = 0; j < i; j++) {
     size_t sizeOfChar = strlen(encodedChars[j]);

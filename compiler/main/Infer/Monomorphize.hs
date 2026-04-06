@@ -94,29 +94,9 @@ findNamespaceModulePath moduleWhereItsUsed namespace = do
       return moduleWhereItsUsed
 
 
--- TODO: move this to a Query!
 findExpByName :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m (Maybe (Exp, FilePath))
-findExpByName moduleWhereItsUsed expName = do
-  maybeExp <- Rock.fetch $ ForeignExp moduleWhereItsUsed expName
-  case maybeExp of
-    Just found ->
-      return $ Just (found, moduleWhereItsUsed)
-
-    Nothing -> do
-      (ast, _) <- Rock.fetch $ SolvedASTWithEnv moduleWhereItsUsed
-      case findForeignModuleForImportedName expName ast of
-        Just foreignModulePath -> do
-          found <- Rock.fetch $ ForeignExp foreignModulePath expName
-
-          case found of
-            Nothing ->
-              findExpByName foreignModulePath expName
-
-            Just exp ->
-              return $ Just (exp, foreignModulePath)
-
-        _ ->
-          return Nothing
+findExpByName moduleWhereItsUsed expName =
+  Rock.fetch $ ResolvedExp moduleWhereItsUsed expName
 
 
 findForeignExpByNameInNamespace :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> String -> m (Maybe (Exp, FilePath))
@@ -203,7 +183,6 @@ makeDefinitionType typeItIsCalledWith def =
         -- foldr fn (foldr fn returnType paramsAfter) paramsBefore
 
 
--- TODO: split this monster in 3 sub functions
 monomorphizeDefinition :: Target -> Bool -> Env -> String -> Type -> Monomorphize String
 monomorphizeDefinition target isMain env@Env{ envCurrentModulePath, envLocalState } fnName typeItIsCalledWith' = do
   let typeItIsCalledWith = genType (envSubstitution env) typeItIsCalledWith'
@@ -354,66 +333,69 @@ monomorphizeGlobalDefinition target isMain env@Env{ envCurrentModulePath } fnNam
             addImport envCurrentModulePath fnModulePath monomorphicName typeItIsCalledWith importType
             return nameToUse
 
-    Nothing -> do
-      -- Try for methods:
-      (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv envCurrentModulePath
+    Nothing ->
+      monomorphizeMethodDefinition target env state fnName typeItIsCalledWith
 
-      foundMethod <-
-        if Map.member fnName (Slv.envMethods slvEnv) then do
-          Rock.fetch $ SolvedMethodNode fnName typeItIsCalledWith
-        else
-          return Nothing
 
-      case foundMethod of
-        Just (methodExp@(Typed (_ :=> t) area (Assignment n method)), methodModulePath) -> do
-          let fnId = FunctionId fnName methodModulePath typeItIsCalledWith
-          let (typeForImport, importType) =
+monomorphizeMethodDefinition :: Target -> Env -> HM.HashMap FunctionId MonomorphizationRequest -> String -> Type -> Monomorphize String
+monomorphizeMethodDefinition target env@Env{ envCurrentModulePath } state fnName typeItIsCalledWith = do
+  (_, slvEnv) <- Rock.fetch $ SolvedASTWithEnv envCurrentModulePath
+
+  foundMethod <-
+    if Map.member fnName (Slv.envMethods slvEnv) then do
+      Rock.fetch $ SolvedMethodNode fnName typeItIsCalledWith
+    else
+      return Nothing
+
+  case foundMethod of
+    Just (methodExp@(Typed (_ :=> t) area (Assignment n method)), methodModulePath) -> do
+      let fnId = FunctionId fnName methodModulePath typeItIsCalledWith
+      let (typeForImport, importType) =
+            if isAbs methodExp then
+              (typeItIsCalledWith, DefinitionImport (getFullAbsParamCount methodExp))
+            else
+              (tUnit `fn` typeItIsCalledWith, DefinitionImport 1)
+
+      case HM.lookup fnId state of
+        Just MonomorphizationRequest { mrIndex } -> do
+          let monomorphicName = buildMonomorphizedName fnName mrIndex
+          addImport envCurrentModulePath methodModulePath monomorphicName typeForImport importType
+
+          return monomorphicName
+
+        Nothing -> do
+          let s = gentleUnify (getType methodExp) typeItIsCalledWith
+          monomorphicName <- liftIO $ newRequest fnName methodModulePath (not $ isAbs methodExp) typeItIsCalledWith
+
+          let methodExp' =
                 if isAbs methodExp then
-                  (typeItIsCalledWith, DefinitionImport (getFullAbsParamCount methodExp))
+                  Typed ([] :=> t) area (Assignment n method)
                 else
-                  (tUnit `fn` typeItIsCalledWith, DefinitionImport 1)
+                  Typed ([] :=> (tUnit `fn` t)) area (Assignment n (Typed ([] :=> (tUnit `fn` t)) area (Abs (Typed ([] :=> tUnit) area "_") [method])))
+          let methodExp'' = Typed (getQualType methodExp') (getArea methodExp') (Export methodExp')
 
-          case HM.lookup fnId state of
-            Just MonomorphizationRequest { mrIndex } -> do
-              let monomorphicName = buildMonomorphizedName fnName mrIndex
-              addImport envCurrentModulePath methodModulePath monomorphicName typeForImport importType
+          monomorphized <-
+            monomorphize
+              target
+              env
+                { envSubstitution = s
+                , envCurrentModulePath = methodModulePath
+                , envLocalState = makeLocalMonomorphizationState ()
+                , envLocalBindingsToExclude = mempty
+                }
+              (updateName monomorphicName methodExp'')
+          liftIO $ setRequestResult fnName methodModulePath (not $ isAbs methodExp) typeItIsCalledWith monomorphized
+          addImport envCurrentModulePath methodModulePath monomorphicName typeForImport importType
 
-              return monomorphicName
+          liftIO $ atomicModifyIORef
+            monomorphicMethods
+            (\methods ->
+              (methods <> Set.singleton monomorphicName, ())
+            )
+          return monomorphicName
 
-            Nothing -> do
-              let s = gentleUnify (getType methodExp) typeItIsCalledWith
-              monomorphicName <- liftIO $ newRequest fnName methodModulePath (not $ isAbs methodExp) typeItIsCalledWith
-
-              let methodExp' =
-                    if isAbs methodExp then
-                      Typed ([] :=> t) area (Assignment n method)
-                    else
-                      -- Typed ([] :=> t) area (Assignment n method)
-                      Typed ([] :=> (tUnit `fn` t)) area (Assignment n (Typed ([] :=> (tUnit `fn` t)) area (Abs (Typed ([] :=> tUnit) area "_") [method])))
-              let methodExp'' = Typed (getQualType methodExp') (getArea methodExp') (Export methodExp')
-
-              monomorphized <-
-                monomorphize
-                  target
-                  env
-                    { envSubstitution = s
-                    , envCurrentModulePath = methodModulePath
-                    , envLocalState = makeLocalMonomorphizationState ()
-                    , envLocalBindingsToExclude = mempty
-                    }
-                  (updateName monomorphicName methodExp'')
-              liftIO $ setRequestResult fnName methodModulePath (not $ isAbs methodExp) typeItIsCalledWith monomorphized
-              addImport envCurrentModulePath methodModulePath monomorphicName typeForImport importType
-
-              liftIO $ atomicModifyIORef
-                monomorphicMethods
-                (\methods ->
-                  (methods <> Set.singleton monomorphicName, ())
-                )
-              return monomorphicName
-
-        _ -> do
-          return fnName
+    _ -> do
+      return fnName
 
 
 blackList :: Set.Set String

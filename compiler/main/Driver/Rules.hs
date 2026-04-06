@@ -304,6 +304,28 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         (_ : next) ->
           findExpByName name next
 
+  ResolvedExp modulePath expName -> nonInput $ do
+    maybeExp <- Rock.fetch $ ForeignExp modulePath expName
+    case maybeExp of
+      Just found ->
+        return (Just (found, modulePath), (mempty, mempty))
+
+      Nothing -> do
+        (ast, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
+        case Slv.findForeignModuleForImportedName expName ast of
+          Just foreignModulePath -> do
+            found <- Rock.fetch $ ForeignExp foreignModulePath expName
+            case found of
+              Nothing -> do
+                resolved <- Rock.fetch $ ResolvedExp foreignModulePath expName
+                return (resolved, (mempty, mempty))
+
+              Just exp ->
+                return (Just (exp, foreignModulePath), (mempty, mempty))
+
+          _ ->
+            return (Nothing, (mempty, mempty))
+
   ForeignMethod modulePath methodName methodCallType -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
     matchingMethods <-

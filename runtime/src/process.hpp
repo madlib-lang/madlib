@@ -71,11 +71,16 @@ madlib__list__Node_t *madlib__process__internal__getEnv();
 
 char *madlib__process__internal__getCurrentPath();
 
+char *madlib__process__internal__getExecutablePath();
+
 ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib__process__CommandOptions_t *options, PAP_t *callback);
 void madlib__process__cancelExec(ExecData_t *data);
 
 BufferedExecData_t *madlib__process__bufferedExec(char *command, madlib__list__Node_t *argList, madlib__process__CommandOptions_t *commandOptions, PAP_t *callback, PAP_t *doneCallback);
 void madlib__process__cancelBufferedExec(BufferedExecData_t *data);
+
+uv_work_t *madlib__process__thread(PAP_t *fn, PAP_t *badCallback, PAP_t *goodCallback);
+void madlib__process__cancelThread(uv_work_t *req);
 
 #ifdef __cplusplus
 }

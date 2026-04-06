@@ -649,13 +649,21 @@ void onFileExists(uv_fs_t *req) {
 }
 
 
-void madlib__file__exists(char *filepath, PAP_t *callback) {
+uv_fs_t *madlib__file__exists(char *filepath, PAP_t *callback) {
   uv_fs_t *accessReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
 
   accessReq->data = GC_MALLOC(sizeof(FileExistData_t));
   ((FileExistData_t *)accessReq->data)->callback = callback;
 
   uv_fs_access(getLoop(), accessReq, filepath, F_OK, onFileExists);
+  return accessReq;
+}
+
+
+void madlib__file__cancelExists(uv_fs_t *req) {
+  if (req != NULL) {
+    uv_cancel((uv_req_t*)req);
+  }
 }
 
 #ifdef __cplusplus

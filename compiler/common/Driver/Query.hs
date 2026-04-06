@@ -62,6 +62,7 @@ data Query a where
   ForeignScheme :: FilePath -> String -> Query (Maybe Scheme)
   ForeignFunctionScheme :: FilePath -> String -> Query (Maybe Scheme)
   ForeignExp :: FilePath -> String -> Query (Maybe Slv.Exp)
+  ResolvedExp :: FilePath -> String -> Query (Maybe (Slv.Exp, FilePath))
   ForeignMethod :: FilePath -> String -> Type -> Query (Maybe Slv.Exp)
   SolvedMethodNode :: String -> Type -> Query (Maybe (Slv.Exp, FilePath))
   DefinesInterfaceForMethod :: FilePath -> String -> Query Bool
@@ -161,6 +162,9 @@ instance Hashable (Query a) where
 
     ForeignExp modulePath expName ->
       hashWithSalt (hashWithSalt (hashWithSalt salt (17 :: Int)) modulePath) expName
+
+    ResolvedExp modulePath expName ->
+      hashWithSalt (hashWithSalt (hashWithSalt salt (38 :: Int)) modulePath) expName
 
     ForeignMethod modulePath methodName methodType ->
       hashWithSalt salt (modulePath, methodName, methodType, 18 :: Int)

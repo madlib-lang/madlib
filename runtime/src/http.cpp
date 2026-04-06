@@ -256,16 +256,16 @@ int handleTimer(CURLM *multi, long timeoutMillis, void *userp) {
 
 
 void handlePoll(uv_poll_t *req, int status, int events) {
-  if (status < 0) {
-    // TODO: handle?
-  }
-
   RequestData_t *requestData = (RequestData_t *)req->data;
   int runningHandles;
 
   int flags = 0;
-  if (events & UV_READABLE) flags |= CURL_CSELECT_IN;
-  if (events & UV_WRITABLE) flags |= CURL_CSELECT_OUT;
+  if (status < 0) {
+    flags = CURL_CSELECT_ERR;
+  } else {
+    if (events & UV_READABLE) flags |= CURL_CSELECT_IN;
+    if (events & UV_WRITABLE) flags |= CURL_CSELECT_OUT;
+  }
 
   curl_multi_socket_action(requestData->curlHandle, requestData->curlSocket, flags, &runningHandles);
 
