@@ -9,7 +9,7 @@ module Explain.Format.Hints
   , toOrdinal
   ) where
 
-import           Error.Error (ErrorOrigin(..))
+import           Error.Error (ErrorOrigin(..), BranchSide(..))
 import           Infer.Type
 import qualified Error.Diagnose                as Diagnose
 import qualified Data.List as List
@@ -36,25 +36,31 @@ mkUnificationTitle found expected origin =
       "Both sides of '++' must be the same List type"
     FromOperator op ->
       "Operands of '" <> op <> "' must have the same type"
-    FromFunctionArgument fn 1 ->
+    FromFunctionArgument fn 1 _ ->
       "Wrong type for the 1st argument to '" <> fn <> "'"
-    FromFunctionArgument fn 2 ->
+    FromFunctionArgument fn 2 _ ->
       "Wrong type for the 2nd argument to '" <> fn <> "'"
-    FromFunctionArgument fn 3 ->
+    FromFunctionArgument fn 3 _ ->
       "Wrong type for the 3rd argument to '" <> fn <> "'"
-    FromFunctionArgument fn n ->
+    FromFunctionArgument fn n _ ->
       "Wrong type for the " <> toOrdinal n <> " argument to '" <> fn <> "'"
     FromFunctionReturn fn ->
       "Return type of '" <> fn <> "' doesn't match its annotation"
     FromIfCondition ->
       "The 'if' condition must be Boolean, not " <> foundName
-    FromIfBranches ->
-      "The 'then' and 'else' branches return different types"
-    FromListElement ->
+    FromIfBranches ThenBranch ->
+      "The 'then' branch returns a different type than 'else'"
+    FromIfBranches ElseBranch ->
+      "The 'else' branch returns a different type than 'then'"
+    FromListElement n | n > 0 ->
+      "The " <> toOrdinal n <> " list element has a different type"
+    FromListElement _ ->
       "All list elements must have the same type"
     FromTypeAnnotation ->
       "Type mismatch: " <> foundName <> " is not " <> expectName
-    FromPatternMatch ->
+    FromPatternMatch n | n > 0 ->
+      "The " <> toOrdinal n <> " branch of 'where' returns a different type"
+    FromPatternMatch _ ->
       "Branches of 'where' return different types"
     FromAssignment name ->
       "Cannot assign " <> foundName <> " to '" <> name <> "'"

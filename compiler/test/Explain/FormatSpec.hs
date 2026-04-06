@@ -45,7 +45,7 @@ spec = do
   -- -------------------------------------------------------------------------
   describe "Type errors" $ do
     it "UnificationError shows expected and found types" $ do
-      result <- fmt (UnificationError tStr tFloat NoOrigin) makeCtx
+      result <- fmt (UnificationError tStr tFloat NoOrigin Nothing) makeCtx
       result `contains` "expected"
       result `contains` "found"
 
@@ -387,46 +387,78 @@ spec = do
   -- -------------------------------------------------------------------------
   describe "Descriptive unification titles" $ do
     it "UnificationError with NoOrigin shows type names in title" $ do
-      result <- fmt (UnificationError tStr tFloat NoOrigin) makeCtx
+      result <- fmt (UnificationError tStr tFloat NoOrigin Nothing) makeCtx
       result `contains` "String"
       result `contains` "Float"
 
     it "UnificationError with FromOperator && shows operator in title" $ do
-      result <- fmt (UnificationError tStr tBool (FromOperator "&&")) makeCtx
+      result <- fmt (UnificationError tStr tBool (FromOperator "&&") Nothing) makeCtx
       result `contains` "&&"
       result `contains` "Boolean"
 
     it "UnificationError with FromIfCondition shows 'if' in title" $ do
-      result <- fmt (UnificationError tStr tBool FromIfCondition) makeCtx
+      result <- fmt (UnificationError tStr tBool FromIfCondition Nothing) makeCtx
       result `contains` "if"
 
-    it "UnificationError with FromIfBranches mentions branches" $ do
-      result <- fmt (UnificationError tStr tFloat FromIfBranches) makeCtx
-      result `contains` "branches"
+    it "UnificationError with FromIfBranches identifies the branch" $ do
+      result <- fmt (UnificationError tStr tFloat (FromIfBranches ElseBranch) Nothing) makeCtx
+      result `contains` "else"
+      result `contains` "then"
 
     it "UnificationError with FromListElement mentions list" $ do
-      result <- fmt (UnificationError tStr tFloat FromListElement) makeCtx
+      result <- fmt (UnificationError tStr tFloat (FromListElement 0) Nothing) makeCtx
       result `contains` "list"
 
     it "UnificationError with FromFunctionArgument shows ordinal and function name" $ do
-      result <- fmt (UnificationError tStr tFloat (FromFunctionArgument "map" 2)) makeCtx
+      result <- fmt (UnificationError tStr tFloat (FromFunctionArgument "map" 2 Nothing) Nothing) makeCtx
       result `contains` "2nd"
       result `contains` "map"
 
     it "UnificationError with FromPatternMatch mentions where" $ do
-      result <- fmt (UnificationError tStr tFloat FromPatternMatch) makeCtx
+      result <- fmt (UnificationError tStr tFloat (FromPatternMatch 0) Nothing) makeCtx
       result `contains` "where"
+
+    it "UnificationError with FromFunctionArgument + FunctionContext shows expected type" $ do
+      let ctx = FunctionContext { fcExpectedType = tFloat, fcFullSignature = tFloat `fn` tStr, fcTotalParams = 1 }
+      result <- fmt (UnificationError tStr tFloat (FromFunctionArgument "doStuff" 1 (Just ctx)) Nothing) makeCtx
+      result `contains` "doStuff"
+      result `contains` "1st"
+
+    it "UnificationError with FunctionContext shows full signature in rich format" $ do
+      let ctx = FunctionContext { fcExpectedType = tFloat, fcFullSignature = tFloat `fn` tStr, fcTotalParams = 1 }
+          stubReader _ = return "doStuff(x)\n"
+      full <- formatError stubReader False (CompilationError (UnificationError tStr tFloat (FromFunctionArgument "doStuff" 1 (Just ctx)) Nothing) makeCtx)
+      full `contains` "doStuff"
+      full `contains` "signature"
+
+    it "UnificationError with FromIfBranches ThenBranch identifies then" $ do
+      result <- fmt (UnificationError tStr tFloat (FromIfBranches ThenBranch) Nothing) makeCtx
+      result `contains` "then"
+
+    it "UnificationError with FromListElement index shows ordinal" $ do
+      result <- fmt (UnificationError tStr tFloat (FromListElement 3) Nothing) makeCtx
+      result `contains` "3rd"
+
+    it "UnificationError with FromPatternMatch index shows ordinal" $ do
+      result <- fmt (UnificationError tStr tFloat (FromPatternMatch 2) Nothing) makeCtx
+      result `contains` "2nd"
+
+    it "UnificationError with SecondaryLocation includes secondary in rich format" $ do
+      let secLoc = SecondaryLocation "test/Module.mad" (Area (Loc 0 5 1) (Loc 0 5 20)) "'f' is applied here"
+          stubReader _ = return "line1\nline2\nline3\nline4\nf = (x) => x + 1\n"
+      full <- formatError stubReader False (CompilationError (UnificationError tStr tFloat (FromFunctionArgument "f" 1 Nothing) (Just secLoc)) makeCtx)
+      full `contains` "applied here"
 
   -- -------------------------------------------------------------------------
   describe "Smart operator hints" $ do
     it "Operator && with String suggests == comparison" $ do
       let stubReader _ = return "x = true && str\n"
-      full <- formatError stubReader False (CompilationError (UnificationError tStr tBool (FromOperator "&&")) makeCtx)
+      full <- formatError stubReader False (CompilationError (UnificationError tStr tBool (FromOperator "&&") Nothing) makeCtx)
       full `contains` "=="
 
     it "Operator + with String suggests <>" $ do
       let stubReader _ = return "x = 1 + str\n"
-      full <- formatError stubReader False (CompilationError (UnificationError tStr tFloat (FromOperator "+")) makeCtx)
+      full <- formatError stubReader False (CompilationError (UnificationError tStr tFloat (FromOperator "+") Nothing) makeCtx)
       full `contains` "<>"
 
   -- -------------------------------------------------------------------------

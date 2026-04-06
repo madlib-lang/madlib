@@ -10,16 +10,35 @@ import           Explain.Location
 data CompilationError = CompilationError TypeError Context deriving(Eq, Ord, Show)
 
 
+-- | Extra context about the function whose argument failed type-checking.
+data FunctionContext = FunctionContext
+  { fcExpectedType :: Type    -- ^ expected type for this specific parameter
+  , fcFullSignature :: Type   -- ^ the function's full inferred type
+  , fcTotalParams :: Int      -- ^ total number of parameters
+  } deriving (Show, Eq, Ord)
+
+-- | Which branch of an if-expression has the mismatch.
+data BranchSide = ThenBranch | ElseBranch
+  deriving (Show, Eq, Ord)
+
+-- | A secondary source location for multi-span error display.
+data SecondaryLocation = SecondaryLocation
+  { slPath :: FilePath
+  , slArea :: Area
+  , slMessage :: String
+  } deriving (Show, Eq, Ord)
+
 -- | Describes where an expected type originated from, for richer error messages.
 data ErrorOrigin
-  = FromFunctionArgument String Int    -- ^ function name, argument index (1-based)
+  = FromFunctionArgument String Int (Maybe FunctionContext)
+                                       -- ^ function name, argument index (1-based), optional context
   | FromFunctionReturn String          -- ^ return type of named function
   | FromOperator String                -- ^ operator like +, &&, <>
   | FromIfCondition                    -- ^ if condition must be Boolean
-  | FromIfBranches                     -- ^ if branches must have the same type
-  | FromListElement                    -- ^ list elements must have the same type
+  | FromIfBranches BranchSide          -- ^ which branch has the mismatch
+  | FromListElement Int                -- ^ 1-based index (0 = unknown)
   | FromTypeAnnotation                 -- ^ user-provided type annotation
-  | FromPatternMatch                   -- ^ pattern match branches
+  | FromPatternMatch Int               -- ^ 1-based branch index (0 = unknown)
   | FromWhileCondition                 -- ^ while condition must be Boolean
   | FromAssignment String              -- ^ assigning to a typed variable
   | NoOrigin
@@ -32,7 +51,7 @@ data TypeError
   | UnboundUnknownTypeVariable
   | UnboundVariableFromNamespace String String
   | UnboundType String [String]
-  | UnificationError Type Type ErrorOrigin
+  | UnificationError Type Type ErrorOrigin (Maybe SecondaryLocation)
   | BadEscapeSequence
   | EmptyChar
   | TypeAlreadyDefined String

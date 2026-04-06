@@ -526,14 +526,14 @@ simpleFormatError json (CompilationError err ctx) = do
 
 
 -- | Format an error with hints and notes included, for LSP display.
+-- Builds the message from the Diagnose.Report to avoid duplication:
+-- extracts the title, the marker messages, and all notes into a single string.
 simpleFormatErrorWithHints :: Bool -> CompilationError -> IO String
 simpleFormatErrorWithHints json (CompilationError err ctx) = do
   noColor <- lookupEnv "NO_COLOR"
   let isColorEnabled = not json && not (noColor /= Just "" && Maybe.isJust noColor)
-      baseMsg   = createSimpleErrorDiagnostic isColorEnabled ctx err
-      notes     = reportNotes (createErrorDiagnostic isColorEnabled ctx err)
-      noteLines = map noteToString notes
-  return $ if null noteLines then baseMsg else baseMsg <> "\n" <> unlines noteLines
+      report = createErrorDiagnostic isColorEnabled ctx err
+  return $ reportToPlainText report
 
 
 -- | Format a warning with hints and notes included, for LSP display.
@@ -541,17 +541,26 @@ simpleFormatWarningWithHints :: Bool -> CompilationWarning -> IO String
 simpleFormatWarningWithHints json (CompilationWarning warning ctx) = do
   noColor <- lookupEnv "NO_COLOR"
   let isColorEnabled = not json && not (noColor /= Just "" && Maybe.isJust noColor)
-      baseMsg   = createSimpleWarningDiagnostic isColorEnabled ctx warning
-      notes     = reportNotes (createWarningDiagnostic isColorEnabled ctx warning)
-      noteLines = map noteToString notes
-  return $ if null noteLines then baseMsg else baseMsg <> "\n" <> unlines noteLines
+      report = createWarningDiagnostic isColorEnabled ctx warning
+  return $ reportToPlainText report
 
 
--- | Extract notes from a Diagnose.Report.
-reportNotes :: Diagnose.Report String -> [Diagnose.Note String]
-reportNotes (Diagnose.Err _ _ _ notes) = notes
-reportNotes (Diagnose.Warn _ _ _ notes) = notes
-
+-- | Convert a Diagnose.Report to a plain text string for LSP display.
+-- Extracts: title, marker messages (This/Where), and all hints/notes.
+-- This is the single source of truth for LSP error messages — no duplication.
+reportToPlainText :: Diagnose.Report String -> String
+reportToPlainText report =
+  let (title, markers, notes) = case report of
+        Diagnose.Err _ t ms ns   -> (t, ms, ns)
+        Diagnose.Warn _ t ms ns  -> (t, ms, ns)
+      markerTexts = concatMap (\(_, marker) -> case marker of
+        Diagnose.This msg  -> [msg]
+        Diagnose.Where msg -> [msg]
+        Diagnose.Maybe msg -> [msg]
+        ) markers
+      noteTexts = map noteToString notes
+      body = title : (markerTexts ++ noteTexts)
+  in  intercalate "\n" (filter (not . null) body)
 
 -- | Convert a Diagnose.Note to a plain string.
 noteToString :: Diagnose.Note String -> String
@@ -561,7 +570,7 @@ noteToString (Diagnose.Note msg) = "Note: " <> msg
 
 createSimpleErrorDiagnostic :: Bool -> Context -> TypeError -> String
 createSimpleErrorDiagnostic color _ typeError = case typeError of
-  UnificationError t1 t2 origin ->
+  UnificationError t1 t2 origin _ ->
     let (pretty1', pretty2') = renderTypesWithDiff color t1 t2
         pretty1'' = unlines $ ("  "<>) <$> lines pretty1'
         pretty2'' = unlines $ ("  "<>) <$> lines pretty2'
@@ -569,7 +578,11 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
         foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n"
         title = mkUnificationTitle t1 t2 origin
         originContext = case origin of
-          FromFunctionArgument fn n ->
+          FromFunctionArgument fn n (Just (FunctionContext expectedType fullSig _)) ->
+            "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type.\n"
+            <> "'" <> fn <> "' expects " <> prettyPrintType True expectedType <> " as its " <> toOrdinal n <> " argument.\n"
+            <> "Full signature: " <> fn <> " :: " <> prettyPrintType True fullSig <> "\n"
+          FromFunctionArgument fn n Nothing ->
             "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type.\n"
           FromFunctionReturn fn ->
             "The return value of '" <> fn <> "' does not match its type annotation.\n"
@@ -577,15 +590,21 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
             "The operands of '" <> op <> "' must have compatible types.\n"
           FromIfCondition ->
             "The condition of an 'if' must be Boolean.\n"
-          FromIfBranches ->
-            "Both branches of an 'if' must return the same type.\n"
+          FromIfBranches ThenBranch ->
+            "The 'then' branch has a different type than the 'else' branch.\n"
+          FromIfBranches ElseBranch ->
+            "The 'else' branch has a different type than the 'then' branch.\n"
           FromWhileCondition ->
             "The condition of a 'while' must be Boolean.\n"
-          FromListElement ->
+          FromListElement n | n > 0 ->
+            "The " <> toOrdinal n <> " element has a different type than the previous elements.\n"
+          FromListElement _ ->
             "All elements in a list must have the same type.\n"
           FromTypeAnnotation ->
             "The expression does not match its type annotation.\n"
-          FromPatternMatch ->
+          FromPatternMatch n | n > 0 ->
+            "The " <> toOrdinal n <> " branch returns a different type than the other branches.\n"
+          FromPatternMatch _ ->
             "All branches of a 'where' must return the same type.\n"
           FromAssignment name ->
             "The value does not match the declared type of '" <> name <> "'.\n"
@@ -1077,14 +1096,22 @@ mkError title context message notes = case context of
 
 createErrorDiagnostic :: Bool -> Context -> TypeError -> Diagnose.Report String
 createErrorDiagnostic color context typeError = case typeError of
-  UnificationError t1 t2 origin ->
+  UnificationError t1 t2 origin maybeSecondary ->
     let (pretty1', pretty2') = renderTypesWithDiff color t1 t2
         pretty1'' = unlines $ ("  "<>) <$> lines pretty1'
         pretty2'' = unlines $ ("  "<>) <$> lines pretty2'
         expectedStr = if color then "\x1b[0mexpected:\n" else "expected:\n  "
         foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n  "
+        secondaryPositions = case maybeSecondary of
+          Just (SecondaryLocation path (Area (Loc _ sl sc) (Loc _ el ec)) msg) ->
+            [(Diagnose.Position (sl, sc) (el, ec) path, Diagnose.Where msg)]
+          Nothing -> []
         originHint = case origin of
-          FromFunctionArgument fn n ->
+          FromFunctionArgument fn n (Just (FunctionContext expectedType fullSig _)) ->
+            [ Diagnose.Hint $ "'" <> fn <> "' expects " <> prettyPrintType True expectedType <> " as its " <> toOrdinal n <> " argument."
+            , Diagnose.Note $ "Full signature: " <> fn <> " :: " <> prettyPrintType True fullSig
+            ]
+          FromFunctionArgument fn n Nothing ->
             [ Diagnose.Hint $ "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type." ]
           FromFunctionReturn fn ->
             [ Diagnose.Hint $ "The return value of '" <> fn <> "' doesn't match its type annotation."
@@ -1095,13 +1122,21 @@ createErrorDiagnostic color context typeError = case typeError of
             [ Diagnose.Hint "The condition of an 'if' expression must be Boolean."
             , Diagnose.Note "Boolean values are 'true' and 'false'. Did you forget a comparison?"
             ]
-          FromIfBranches ->
-            [ Diagnose.Hint "The 'then' and 'else' branches must return the same type."
-            , Diagnose.Note "If you only need one branch, consider returning '{}' in the other."
+          FromIfBranches ThenBranch ->
+            [ Diagnose.Hint "The 'then' branch has a different type than the 'else' branch."
+            , Diagnose.Note "Both branches of an 'if' must return the same type."
+            ]
+          FromIfBranches ElseBranch ->
+            [ Diagnose.Hint "The 'else' branch has a different type than the 'then' branch."
+            , Diagnose.Note "Both branches of an 'if' must return the same type."
             ]
           FromWhileCondition ->
             [ Diagnose.Hint "The condition of a 'while' loop must be Boolean." ]
-          FromListElement ->
+          FromListElement n | n > 0 ->
+            [ Diagnose.Hint $ "The " <> toOrdinal n <> " element has a different type than the previous elements."
+            , Diagnose.Note "All elements in a list must have the same type."
+            ]
+          FromListElement _ ->
             [ Diagnose.Hint "All elements in a list literal must have the same type."
             , Diagnose.Note "If you need a heterogeneous collection, consider a custom type or a tuple."
             ]
@@ -1109,7 +1144,11 @@ createErrorDiagnostic color context typeError = case typeError of
             [ Diagnose.Hint "The expression's type doesn't match its annotation."
             , Diagnose.Note "Check whether the annotation is too specific, or the expression is wrong."
             ]
-          FromPatternMatch ->
+          FromPatternMatch n | n > 0 ->
+            [ Diagnose.Hint $ "The " <> toOrdinal n <> " branch returns a different type than the other branches."
+            , Diagnose.Note "All branches of 'where' must return the same type."
+            ]
+          FromPatternMatch _ ->
             [ Diagnose.Hint "All branches of a 'where' expression must return the same type."
             , Diagnose.Note "Make sure every branch has the same return type."
             ]
@@ -1118,7 +1157,10 @@ createErrorDiagnostic color context typeError = case typeError of
           NoOrigin -> []
         title = mkUnificationTitle t1 t2 origin
         originPrefix = case origin of
-          FromFunctionArgument fn n ->
+          FromFunctionArgument fn n (Just (FunctionContext expectedType _ _)) ->
+            "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type.\n"
+            <> "Expected: " <> prettyPrintType True expectedType <> "\n"
+          FromFunctionArgument fn n Nothing ->
             "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type.\n"
           FromFunctionReturn fn ->
             "The return value of '" <> fn <> "' does not match its annotation.\n"
@@ -1126,15 +1168,21 @@ createErrorDiagnostic color context typeError = case typeError of
             "The operands of '" <> op <> "' have incompatible types.\n"
           FromIfCondition ->
             "The condition of an 'if' must be Boolean.\n"
-          FromIfBranches ->
-            "Both branches of an 'if' must return the same type.\n"
+          FromIfBranches ThenBranch ->
+            "The 'then' branch has a different type than the 'else' branch.\n"
+          FromIfBranches ElseBranch ->
+            "The 'else' branch has a different type than the 'then' branch.\n"
           FromWhileCondition ->
             "The condition of a 'while' must be Boolean.\n"
-          FromListElement ->
+          FromListElement n | n > 0 ->
+            "The " <> toOrdinal n <> " element has a different type than the previous elements.\n"
+          FromListElement _ ->
             "All list elements must have the same type.\n"
           FromTypeAnnotation ->
             "The expression does not match its type annotation.\n"
-          FromPatternMatch ->
+          FromPatternMatch n | n > 0 ->
+            "The " <> toOrdinal n <> " branch returns a different type than the other branches.\n"
+          FromPatternMatch _ ->
             "All branches of a 'where' must return the same type.\n"
           FromAssignment name ->
             "The value does not match the declared type of '" <> name <> "'.\n"
@@ -1144,10 +1192,10 @@ createErrorDiagnostic color context typeError = case typeError of
         Diagnose.Err
           Nothing
           title
-          [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
+          ([ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
             , Diagnose.This $ originPrefix <> expectedStr <> pretty2'' <> foundStr <> pretty1''
             )
-          ]
+          ] ++ secondaryPositions)
           originHint
 
       NoContext ->
@@ -1517,7 +1565,9 @@ createErrorDiagnostic color context typeError = case typeError of
           [ Diagnose.Hint "Check for a missing bracket, parenthesis, or operator near this location."
           , Diagnose.Note "Common causes: unclosed '(', '{', or '['; a missing '->' in a function; or a typo in a keyword."
           ]
-    in  mkError "Syntax error" context trimmed (smartHints ++ stdHints)
+        -- Only include generic hints when no smart hints are available
+        hints = if null smartHints then stdHints else smartHints
+    in  mkError "Syntax error" context trimmed hints
 
   BadEscapeSequence ->
     mkError "Bad escape sequence" context "This escape sequence is not valid"

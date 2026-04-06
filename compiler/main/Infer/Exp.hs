@@ -52,13 +52,13 @@ getAppOrigin :: Can.Exp -> ErrorOrigin
 getAppOrigin (Can.Canonical _ expr) = case expr of
   Can.Var name
     | isOperatorName name -> FromOperator name
-    | otherwise           -> FromFunctionArgument name 1
+    | otherwise           -> FromFunctionArgument name 1 Nothing
   Can.App (Can.Canonical _ (Can.Var name)) _ _
     | isOperatorName name -> FromOperator name
-    | otherwise           -> FromFunctionArgument name 2
+    | otherwise           -> FromFunctionArgument name 2 Nothing
   Can.App (Can.Canonical _ (Can.App (Can.Canonical _ (Can.Var name)) _ _)) _ _
     | isOperatorName name -> FromOperator name
-    | otherwise           -> FromFunctionArgument name 3
+    | otherwise           -> FromFunctionArgument name 3 Nothing
   _ -> NoOrigin
   where
     isOperatorName []    = False
@@ -357,14 +357,34 @@ inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonica
   (s1, ps1, t1, eabs) <- infer discardError options env abs
   (s2, ps2, t2, earg) <- infer discardError options (apply s1 env) arg
 
-  let expForContext =
-        if getLineFromStart argArea < getLineFromStart absArea then
-          abs
-        else
-          arg
+  let expForContext = arg  -- Always point at the argument (the "wrong" value)
 
-  let origin = getAppOrigin abs
-  s3 <- contextualUnifyWithOrigin (if discardError then Discard else Strict) origin env expForContext (apply s2 t1) (apply s1 t2 `fn` tv)
+  -- Enrich the origin with function context (expected type + full signature).
+  -- At each curried application level, funcType is the *remaining* function type,
+  -- so the expected param is always the 1st parameter of funcType (not the idx-th).
+  let baseOrigin = getAppOrigin abs
+      funcType   = apply s2 t1
+      origin = case baseOrigin of
+        FromFunctionArgument fn idx _ ->
+          let params = getParamTypes funcType
+              -- Always take the 1st param of the remaining function type
+              expectedParam = case params of { (p:_) -> Just p; _ -> Nothing }
+              ctx = FunctionContext
+                { fcExpectedType  = maybe funcType id expectedParam
+                , fcFullSignature = funcType
+                , fcTotalParams   = length params
+                }
+          in  FromFunctionArgument fn idx (Just ctx)
+        other -> other
+
+      -- Build secondary location: point at the function expression
+      secondaryLoc = case baseOrigin of
+        FromFunctionArgument fn _ _ ->
+          Just $ SecondaryLocation (envCurrentPath env) absArea
+            ("'" <> fn <> "' is applied here")
+        _ -> Nothing
+
+  s3 <- contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) origin secondaryLoc env expForContext (apply s2 t1) (apply s1 t2 `fn` tv)
 
   let t = apply s3 tv
   let s = s3 `compose` s2 `compose` s1
@@ -525,21 +545,22 @@ inferListConstructor discardError options env listExp@(Can.Canonical area (Can.L
     tv               <- newTVar Star
 
     -- Accumulate list items and pred chunks reversed (cons O(1)) then reverse — avoids O(n²).
-    (s', psChunksRev, t', esRev) <- foldlM
-      (\(s, pssRev, t, lis) elem -> do
+    -- The index tracks which element we're at (1-based) for better error messages.
+    (s', psChunksRev, t', esRev, _) <- foldlM
+      (\(s, pssRev, t, lis, idx) elem -> do
         (s', ps', t'', li) <- inferListItem discardError options (apply s env) (fromMaybe tv t) elem
         (s'', tr) <- case t of
           Nothing ->
             return (mempty, t'')
 
           Just t''' -> do
-            s'''' <- contextualUnifyWithOrigin (if discardError then Discard else Strict) FromListElement env elem (apply s' t''') t''
+            s'''' <- contextualUnifyWithOrigin (if discardError then Discard else Strict) (FromListElement idx) env elem (apply s' t''') t''
             return (s'''', pickJSXChild t''' t'')
 
         let s''' = s'' `compose` s' `compose` s
-        return (s''', ps' : pssRev, Just $ apply s''' tr, li : lis)
+        return (s''', ps' : pssRev, Just $ apply s''' tr, li : lis, idx + 1)
       )
-      (mempty, [], Nothing, [])
+      (mempty, [], Nothing, [], 1)
       elems
 
     let ps = concat (reverse psChunksRev)
@@ -829,8 +850,8 @@ inferIf discardError options env (Can.Canonical area (Can.If cond truthy falsy))
 
   let tfalsy' = apply (s3 `compose` s2 `compose` s1) tfalsy
   let ttruthy' = apply (s3 `compose` s2 `compose` s1) ttruthy
-  let unifyBranches = contextualUnifyWithOrigin (if discardError then Discard else Strict) FromIfBranches env falsy tfalsy' ttruthy'
-  s4 <- catchError unifyBranches flipUnificationError
+  let unifyBranches = contextualUnifyWithOrigin (if discardError then Discard else Strict) (FromIfBranches ElseBranch) env falsy tfalsy' ttruthy'
+  s4 <- catchError unifyBranches (flipUnificationErrorWithBranch ThenBranch)
   s5 <- contextualUnifyWithOrigin (if discardError then Discard else Strict) FromIfCondition env cond tBool (apply s4 tcond)
 
   let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
@@ -876,12 +897,12 @@ inferWhere :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], 
 inferWhere discardError options env (Can.Canonical area (Can.Where exp iss)) = do
   (s, ps, t, e)          <- infer discardError options env exp
   tv                     <- newTVar Star
-  (pssRev, issSubstitution) <- foldM
-    (\(res, currSubst) is -> do
-      r@(subst, _, _) <- inferBranch discardError options (apply currSubst env) (apply currSubst tv) (apply currSubst t) is
-      return (r : res, subst `compose` currSubst)
+  (pssRev, issSubstitution, _) <- foldM
+    (\(res, currSubst, idx) is -> do
+      r@(subst, _, _) <- inferBranch discardError options (apply currSubst env) (apply currSubst tv) (apply currSubst t) idx is
+      return (r : res, subst `compose` currSubst, idx + 1)
     )
-    ([], s)
+    ([], s, 1)
     iss
   let pss = reverse pssRev
 
@@ -896,10 +917,10 @@ inferWhere discardError options env (Can.Canonical area (Can.Where exp iss)) = d
   return (s'', ps ++ ps', apply s'' tv, wher)
 
 
-inferBranch :: Bool -> Options -> Env -> Type -> Type -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
-inferBranch discardError options env tv t (Can.Canonical area (Can.Is pat exp)) = do
+inferBranch :: Bool -> Options -> Env -> Type -> Type -> Int -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
+inferBranch discardError options env tv t branchIdx (Can.Canonical area (Can.Is pat exp)) = do
   (pat', ps, vars, t') <- inferPattern env pat
-  s <- contextualUnifyWithOrigin (if discardError then Discard else Strict) FromPatternMatch env exp t t'
+  s <- contextualUnifyWithOrigin (if discardError then Discard else Strict) (FromPatternMatch branchIdx) env exp t t'
 
   -- Fix rest variable types: after unification, row variables get substituted with
   -- records that include ALL fields (because optional fields merge into main fields
