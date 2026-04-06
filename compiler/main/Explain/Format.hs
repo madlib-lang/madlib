@@ -568,7 +568,29 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
         expectedStr = if color then "\x1b[0mexpected:\n" else "expected:\n"
         foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n"
         title = mkUnificationTitle t1 t2 origin
-    in  title <> "\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1''
+        originContext = case origin of
+          FromFunctionArgument fn n ->
+            "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type.\n"
+          FromFunctionReturn fn ->
+            "The return value of '" <> fn <> "' does not match its type annotation.\n"
+          FromOperator op ->
+            "The operands of '" <> op <> "' must have compatible types.\n"
+          FromIfCondition ->
+            "The condition of an 'if' must be Boolean.\n"
+          FromIfBranches ->
+            "Both branches of an 'if' must return the same type.\n"
+          FromWhileCondition ->
+            "The condition of a 'while' must be Boolean.\n"
+          FromListElement ->
+            "All elements in a list must have the same type.\n"
+          FromTypeAnnotation ->
+            "The expression does not match its type annotation.\n"
+          FromPatternMatch ->
+            "All branches of a 'where' must return the same type.\n"
+          FromAssignment name ->
+            "The value does not match the declared type of '" <> name <> "'.\n"
+          NoOrigin -> ""
+    in  title <> "\n\n" <> originContext <> expectedStr <> pretty2'' <> foundStr <> pretty1''
 
   TestNotValid t ->
     let prettyType = renderType t
@@ -610,27 +632,35 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "Note: You can also omit the type annotation and let it be inferred."
 
   MutationRestriction ->
-    "This value depends on a closure doing mutation and can't be generic\n\n"
-    <> "Hint: Add a type definition with concrete types"
+    "Mutation restriction\n\n"
+    <> "This binding depends on a closure that performs mutation and cannot be made polymorphic.\n\n"
+    <> "Hint: Add an explicit type annotation with concrete (non-polymorphic) types.\n"
+    <> "Note: Mutation requires a fixed memory location; polymorphic types would create separate copies."
 
   MutatingFunction n ->
-    "You are trying to mutate the function '" <> n <> "'. It is currently not allowed\n\n"
-    <> "Hint: Wrap it in a record\n"
-    <> "Hint: Use a closure that returns a setter and getter to mutate it"
+    "Cannot mutate function\n\n"
+    <> "'" <> n <> "' is a function and cannot be reassigned with ':='.\n\n"
+    <> "Hint: To make it swappable, wrap it in a mutable record:\n"
+    <> "  ref = { fn: " <> n <> " }\n"
+    <> "  ref.fn := newFunction"
 
   NotAConstructor n ->
-    "You are trying to match '" <> n <> "', but it is not a constructor\n\n"
-    <> "Hint: Only constructors can be used in patterns\n"
+    "Not a constructor\n\n"
+    <> "'" <> n <> "' is used in a pattern but is not a constructor.\n\n"
+    <> "Hint: Only data constructors (capitalized names) can appear in patterns.\n"
+    <> "Note: Example pattern:  where | Just x => ...   | Nothing => ...\n"
 
   MethodNameAlreadyDefined ->
-    "You are trying to redefine a method name\n\n"
-    <> "Hint: Use a different name for the method"
+    "Method name already defined\n\n"
+    <> "This method name is already used by another interface.\n\n"
+    <> "Note: Two interfaces cannot define methods with the same name.\n"
+    <> "Hint: Choose a different name, or prefix it to avoid collisions."
 
   NotADefinition ->
     "Not a definition\n\n"
-    <> "It is not a definition and is not allowed\n\n"
-    <> "Note: Top level expressions are not allowed in Madlib.\n"
-    <> "Hint: You may want to assign it to a top level variable.\n"
+    <> "This expression appears at the top level, but only definitions are allowed here.\n\n"
+    <> "Note: A module's top level can only contain: type definitions, assignments, imports, exports, and interface/instance declarations.\n"
+    <> "Hint: Assign it to a name:  myValue = <expression>\n"
 
   InfiniteType tv t ->
     let (vars, hkVars, printedT) = prettyPrintType' True (mempty, mempty) t
@@ -643,11 +673,10 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
         <> "or when a recursive type needs an explicit type alias."
 
   IllegalSkipAccess ->
-    "Illegal skip access\n\n"
-    <> "You accessed the skip symbol '_'. This is not permitted as\n"
-    <> "it does not hold any value and only serves to indicate that\n"
-    <> "you are not interested in whatever it may contain.\n\n"
-    <> "Hint: Give it a name if you intend to use it"
+    "Cannot use '_' as a value\n\n"
+    <> "The skip symbol '_' is a placeholder for values you don't need. It cannot be read.\n\n"
+    <> "Hint: Give it a name if you need to use the value: (x) => x  instead of  (_) => _\n"
+    <> "Note: '_' means 'I don't care about this value'. To use it, replace '_' with a named variable."
 
   UnboundVariable n suggestions ->
     let typoStr = case suggestions of
@@ -680,23 +709,25 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "Hint: Either remove it if you don't need the type variable, or\nmake its first letter lowercase."
 
   UnboundType n suggestions ->
-    "Unbound Type\n\n"
-    <> "The type '" <> n <> "' has not been declared\n\n"
+    "Unknown type\n\n"
+    <> "The type '" <> n <> "' is not defined in this scope.\n\n"
     <> case suggestions of
-         []  -> "Hint: Maybe you forgot to import it?\nHint: Maybe you have a typo?"
+         []  -> "Hint: Check for a typo in the type name.\nNote: If '" <> n <> "' is defined in another module, import it."
          [s] -> "Hint: Did you mean '" <> s <> "'?"
          _   -> "Hint: Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
 
   DerivingAliasNotAllowed n ->
-    "Deriving Alias Not Allowed\n\n"
-    <> "The type '" <> n <> "' is an alias.\n\n"
-    <> "Hint: Aliases can't be derived, use the aliased type instead\n"
+    "Cannot derive for type alias\n\n"
+    <> "'" <> n <> "' is a type alias, not a concrete type. Cannot derive instances for aliases.\n\n"
+    <> "Hint: Derive the instance on the underlying type that the alias refers to.\n"
+    <> "Note: Type aliases are transparent -- instances on the underlying type apply automatically."
 
   InvalidInterfaceDerived n ->
-    "Invalid Interface Derived\n\n"
-    <> "The interface '" <> n <> "' can't be derived.\n\n"
-    <> "Note: Eq and Show are automatically derived\n"
-    <> "Hint: Currently only Comparable can be derived\n"
+    "Cannot derive '" <> n <> "'\n\n"
+    <> "The interface '" <> n <> "' does not support automatic derivation.\n\n"
+    <> "Note: Only these interfaces can be derived: Eq, Show, Comparable.\n"
+    <> "Hint: Write a manual instance instead:\n"
+    <> "  instance " <> n <> " YourType { ... }"
 
   SignatureTooGeneral scGiven scInferred ->
     let (scInferred', scGiven') = renderSchemesWithDiff color scInferred scGiven
@@ -705,13 +736,18 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
         givenStr     = if color then "\x1b[0mType signature given:\n" else "Type signature given:\n  "
         inferredStr  = if color then "\n\x1b[0mType inferred:\n" else "\nType inferred:\n  "
     in  "Signature too general\n\n"
+        <> "The annotation claims the function is more polymorphic than the\n"
+        <> "implementation allows. The inferred type is more specific.\n\n"
         <> givenStr <> scGiven'' <> inferredStr <> scInferred''
+        <> "\nHint: Update the type annotation to match the inferred type shown above."
 
   NoInstanceFound cls ts ->
-    "Instance not found\n\n"
-    <> "No instance for '" <> lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing)) <> "' was found.\n\n"
-    <> "Hint: Verify that you imported the module where the " <> cls <> "\ninstance for '" <> unwords (prettyPrintType True <$> ts) <> "' is defined"
-    <> "Note: Remember that instance methods are automatically imported when the module\nis imported, directly, or indirectly."
+    let typeStr = unwords (prettyPrintType True <$> ts)
+        predStr = lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing))
+    in  "No instance found\n\n"
+        <> "'" <> predStr <> "' is required here, but no instance was found for '" <> typeStr <> "'.\n\n"
+        <> "Hint: Make sure '" <> typeStr <> "' implements the '" <> cls <> "' interface.\n"
+        <> "Note: Instance methods are automatically in scope when their module is imported,\ndirectly or transitively."
 
   AmbiguousType (TV _ _, IsIn cls _ _ : _) ->
     "Ambiguous type\n\n"
@@ -729,27 +765,23 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "Hint: Make sure you imported the module defining it,\nor a module that imports it."
 
   KindError (t, k) (t', k') ->
-    "Kind error\n\n"
-    <> "The kind of types don't match, '"
-    <> prettyPrintType True t
-    <> "' has kind "
-    <> kindToStr k
-    <> " and "
-    <> prettyPrintType True t'
-    <> " has kind "
-    <> kindToStr k'
-    <> "."
+    "Kind mismatch\n\n"
+    <> "'" <> prettyPrintType True t <> "' has kind " <> kindToStr k
+    <> ", but '" <> prettyPrintType True t' <> "' has kind " <> kindToStr k' <> ".\n\n"
+    <> "Note: Kinds describe how many type arguments a type constructor takes.\n"
+    <> "  '*' means a fully-applied type (like 'Int' or 'String').\n"
+    <> "  '* -> *' means it takes one argument (like 'List' or 'Maybe').\n"
+    <> "Hint: Check whether you applied too many or too few type arguments."
 
   InstancePredicateError pInstance pWrong pCorrect ->
-    "Instance predicate error\n\n"
-    <> "A constraint in the instance declaration '"
-    <> lst (predToStr True (mempty, mempty) pInstance)
-    <> " is not correct.\n"
-    <> "You gave the constraint '"
-    <> lst (predToStr True (mempty, mempty) pWrong)
-    <> "' but a constraint of the form '"
-    <> lst (predToStr True (mempty, mempty) pCorrect)
-    <> "'\nwas expected."
+    let instStr    = lst (predToStr True (mempty, mempty) pInstance)
+        wrongStr   = lst (predToStr True (mempty, mempty) pWrong)
+        correctStr = lst (predToStr True (mempty, mempty) pCorrect)
+    in  "Instance constraint error\n\n"
+        <> "The instance '" <> instStr <> "' has an incorrect constraint.\n"
+        <> "  Given:    " <> wrongStr <> "\n"
+        <> "  Expected: " <> correctStr <> "\n\n"
+        <> "Hint: Replace '" <> wrongStr <> "' with '" <> correctStr <> "' in the instance declaration."
 
   ImportCycle paths ->
     let loop [] = ""
@@ -831,54 +863,44 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
   NotExported name path suggestions ->
     "Not exported\n\n"
-    <> "You are trying to import '" <> name <> "' from\n"
-    <> "the module located here:\n"
-    <> "'" <> path <> "'\n"
-    <> "Unfortunately, that module does not export '" <> name <> "'\n\n"
+    <> "'" <> name <> "' is not exported by the module at:\n"
+    <> "'" <> path <> "'\n\n"
     <> case suggestions of
-         []  -> "Hint: Verify that you spelled it correctly or add the export to the module if you can."
+         []  -> "Hint: Check the spelling, or add 'export { " <> name <> " }' to the module if you own it."
          [s] -> "Hint: Did you mean '" <> s <> "'?"
          _   -> "Hint: Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"
 
   RecursiveVarAccess _ ->
     "Recursive variable access\n\n"
-    <> "You are using a variable that is recursively accessing itself\n"
-    <> "and is thus not yet initialized\n\n"
-    <> "Note: This is not allowed and can only work if there exists a\n"
-    <> "function in between, let me show you some examples that should\n"
-    <> "make this clearer:\n"
-    <> "// this is not allowed because parser is directly refering to itself\n"
-    <> "parser = J.map(Title, J.field(\"title\", parser))\n"
-    <> "// this works because now the recursive accessed is wrapped in a function\n"
-    <> "parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser)))"
+    <> "This variable refers to itself directly in its own definition,\n"
+    <> "so it cannot be initialized.\n\n"
+    <> "Note: A direct self-reference is not allowed. Wrap the recursive\n"
+    <> "access in a function to defer evaluation:\n"
+    <> "  // Not allowed -- direct self-reference:\n"
+    <> "  parser = J.map(Title, J.field(\"title\", parser))\n"
+    <> "  // Works -- recursive access is wrapped in a function:\n"
+    <> "  parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser)))"
 
   NotInScope name (Loc _ line _) ->
     "Not in scope\n\n"
-    <> "This expression relies on an expression that accesses the\n"
-    <> "variable '" <> name <> "' at line " <> ppShow line <> "\n\n"
-    <> "Note: All variables need to have been defined by the time they are\n"
-    <> "accessed and this access is thus not allowed.\n"
-    <> "Hint: Move that call further down in the module so that the name\n"
-    <> "is defined when you access it."
+    <> "'" <> name <> "' (at line " <> ppShow line <> ") is not yet defined at this point.\n\n"
+    <> "Note: All variables must be defined before they are used.\n"
+    <> "Hint: Move the definition of '" <> name <> "' above this usage, or add a type\n"
+    <> "annotation to allow forward references."
 
   TypesHaveDifferentOrigin adtName origin1 origin2 ->
     "Types have different origins\n\n"
-    <> "Types do not match. You try to use a type that seems similar\n"
-    <> "but comes from two different locations. The type '" <> adtName <> "'\n"
-    <> "is used from:\n"
+    <> "The type '" <> adtName <> "' is imported from two different locations:\n"
     <> "  - '" <> origin1 <> "'\n"
-    <> "  - '" <> origin2 <> "'\n\n"
-    <> "Hint: Import it only from one place, or if you meant to use both,\n"
-    <> "make sure to convert from one to the other correctly."
+    <> "  - '" <> origin2 <> "'\n"
+    <> "These are treated as distinct types even though they share a name.\n\n"
+    <> "Hint: Import '" <> adtName <> "' from only one location, or convert between the two explicitly."
 
   ShouldBeTypedOrAbove name ->
     "Must be typed or above\n\n"
-    <> "You access the name '" <> name <> "' before it\n"
-    <> "is defined\n\n"
-    <> "Note: This is fine, but in that case you must give it a type\n"
-    <> "annotation.\n"
-    <> "Hint: Place that declaration above the place you use it, or give\n"
-    <> "it a type annotation."
+    <> "'" <> name <> "' is used before it is defined.\n\n"
+    <> "Hint: Move the definition of '" <> name <> "' above this usage, or add a type annotation.\n"
+    <> "Note: Forward references are allowed only when the referenced name has a type annotation."
 
   NotCapitalizedADTName name ->
     let capitalized = if null name then name else toUpper (head name) : tail name
@@ -906,19 +928,19 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
   ContextTooWeak preds ->
     "Context too weak\n\n"
-    <> "The context of the type annotation is too weak. The type\n"
-    <> "inferred for the implementation has the following\n"
-    <> "constraints: " <> intercalate ", " (predClass <$> preds)
+    <> "The type annotation is missing required interface constraints.\n"
+    <> "The implementation needs: " <> intercalate ", " (predClass <$> preds)
     <> "\n\n"
-    <> "Hint: Add the missing interface constraints to the type annotation."
+    <> "Hint: Add the missing constraints to the type annotation.\n"
+    <> "Note: Example: if 'Eq a' is missing, change\n"
+    <> "  'myFn :: a -> Boolean'  to  'myFn :: Eq a => a -> Boolean'"
 
   OverloadedMutation n _ ->
     "Mutation in overloaded context\n\n"
-    <> "You are mutating the variable '" <> n <> "' in a function that has constraints"
-    <> "\n\n"
-    <> "Note: This will not work as it'll always generate a new reference for the closure\n"
-    <> "leading to the value not being changed.\n"
-    <> "Hint: Add or change type annotations to suppress the constraints."
+    <> "Cannot mutate '" <> n <> "' in a function with type class constraints.\n\n"
+    <> "Note: Each specialisation creates a separate closure copy, so mutations\n"
+    <> "to '" <> n <> "' would be invisible to callers.\n"
+    <> "Hint: Add a concrete type annotation to remove the polymorphism, or avoid mutation here."
 
   WrongAliasArgCount aliasName expected actual ->
     "Wrong alias argument count\n\n"
@@ -942,16 +964,14 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
   InterfaceAlreadyDefined interfaceName ->
     "Interface already defined\n\n"
-    <> "You defined the interface '" <> interfaceName <> "',\n"
-    <> "but it already exists\n\n"
-    <> "Hint: Choose a different name for this interface, or remove the duplicate definition."
+    <> "The interface '" <> interfaceName <> "' is already defined.\n\n"
+    <> "Hint: Choose a different name, or remove the duplicate definition."
 
   ADTAlreadyDefined adtType ->
     let adtName = renderType adtType
     in  "Type already defined\n\n"
-        <> "You defined the type '" <> adtName <> "',\n"
-        <> "but it already exists\n\n"
-        <> "Hint: Choose a different name for this type, or remove the duplicate definition."
+        <> "The type '" <> adtName <> "' is already defined.\n\n"
+        <> "Hint: Choose a different name, or remove the duplicate definition."
 
   WrongSpreadType t ->
     "Type error\n\n" <> t <> "\n\n"
@@ -980,13 +1000,15 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
   BadMutation ->
     "Bad mutation\n\n"
-    <> "You are trying to change a value with the assignment operator.\n\n"
-    <> "Hint: use the mutation operator ':='"
+    <> "Cannot reassign a variable with '='. Use ':=' to mutate an existing binding.\n\n"
+    <> "Hint: Use the mutation operator ':='\n"
+    <> "Note: Example:  x = 0         // initial binding\n"
+    <> "         x := x + 1    // mutation"
 
   MutatingNotInScope name ->
     "Not in scope\n\n"
-    <> "You are trying to mutate the value of '" <> name <> "' but it is not in scope.\n\n"
-    <> "Hint: Declare the variable before mutating it, or check for a typo in the name."
+    <> "Cannot mutate '" <> name <> "' because it is not in scope.\n\n"
+    <> "Hint: Declare '" <> name <> "' before mutating it, or check for a typo in the name."
 
   MutatingPatternBoundVariable name ->
     "Cannot mutate pattern-bound variable\n\n"
@@ -1011,15 +1033,22 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "Note: If this is a package dependency, run 'madlib install' to fetch it."
 
   ConstructorAccessBadIndex typeName constructorName arity index ->
-    "You want to access the parameter at index '" <> show index <> "' for the constructor '" <> constructorName <> "'\n"
-    <> "from type '" <> typeName <> "' but it has only " <> show arity <> " parameters."
+    "Constructor index out of range\n\n"
+    <> "The constructor '" <> constructorName <> "' from '" <> typeName <> "' has "
+    <> show arity <> " parameter" <> (if arity == 1 then "" else "s")
+    <> ", but index " <> show index <> " was accessed.\n\n"
+    <> "Hint: Valid indices for '" <> constructorName <> "' are 0 to " <> show (arity - 1) <> "."
 
   ConstructorAccessNoConstructorFound typeName ->
-    "No constructor found for the type '" <> typeName <> "'."
-
+    "Constructor not found\n\n"
+    <> "The type '" <> typeName <> "' has no constructors that can be accessed this way.\n\n"
+    <> "Hint: Use pattern matching to destructure the value instead."
 
   ConstructorAccessTooManyConstructors typeName _ ->
-    "You can't access a value from the constructor of the type '" <> typeName <> "' because it has more than one constructor."
+    "Ambiguous constructor access\n\n"
+    <> "Cannot access a constructor parameter of '" <> typeName <> "' because it has more than one constructor.\n\n"
+    <> "Hint: Use pattern matching to safely handle each constructor case.\n"
+    <> "Note: Constructor parameter access only works on types with a single constructor."
 
   RecordDuplicateRestPattern ->
     "Duplicate rest pattern\n\n"
@@ -1088,13 +1117,35 @@ createErrorDiagnostic color context typeError = case typeError of
             [ Diagnose.Hint $ "The right-hand side doesn't match the declared type of '" <> name <> "'." ]
           NoOrigin -> []
         title = mkUnificationTitle t1 t2 origin
+        originPrefix = case origin of
+          FromFunctionArgument fn n ->
+            "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type.\n"
+          FromFunctionReturn fn ->
+            "The return value of '" <> fn <> "' does not match its annotation.\n"
+          FromOperator op ->
+            "The operands of '" <> op <> "' have incompatible types.\n"
+          FromIfCondition ->
+            "The condition of an 'if' must be Boolean.\n"
+          FromIfBranches ->
+            "Both branches of an 'if' must return the same type.\n"
+          FromWhileCondition ->
+            "The condition of a 'while' must be Boolean.\n"
+          FromListElement ->
+            "All list elements must have the same type.\n"
+          FromTypeAnnotation ->
+            "The expression does not match its type annotation.\n"
+          FromPatternMatch ->
+            "All branches of a 'where' must return the same type.\n"
+          FromAssignment name ->
+            "The value does not match the declared type of '" <> name <> "'.\n"
+          NoOrigin -> ""
     in  case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
         Diagnose.Err
           Nothing
           title
           [ ( Diagnose.Position (startL, startC) (endL, endC) modulePath
-            , Diagnose.This $ expectedStr <> pretty2'' <> foundStr <> pretty1''
+            , Diagnose.This $ originPrefix <> expectedStr <> pretty2'' <> foundStr <> pretty1''
             )
           ]
           originHint
@@ -1102,7 +1153,7 @@ createErrorDiagnostic color context typeError = case typeError of
       NoContext ->
         Diagnose.Err
           Nothing
-          (title <> "\n\n" <> expectedStr <> pretty2'' <> foundStr <> pretty1'')
+          (title <> "\n\n" <> originPrefix <> expectedStr <> pretty2'' <> foundStr <> pretty1'')
           []
           originHint
 
@@ -1518,57 +1569,48 @@ createErrorDiagnostic color context typeError = case typeError of
                  [s] -> [Diagnose.Hint $ "Did you mean '" <> s <> "'?"]
                  _   -> [Diagnose.Hint $ "Did you mean one of: " <> intercalate ", " (map (\s -> "'" <> s <> "'") suggestions) <> "?"]
     in  mkError "Not exported" context
-          (    "You are trying to import '" <> name <> "' from\n"
-            <> "the module located here:\n"
-            <> "'" <> path <> "'\n"
-            <> "Unfortunately, that module does not export '" <> name <> "'"
+          (    "'" <> name <> "' is not exported by the module at:\n"
+            <> "'" <> path <> "'"
           )
           hint
 
   RecursiveVarAccess _ ->
     mkError "Recursive variable access" context
-      (    "You are using a variable that is recursively accessing itself\n"
-        <> "and is thus not yet initialized."
+      (    "This variable refers to itself directly in its own definition\n"
+        <> "and cannot be initialized."
       )
       [ Diagnose.Note $
-          "This is not allowed and can only work if there exists a\n"
-          <> "function in between, let me show you some examples that should\n"
-          <> "make this clearer:\n"
-          <> "// this is not allowed because parser is directly refering to itself\n"
-          <> "parser = J.map(Title, J.field(\"title\", parser))\n"
-          <> "// this works because now the recursive accessed is wrapped in a function\n"
-          <> "parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser)))"
+          "A direct self-reference is not allowed. Wrap the recursive\n"
+          <> "access in a function to defer evaluation:\n"
+          <> "  // Not allowed -- direct self-reference:\n"
+          <> "  parser = J.map(Title, J.field(\"title\", parser))\n"
+          <> "  // Works -- recursive access is wrapped in a function:\n"
+          <> "  parser = J.map(Title, J.field(\"title\", J.lazy((_) => parser)))"
       ]
 
   NotInScope name (Loc _ line _) ->
     mkError "Not in scope" context
-      (    "This expression relies on an expression that accesses the\n"
-        <> "variable '" <> name <> "' at line " <> ppShow line
+      (    "'" <> name <> "' (at line " <> ppShow line <> ") is not yet defined at this point."
       )
-      [ Diagnose.Note $
-          "All variables need to have been defined by the time they are\n"
-          <> "accessed and this access is thus not allowed."
+      [ Diagnose.Note "All variables must be defined before they are used."
       , Diagnose.Hint $
-          "Move that call further down in the module so that the name\n"
-          <> "is defined when you access it."
+          "Move the definition of '" <> name <> "' above this usage, or add a type\n"
+          <> "annotation to allow forward references."
       ]
 
   TypesHaveDifferentOrigin adtName origin1 origin2 ->
     mkError "Types have different origins" context
-      (    "Types do not match. You try to use a type that seems similar\n"
-        <> "but comes from two different locations. The type '" <> adtName <> "'\n"
-        <> "is used from:\n"
+      (    "The type '" <> adtName <> "' is imported from two different locations:\n"
         <> "  - '" <> origin1 <> "'\n"
-        <> "  - '" <> origin2 <> "'"
+        <> "  - '" <> origin2 <> "'\n"
+        <> "These are treated as distinct types even though they share a name."
       )
-      [ Diagnose.Hint $
-          "Import it only from one place, or if you meant to use both,\n"
-          <> "make sure to convert from one to the other correctly."
+      [ Diagnose.Hint $ "Import '" <> adtName <> "' from only one location, or convert between the two explicitly."
       ]
 
   ShouldBeTypedOrAbove name ->
     mkError "Must be typed or above" context
-      ("You access the name '" <> name <> "' before it\nis defined")
+      ("'" <> name <> "' is used before it is defined.")
       [ Diagnose.Note $
           "This is fine, but in that case you must give it a type\n"
           <> "annotation."
@@ -1707,14 +1749,14 @@ createErrorDiagnostic color context typeError = case typeError of
 
   BadMutation ->
     mkError "Bad mutation" context
-      "You are trying to reassign a variable that was already defined. Use ':=' to mutate, not '='."
+      "Cannot reassign a variable with '='. Use ':=' to mutate an existing binding."
       [ Diagnose.Hint "Use the mutation operator ':=' to change an existing value."
       , Diagnose.Note "Example:  x = 0         // initial binding\n         x := x + 1    // mutation"
       ]
 
   MutatingNotInScope name ->
     mkError "Not in scope" context
-      ("You are trying to mutate the value of '" <> name <> "' but it is not in scope.")
+      ("Cannot mutate '" <> name <> "' because it is not in scope.")
       [ Diagnose.Hint $ "Declare '" <> name <> "' before mutating it, or check for a typo."
       , Diagnose.Note "The variable must be in scope (declared earlier in the same block or outer scope)."
       ]

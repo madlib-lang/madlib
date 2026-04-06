@@ -431,7 +431,8 @@ read' isColorful multi acc = do
 
 eval :: Bool -> Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
 eval isColorful options state code =
-  case code of
+  let trimmed = List.dropWhileEnd Char.isSpace code
+  in  case trimmed of
     ':' : cmd ->
       evalCmd isColorful options state cmd
 
