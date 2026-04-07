@@ -168,8 +168,12 @@ mkTupleInstance cls n =
 
 initialEnv :: Infer Env
 initialEnv = do
-  builtinsModulePath <- Rock.fetch $ Query.AbsolutePreludePath "__BUILTINS__"
-  let tComparison = mkTCon (TC "Comparison" Star) builtinsModulePath
+  builtinsModulePath  <- Rock.fetch $ Query.AbsolutePreludePath "__BUILTINS__"
+  jsonValueModulePath <- Rock.fetch $ Query.AbsolutePreludePath "Json/Value"
+  jsonParseModulePath <- Rock.fetch $ Query.AbsolutePreludePath "Json/Parse"
+  let tComparison  = mkTCon (TC "Comparison" Star) builtinsModulePath
+      tJsonValue   = mkTCon (TC "Value"  Star)                    jsonValueModulePath
+      tJsonParser  = mkTCon (TC "Parser" (Kfun Star Star))        jsonParseModulePath
   return Env
     { envVars        = M.fromList
                         [ ("&&"           , Forall [] $ [] :=> (tBool `fn` tBool `fn` tBool))
@@ -235,6 +239,10 @@ initialEnv = do
                   , Instance ([] :=> IsIn "Comparable" [tUnit] Nothing) M.empty
                   ]
           )
+        , ("Json", Interface [TV 0 Star] []
+                  -- No built-in instances; all instances are defined in Json.mad
+                  []
+          )
         , ("Eq", Interface [TV 0 Star] []
                   -- These are needed for the JS backend where Eq is a special generic function
                   ( [ Instance ([] :=> IsIn "Eq" [tInteger] Nothing) M.empty
@@ -268,6 +276,8 @@ initialEnv = do
         , ("=="           , Forall [Star] $ [IsIn "Eq" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
         , ("compare"      , Forall [Star] $ [IsIn "Comparable" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` tComparison))
         , ("show"         , Forall [Star] $ [IsIn "Show" [TGen 0] Nothing] :=> (TGen 0 `fn` tStr))
+        , ("toJson"       , Forall [Star] $ [IsIn "Json" [TGen 0] Nothing] :=> (TGen 0 `fn` tJsonValue))
+        , ("fromJson"     , Forall [Star] $ [IsIn "Json" [TGen 0] Nothing] :=> TApp tJsonParser (TGen 0))
 
         , ("|"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))
         , ("&"            , Forall [Star] $ [IsIn "Bits" [TGen 0] Nothing] :=> (TGen 0 `fn` TGen 0 `fn` TGen 0))

@@ -1,0 +1,259 @@
+import type { Either } from "Either"
+import type { Maybe } from "Maybe"
+
+import Array from "Array"
+import JP from "Json/Parse"
+import { JsonArray, JsonBoolean, JsonFloat, JsonInteger, JsonNull, JsonObject, JsonString } from "Json/Value"
+import Print from "Json/Print"
+import { Just, Nothing } from "Maybe"
+
+
+// The Json interface is defined in the compiler (Infer.EnvUtils).
+// This file provides instances for all built-in types.
+
+// -------- Primitives --------------------------------------------------------
+
+instance Json String {
+  toJson   = JsonString
+  fromJson = JP.string
+}
+
+instance Json Integer {
+  toJson   = JsonInteger
+  fromJson = JP.integer
+}
+
+instance Json Float {
+  toJson   = JsonFloat
+  fromJson = JP.float
+}
+
+instance Json Boolean {
+  toJson   = JsonBoolean
+  fromJson = JP.boolean
+}
+
+instance Json {} {
+  toJson   = (_) => JsonNull
+  fromJson = JP.succeed({})
+}
+
+
+// -------- Containers --------------------------------------------------------
+
+instance Json a => Json (Maybe a) {
+  toJson = (ma) => where(ma) {
+    Just(a) =>
+      toJson(a)
+
+    Nothing =>
+      JsonNull
+  }
+
+  fromJson = JP.maybe(fromJson)
+}
+
+
+instance Json a => Json (List a) {
+  toJson   = (xs) => JsonArray(map(toJson, xs))
+  fromJson = JP.list(fromJson)
+}
+
+
+instance Json a => Json (Array a) {
+  toJson   = (arr) => JsonArray(Array.toList(map(toJson, arr)))
+  fromJson = map(Array.fromList, JP.list(fromJson))
+}
+
+
+instance Json a => Json (Dictionary String a) {
+  toJson   = (d) => JsonObject(map(toJson, d))
+  fromJson = JP.dict(fromJson)
+}
+
+
+// -------- Tuples ------------------------------------------------------------
+// Tuples are encoded as JSON objects with string keys "0", "1", etc.
+// e.g. #["hello", 42] -> { "0": "hello", "1": 42 }
+
+instance (Json a, Json b) => Json #[a, b] {
+  toJson = (t) => where(t) {
+    #[a, b] => Print.object([
+      #["0", toJson(a)],
+      #["1", toJson(b)],
+    ])
+  }
+
+  fromJson = JP.map2(
+    (a, b) => #[a, b],
+    JP.field("0", fromJson),
+    JP.field("1", fromJson),
+  )
+}
+
+
+instance (Json a, Json b, Json c) => Json #[a, b, c] {
+  toJson = (t) => where(t) {
+    #[a, b, c] => Print.object([
+      #["0", toJson(a)],
+      #["1", toJson(b)],
+      #["2", toJson(c)],
+    ])
+  }
+
+  fromJson = JP.map3(
+    (a, b, c) => #[a, b, c],
+    JP.field("0", fromJson),
+    JP.field("1", fromJson),
+    JP.field("2", fromJson),
+  )
+}
+
+
+instance (Json a, Json b, Json c, Json d) => Json #[a, b, c, d] {
+  toJson = (t) => where(t) {
+    #[a, b, c, d] => Print.object([
+      #["0", toJson(a)],
+      #["1", toJson(b)],
+      #["2", toJson(c)],
+      #["3", toJson(d)],
+    ])
+  }
+
+  fromJson = JP.map4(
+    (a, b, c, d) => #[a, b, c, d],
+    JP.field("0", fromJson),
+    JP.field("1", fromJson),
+    JP.field("2", fromJson),
+    JP.field("3", fromJson),
+  )
+}
+
+
+instance (Json a, Json b, Json c, Json d, Json e) => Json #[a, b, c, d, e] {
+  toJson = (t) => where(t) {
+    #[a, b, c, d, e] => Print.object([
+      #["0", toJson(a)],
+      #["1", toJson(b)],
+      #["2", toJson(c)],
+      #["3", toJson(d)],
+      #["4", toJson(e)],
+    ])
+  }
+
+  fromJson = JP.map5(
+    (a, b, c, d, e) => #[a, b, c, d, e],
+    JP.field("0", fromJson),
+    JP.field("1", fromJson),
+    JP.field("2", fromJson),
+    JP.field("3", fromJson),
+    JP.field("4", fromJson),
+  )
+}
+
+
+instance (Json a, Json b, Json c, Json d, Json e, Json f) => Json #[a, b, c, d, e, f] {
+  toJson = (t) => where(t) {
+    #[a, b, c, d, e, f] => Print.object([
+      #["0", toJson(a)],
+      #["1", toJson(b)],
+      #["2", toJson(c)],
+      #["3", toJson(d)],
+      #["4", toJson(e)],
+      #["5", toJson(f)],
+    ])
+  }
+
+  fromJson = JP.map6(
+    (a, b, c, d, e, f) => #[a, b, c, d, e, f],
+    JP.field("0", fromJson),
+    JP.field("1", fromJson),
+    JP.field("2", fromJson),
+    JP.field("3", fromJson),
+    JP.field("4", fromJson),
+    JP.field("5", fromJson),
+  )
+}
+
+
+instance (Json a, Json b, Json c, Json d, Json e, Json f, Json g) => Json #[a, b, c, d, e, f, g] {
+  toJson = (t) => where(t) {
+    #[a, b, c, d, e, f, g] => Print.object([
+      #["0", toJson(a)],
+      #["1", toJson(b)],
+      #["2", toJson(c)],
+      #["3", toJson(d)],
+      #["4", toJson(e)],
+      #["5", toJson(f)],
+      #["6", toJson(g)],
+    ])
+  }
+
+  fromJson = JP.map7(
+    (a, b, c, d, e, f, g) => #[a, b, c, d, e, f, g],
+    JP.field("0", fromJson),
+    JP.field("1", fromJson),
+    JP.field("2", fromJson),
+    JP.field("3", fromJson),
+    JP.field("4", fromJson),
+    JP.field("5", fromJson),
+    JP.field("6", fromJson),
+  )
+}
+
+
+instance (Json a, Json b, Json c, Json d, Json e, Json f, Json g, Json h) => Json #[a, b, c, d, e, f, g, h] {
+  toJson = (t) => where(t) {
+    #[a, b, c, d, e, f, g, h] => Print.object([
+      #["0", toJson(a)],
+      #["1", toJson(b)],
+      #["2", toJson(c)],
+      #["3", toJson(d)],
+      #["4", toJson(e)],
+      #["5", toJson(f)],
+      #["6", toJson(g)],
+      #["7", toJson(h)],
+    ])
+  }
+
+  fromJson = JP.map8(
+    (a, b, c, d, e, f, g, h) => #[a, b, c, d, e, f, g, h],
+    JP.field("0", fromJson),
+    JP.field("1", fromJson),
+    JP.field("2", fromJson),
+    JP.field("3", fromJson),
+    JP.field("4", fromJson),
+    JP.field("5", fromJson),
+    JP.field("6", fromJson),
+    JP.field("7", fromJson),
+  )
+}
+
+
+// -------- Convenience -------------------------------------------------------
+
+/**
+ * Serialize a value implementing the Json interface to a JSON string.
+ *
+ * @since 0.23.0
+ * @example
+ * encode(42)         // "42"
+ * encode("hello")    // "\"hello\""
+ * encode([1, 2, 3])  // "[1, 2, 3]"
+ */
+encode :: Json a => a -> String
+export encode = (a) => Print.print(80, toJson(a))
+
+
+/**
+ * Deserialize a JSON string to a value implementing the Json interface.
+ * Returns a Left with an error message if parsing fails.
+ *
+ * @since 0.23.0
+ * @example
+ * decode("42") :: Either String Integer       // Right(42)
+ * decode("\"hi\"") :: Either String String    // Right("hi")
+ * decode("bad") :: Either String Integer      // Left("Invalid json: ...")
+ */
+decode :: Json a => String -> Either String a
+export decode = (s) => JP.parse(fromJson, s)

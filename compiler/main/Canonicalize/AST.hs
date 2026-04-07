@@ -199,7 +199,7 @@ checkUnusedImports env imports = do
       return $ filter (not . (allJS =~) . fst) allUnused
   mapM_
     (\(name, area) ->
-      when (name `notElem` ["__BUILTINS__", "Dictionary"] && not (isAutoImportedMaybe name area)) $
+      when (name `notElem` ["__BUILTINS__", "__Json__", "__JsonParse__", "__JsonPrint__", "__JsonValue__", "Dictionary"] && not (isAutoImportedMaybe name area)) $
         pushWarning (CompilationWarning (UnusedImport name (envCurrentPath env)) (Context (envCurrentPath env) area))
     )
     (withJSCheck ++ unusedTypes)
@@ -333,6 +333,14 @@ checkTypeImportCollision modulePath foundNames imp = case imp of
 
 
 
+hasJsonDerives :: Src.AST -> Bool
+hasJsonDerives ast = any isJson (Src.aderived ast)
+  where
+    isJson (Src.Source _ _ (Src.DerivedADT "Json" _))    = True
+    isJson (Src.Source _ _ (Src.DerivedRecord "Json" _)) = True
+    isJson _                                              = False
+
+
 canonicalizeAST :: FilePath -> Options -> Env -> Src.AST -> CanonicalM (Can.AST, Env, [InstanceToDerive])
 canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = Just astPath, Src.aimports } = do
   mapM_ (validateImport astPath) aimports
@@ -359,6 +367,21 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
   instances             <- canonicalizeInstances env'''' (optTarget options) $ Src.ainstances sourceAst
   derivedInstances      <- deriveInstances env'''' typeDecls $ Src.aderived sourceAst
 
+  jsonImports <-
+    if hasJsonDerives sourceAst then do
+      jsonModulePath      <- Rock.fetch $ Query.AbsolutePreludePath "Json"
+      jsonParseModulePath <- Rock.fetch $ Query.AbsolutePreludePath "Json/Parse"
+      jsonPrintModulePath <- Rock.fetch $ Query.AbsolutePreludePath "Json/Print"
+      jsonValueModulePath <- Rock.fetch $ Query.AbsolutePreludePath "Json/Value"
+      return
+        [ Can.Canonical emptyArea (Can.DefaultImport (Can.Canonical emptyArea "__Json__")      "Json"       jsonModulePath)
+        , Can.Canonical emptyArea (Can.DefaultImport (Can.Canonical emptyArea "__JsonParse__") "Json/Parse" jsonParseModulePath)
+        , Can.Canonical emptyArea (Can.DefaultImport (Can.Canonical emptyArea "__JsonPrint__") "Json/Print" jsonPrintModulePath)
+        , Can.Canonical emptyArea (Can.DefaultImport (Can.Canonical emptyArea "__JsonValue__") "Json/Value" jsonValueModulePath)
+        ]
+    else
+      return []
+
   when (optMustHaveMain options && astPath == optEntrypoint options) $ do
     if any ((== Just "main") . Can.getExpName) exps then
       return ()
@@ -383,7 +406,7 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
   addDerivedTypes (S.fromList typeDeclarationsToDerive')
   resetToDerive
 
-  let canonicalizedAST = Can.AST { Can.aimports    = imports
+  let canonicalizedAST = Can.AST { Can.aimports    = jsonImports ++ imports
                                  , Can.aexps       = exps
                                  , Can.atypedecls  = typeDecls
                                  , Can.ainterfaces = interfaces
@@ -391,7 +414,7 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
                                  , Can.apath       = Src.apath sourceAst
                                  }
 
-  checkUnusedImports env'' imports
+  checkUnusedImports env'' (jsonImports ++ imports)
   checkUnusedDeclarations env'' canonicalizedAST
   checkUnusedTypes env'' canonicalizedAST
 

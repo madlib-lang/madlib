@@ -758,7 +758,7 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
   InvalidInterfaceDerived n ->
     "Cannot derive '" <> n <> "'\n\n"
     <> "The interface '" <> n <> "' does not support automatic derivation.\n\n"
-    <> "Note: Only these interfaces can be derived: Eq, Show, Comparable.\n"
+    <> "Note: Only these interfaces can be derived: Eq, Show, Comparable, Json.\n"
     <> "Hint: Write a manual instance instead:\n"
     <> "  instance " <> n <> " YourType { ... }"
 
@@ -1435,7 +1435,7 @@ createErrorDiagnostic color context typeError = case typeError of
   InvalidInterfaceDerived n ->
     mkError ("Cannot derive '" <> n <> "'") context
       ("The interface '" <> n <> "' does not support automatic derivation.")
-      [ Diagnose.Note "Only these interfaces can be derived: Eq, Show, Comparable."
+      [ Diagnose.Note "Only these interfaces can be derived: Eq, Show, Comparable, Json."
       , Diagnose.Hint $ "Write a manual instance instead:\n  instance " <> n <> " YourType { ... }"
       ]
 
