@@ -161,10 +161,11 @@ handlers state autocompletionState = mconcat
   , requestHandler STextDocumentCodeAction $ \(RequestMessage _ _ _ (CodeActionParams _ _ (TextDocumentIdentifier uri) _ (CodeActionContext (List diags) _))) responder ->
       recordAndPrintDuration "codeAction" $ do
         let removeImportActions = Maybe.mapMaybe (diagnosticToCodeAction uri) diags
+        let holeActions         = concatMap (holeCodeActions uri) diags
         file <- getVirtualFile (toNormalizedUri uri)
         let fileContent = maybe "" (T.unpack . virtualFileText) file
         addImportActions <- getAddImportActions state (uriToPath uri) uri diags fileContent
-        responder $ Right $ List (map InR (removeImportActions ++ addImportActions))
+        responder $ Right $ List (map InR (removeImportActions ++ holeActions ++ addImportActions))
   , requestHandler STextDocumentSignatureHelp $ \(RequestMessage _ _ _ (SignatureHelpParams (TextDocumentIdentifier uri) (Position line col) _ _)) responder ->
       recordAndPrintDuration "signatureHelp" $ do
         help <- getSignatureHelp state (Loc 0 (line + 1) (col + 1)) (uriToPath uri)
@@ -909,6 +910,114 @@ diagnosticToCodeAction uri diag@(Diagnostic range _ _ _ msg tags _) =
         in  Just $ CodeAction "Remove redundant pattern" (Just CodeActionQuickFix)
               (Just $ List [diag]) Nothing Nothing (Just wsEdit) Nothing Nothing
       else Nothing
+
+
+-- | Generate code actions for a typed hole diagnostic:
+--   - one "Fill hole with X" action per in-scope suggestion (parsed from the message)
+--   - a "Refine: insert lambda" action when the message indicates a function type
+-- Returns an empty list if the diagnostic is not a typed hole.
+holeCodeActions :: Uri -> Diagnostic -> [CodeAction]
+holeCodeActions uri diag@(Diagnostic range _ _ _ msg _ _)
+  | "Typed hole" `T.isPrefixOf` msg =
+      let suggestions   = extractHoleSuggestions msg
+          isFnType      = "-> " `T.isInfixOf` holeTypeLine msg
+          fillActions   = map (fillHoleAction uri range diag) suggestions
+          refineActions = if isFnType then [refineHoleLambdaAction uri range diag] else []
+      in  fillActions ++ refineActions
+  | otherwise = []
+
+
+-- | Extract the type line from a typed hole diagnostic message.
+-- Message contains: "I found a typed hole with type:\n  <type>"
+holeTypeLine :: T.Text -> T.Text
+holeTypeLine msg =
+  case dropWhile (not . T.isPrefixOf "  ") (T.lines msg) of
+    (l : _) -> T.strip l
+    []      -> ""
+
+
+-- | Extract suggestion names and their types from a typed hole diagnostic message.
+-- The LSP message is built via reportToPlainText, so the suggestions note appears as:
+--   "Note: Suggestions (in scope):\n    rec :: { name :: String }\n  "
+-- We look for a line containing "Suggestions (in scope)" (with or without "Note: " prefix).
+-- Returns (name, typeString) pairs.
+extractHoleSuggestions :: T.Text -> [(String, String)]
+extractHoleSuggestions msg =
+  let ls        = T.lines msg
+      isSectionHeader l = "Suggestions (in scope)" `T.isInfixOf` l
+      inSection = dropWhile (not . isSectionHeader) ls
+      -- Lines after the header that are indented (part of the suggestion block)
+      suggLines = takeWhile (\l -> "  " `T.isPrefixOf` l || T.null l) (drop 1 inSection)
+      nonEmpty  = filter (not . T.null) suggLines
+  in  [ (T.unpack name, T.unpack typeStr)
+      | l <- nonEmpty
+      , let trimmed  = T.strip l
+      -- format: "name :: type"
+      , let (name, rest) = T.breakOn " " trimmed
+      , not (T.null name)
+      , let typeStr  = T.strip $ T.drop 3 $ T.strip rest  -- drop " ::"
+      ]
+
+
+-- | Count the number of top-level function arrows in a type string.
+-- Top-level means not inside parentheses or braces.
+-- "a -> b"           = 1   →  1 arg  (bare value)
+-- "a -> b -> c"      = 2   →  2 args
+-- "(a -> b) -> c"    = 1   →  1 arg  (the (a->b) is nested)
+-- "List a -> List b" = 1   →  1 arg
+countTopLevelArrows :: String -> Int
+countTopLevelArrows s = go s 0 0
+  where
+    -- go remaining depth count
+    go []           _ acc = acc
+    go ('-':'>':xs) 0 acc = go xs 0 (acc + 1)
+    go ('(':xs)     d acc = go xs (d + 1) acc
+    go ('{':xs)     d acc = go xs (d + 1) acc
+    go ('[':xs)     d acc = go xs (d + 1) acc
+    go (')':xs)     d acc = go xs (max 0 (d - 1)) acc
+    go ('}':xs)     d acc = go xs (max 0 (d - 1)) acc
+    go (']':xs)     d acc = go xs (max 0 (d - 1)) acc
+    go (_:xs)       d acc = go xs d acc
+
+
+-- | Build the replacement text for a fill-hole action.
+-- For a 0-arity value: just the name.
+-- For an n-arity function: name(???, ???, ...) with n holes.
+-- We subtract 1 because the last arrow leads to the return type.
+fillHoleReplacement :: String -> String -> String
+fillHoleReplacement name typeStr =
+  let arity = countTopLevelArrows typeStr
+  in  if arity == 0
+        then name
+        else name <> "(" <> T.unpack (T.intercalate ", " (replicate arity "???")) <> ")"
+
+
+fillHoleAction :: Uri -> Range -> Diagnostic -> (String, String) -> CodeAction
+fillHoleAction uri range diag (name, typeStr) =
+  let replacement = T.pack $ fillHoleReplacement name typeStr
+      edit   = TextEdit range replacement
+      wsEdit = WorkspaceEdit (Just $ HashMap.singleton uri (List [edit])) Nothing Nothing
+  in  CodeAction
+        ("Fill hole with `" <> T.pack name <> "`")
+        (Just CodeActionQuickFix)
+        (Just $ List [diag])
+        Nothing Nothing
+        (Just wsEdit)
+        Nothing Nothing
+
+
+-- | Replaces ??? with \x => ??? — useful when the hole has a function type.
+refineHoleLambdaAction :: Uri -> Range -> Diagnostic -> CodeAction
+refineHoleLambdaAction uri range diag =
+  let edit   = TextEdit range "(x) => ???"
+      wsEdit = WorkspaceEdit (Just $ HashMap.singleton uri (List [edit])) Nothing Nothing
+  in  CodeAction
+        "Refine: insert lambda"
+        (Just CodeActionQuickFix)
+        (Just $ List [diag])
+        Nothing Nothing
+        (Just wsEdit)
+        Nothing Nothing
 
 
 -- | Extract missing pattern names from an "Incomplete pattern" diagnostic message.

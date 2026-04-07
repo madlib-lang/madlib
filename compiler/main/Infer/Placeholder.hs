@@ -21,6 +21,9 @@ import           Error.Context
 import           Infer.Instantiate
 import           Run.Options
 import           Error.Warning
+import           Data.List (sortBy, isPrefixOf)
+import           Data.Ord (comparing)
+import           Data.Char (isAlpha, isAlphaNum)
 
 
 {-
@@ -170,7 +173,8 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
 
   Slv.TypedHole -> do
     let qt'@(_ :=> t) = apply s qt
-    pushWarning $ CompilationWarning (TypedHoleFound t) (Context (envCurrentPath env) a)
+    suggestions <- collectHoleSuggestions env s t
+    pushWarning $ CompilationWarning (TypedHoleFound t suggestions) (Context (envCurrentPath env) a)
     return $ Slv.Typed qt' a Slv.TypedHole
 
   _ ->
@@ -201,3 +205,72 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     updateField s (Slv.Typed t area field) = case field of
       Slv.Field       (n, e) -> Slv.Typed (apply s t) area . Slv.Field . (n, ) <$> updateExpTypes options env push s e
       Slv.FieldSpread e      -> Slv.Typed (apply s t) area . Slv.FieldSpread <$> updateExpTypes options env push s e
+
+
+-- | Collect and rank in-scope names whose type is compatible with the hole type.
+-- Applies a structural pre-filter so that we only attempt unification when the
+-- top-level shape of the candidate matches the hole.  This prevents a highly
+-- polymorphic hole (e.g. a record type with free vars) from matching every name
+-- in scope.
+-- Filters out internal compiler-generated names (prefixed with "__") and sorts
+-- local bindings (from envNamesInScope) before top-level ones.
+collectHoleSuggestions :: Env -> Substitution -> Type -> Infer [(String, Scheme)]
+collectHoleSuggestions env s holeType = do
+  let allVars   = M.toList (envVars env) ++ M.toList (envMethods env)
+      localNames = M.keysSet (envNamesInScope env)
+      isInternal name = "__" `isPrefixOf` name
+      -- Valid user-facing identifiers: start with a letter or underscore,
+      -- contain only alphanumeric chars, '_', or '''.
+      -- Filters out corrupt entries like "(b" that appear in envVars as
+      -- artifacts of type variable tracking during record/pattern inference.
+      isValidIdentifier name = case name of
+        []    -> False
+        (c:cs) -> (isAlpha c || c == '_') && all (\x -> isAlphaNum x || x == '_' || x == '\'') cs
+      isLocal    name = name `S.member` localNames
+
+  candidates <- mapM (tryCandidate holeType) (filter (\(n, _) -> not (isInternal n) && isValidIdentifier n) allVars)
+  let matched = [ (n, sc) | Just (n, sc) <- candidates ]
+      ranked  = sortBy (rankSuggestion isLocal) matched
+  return $ take 10 ranked
+
+  where
+    -- Returns Just (name, scheme) if the candidate's result type is structurally
+    -- compatible with the hole type AND unification succeeds.
+    tryCandidate :: Type -> (String, Scheme) -> Infer (Maybe (String, Scheme))
+    tryCandidate holeT (name, sc) = do
+      (_ :=> instT) <- instantiate sc
+      -- For function types we check the *return* type; for others the type itself.
+      let candidateT = getReturnType instT
+      if structurallyCompatible holeT candidateT
+        then catchError
+               (unify holeT candidateT >> return (Just (name, sc)))
+               (\_ -> return Nothing)
+        else return Nothing
+
+    -- Structural pre-filter: do the two types have the same outermost shape?
+    -- This prevents a TRecord hole from matching plain Integer/String values and
+    -- prevents a fully-free TVar hole from matching literally everything.
+    structurallyCompatible :: Type -> Type -> Bool
+    structurallyCompatible h c = case (h, c) of
+      -- Both record types — compatible (field check is left to unification)
+      (TRecord _ _ _, TRecord _ _ _) -> True
+      -- Hole is a record, candidate is a plain type var — could be anything, skip
+      (TRecord _ _ _, TVar _)        -> False
+      -- Candidate is a record, hole is a plain var — skip (hole is probably not record-shaped)
+      (TVar _, TRecord _ _ _)        -> False
+      -- Both concrete constructors — must match
+      (TCon c1 _ _, TCon c2 _ _)     -> c1 == c2
+      -- Both function types — compatible (return type was already extracted)
+      (TApp _ _, TApp _ _)           -> True
+      -- Free type variable on hole side only — accept only when candidate is concrete
+      (TVar _, TCon _ _ _)           -> True
+      (TVar _, TApp _ _)             -> True
+      -- Remaining TVar/TVar — too unspecific, skip
+      (TVar _, TVar _)               -> False
+      _                              -> False
+
+    -- Local bindings ranked before top-level; within each group, shorter names first.
+    rankSuggestion :: (String -> Bool) -> (String, Scheme) -> (String, Scheme) -> Ordering
+    rankSuggestion isLocal (n1, _) (n2, _) =
+      compare (not (isLocal n1)) (not (isLocal n2))
+      <> comparing length n1 n2

@@ -36,9 +36,11 @@ import qualified Explain.Location as Loc
 import           Explain.Format (prettyPrintQualType, prettyPrintType, kindToStr, prettyPrintTyping, prettyPrintTyping', renderSchemesWithDiff)
 import           Data.List (foldl')
 import qualified Data.List as List
+import           Data.Char (isAlpha, isAlphaNum)
 import qualified AST.Solved as Slv
 import           Control.Applicative ((<|>))
-import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified, Scheme (Forall), getParamTypes)
+import           Infer.Type (Qual((:=>)), Type (..), kind, Kind (Star), TCon (..), TVar (..), findTypeVarInType, collectVars, buildKind, getQualified, Scheme (Forall), getParamTypes, getReturnType)
+import qualified Infer.Env as SlvEnv
 import           Run.Target
 import Control.Monad.IO.Class
 import qualified AST.Canonical         as Can
@@ -522,6 +524,18 @@ nodeToHoverInfo modulePath node = do
               sanitizeName name <> " :: "
       return $ prefix <> prettyQt topLevel qt
 
+    ExpNode _ (Slv.Typed qt _ Slv.TypedHole) -> do
+      (_, slvEnv) <- Rock.fetch $ Query.SolvedASTWithEnv modulePath
+      let holeType = prettyQt False qt
+          suggestions = collectHoverSuggestions slvEnv qt
+          suggSection
+            | null suggestions = ""
+            | otherwise =
+                "\n\n**Suggestions (in scope):**\n"
+                <> unlines [ "- `" <> n <> "` :: `" <> prettyScheme sc <> "`"
+                           | (n, sc) <- suggestions ]
+      return $ "**Typed hole** — expected type: `" <> holeType <> "`" <> suggSection
+
     ExpNode topLevel (Slv.Typed qt _ _) ->
       return $ prettyQt topLevel qt
 
@@ -702,3 +716,36 @@ hoverInfoTask loc path = do
     srcAst        <- Rock.fetch $ Query.ParsedAST path
     (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
     mapM (nodeToHoverInfo path) (findNodeInAst loc srcAst typedAst)
+
+
+-- | Collect in-scope names whose type is compatible with the hole's expected type.
+-- Mirrors the logic in Infer.Placeholder.collectHoleSuggestions but runs purely
+-- on the already-solved Env (no Infer monad needed).
+collectHoverSuggestions :: SlvEnv.Env -> Qual Type -> [(String, Scheme)]
+collectHoverSuggestions env (_ :=> holeType) =
+  let allVars  = Map.toList (SlvEnv.envVars env) ++ Map.toList (SlvEnv.envMethods env)
+      isInternal n = length n >= 2 && take 2 n == "__"
+      -- Valid user-facing identifiers: start with a letter or underscore,
+      -- followed by alphanumeric, '_', or '''. Filters out corrupted entries
+      -- like "(b" that appear as type-variable artifacts in envVars.
+      isValidIdentifier n = case n of
+        []    -> False
+        (c:cs) -> (isAlpha c || c == '_') && all (\x -> isAlphaNum x || x == '_' || x == '\'') cs
+      candidates = filter (\(n, _) -> not (isInternal n) && isValidIdentifier n) allVars
+      matches    = [ (n, sc) | (n, sc@(Forall _ (_ :=> t))) <- candidates
+                              , typesCompatible holeType (getReturnType t) ]
+  in  take 10 matches
+
+  where
+    -- Structural compatibility check without running the Infer monad:
+    -- two types are compatible if they have the same outermost constructor
+    -- or either side is a type variable (could unify).
+    -- Note: we only allow TVar on the *candidate* side (polymorphic functions),
+    -- not on the hole side, to avoid matching everything when the hole is a concrete type.
+    typesCompatible :: Type -> Type -> Bool
+    typesCompatible _          (TVar _)       = True
+    typesCompatible (TVar _)   (TCon _ _ _)   = True
+    typesCompatible (TVar _)   (TApp _ _)     = True
+    typesCompatible (TCon c1 _ _) (TCon c2 _ _) = c1 == c2
+    typesCompatible (TApp l1 _)   (TApp l2 _)   = typesCompatible l1 l2
+    typesCompatible _          _              = False

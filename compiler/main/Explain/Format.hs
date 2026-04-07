@@ -163,13 +163,20 @@ createSimpleWarningDiagnostic _ _ warning = case warning of
     <> "Note: This pattern will never be reached.\n"
     <> "Hint: Remove it or move it higher up so that it might be useful."
 
-  TypedHoleFound t ->
+  TypedHoleFound t suggestions ->
     let (renderedType, _) = renderSchemesWithDiff False (Forall [] ([] :=> t)) (Forall [] ([] :=> t))
         indentedType = unlines $ ("  "<>) <$> lines renderedType
+        suggestionsSection =
+          if null suggestions then ""
+          else
+            "\nSuggestions (in scope):\n"
+            <> unlines (map renderSuggestion suggestions)
+        renderSuggestion (name, sc) =
+          "  " <> name <> " :: " <> renderSchemeOneLine sc
     in  "Typed hole\n\n"
         <> "I found a typed hole with type:\n" <> indentedType
-        <> "\n\n"
-        <> "Note: This will crash at runtime if reached.\n"
+        <> suggestionsSection
+        <> "\nNote: This will crash at runtime if reached.\n"
         <> "Hint: Replace it with a valid expression of that type."
 
 
@@ -436,11 +443,16 @@ createWarningDiagnostic _ context warning = case warning of
           , Diagnose.Hint "Remove it or move it higher up so that it might be useful."
           ]
 
-  TypedHoleFound t ->
+  TypedHoleFound t suggestions ->
     case context of
       Context modulePath (Area (Loc _ startL startC) (Loc _ endL endC)) ->
         let (renderedType, _) = renderSchemesWithDiff False (Forall [] ([] :=> t)) (Forall [] ([] :=> t))
             indentedType = unlines $ ("  "<>) <$> lines renderedType
+            renderSuggestion (name, sc) =
+              name <> " :: " <> renderSchemeOneLine sc
+            suggestionsNote =
+              if null suggestions then []
+              else [Diagnose.Note $ "Suggestions (in scope):\n" <> unlines (map (("  " <>) . renderSuggestion) suggestions)]
         in  Diagnose.Warn
               Nothing
               "Typed hole"
@@ -448,9 +460,11 @@ createWarningDiagnostic _ context warning = case warning of
                 , Diagnose.This $ "I found a typed hole with type:\n  " <> indentedType
                 )
               ]
-              [ Diagnose.Note "This will crash at runtime if reached."
-              , Diagnose.Hint "Replace it with a valid expression of that type."
-              ]
+              ( suggestionsNote <>
+                [ Diagnose.Note "This will crash at runtime if reached."
+                , Diagnose.Hint "Replace it with a valid expression of that type."
+                ]
+              )
 
       NoContext ->
         Diagnose.Warn

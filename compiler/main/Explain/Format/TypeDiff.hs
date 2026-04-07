@@ -124,6 +124,18 @@ renderScheme sc =
   in  Text.unpack s
 
 
+-- | Like 'renderScheme' but forces the output onto a single line (no wrapping).
+-- Used for suggestion lists where each entry must stay on one line so that
+-- downstream parsers (e.g. LSP code-action extraction) can split by newline.
+renderSchemeOneLine :: Scheme -> String
+renderSchemeOneLine sc =
+  let (_, _, docT)  = schemeToDoc (mempty, mempty) sc
+      docT'         = Pretty.unAnnotate docT
+      layoutOptions = Pretty.LayoutOptions { Pretty.layoutPageWidth = Pretty.Unbounded }
+      s             = Terminal.renderStrict (Pretty.layoutPretty layoutOptions docT')
+  in  Text.unpack s
+
+
 hkLetters :: [Char]
 hkLetters = ['m' ..]
 
@@ -1072,7 +1084,7 @@ schemeToDoc (vars, hkVars) sc = case sc of
       if length ps > 1 then
         ( vars''
         , hkVars''
-        , Pretty.lparen <> Pretty.hcat ps' <> Pretty.rparen <> Pretty.pretty " => " <> t'
+        , Pretty.lparen <> Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.space) ps') <> Pretty.rparen <> Pretty.pretty " => " <> t'
         )
       else
         ( vars''

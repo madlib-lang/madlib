@@ -38,6 +38,7 @@ import           Run.Target
 import           Language.LSP.Diagnostics
 import qualified Infer.Env as SlvEnv
 import GHC.Base (when)
+import           Infer.Type (isFunctionType)
 
 import Run.LanguageServer.State
 import Run.Options (optEntrypoint)

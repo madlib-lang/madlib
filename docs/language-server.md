@@ -30,7 +30,7 @@ Any editor that supports LSP can use the Madlib language server. Configure it to
 - **Communication:** stdin/stdout
 
 
-## Supported Features (19 capabilities)
+## Supported Features (20 capabilities)
 
 ### Core Editing
 
@@ -59,13 +59,62 @@ Any editor that supports LSP can use the Madlib language server. Configure it to
 | **Autocompletion** | `textDocument/completion` | Context-aware completions: variables, types, constructors, module members, record fields |
 | **Inlay Hints** | `textDocument/inlayHint` | Inline type annotations for let bindings and function parameters (custom method) |
 | **Semantic Tokens** | `textDocument/semanticTokens/full` | Rich syntax highlighting: constructors, types, variables, methods (custom method) |
-| **Code Actions** | `textDocument/codeAction` | Quick fixes: remove unused imports, add missing pattern branches, add missing imports |
+| **Code Actions** | `textDocument/codeAction` | Quick fixes: remove unused imports, add missing pattern branches, add missing imports, fill/refine typed holes |
 
 ### Note on Custom Methods
 
 Call hierarchy, inlay hints, and semantic tokens are implemented as custom LSP methods
 (`SCustomMethod`). Most modern editors (VS Code, Neovim with lsp-config, etc.) support
 these automatically. Older clients may need explicit configuration.
+
+
+## Typed Hole Tooling
+
+Writing `???` in any expression position creates a **typed hole**. The compiler infers
+the type expected at that position and provides interactive assistance.
+
+### What you get
+
+**Diagnostic warning** — the hole's inferred type is shown immediately:
+```
+Typed hole
+
+I found a typed hole with type:
+  Integer -> String
+
+Suggestions (in scope):
+  show :: Integer -> String
+  myFormatter :: Integer -> String
+
+Note: This will crash at runtime if reached.
+```
+
+**Hover** — hovering over `???` in your editor shows the expected type and the top
+matching names from the local scope, without switching to the diagnostics panel.
+
+**Code actions** — a lightbulb appears on the `???` line with:
+- **"Fill hole with `show`"** — one action per in-scope suggestion, replacing `???` with
+  the chosen name in one click
+- **"Refine: insert lambda"** — when the hole has a function type, replaces `???` with
+  `(x) => ???`, letting you fill the body as a new hole
+
+### Ranking
+
+Suggestions are ranked: local bindings (function parameters, `let`/`where` names) appear
+before top-level and imported names. Within each group, shorter names rank first.
+Only the top 10 matches are shown to keep the list actionable.
+
+### Example
+
+```madlib
+import List from "List"
+
+transform :: List Integer -> List String
+transform = (xs) => List.map(???, xs)
+-- ??? has type: Integer -> String
+-- Suggestions: show, ...
+-- Code action: "Fill hole with `show`"  →  List.map(show, xs)
+```
 
 
 ## Diagnostics
