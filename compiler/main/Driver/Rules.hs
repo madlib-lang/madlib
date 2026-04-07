@@ -806,7 +806,7 @@ input = fmap ((, mempty) . (, Rock.Input))
 -- Test runner
 
 makeEmptyHook :: String -> Src.Exp
-makeEmptyHook hookName = Src.Source emptyArea TargetAll (Src.Export (Src.Source emptyArea TargetAll (Src.Assignment hookName (Src.Source emptyArea TargetAll (Src.Abs [Src.Source emptyArea TargetAll "_"] [Src.Source emptyArea TargetAll (Src.App (Src.Source emptyArea TargetAll (Src.Var "of")) [Src.Source emptyArea TargetAll Src.LUnit])])))))
+makeEmptyHook hookName = Src.Source emptyArea TargetAll (Src.Export (Src.Source emptyArea TargetAll (Src.Assignment hookName (Src.Source emptyArea TargetAll (Src.Abs [Src.ParamName (Src.Source emptyArea TargetAll "_")] [Src.Source emptyArea TargetAll (Src.App (Src.Source emptyArea TargetAll (Src.Var "of")) [Src.Source emptyArea TargetAll Src.LUnit])])))))
 
 
 updateHooks :: Bool -> Bool -> [Src.Exp] -> [Src.Exp]

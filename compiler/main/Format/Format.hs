@@ -144,17 +144,25 @@ argsToDoc comments args = case args of
     (Pretty.emptyDoc, comments)
 
 
-paramsToDoc :: [Comment] -> [Source String] -> (Pretty.Doc ann, [Comment])
+paramsToDoc :: [Comment] -> [Param] -> (Pretty.Doc ann, [Comment])
 paramsToDoc comments nodes = case nodes of
-  [Source area _ name] ->
+  [ParamName (Source area _ name)] ->
     let (commentsDoc, comments') = insertComments False area comments
     in  (commentsDoc <> Pretty.pretty name, comments')
 
-  (Source area _ name : more) ->
+  [ParamPattern pat] ->
+    (patternToDoc pat, comments)
+
+  (ParamName (Source area _ name) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         param                    = Pretty.pretty name <> Pretty.pretty ","
         (more', comments'')      = paramsToDoc comments' more
     in  (commentsDoc <> param <> Pretty.line <> more', comments'')
+
+  (ParamPattern pat : more) ->
+    let param               = patternToDoc pat <> Pretty.pretty ","
+        (more', comments')  = paramsToDoc comments more
+    in  (param <> Pretty.line <> more', comments')
 
   [] ->
     (Pretty.emptyDoc, comments)
@@ -950,6 +958,11 @@ expToDoc comments exp =
           let name'              = Pretty.pretty name
               (exp', comments'') = expToDoc comments' exp
           in  (name' <> Pretty.pretty " = " <> exp', comments'')
+
+        Source _ _ (PatternAssignment pat exp) ->
+          let pat'               = patternToDoc pat
+              (exp', comments'') = expToDoc comments' exp
+          in  (pat' <> Pretty.pretty " = " <> exp', comments'')
 
         Source _ _ (Mutate lhs exp) ->
           let (lhs', comments'') = expToDoc comments' lhs

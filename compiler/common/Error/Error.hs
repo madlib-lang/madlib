@@ -104,6 +104,7 @@ data TypeError
   | MutatingNotInScope String
   | MutatingPatternBoundVariable String
   | InvalidLhs
+  | RefutablePatternInParameter
   | TypeAnnotationNameMismatch String String
   | MutatingFunction String
   | MethodNameAlreadyDefined

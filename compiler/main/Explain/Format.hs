@@ -1031,6 +1031,13 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "The left-hand side of an assignment must be a variable name, a record pattern, or a list pattern.\n\n"
     <> "Hint: Valid examples: x = 5, { name } = person, [first] = list"
 
+  RefutablePatternInParameter ->
+    "Refutable pattern in function parameter\n\n"
+    <> "Function parameter patterns must be irrefutable (guaranteed to match).\n"
+    <> "Only tuple (#[a, b]) and record ({ name, age }) patterns are allowed.\n\n"
+    <> "Hint: Use a 'where' expression for refutable patterns:\n"
+    <> "  (x) => where(x) { Just(val) => ... }"
+
   BadMutation ->
     "Bad mutation\n\n"
     <> "Cannot reassign a variable with '='. Use ':=' to mutate an existing binding.\n\n"
@@ -1809,6 +1816,13 @@ createErrorDiagnostic color context typeError = case typeError of
     mkError "Invalid left hand side" context "It is not a valid left hand side expression."
       [ Diagnose.Note "The left-hand side of '=' must be a variable name, a record pattern, or a list pattern."
       , Diagnose.Hint "Valid forms: x = expr, { field } = record, [first] = list"
+      ]
+
+  RefutablePatternInParameter ->
+    mkError "Refutable pattern in function parameter" context
+      "This pattern may not match all possible values."
+      [ Diagnose.Note "Function parameter patterns must be irrefutable (guaranteed to match).\nOnly tuple (#[a, b]) and record ({ name, age }) patterns are allowed."
+      , Diagnose.Hint "Use a 'where' expression for refutable patterns:\n  (x) => where(x) { Just(val) => ... }"
       ]
 
   BadMutation ->

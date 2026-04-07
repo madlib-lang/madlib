@@ -1,0 +1,35 @@
+import IO from "IO"
+
+// Tuple destructuring
+add = (#[a, b]) => a + b
+
+// Record destructuring
+getName = ({ name }) => name
+
+// Record with rest
+getRest = ({ name, ...rest }) => rest
+
+// Multi-param: name then pattern
+process = (x, #[a, b]) => x + a + b
+
+// Multi-param: pattern then name
+mixed = (#[a, b], x) => x + a + b
+
+// Multiline body with tuple destructuring
+multiline = (#[a, b]) => {
+  c = a + b
+  return c * 2
+}
+
+// Nested tuple destructuring
+nested = (#[#[a, b], c]) => a + b + c
+
+main = () => {
+  IO.putLine(show(add(#[1, 2])))
+  IO.putLine(getName({ name: "Alice", age: 30 }))
+  IO.putLine(show(getRest({ name: "Bob", age: 25 })))
+  IO.putLine(show(process(100, #[1, 2])))
+  IO.putLine(show(mixed(#[10, 20], 5)))
+  IO.putLine(show(multiline(#[3, 4])))
+  IO.putLine(show(nested(#[#[10, 20], 3])))
+}

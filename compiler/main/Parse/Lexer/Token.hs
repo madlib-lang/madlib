@@ -113,6 +113,7 @@ data Token
   | TkTripleRightChevron -- >>>
   -- Alternative op
   | TkAlternativeOp    -- <|>
+  | TkMappend          -- <>
   -- Whitespace / structure
   | TkNewline
   | TkEOF

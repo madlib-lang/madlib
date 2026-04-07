@@ -266,7 +266,7 @@ generateRunTestSuitesExp testSuites =
     Assignment
       "main"
       (
-        Source emptyArea TargetAll (Abs [Source emptyArea TargetAll "_"] [
+        Source emptyArea TargetAll (Abs [ParamName (Source emptyArea TargetAll "_")] [
           Source emptyArea TargetAll (App (Source emptyArea TargetAll (Var "runAllTestSuites")) [testSuites]),
           Source emptyArea TargetAll LUnit
         ])

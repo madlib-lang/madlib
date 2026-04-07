@@ -98,6 +98,7 @@ module Parse.Megaparsec.Lexeme
   , pTripleRightChevron
   -- Misc
   , pAlternativeOp
+  , pMappend
   , pNewline
   , keywords
   ) where
@@ -377,6 +378,7 @@ pTripleRightChevron :: Parser (); pTripleRightChevron = tok TkTripleRightChevron
 
 -- Misc
 pAlternativeOp    :: Parser (); pAlternativeOp    = tok TkAlternativeOp
+pMappend          :: Parser (); pMappend          = tok TkMappend
 
 -- | Parse a TkNewline token
 pNewline          :: Parser (); pNewline           = tok TkNewline

@@ -42,6 +42,8 @@ pBodyExp = do
     Just TkWhen         -> tryNameAssignment
     Just TkIs           -> tryNameAssignment
     Just TkNot          -> tryNameAssignment
+    Just TkTupleStart   -> tryPatternAssignment
+    Just TkLeftCurly    -> tryPatternAssignment
     _ -> pBodyExpNoName
   where
     tryNameAssignment = do
@@ -113,6 +115,22 @@ pBodyExp = do
               body <- pExp
               let assignArea = mergeAreas startArea (Src.getArea body)
               return $ Src.Source assignArea target (Src.NamedTypedExp name1 (Src.Source assignArea target (Src.Assignment name2 body)) typing)
+
+    -- #[a, b] = expr or { name } = expr — destructuring assignment
+    tryPatternAssignment = do
+      mDetected <- optional $ try $ do
+        pat <- pPattern
+        target <- pSourceTarget
+        pEq
+        return (pat, target)
+      case mDetected of
+        Just (pat, target) -> do
+          maybeRet
+          body <- pExp
+          let area = mergeAreas (Src.getArea pat) (Src.getArea body)
+          return $ Src.Source area target (Src.PatternAssignment pat body)
+        Nothing ->
+          pBodyExpNoName
 
     -- exp := exp or plain expression
     pBodyExpNoName = choice
@@ -202,11 +220,12 @@ operatorTable =
           Just TkPercent -> do (area, _) <- withArea pPercent; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "%"
           _              -> empty
     ]
-  , -- + ++ -
+  , -- + ++ <> -
     [ InfixL $ try $ do
         mt <- peekTok
         case mt of
           Just TkDoublePlus -> do (area, _) <- withArea pDoublePlus; target <- pSourceTarget; maybeRet; return $ mkBinOp area target "++"
+          Just TkMappend    -> do (area, _) <- withArea pMappend;    target <- pSourceTarget; maybeRet; return $ mkBinOp area target "<>"
           Just TkPlus       -> do (area, _) <- withArea pPlus;       target <- pSourceTarget; maybeRet; return $ mkBinOp area target "+"
           Just TkDash       -> do (area, _) <- withArea pDash;       target <- pSourceTarget; maybeRet; return $ mkBinOp area target "-"
           _                 -> empty
@@ -723,27 +742,50 @@ pAbsOrParenthesized = do
       case mResult of
         Just params -> pLambdaBody startArea target params
         Nothing -> do
-          inner <- pExp
-          rets
-          (parenEndArea, _) <- withArea (void pRightParen)
-          case inner of
-            Src.Source nameArea _ (Src.Var name) -> do
-              mLambda <- optional $ try $ do
-                pFatArrow
-                rets
-                return ()
-              case mLambda of
-                Just _ -> do
-                  let param = Src.Source nameArea target name
-                  pLambdaBody startArea target [param]
-                Nothing ->
+          -- Try single pattern param lambda, but ONLY when the next token
+          -- unambiguously starts a destructuring pattern (#[ for tuples, { for records).
+          -- This avoids ambiguity with single-name lambdas like (x) => ...
+          mt2 <- peekTok
+          mPattern <- case mt2 of
+            Just TkTupleStart  -> optional $ try $ do
+              pat <- pPattern
+              rets
+              void pRightParen
+              pFatArrow
+              rets
+              return pat
+            Just TkLeftCurly   -> optional $ try $ do
+              pat <- pPattern
+              rets
+              void pRightParen
+              pFatArrow
+              rets
+              return pat
+            _ -> return Nothing
+          case mPattern of
+            Just pat -> pLambdaBody startArea target [Src.ParamPattern pat]
+            Nothing -> do
+              inner <- pExp
+              rets
+              (parenEndArea, _) <- withArea (void pRightParen)
+              case inner of
+                Src.Source nameArea _ (Src.Var name) -> do
+                  mLambda <- optional $ try $ do
+                    pFatArrow
+                    rets
+                    return ()
+                  case mLambda of
+                    Just _ -> do
+                      let param = Src.ParamName (Src.Source nameArea target name)
+                      pLambdaBody startArea target [param]
+                    Nothing ->
+                      return $ Src.Source (mergeAreas startArea parenEndArea) target (Src.Parenthesized startArea inner parenEndArea)
+                _ ->
                   return $ Src.Source (mergeAreas startArea parenEndArea) target (Src.Parenthesized startArea inner parenEndArea)
-            _ ->
-              return $ Src.Source (mergeAreas startArea parenEndArea) target (Src.Parenthesized startArea inner parenEndArea)
 
 
 -- | Parse lambda body after '=>'
-pLambdaBody :: Area -> Src.SourceTarget -> [Src.Source Src.Name] -> Parser Src.Exp
+pLambdaBody :: Area -> Src.SourceTarget -> [Src.Param] -> Parser Src.Exp
 pLambdaBody startArea target params = do
   mt <- peekTok
   case mt of
@@ -759,8 +801,9 @@ pLambdaBody startArea target params = do
       return $ Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Abs params [body])
 
 
--- | Parse lambda parameters (comma-separated names, at least two)
-pParams :: Parser [Src.Source Src.Name]
+-- | Parse lambda parameters (comma-separated, at least two). Each parameter
+-- can be a simple name or a destructuring pattern (tuple or record).
+pParams :: Parser [Src.Param]
 pParams = do
   first <- pParam
   pComma
@@ -768,10 +811,19 @@ pParams = do
   rest <- pParam `sepBy1` (pComma <* rets)
   return $ first : rest
   where
-    pParam = do
+    pParam = pPatternParam <|> pNameParam
+    pNameParam = do
       (area, name) <- withArea pNameStr
       target <- pSourceTarget
-      return $ Src.Source area target name
+      return $ Src.ParamName (Src.Source area target name)
+    pPatternParam = do
+      -- Only attempt pattern parsing when the next token unambiguously starts
+      -- a destructuring pattern. This avoids ambiguity with name params.
+      mt <- peekTok
+      case mt of
+        Just TkTupleStart -> Src.ParamPattern <$> pPattern
+        Just TkLeftCurly  -> Src.ParamPattern <$> pPattern
+        _                 -> empty
 
 
 -- Record --

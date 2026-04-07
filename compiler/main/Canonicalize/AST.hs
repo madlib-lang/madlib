@@ -362,7 +362,7 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
 
   (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath importedTypeNames $ Src.atypedecls sourceAst
   imports               <- mapM (canonicalize env''' (optTarget options)) $ Src.aimports sourceAst
-  exps                  <- mapM (canonicalize env''' (optTarget options)) $ Src.aexps sourceAst
+  exps                  <- mapM (canonicalize env''' (optTarget options)) $ expandPatternAssignments (Src.aexps sourceAst)
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces sourceAst
   instances             <- canonicalizeInstances env'''' (optTarget options) $ Src.ainstances sourceAst
   derivedInstances      <- deriveInstances env'''' typeDecls $ Src.aderived sourceAst

@@ -97,6 +97,18 @@ sanitizeName s = case s of
   '_':'_':'$':'P':'H':_ ->
     "$"
 
+  -- Strip __PA_name__ → name (pattern assignment internal var)
+  '_':'_':'P':'A':'_':rest ->
+    takeWhile (/= '_') rest
+
+  -- Strip __D__N → <param> (destructured param)
+  '_':'_':'D':'_':'_':_ ->
+    "<param>"
+
+  -- Strip __PA__N → <destructured> (pattern assignment temp)
+  '_':'_':'P':'A':'_':'_':_ ->
+    "<destructured>"
+
   or ->
     or
 

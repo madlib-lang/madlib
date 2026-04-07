@@ -139,6 +139,7 @@ tokens :-
 <0,interp> "..."   { \inp _ -> do { recordStart inp; return TkSpread } }
 <0,interp> ">>>"   { \inp _ -> do { recordStart inp; return TkTripleRightChevron } }
 <0,interp> "<|>"   { \inp _ -> do { recordStart inp; return TkAlternativeOp } }
+<0,interp> "<>"    { \inp _ -> do { recordStart inp; return TkMappend } }
 <0,interp> "??"    { \inp _ -> do { recordStart inp; return TkDoubleQuestionMark } }
 <0,interp> "?."    { \inp _ -> do { recordStart inp; return TkQuestionDot } }
 <0,interp> "::"    { \inp _ -> do { recordStart inp; return TkDoubleColon } }

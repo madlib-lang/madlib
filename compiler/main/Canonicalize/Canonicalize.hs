@@ -163,6 +163,9 @@ instance Canonicalizable Src.Exp Can.Exp where
       Src.Source area srcTarget (Src.Var "<|>") -> do
         buildApp env target area (Src.Source area srcTarget (Src.Var "alt")) [argL, argR]
 
+      Src.Source area srcTarget (Src.Var "<>") -> do
+        buildApp env target area (Src.Source area srcTarget (Src.Var "mappend")) [argL, argR]
+
       Src.Source area srcTarget (Src.Var "!=") | target == TLLVM -> do
         equalCheck <- buildApp env target area (Src.Source area srcTarget (Src.Var "==")) [argL, argR]
         return $ Can.Canonical area (Can.App (Can.Canonical area (Can.Var "!")) equalCheck True)
@@ -184,10 +187,10 @@ instance Canonicalizable Src.Exp Can.Exp where
       return $ Can.Canonical area (Can.ArrayAccess arr' field')
 
     Src.AbsWithMultilineBody params body ->
-      processAbs env target area params body
+      processAbs env target area params (expandPatternAssignments body)
 
     Src.Abs params body ->
-      processAbs env target area params body
+      processAbs env target area params (expandPatternAssignments body)
 
     Src.Return exp ->
       canonicalize env target exp
@@ -203,6 +206,16 @@ instance Canonicalizable Src.Exp Can.Exp where
       pushNameDeclaration (Env.envExpPosition env) name
       exp' <- canonicalize env target exp
       return $ Can.Canonical area (Can.Assignment name exp')
+
+    -- PatternAssignment should be pre-expanded by expandPatternAssignments in all
+    -- body/top-level contexts. This fallback handles any remaining cases.
+    Src.PatternAssignment pat rhs -> do
+      validateIrrefutablePattern env pat
+      let expanded = expandPatternAssignments [Src.Source area sourceTarget e]
+      exps' <- mapM (canonicalize env target) expanded
+      case exps' of
+        [single] -> return single
+        multiple -> return $ Can.Canonical area (Can.Do multiple)
 
     Src.Mutate lhs exp -> do
       exp' <- canonicalize env target exp
@@ -322,7 +335,7 @@ instance Canonicalizable Src.Exp Can.Exp where
 
       resetNameAccesses
 
-      exps' <- canonicalizeDoExps exps
+      exps' <- canonicalizeDoExps (expandPatternAssignments exps)
 
 
       allAccessesInAbs   <- getAllAccesses
@@ -387,7 +400,7 @@ instance Canonicalizable Src.Exp Can.Exp where
         env
         target
         area
-        [Src.Source emptyArea sourceTarget parameterName]
+        [Src.ParamName (Src.Source emptyArea sourceTarget parameterName)]
         [Src.Source area sourceTarget (Src.Where (Src.Source emptyArea sourceTarget (Src.Var parameterName)) iss)]
 
     Src.JsxTag{} -> do
@@ -447,7 +460,7 @@ validateLhs env initialExp exp = case exp of
     throwError $ CompilationError InvalidLhs (Context (Env.envCurrentPath env) (Can.getArea initialExp))
 
 
-processAbs :: Env.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp
+processAbs :: Env.Env -> Target -> Area -> [Src.Param] -> [Src.Exp] -> CanonicalM Can.Exp
 processAbs env target area params body = do
   allAccessesBeforeAbs <- getAllAccesses
   allDeclaredBeforeAbs <- getAllDeclaredNames
@@ -468,7 +481,9 @@ processAbs env target area params body = do
   let localDecls   = map (\(e, i) -> (Src.getLocalOrNotExportedAssignmentName e, i + Env.envExpPosition env)) (zip body [0..])
   let localDecls'  = map (\(Just x, i) -> (x, i)) $ filter (Maybe.isJust . fst) localDecls
   let localDecls'' = filter (\(Src.Source _ _ n, _) -> n `Set.notMember` declaredNsBefore) localDecls'
-  let unusedParams = filter (\(Src.Source _ _ n) -> n /= "_" && n `Set.notMember` nameAccessesInAbs) params
+  -- Only check unused params for ParamName entries; ParamPattern entries use synthetic names
+  let nameParams = [ src | Src.ParamName src <- params ]
+  let unusedParams = filter (\(Src.Source _ _ n) -> n /= "_" && n `Set.notMember` nameAccessesInAbs) nameParams
   let unusedDecls  =
         filter
           (\(Src.Source _ _ n, i) ->
@@ -501,17 +516,150 @@ processAbs env target area params body = do
 
   return abs'
 
-buildAbs :: Env.Env -> Target -> Area -> [Src.Source Src.Name] -> [Src.Exp] -> CanonicalM Can.Exp
+buildAbs :: Env.Env -> Target -> Area -> [Src.Param] -> [Src.Exp] -> CanonicalM Can.Exp
 buildAbs env target area@(Area _ (Loc a l c)) [] body = do
   body' <- mapM (\(e, i) -> canonicalize env { Env.envExpPosition = i + Env.envExpPosition env } target e) (zip body [0..])
   let param = Can.Canonical (Area (Loc (a - 1) l (c - 1)) (Loc (a - 1) l (c - 1))) "_"
   return $ Can.Canonical area (Can.Abs param body')
-buildAbs env target area [Src.Source area' _ param] body = do
+buildAbs env target area [Src.ParamName (Src.Source area' _ param)] body = do
   body' <- mapM (\(e, i) -> canonicalize env { Env.envExpPosition = i + Env.envExpPosition env } target e) (zip body [0..])
   return $ Can.Canonical area (Can.Abs (Can.Canonical area' param) body')
-buildAbs env target area (Src.Source area' _ param:xs) body  = do
+buildAbs env target area [Src.ParamPattern pat] body = do
+  validateIrrefutablePattern env pat
+  parameterIndex <- generateParameterIndex
+  let parameterName = "__D__" ++ show parameterIndex
+      patArea = Src.getArea pat
+  pat' <- canonicalize env target pat
+  body' <- mapM (\(e, i) -> canonicalize env { Env.envExpPosition = i + Env.envExpPosition env } target e) (zip body [0..])
+  let bodyExp = case body' of
+        [single] -> single
+        multiple -> Can.Canonical area (Can.Do multiple)
+  -- Use emptyArea for the synthetic __D__ param so hover doesn't show it
+  let whereExp = Can.Canonical area (Can.Where
+        (Can.Canonical emptyArea (Can.Var parameterName))
+        [Can.Canonical area (Can.Is pat' bodyExp)])
+  return $ Can.Canonical area (Can.Abs (Can.Canonical emptyArea parameterName) [whereExp])
+buildAbs env target area (Src.ParamName (Src.Source area' _ param):xs) body = do
   next <- buildAbs env target area xs body
   return $ Can.Canonical area (Can.Abs (Can.Canonical area' param) [next])
+buildAbs env target area (Src.ParamPattern pat:xs) body = do
+  validateIrrefutablePattern env pat
+  parameterIndex <- generateParameterIndex
+  let parameterName = "__D__" ++ show parameterIndex
+  pat' <- canonicalize env target pat
+  next <- buildAbs env target area xs body
+  -- Use emptyArea for synthetic __D__ param so hover doesn't show it
+  let whereExp = Can.Canonical area (Can.Where
+        (Can.Canonical emptyArea (Can.Var parameterName))
+        [Can.Canonical area (Can.Is pat' next)])
+  return $ Can.Canonical area (Can.Abs (Can.Canonical emptyArea parameterName) [whereExp])
+
+
+-- | Validate that a pattern used in a function parameter is irrefutable.
+-- Only tuples, records, variables, and wildcards are allowed.
+validateIrrefutablePattern :: Env.Env -> Src.Pattern -> CanonicalM ()
+validateIrrefutablePattern env pat = case pat of
+  Src.Source _ _ (Src.PTuple pats) ->
+    mapM_ (validateIrrefutablePattern env) pats
+  Src.Source _ _ (Src.PRecord fields) ->
+    mapM_ validateField fields
+  Src.Source _ _ (Src.PVar _) ->
+    return ()
+  Src.Source _ _ Src.PAny ->
+    return ()
+  Src.Source area _ _ ->
+    throwError $ CompilationError RefutablePatternInParameter (Context (Env.envCurrentPath env) area)
+  where
+    validateField (Src.PatternField _ subPat) = validateIrrefutablePattern env subPat
+    validateField (Src.PatternFieldShorthand _) = return ()
+    validateField (Src.PatternFieldRest _) = return ()
+
+
+-- | Collect all binding names from a source pattern.
+collectPatternNames :: Src.Pattern -> [String]
+collectPatternNames (Src.Source _ _ pat) = case pat of
+  Src.PVar name  -> [name]
+  Src.PAny       -> []
+  Src.PTuple ps  -> concatMap collectPatternNames ps
+  Src.PRecord fs -> concatMap collectFieldNames fs
+  Src.PSpread p  -> collectPatternNames p
+  Src.PCon _ ps  -> concatMap collectPatternNames ps
+  Src.PNullaryCon _ -> []
+  Src.PList ps   -> concatMap collectPatternNames ps
+  _              -> []
+  where
+    collectFieldNames (Src.PatternField _ subPat) = collectPatternNames subPat
+    collectFieldNames (Src.PatternFieldShorthand (Src.Source _ _ name)) = [name]
+    collectFieldNames (Src.PatternFieldRest (Src.Source _ _ name)) = [name]
+
+
+-- | Like collectPatternNames but also returns the area of each name binding.
+collectPatternNamesWithArea :: Src.Pattern -> [(String, Area)]
+collectPatternNamesWithArea (Src.Source area _ pat) = case pat of
+  Src.PVar name  -> [(name, area)]
+  Src.PAny       -> []
+  Src.PTuple ps  -> concatMap collectPatternNamesWithArea ps
+  Src.PRecord fs -> concatMap collectFieldNamesWithArea fs
+  Src.PSpread p  -> collectPatternNamesWithArea p
+  Src.PCon _ ps  -> concatMap collectPatternNamesWithArea ps
+  Src.PNullaryCon _ -> []
+  Src.PList ps   -> concatMap collectPatternNamesWithArea ps
+  _              -> []
+  where
+    collectFieldNamesWithArea (Src.PatternField _ subPat) = collectPatternNamesWithArea subPat
+    collectFieldNamesWithArea (Src.PatternFieldShorthand (Src.Source a _ name)) = [(name, a)]
+    collectFieldNamesWithArea (Src.PatternFieldRest (Src.Source a _ name)) = [(name, a)]
+
+
+-- | Replace the target name with an internal name in a pattern, wildcard everything else.
+-- Uses emptyArea for internal names so the LSP doesn't show them on hover.
+replaceTargetNameInPat :: String -> String -> Src.Pattern -> Src.Pattern
+replaceTargetNameInPat target replacement (Src.Source area t pat) = Src.Source emptyArea t $ case pat of
+  Src.PVar n
+    | n == target -> Src.PVar replacement
+    | otherwise   -> Src.PAny
+  Src.PTuple ps   -> Src.PTuple (map (replaceTargetNameInPat target replacement) ps)
+  Src.PRecord fs  -> Src.PRecord (map replaceField fs)
+  Src.PSpread p   -> Src.PSpread (replaceTargetNameInPat target replacement p)
+  Src.PList ps    -> Src.PList (map (replaceTargetNameInPat target replacement) ps)
+  Src.PCon n ps   -> Src.PCon n (map (replaceTargetNameInPat target replacement) ps)
+  other           -> other
+  where
+    replaceField field = case field of
+      Src.PatternField n subPat -> Src.PatternField n (replaceTargetNameInPat target replacement subPat)
+      Src.PatternFieldShorthand (Src.Source _ tt name)
+        | name == target -> Src.PatternField (Src.Source emptyArea tt name) (Src.Source emptyArea tt (Src.PVar replacement))
+        | otherwise      -> Src.PatternField (Src.Source emptyArea tt name) (Src.Source emptyArea tt Src.PAny)
+      Src.PatternFieldRest (Src.Source _ tt name)
+        | name == target -> Src.PatternFieldRest (Src.Source emptyArea tt replacement)
+        | otherwise      -> Src.PatternFieldRest (Src.Source emptyArea tt "_")
+
+
+-- | Expand PatternAssignment nodes in a list of expressions into multiple
+-- regular assignments. Used both at top level and inside Do/body blocks.
+expandPatternAssignments :: [Src.Exp] -> [Src.Exp]
+expandPatternAssignments = concatMap expand
+  where
+    expand (Src.Source area target (Src.PatternAssignment pat rhs)) =
+      let tmpName  = "__PA__" ++ show (hashArea area)
+          patArea  = Src.getArea pat
+          tmpVar   = Src.Source emptyArea target (Src.Var tmpName)
+          tmpAssign = Src.Source emptyArea target (Src.Assignment tmpName rhs)
+          namesWithAreas = collectPatternNamesWithArea pat
+          mkBinding (n, nameArea) =
+            let internalName = "__PA_" ++ n ++ "__"
+                extractPat = replaceTargetNameInPat n internalName pat
+                -- Use nameArea for internal var — sanitizeName strips the __PA_ prefix in hover
+                internalVar = Src.Source nameArea target (Src.Var internalName)
+                -- Use nameArea for Where/Is so type errors point to the binding's location
+                -- and hover works correctly on the pattern variables.
+                whereExp = Src.Source nameArea target (Src.Where tmpVar [Src.Source nameArea target (Src.Is extractPat internalVar)])
+            -- Use the pattern variable's own area for the binding assignment
+            in  Src.Source nameArea target (Src.Assignment n whereExp)
+      in  tmpAssign : map mkBinding namesWithAreas
+    expand exp = [exp]
+
+    hashArea (Area (Loc a _ _) (Loc b _ _)) = abs (a * 31 + b)
 
 
 placeholderArgCheck :: [Src.Exp] -> CanonicalM ([Src.Exp], [Src.Source String])
@@ -557,7 +705,7 @@ buildApp env target area f args = do
     buildApp' env target (length args'') (length args'') area f args''
   else
     let app = Src.Source area (Src.getSourceTarget f) (Src.App f args'')
-    in  buildAbs env target area wrapperPlaceholderParams' [app]
+    in  buildAbs env target area (map Src.ParamName wrapperPlaceholderParams') [app]
 
 
 buildApp' :: Env.Env -> Target -> Int -> Int -> Area -> Src.Exp -> [Src.Exp] -> CanonicalM Can.Exp
