@@ -8,11 +8,10 @@
     }
 , []
 , [ CompilationError
-      (GrammarError
-         "Module.mad" "unexpected ::\nexpecting end of input\n")
+      (GrammarError "Module.mad" "unexpected ,\n")
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 0 27 22) (Loc 0 27 23)
+        , ctxArea = Area (Loc 0 28 36) (Loc 0 28 37)
         }
   ]
 )

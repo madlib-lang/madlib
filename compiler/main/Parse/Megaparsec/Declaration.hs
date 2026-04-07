@@ -7,8 +7,11 @@ module Parse.Megaparsec.Declaration
   ) where
 
 import qualified Data.Map.Strict                as M
+import qualified Data.Set                       as Set
 import           Control.Monad                  ( void, unless )
 import           Data.Maybe                     ( catMaybes )
+import           Data.List                      ( intercalate )
+import           Data.List.NonEmpty             ( NonEmpty(..) )
 
 import           Text.Megaparsec                hiding ( State, Token )
 
@@ -91,13 +94,33 @@ pASTWithRecovery = do
     recoverTopLevel :: ParseError TokenStream CustomError -> Parser (Maybe TopLevel)
     recoverTopLevel err = do
       pos <- getLoc
-      let errMsg = case err of
-            TrivialError _ _ _ -> "Syntax error"
-            FancyError _ _     -> "Syntax error"
+      let errMsg = parseErrorToMessage err
       addRecoveryError $ ParseRecoveryError
         (getLine' pos) (getCol' pos) (getLine' pos) (getCol' pos) errMsg
       skipToNextTopLevel
       return Nothing
+
+    -- | Extract a readable message from a megaparsec ParseError instead of
+    -- discarding it as a generic "Syntax error".
+    parseErrorToMessage :: ParseError TokenStream CustomError -> String
+    parseErrorToMessage (TrivialError _ unexpected' expected') =
+      let unexpectedStr = case unexpected' of
+            Just (Tokens (rt :| _)) -> "unexpected " ++ show (rtToken rt)
+            Just (Label (c :| cs))  -> "unexpected " ++ (c : cs)
+            Just EndOfInput         -> "unexpected end of input"
+            _                       -> ""
+          expectedStr = if Set.null expected' then ""
+            else " expecting " ++ intercalate ", " (map showItem (Set.toList expected'))
+      in  if null unexpectedStr then "Syntax error" else unexpectedStr ++ expectedStr
+    parseErrorToMessage (FancyError _ errs) =
+      case Set.toList errs of
+        (ErrorFail msg : _) -> msg
+        _                   -> "Syntax error"
+
+    showItem :: ErrorItem RangedToken -> String
+    showItem (Tokens (rt :| _)) = show (rtToken rt)
+    showItem (Label (c :| cs))  = c : cs
+    showItem EndOfInput         = "end of input"
 
     skipToNextTopLevel :: Parser ()
     skipToNextTopLevel = do
@@ -111,15 +134,17 @@ pASTWithRecovery = do
         unless (isTopLevelStart mt) skipToNextTopLevel
 
     isTopLevelStart :: Maybe Token -> Bool
-    isTopLevelStart Nothing           = True   -- EOF
-    isTopLevelStart (Just TkImport)   = True
-    isTopLevelStart (Just TkInterface) = True
-    isTopLevelStart (Just TkInstance) = True
-    isTopLevelStart (Just TkDerive)   = True
-    isTopLevelStart (Just TkType)     = True
-    isTopLevelStart (Just TkAlias)    = True
-    isTopLevelStart (Just TkExport)   = True
-    isTopLevelStart _                 = False
+    isTopLevelStart Nothing              = True   -- EOF
+    isTopLevelStart (Just TkImport)      = True
+    isTopLevelStart (Just TkInterface)   = True
+    isTopLevelStart (Just TkInstance)    = True
+    isTopLevelStart (Just TkDerive)      = True
+    isTopLevelStart (Just TkType)        = True
+    isTopLevelStart (Just TkAlias)       = True
+    isTopLevelStart (Just TkExport)      = True
+    isTopLevelStart (Just (TkName _))    = True   -- top-level assignment: name = ...
+    isTopLevelStart (Just (TkTypeName _)) = True  -- top-level constructor/type usage
+    isTopLevelStart _                    = False
 
     getLine' (Loc _ l _) = l
     getCol' (Loc _ _ c) = c

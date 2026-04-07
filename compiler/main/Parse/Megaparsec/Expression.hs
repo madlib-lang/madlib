@@ -45,7 +45,9 @@ pBodyExp = do
     _ -> pBodyExpNoName
   where
     tryNameAssignment = do
-      mResult <- optional $ try $ do
+      -- Phase 1: Use 'try' ONLY to detect if this is name::type or name=expr.
+      -- Once we commit (after :: or =), we don't backtrack — errors stay local.
+      mDetected <- optional $ try $ do
         (startArea, name1) <- withArea pName
         target <- pSourceTarget
         mt2 <- peekTok
@@ -54,16 +56,24 @@ pBodyExp = do
             pDoubleColon
             typing <- pConstrainedTyping
             rets
-            pNamedTypedBodyExpBody startArea target name1 typing
+            -- Commit: we've seen "name :: type \n", no more backtracking
+            return $ Left (startArea, target, name1, typing)
           Just TkEq -> do
             pEq
-            maybeRet
-            body <- pExp
-            return $ Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Assignment name1 body)
+            -- Commit: we've seen "name =", no more backtracking
+            return $ Right (startArea, target, name1)
           _ -> empty
-      case mResult of
-        Just e  -> return e
-        Nothing -> pBodyExpNoName
+      case mDetected of
+        Just (Left (startArea, target, name1, typing)) ->
+          -- Phase 2: parse the body WITHOUT try — errors are reported here, not at the type annotation
+          pNamedTypedBodyExpBody startArea target name1 typing
+        Just (Right (startArea, target, name1)) -> do
+          -- Phase 2: parse the body WITHOUT try
+          maybeRet
+          body <- pExp
+          return $ Src.Source (mergeAreas startArea (Src.getArea body)) target (Src.Assignment name1 body)
+        Nothing ->
+          pBodyExpNoName
 
     -- After name :: typing, parse either export extern | export assignment | extern | assignment
     pNamedTypedBodyExpBody startArea target name1 typing = do

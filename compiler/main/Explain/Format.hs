@@ -572,8 +572,8 @@ createSimpleErrorDiagnostic :: Bool -> Context -> TypeError -> String
 createSimpleErrorDiagnostic color _ typeError = case typeError of
   UnificationError t1 t2 origin _ ->
     let (pretty1', pretty2') = renderTypesWithDiff color t1 t2
-        pretty1'' = unlines $ ("  "<>) <$> lines pretty1'
-        pretty2'' = unlines $ ("  "<>) <$> lines pretty2'
+        pretty1'' = intercalate "\n" $ ("  "<>) <$> lines pretty1'
+        pretty2'' = intercalate "\n" $ ("  "<>) <$> lines pretty2'
         expectedStr = if color then "\x1b[0mexpected:\n" else "expected:\n"
         foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n"
         title = mkUnificationTitle t1 t2 origin
@@ -613,7 +613,7 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
 
   TestNotValid t ->
     let prettyType = renderType t
-        prettyType' = unlines $ ("  "<>) <$> lines prettyType
+        prettyType' = intercalate "\n" $ ("  "<>) <$> lines prettyType
     in  "Invalid test type\n\n" <> "This test expression has type:\n" <> prettyType'
               <> "\nbut tests must return one of:\n"
               <> "  Wish TestResult TestResult\n"
@@ -1098,8 +1098,8 @@ createErrorDiagnostic :: Bool -> Context -> TypeError -> Diagnose.Report String
 createErrorDiagnostic color context typeError = case typeError of
   UnificationError t1 t2 origin maybeSecondary ->
     let (pretty1', pretty2') = renderTypesWithDiff color t1 t2
-        pretty1'' = unlines $ ("  "<>) <$> lines pretty1'
-        pretty2'' = unlines $ ("  "<>) <$> lines pretty2'
+        pretty1'' = intercalate "\n" $ ("  "<>) <$> lines pretty1'
+        pretty2'' = intercalate "\n" $ ("  "<>) <$> lines pretty2'
         expectedStr = if color then "\x1b[0mexpected:\n" else "expected:\n  "
         foundStr = if color then "\n\x1b[0mbut found:\n" else "\nbut found:\n  "
         secondaryPositions = case maybeSecondary of
@@ -1207,7 +1207,7 @@ createErrorDiagnostic color context typeError = case typeError of
 
   TestNotValid t ->
     let prettyType = renderType t
-        prettyType' = unlines $ ("  "<>) <$> lines prettyType
+        prettyType' = intercalate "\n" $ ("  "<>) <$> lines prettyType
     in  mkError "Invalid test type" context
           (    "This test expression has type:\n" <> prettyType'
             <> "\nbut tests must return one of:\n"
