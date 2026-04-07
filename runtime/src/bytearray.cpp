@@ -1,5 +1,5 @@
 
-#include <gc.h>
+#include "rc.h"
 #include "bytearray.hpp"
 #include <stdio.h>
 #include <cstring>
@@ -16,8 +16,8 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__initWithCapacity(int64_t capa
     capacity = 1;
   }
 
-  madlib__bytearray__ByteArray_t *result = (madlib__bytearray__ByteArray_t *) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
-  result->bytes = (unsigned char *)GC_MALLOC_ATOMIC(capacity * sizeof(unsigned char));
+  madlib__bytearray__ByteArray_t *result = (madlib__bytearray__ByteArray_t *) MADLIB_ALLOC(sizeof(madlib__bytearray__ByteArray_t));
+  result->bytes = (unsigned char *)MADLIB_ALLOC_ATOMIC(capacity * sizeof(unsigned char));
   result->capacity = capacity;
   result->length = 0;
   return result;
@@ -61,7 +61,7 @@ char *madlib__bytearray__internal__show(madlib__bytearray__ByteArray_t *bytearra
   }
 
   int currentIndex = 0;
-  char **inspectedItems = (char **)GC_MALLOC(length * sizeof(char *));
+  char **inspectedItems = (char **)MADLIB_ALLOC(length * sizeof(char *));
   size_t sizeOfItems = 0;
 
   for (int i = 0; i < length; i++) {
@@ -70,7 +70,7 @@ char *madlib__bytearray__internal__show(madlib__bytearray__ByteArray_t *bytearra
   }
 
   size_t sizeOfSpacesAndCommas = (length - 1) * 2;
-  char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 12));
+  char *result = (char*)MADLIB_ALLOC_ATOMIC(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 12));
 
   // Leading "ByteArray(["
   strncpy(result, "ByteArray(", sizeof(char) * 10);
@@ -102,7 +102,7 @@ char *madlib__bytearray__toString(madlib__bytearray__ByteArray_t *arr) {
   char *string = (char*) arr->bytes;
 
   if (arr->length == 0 || arr->bytes[arr->length - 1] > 0) {
-    string = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (arr->length + 1));
+    string = (char *)MADLIB_ALLOC_ATOMIC(sizeof(char) * (arr->length + 1));
     memcpy(string, arr->bytes, arr->length);
     string[arr->length] = '\0';
   }
@@ -114,7 +114,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__fromString(char *string) {
   size_t length = strlen(string);
 
   madlib__bytearray__ByteArray_t *result =
-      (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
+      (madlib__bytearray__ByteArray_t *)MADLIB_ALLOC(sizeof(madlib__bytearray__ByteArray_t));
 
   result->bytes = (unsigned char*) string;
   result->length = length;
@@ -128,8 +128,8 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__fromList(madlib__list__Node_t
   int64_t itemCount = madlib__list__length(list);
 
   madlib__bytearray__ByteArray_t *result =
-      (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
-  result->bytes = (unsigned char *)GC_MALLOC_ATOMIC(itemCount * sizeof(unsigned char));
+      (madlib__bytearray__ByteArray_t *)MADLIB_ALLOC(sizeof(madlib__bytearray__ByteArray_t));
+  result->bytes = (unsigned char *)MADLIB_ALLOC_ATOMIC(itemCount * sizeof(unsigned char));
   result->length = itemCount;
   result->capacity = itemCount;
 
@@ -156,8 +156,8 @@ madlib__list__Node_t *madlib__bytearray__toList(madlib__bytearray__ByteArray_t *
 madlib__bytearray__ByteArray_t *madlib__bytearray__concat(madlib__bytearray__ByteArray_t *a,
                                                           madlib__bytearray__ByteArray_t *b) {
   madlib__bytearray__ByteArray_t *result =
-      (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
-  result->bytes = (unsigned char *)GC_MALLOC_ATOMIC((a->length + b->length) * sizeof(unsigned char));
+      (madlib__bytearray__ByteArray_t *)MADLIB_ALLOC(sizeof(madlib__bytearray__ByteArray_t));
+  result->bytes = (unsigned char *)MADLIB_ALLOC_ATOMIC((a->length + b->length) * sizeof(unsigned char));
 
   memcpy(result->bytes, a->bytes, a->length * sizeof(unsigned char));
   memcpy(result->bytes + a->length, b->bytes, b->length * sizeof(unsigned char));
@@ -174,7 +174,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__concatWithMutation(madlib__by
   int64_t nextLength = a->length + b->length;
 
   if (a->capacity < nextLength) {
-    resultBytes = (unsigned char *)GC_MALLOC_ATOMIC(nextLength * 2 * sizeof(unsigned char));
+    resultBytes = (unsigned char *)MADLIB_ALLOC_ATOMIC(nextLength * 2 * sizeof(unsigned char));
     memcpy(resultBytes, a->bytes, a->length * sizeof(unsigned char));
     a->bytes = resultBytes;
     a->capacity = nextLength * 2;
@@ -192,7 +192,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__pushBackWithMutation(unsigned
   int64_t nextLength = a->length + 1;
 
   if (a->capacity < nextLength) {
-    resultBytes = (unsigned char *)GC_MALLOC_ATOMIC(nextLength * 2 * sizeof(unsigned char));
+    resultBytes = (unsigned char *)MADLIB_ALLOC_ATOMIC(nextLength * 2 * sizeof(unsigned char));
     memcpy(resultBytes, a->bytes, a->length * sizeof(unsigned char));
     a->bytes = resultBytes;
     a->capacity = nextLength * 2;
@@ -207,10 +207,10 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__pushBackWithMutation(unsigned
 
 madlib__bytearray__ByteArray_t *madlib__bytearray__map(PAP_t *f, madlib__bytearray__ByteArray_t *arr) {
   madlib__bytearray__ByteArray_t *result =
-      (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
+      (madlib__bytearray__ByteArray_t *)MADLIB_ALLOC(sizeof(madlib__bytearray__ByteArray_t));
   result->length = arr->length;
   result->capacity = arr->length;
-  result->bytes = (unsigned char *)GC_MALLOC_ATOMIC(arr->length * sizeof(unsigned char));
+  result->bytes = (unsigned char *)MADLIB_ALLOC_ATOMIC(arr->length * sizeof(unsigned char));
 
   for (int i = 0; i < arr->length; i++) {
     result->bytes[i] = (unsigned char)(int64_t)__applyPAP__(f, 1, (void*)arr->bytes[i]);

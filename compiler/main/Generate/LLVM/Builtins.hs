@@ -18,6 +18,13 @@ module Generate.LLVM.Builtins
   , gcMallocAtomic
   , gcDisable
   , gcEnable
+    -- * Perceus RC runtime function references
+  , rcAlloc
+  , rcInc
+  , rcDec
+  , rcDecWithDrop
+  , rcIsUnique
+  , rcReuse
   , applyPAP
   , applyPAP1
   , applyPAP2
@@ -35,7 +42,9 @@ module Generate.LLVM.Builtins
   , strConcat
     -- * Allocation helpers
   , isAtomicType
+  , isRCType
   , chooseMalloc
+  , chooseRCAlloc
   ) where
 
 import           LLVM.AST                     (mkName, Operand)
@@ -111,6 +120,65 @@ gcDisable =
 gcEnable :: Operand
 gcEnable =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [] False) (mkName "GC_enable"))
+
+
+-- ---------------------------------------------------------------------------
+-- Perceus RC runtime function references
+-- ---------------------------------------------------------------------------
+
+-- | rc_alloc(i64 size) -> i8*
+-- Allocates `size` payload bytes with refcount=1 prepended as an 8-byte header.
+rcAlloc :: Operand
+rcAlloc =
+  Operand.ConstantOperand (Constant.GlobalReference
+    (Type.ptr $ Type.FunctionType (Type.ptr Type.i8) [Type.i64] False)
+    (mkName "rc_alloc"))
+
+-- | rc_inc(i8* ptr) -> void
+-- Increments the refcount of ptr (no-op on NULL or immortal values).
+rcInc :: Operand
+rcInc =
+  Operand.ConstantOperand (Constant.GlobalReference
+    (Type.ptr $ Type.FunctionType Type.void [Type.ptr Type.i8] False)
+    (mkName "rc_inc"))
+
+-- | rc_dec(i8* ptr) -> void
+-- Decrements the refcount; frees when it reaches 0 (no child cleanup).
+rcDec :: Operand
+rcDec =
+  Operand.ConstantOperand (Constant.GlobalReference
+    (Type.ptr $ Type.FunctionType Type.void [Type.ptr Type.i8] False)
+    (mkName "rc_dec"))
+
+-- | rc_dec_with_drop(i8* ptr, void(*)(i8*) drop) -> void
+-- Decrements the refcount; calls drop(ptr) before freeing to release children.
+rcDecWithDrop :: Operand
+rcDecWithDrop =
+  Operand.ConstantOperand (Constant.GlobalReference
+    (Type.ptr $ Type.FunctionType Type.void
+      [ Type.ptr Type.i8
+      , Type.ptr (Type.FunctionType Type.void [Type.ptr Type.i8] False)
+      ] False)
+    (mkName "rc_dec_with_drop"))
+
+-- | rc_is_unique(i8* ptr) -> i1
+-- Returns 1 if ptr has refcount == 1 (uniquely owned).
+rcIsUnique :: Operand
+rcIsUnique =
+  Operand.ConstantOperand (Constant.GlobalReference
+    (Type.ptr $ Type.FunctionType Type.i1 [Type.ptr Type.i8] False)
+    (mkName "rc_is_unique"))
+
+-- | rc_reuse(i8* ptr, i64 new_size) -> i8*
+-- Returns ptr if it is uniquely owned and large enough for new_size bytes;
+-- otherwise allocates fresh.  Used for FBIP in-place reuse.
+rcReuse :: Operand
+rcReuse =
+  Operand.ConstantOperand (Constant.GlobalReference
+    (Type.ptr $ Type.FunctionType (Type.ptr Type.i8)
+      [Type.ptr Type.i8, Type.i64] False)
+    (mkName "rc_reuse"))
+
 
 applyPAP :: Operand
 applyPAP =
@@ -188,8 +256,24 @@ isAtomicType t = case t of
   IT.TCon (IT.TC "Unit" _) _ _    -> True
   _ -> False
 
+-- | Check if a Madlib type is heap-allocated and RC-managed.
+-- Returns False for primitive types that are boxed via inttoptr/ptrtoint
+-- (Integer, Float, Boolean, Byte, Short, Char, Unit).
+-- Returns True for types that are genuinely heap-allocated (Strings, Lists,
+-- ADTs with fields, Records, Tuples, Functions/PAPs, Arrays, ByteArrays).
+--
+-- IMPORTANT: Enum ADTs (all zero-arity constructors) are represented as
+-- plain i64 tag values — not heap pointers — and must also return False.
+-- That check requires symbol table information and is done at call sites.
+isRCType :: IT.Type -> Bool
+isRCType = not . isAtomicType
+
 -- | Choose GC_malloc or GC_malloc_atomic based on whether all field types are atomic.
 chooseMalloc :: [IT.Type] -> Operand
 chooseMalloc fieldTypes
   | all isAtomicType fieldTypes = gcMallocAtomic
   | otherwise = gcMalloc
+
+-- | Choose rc_alloc for all field types (no GC distinction needed under RC).
+chooseRCAlloc :: [IT.Type] -> Operand
+chooseRCAlloc _ = rcAlloc

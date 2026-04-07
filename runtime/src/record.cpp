@@ -1,5 +1,5 @@
 
-#include <gc.h>
+#include "rc.h"
 #include <iostream>
 #include <string.h>
 #include <cstdarg>
@@ -33,12 +33,12 @@ madlib__record__Record_t *madlib__record__internal__buildRecord(int32_t fieldCou
   va_list fieldArgs;
   va_start(fieldArgs, base);
 
-  madlib__record__Record_t *record = (madlib__record__Record_t *)GC_MALLOC(sizeof(madlib__record__Record_t));
+  madlib__record__Record_t *record = (madlib__record__Record_t *)MADLIB_ALLOC(sizeof(madlib__record__Record_t));
 
   if (base == NULL) {
     int32_t actualFieldCount = base == NULL ? fieldCount : base->fieldCount;
     madlib__record__Field_t *fields =
-        (madlib__record__Field_t *)GC_MALLOC(sizeof(madlib__record__Field_t) * actualFieldCount);
+        (madlib__record__Field_t *)MADLIB_ALLOC(sizeof(madlib__record__Field_t) * actualFieldCount);
     record->fieldCount = actualFieldCount;
     record->fields = fields;
     // if there is no base then all fields are provided ( closed record ) and we
@@ -50,7 +50,7 @@ madlib__record__Record_t *madlib__record__internal__buildRecord(int32_t fieldCou
   } else {
     int32_t maxFieldCount = base == NULL ? fieldCount : base->fieldCount + fieldCount;
     madlib__record__Field_t *fields =
-        (madlib__record__Field_t *)GC_MALLOC(sizeof(madlib__record__Field_t) * maxFieldCount);
+        (madlib__record__Field_t *)MADLIB_ALLOC(sizeof(madlib__record__Field_t) * maxFieldCount);
     record->fieldCount = 0;
     record->fields = fields;
     int32_t baseIndex = 0;

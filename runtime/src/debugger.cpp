@@ -1,4 +1,4 @@
-#include <gc.h>
+#include "rc.h"
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -22,7 +22,7 @@ char *madlib__debugger__sgets(char *line, size_t size)
 }
 
 char *madlib__debugger__prompt() {
-  char *line = (char *) GC_MALLOC_ATOMIC(256);
+  char *line = (char *) MADLIB_ALLOC_ATOMIC(256);
 
   return madlib__debugger__sgets(line, 256);
 }

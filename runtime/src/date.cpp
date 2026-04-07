@@ -1,6 +1,6 @@
 #include "date.hpp"
 
-#include <gc.h>
+#include "rc.h"
 #include <math.h>
 #include <stdio.h>
 #include <sys/time.h>
@@ -36,7 +36,7 @@ char *madlib__date__toISOString(int64_t epochMilliseconds) {
   int month = timeInfo.tm_mon + 1;
   int year = timeInfo.tm_year + 1900;
 
-  char *result = (char *)GC_MALLOC(25);
+  char *result = (char *)MADLIB_ALLOC(25);
   sprintf(result, "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", year, month, day, hours, minutes, seconds, milliseconds);
 
   return result;
@@ -57,7 +57,7 @@ void **madlib__date__toDateInfo(int64_t epochMilliseconds) {
   time_t epochSeconds = trunc(epochMilliseconds / 1000);
   struct tm timeInfo = *gmtime(&epochSeconds);
 
-  void **result = (void **)GC_MALLOC(sizeof(void *) * DATEINFO_FIELD_COUNT);
+  void **result = (void **)MADLIB_ALLOC(sizeof(void *) * DATEINFO_FIELD_COUNT);
   result[DATEINFO_DAY]          = (void *)(int64_t)timeInfo.tm_mday;
   result[DATEINFO_HOURS]        = (void *)(int64_t)timeInfo.tm_hour;
   result[DATEINFO_MILLISECONDS] = (void *)(epochMilliseconds - epochSeconds * 1000);

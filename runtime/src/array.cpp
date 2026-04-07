@@ -1,6 +1,6 @@
 #include "array.hpp"
 
-#include <gc.h>
+#include "rc.h"
 #include <stdio.h>
 
 #include <cstring>
@@ -31,8 +31,8 @@ bool madlib__array__internal__eq(PAP_t *eqFn, madlib__array__Array_t *arr1, madl
 madlib__array__Array_t *madlib__array__fromList(madlib__list__Node_t *list) {
   int64_t itemCount = madlib__list__length(list);
 
-  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
-  result->items = (void **)GC_MALLOC(itemCount * sizeof(void *));
+  madlib__array__Array_t *result = (madlib__array__Array_t *)MADLIB_ALLOC(sizeof(madlib__array__Array_t));
+  result->items = (void **)MADLIB_ALLOC(itemCount * sizeof(void *));
   result->length = itemCount;
   result->capacity = itemCount;
 
@@ -58,10 +58,10 @@ madlib__list__Node_t *madlib__array__toList(madlib__array__Array_t *arr) {
 
 
 madlib__array__Array_t *madlib__array__concat(madlib__array__Array_t *a, madlib__array__Array_t *b) {
-  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
+  madlib__array__Array_t *result = (madlib__array__Array_t *)MADLIB_ALLOC(sizeof(madlib__array__Array_t));
   result->length = a->length + b->length;
   result->capacity = result->length * 2;
-  result->items = (void **)GC_MALLOC(result->capacity * sizeof(void *));
+  result->items = (void **)MADLIB_ALLOC(result->capacity * sizeof(void *));
 
   memcpy(result->items, a->items, a->length * sizeof(void *));
   memcpy(result->items + a->length, b->items, b->length * sizeof(void *));
@@ -75,7 +75,7 @@ madlib__array__Array_t *madlib__array__concatWithMutation(madlib__array__Array_t
   int64_t nextLength = a->length + b->length;
 
   if (a->capacity < nextLength) {
-    resultItems = (void **)GC_MALLOC(nextLength * 2 * sizeof(void *));
+    resultItems = (void **)MADLIB_ALLOC(nextLength * 2 * sizeof(void *));
     memcpy(resultItems, a->items, a->length * sizeof(void *));
     a->items = resultItems;
     a->capacity = nextLength * 2;
@@ -93,7 +93,7 @@ madlib__array__Array_t *madlib__array__pushBackWithMutation(void *item, madlib__
   int64_t nextLength = a->length + 1;
 
   if (a->capacity < nextLength) {
-    resultItems = (void **)GC_MALLOC(nextLength * 2 * sizeof(void *));
+    resultItems = (void **)MADLIB_ALLOC(nextLength * 2 * sizeof(void *));
     memcpy(resultItems, a->items, a->length * sizeof(void *));
     a->items = resultItems;
     a->capacity = nextLength * 2;
@@ -122,8 +122,8 @@ madlib__array__Array_t *madlib__array__initWithCapacity(int64_t capacity) {
     capacity = 1;
   }
 
-  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
-  result->items = (void **)GC_MALLOC(capacity * sizeof(void *));
+  madlib__array__Array_t *result = (madlib__array__Array_t *)MADLIB_ALLOC(sizeof(madlib__array__Array_t));
+  result->items = (void **)MADLIB_ALLOC(capacity * sizeof(void *));
   result->capacity = capacity;
   result->length = 0;
   return result;
@@ -131,10 +131,10 @@ madlib__array__Array_t *madlib__array__initWithCapacity(int64_t capacity) {
 
 
 madlib__array__Array_t *madlib__array__map(PAP_t *f, madlib__array__Array_t *arr) {
-  madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
+  madlib__array__Array_t *result = (madlib__array__Array_t *)MADLIB_ALLOC(sizeof(madlib__array__Array_t));
   result->length = arr->length;
   result->capacity = arr->capacity;
-  result->items = (void **)GC_MALLOC(arr->capacity * sizeof(void *));
+  result->items = (void **)MADLIB_ALLOC(arr->capacity * sizeof(void *));
 
   for (int i = 0; i < arr->length; i++) {
     result->items[i] = __applyPAP__(f, 1, arr->items[i]);

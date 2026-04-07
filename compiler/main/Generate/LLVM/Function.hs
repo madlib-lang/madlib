@@ -59,7 +59,7 @@ import           Control.Monad.IO.Class       (MonadIO)
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, papType, sizeof', buildLLVMType, buildLLVMParamType, retrieveConstructorStructType, adtSymbol)
-import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcMalloc, chooseMalloc, gcDisable, gcEnable)
+import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcDisable, gcEnable, rcAlloc, chooseRCAlloc)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata)
 import           Generate.LLVM.Debug
@@ -435,7 +435,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
               -- Atomic chunks require a persistent heap-rooted ownership model for
               -- all chunk segments; until that exists, traced chunks are the safe
               -- choice for correctness.
-              arena       <- callMallocWithMetadata [] gcMalloc [(chunkBytes, [])]
+              arena       <- callMallocWithMetadata [] rcAlloc [(chunkBytes, [])]
               arena'      <- ctxSafeBitcast ctx arena (Type.ptr nodeType)
               start'      <- ctxAddrSpaceCast ctx arena listType
 
@@ -471,7 +471,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
             else if Core.isConstructorRecursiveDefinition metadata then do
               let returnType = IT.getReturnType t
                   constructedType = retrieveConstructorStructType env' symbolTable returnType
-              start  <- callMallocWithMetadata [] gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [Type.i64, constructedType]), [])]
+              start  <- callMallocWithMetadata [] rcAlloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [Type.i64, constructedType]), [])]
               start' <- ctxSafeBitcast ctx start (Type.ptr (Type.StructureType False [Type.i64, constructedType]))
               end    <- alloca constructedType Nothing 0
               hole   <- gep start' [i32ConstOp 0, i32ConstOp 1]
@@ -718,7 +718,7 @@ generateConstructor maxArity ctorCount env symbolTable (constructor, index) = ca
     else if ctorCount == 1 then do
       -- Single-constructor: no tag field needed
       let structType = Type.StructureType False $ List.replicate maxArity boxType
-      let mallocFn   = chooseMalloc paramTypes
+      let mallocFn   = chooseRCAlloc paramTypes
       functionWithMetadata [] (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
         block `named` "entry"
         structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) mallocFn [(Operand.ConstantOperand $ sizeof' structType, [])]
@@ -729,7 +729,7 @@ generateConstructor maxArity ctorCount env symbolTable (constructor, index) = ca
     else do
       -- Multi-constructor: struct with tag
       let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
-      let mallocFn   = chooseMalloc paramTypes
+      let mallocFn   = chooseRCAlloc paramTypes
       functionWithMetadata [] (AST.mkName constructorName) paramLLVMTypes boxType $ \params -> do
         block `named` "entry"
         structPtr     <- callMallocWithMetadata (makeDILocation env (Core.getArea constructor)) mallocFn [(Operand.ConstantOperand $ sizeof' structType, [])]

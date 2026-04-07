@@ -359,6 +359,14 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
   extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "GC_malloc_atomic")       [Type.i64] (Type.ptr Type.i8)
 
+  -- Perceus RC runtime functions
+  extern (AST.mkName "rc_alloc")           [Type.i64] (Type.ptr Type.i8)
+  extern (AST.mkName "rc_inc")             [Type.ptr Type.i8] Type.void
+  extern (AST.mkName "rc_dec")             [Type.ptr Type.i8] Type.void
+  extern (AST.mkName "rc_dec_with_drop")   [Type.ptr Type.i8, Type.ptr (Type.FunctionType Type.void [Type.ptr Type.i8] False)] Type.void
+  extern (AST.mkName "rc_is_unique")       [Type.ptr Type.i8] Type.i1
+  extern (AST.mkName "rc_reuse")           [Type.ptr Type.i8, Type.i64] (Type.ptr Type.i8)
+
   extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
 
   Monad.when isMain $ do

@@ -160,7 +160,7 @@ allocateArenaNode env area = mdo
   -- Allocate new chunk: newCap * sizeof(Node)
   nodeSize <- Instruction.ptrtoint (Operand.ConstantOperand $ sizeof' nodeType) Type.i64
   chunkBytes <- mul newCap nodeSize
-  newArena <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(chunkBytes, [])]
+  newArena <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(chunkBytes, [])]
   newArena' <- safeBitcast newArena (Type.ptr nodeType)
   store arenaPtr' 0 newArena'
   store arenaCap' 0 newCap
@@ -355,7 +355,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       let envArgTypes = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
       let hasAtomicEnv = not hasMutationRef && all isAtomicType envArgTypes
       let envIsAtomic = i8ConstOp (if hasAtomicEnv then 1 else 0)
-      let envMallocFn = gcMalloc
+      let envMallocFn = rcAlloc
       envPtr  <- callMallocWithMetadata (makeDILocation env area) envMallocFn [(Operand.ConstantOperand $ sizeof' envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
 
@@ -364,7 +364,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
           case typeOf unboxed of
             Type.PointerType (Type.StructureType _ [Type.PointerType _ _, Type.IntegerType 32, Type.IntegerType 32, Type.PointerType _ _, Type.IntegerType 8]) _ | IT.isFunctionType argType && Maybe.isJust (recursionData env) -> do
               unboxed' <- load unboxed 0
-              newPAP <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
+              newPAP <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
               newPAP' <- bitcast newPAP papType
               store newPAP' 0 unboxed'
               storeItem envPtr' () (newPAP, index)
@@ -375,7 +375,7 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
         ()
         $ List.zip4 boxedArgs [0..] (Core.getType <$> args) ((\(_, a, _) -> a) <$> args')
 
-      papPtr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
+      papPtr  <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
       papPtr' <- safeBitcast papPtr (Type.ptr papStructType)
       Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (amountOfArgsToBeApplied, 2), (envPtr, 3), (envIsAtomic, 4)]
 
@@ -424,7 +424,7 @@ buildReferencePAP symbolTable env area arity fn = do
       let envIsAtomic = i8ConstOp 0
       let nullEnv = Operand.ConstantOperand (Constant.Null boxType)
       boxedFn  <- box fn
-      papPtr   <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
+      papPtr   <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
       papPtr'  <- safeBitcast papPtr (Type.ptr papStructType)
       Monad.foldM_ (storeItem papPtr') () [(boxedFn, 0), (arity', 1), (arity', 2), (nullEnv, 3), (envIsAtomic, 4)]
       return (symbolTable, papPtr', Just papPtr)
@@ -653,7 +653,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
                     _ ->
                       error $ "Constructor not found in symbol table: " <> constructorName
 
-        constructed     <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' structType, [])]
+        constructed     <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand $ sizeof' structType, [])]
         constructed'    <- safeBitcast constructed constructedType
 
         -- store the constructor data in the struct
@@ -847,7 +847,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
       if Core.isReferenceAllocation metadata then do
         let expType = buildLLVMType env symbolTable (Core.getQualType exp) --typeOf exp'
             ptrType = Type.ptr expType
-        ptr  <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (sizeof' expType), [])]
+        ptr  <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand (sizeof' expType), [])]
         declareVariable env area False name ptr
         ptr' <- safeBitcast ptr ptrType
         v <- load ptr' 0
@@ -903,10 +903,10 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
       items'' <- mapM (generateExp env symbolTable) items'
       let items''' = List.map (\(_, i, _) -> i) items''
       items'''' <- mapM box items'''
-      itemsArray <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' (Type.ptr i8)) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
+      itemsArray <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' (Type.ptr i8)) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
       itemsArray' <- safeBitcast itemsArray (Type.ptr $ Type.ptr i8)
       let arrayType = Type.StructureType False [i64, i64, Type.ptr $ Type.ptr i8]
-      arr <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
+      arr <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
       arr' <- safeBitcast arr (Type.ptr arrayType)
 
       Monad.foldM_ (storeArrayItem itemsArray') () (List.zip items'''' [0..])
@@ -920,10 +920,10 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
       let items' = List.map getListItemExp items
       items'' <- mapM (generateExp env symbolTable) items'
       let items''' = List.map (\(_, i, _) -> i) items''
-      itemsArray <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' i8) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
+      itemsArray <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand (Constant.Mul False False (sizeof' i8) (Constant.Int 64 (fromIntegral $ List.length items))), [])]
       itemsArray' <- safeBitcast itemsArray (Type.ptr i8)
       let arrayType = Type.StructureType False [i64, i64, Type.ptr i8]
-      arr <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
+      arr <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand $ sizeof' arrayType, [])]
       arr' <- safeBitcast arr (Type.ptr arrayType)
 
       Monad.foldM_ (storeArrayItem itemsArray') () (List.zip items''' [0..])
@@ -1113,7 +1113,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             -- Single-constructor: no tag field
             let structType = Type.StructureType False $ List.replicate maxArity boxType
             let argTypes   = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
-            let mallocFn   = if arity == maxArity then chooseMalloc argTypes else gcMalloc
+            let mallocFn   = if arity == maxArity then chooseRCAlloc argTypes else rcAlloc
             structPtr     <- allocateStruct env area metadata structType mallocFn
             structPtr'    <- safeBitcast structPtr $ Type.ptr structType
             Monad.foldM_ (storeItem structPtr') () $ List.zip args'' [0..]
@@ -1122,7 +1122,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             -- Multi-constructor: struct with tag
             let structType = Type.StructureType False $ Type.IntegerType 64 : List.replicate maxArity boxType
             let argTypes   = (\a -> let (_ IT.:=> at') = Core.getQualType a in at') <$> args
-            let mallocFn   = if arity == maxArity then chooseMalloc argTypes else gcMalloc
+            let mallocFn   = if arity == maxArity then chooseRCAlloc argTypes else rcAlloc
             structPtr     <- allocateStruct env area metadata structType mallocFn
             structPtr'    <- safeBitcast structPtr $ Type.ptr structType
             Monad.foldM_ (storeItem structPtr') () $ List.zip args'' [1..] ++ [(i64ConstOp (fromIntegral index), 0)]
@@ -1271,7 +1271,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     fieldVals <- mapM (\((triple, ft), qt) -> getFieldValue triple ft qt) (List.zip (List.zip exps' fieldLLVMTypes) elemQualTypes)
     let expsWithIds = List.zip fieldVals [0..]
         elemTypes   = (\e -> let (_ IT.:=> et) = Core.getQualType e in et) <$> exps
-        mallocFn    = chooseMalloc elemTypes
+        mallocFn    = chooseRCAlloc elemTypes
     tuplePtr  <- allocateStruct env area metadata tupleType mallocFn
     tuplePtr' <- safeBitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
@@ -1440,7 +1440,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
         ) listItems
 
       -- Single bulk allocation for all nodes
-      bulkPtr <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(totalSize, [])]
+      bulkPtr <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(totalSize, [])]
       bulkPtr' <- safeBitcast bulkPtr (Type.ptr nodeType)
 
       -- Fill each node: node[i].value = item[i], node[i].next = &node[i+1]
@@ -1482,7 +1482,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             item' <- generateExp env symbolTable item
             items <- retrieveArgs [Core.getMetadata item] [item] [item']
 
-            newHead <- callMallocWithMetadata (makeDILocation env area) gcMalloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
+            newHead <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand $ sizeof' (Type.StructureType False [boxType, boxType]), [])]
             newHead' <- safeBitcast newHead listType
             nextPtr <- gep newHead' [Operand.ConstantOperand (Constant.Int 32 0), Operand.ConstantOperand (Constant.Int 32 1)]
             nextPtr' <- addrspacecast nextPtr (Type.ptr listType)
@@ -1517,7 +1517,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     let structType = Type.StructureType False fieldLLVMTypes
 
     -- Allocate a single flat struct for the record (stack or heap based on escape analysis)
-    let mallocFn = chooseMalloc allFieldTypes
+    let mallocFn = chooseRCAlloc allFieldTypes
     recordPtr  <- allocateStruct env area metadata structType mallocFn
     recordPtr' <- safeBitcast recordPtr (Type.ptr structType)
 

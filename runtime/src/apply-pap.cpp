@@ -1,5 +1,5 @@
 // generated automatically on the 2026-03-29 at 17:00:35 UTC
-#include <gc.h>
+#include "rc.h"
 #include "apply-pap.hpp"
 #include <cstdarg>
 #include <iostream>
@@ -1087,7 +1087,7 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
   } else {
     // We push the args to a newly allocated PAP
     int NEXT_ENV_SIZE = argc + ENV_SIZE;
-    PAP_t *newPAP = (PAP_t *)GC_MALLOC(sizeof(PAP_t));
+    PAP_t *newPAP = (PAP_t *)MADLIB_ALLOC(sizeof(PAP_t));
     newPAP->fn = unwrappedPAP->fn;
     newPAP->arity = unwrappedPAP->arity;
     newPAP->missingArgCount = unwrappedPAP->missingArgCount - argc;
@@ -1096,8 +1096,8 @@ void *__applyPAP__(void *pap, int32_t argc, ...) {
     void **env = (void **)unwrappedPAP->env;
     bool useAtomicEnv = papAtomicEnvEnabled() && unwrappedPAP->env_is_atomic;
     void **newEnv = useAtomicEnv
-      ? (void**) GC_MALLOC_ATOMIC(sizeof(void*) * NEXT_ENV_SIZE)
-      : (void**) GC_MALLOC(sizeof(void*) * NEXT_ENV_SIZE);
+      ? (void**) MADLIB_ALLOC_ATOMIC(sizeof(void*) * NEXT_ENV_SIZE)
+      : (void**) MADLIB_ALLOC(sizeof(void*) * NEXT_ENV_SIZE);
     if (ENV_SIZE > 0) {
       memcpy(newEnv, env, sizeof(void*) * ENV_SIZE);
     }

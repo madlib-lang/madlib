@@ -1,5 +1,5 @@
 
-#include <gc.h>
+#include "rc.h"
 #include "list.hpp"
 
 #include <string.h>
@@ -28,7 +28,7 @@ int64_t madlib__list__length(madlib__list__Node_t *list) {
 
 madlib__list__Node_t *madlib__list__singleton(void *item) {
   madlib__list__Node_t *head =
-      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
+      (madlib__list__Node_t *)MADLIB_ALLOC(sizeof(madlib__list__Node_t));
   head->next = madlib__list__empty();
   head->value = item;
 
@@ -38,7 +38,7 @@ madlib__list__Node_t *madlib__list__singleton(void *item) {
 madlib__list__Node_t *madlib__list__push(void *item,
                                          madlib__list__Node_t *list) {
   madlib__list__Node_t *newHead =
-      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
+      (madlib__list__Node_t *)MADLIB_ALLOC(sizeof(madlib__list__Node_t));
   newHead->next = list;
   newHead->value = item;
 
@@ -48,7 +48,7 @@ madlib__list__Node_t *madlib__list__push(void *item,
 madlib__list__Node_t *madlib__list__internal__push(void *item,
                                                    madlib__list__Node_t *list) {
   madlib__list__Node_t *newHead =
-      (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
+      (madlib__list__Node_t *)MADLIB_ALLOC(sizeof(madlib__list__Node_t));
   newHead->next = list;
   newHead->value = item;
 

@@ -1,5 +1,5 @@
 
-#include <gc.h>
+#include "rc.h"
 #include <string.h>
 
 #include "dictionary.hpp"
@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 madlib__dictionary__Dictionary_t *madlib__dictionary__typeConstructor(madlib__list__Node_t *items) {
-  madlib__dictionary__Dictionary_t *dictionary = (madlib__dictionary__Dictionary_t*) GC_MALLOC(sizeof(madlib__dictionary__Dictionary_t));
+  madlib__dictionary__Dictionary_t *dictionary = (madlib__dictionary__Dictionary_t*) MADLIB_ALLOC(sizeof(madlib__dictionary__Dictionary_t));
 
   dictionary->constructorIndex = 0;
   dictionary->items = items;

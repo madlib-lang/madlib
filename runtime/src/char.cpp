@@ -1,5 +1,5 @@
 
-#include <gc.h>
+#include "rc.h"
 #include "char.hpp"
 
 
@@ -15,20 +15,20 @@ extern "C" {
 // char *utf8Encode(int32_t unicode) {
 //   if (unicode <= 0x7f) {
 //     // ASCII character
-//     char *str = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 2);
+//     char *str = (char *)MADLIB_ALLOC_ATOMIC(sizeof(char) * 2);
 //     str[0] = (char)unicode;
 //     str[1] = '\0';
 //     return str;
 //   } else if (unicode <= 0x07ff) {
 //     // 2-byte unicode
-//     char *str = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 3);
+//     char *str = (char *)MADLIB_ALLOC_ATOMIC(sizeof(char) * 3);
 //     str[0] = (char)(((unicode >> 6) & 0x1f) | 0xc0);
 //     str[1] = (char)(((unicode >> 0) & 0x3f) | 0x80);
 //     str[2] = '\0';
 //     return str;
 //   } else if (unicode <= 0xffff) {
 //     // 3-byte unicode
-//     char *str = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 4);
+//     char *str = (char *)MADLIB_ALLOC_ATOMIC(sizeof(char) * 4);
 //     str[0] = (char)(((unicode >> 12) & 0x0f) | 0xe0);
 //     str[1] = (char)(((unicode >> 6) & 0x3f) | 0x80);
 //     str[2] = (char)(((unicode >> 0) & 0x3f) | 0x80);
@@ -36,7 +36,7 @@ extern "C" {
 //     return str;
 //   } else if (unicode <= 0x10ffff) {
 //     // 4-byte unicode
-//     char *str = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 5);
+//     char *str = (char *)MADLIB_ALLOC_ATOMIC(sizeof(char) * 5);
 //     str[0] = (char)(((unicode >> 18) & 0x07) | 0xf0);
 //     str[1] = (char)(((unicode >> 12) & 0x3f) | 0x80);
 //     str[2] = (char)(((unicode >> 6) & 0x3f) | 0x80);
@@ -45,7 +45,7 @@ extern "C" {
 //     return str;
 //   } else {
 //     // or use replacement character
-//     char *str = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 4);
+//     char *str = (char *)MADLIB_ALLOC_ATOMIC(sizeof(char) * 4);
 //     str[0] = (char)0xef;
 //     str[1] = (char)0xbf;
 //     str[2] = (char)0xbf;
@@ -134,7 +134,7 @@ int utf8CodepointLength(const uint32_t cp)
 char *utf8EncodeChar(int32_t cp)
 {
   const int bytes = utf8CodepointLength(cp);
-  uint8_t *ret = (uint8_t*) GC_MALLOC_ATOMIC(bytes + 1);
+  uint8_t *ret = (uint8_t*) MADLIB_ALLOC_ATOMIC(bytes + 1);
 
   int shift = utf[0]->bits_stored * (bytes - 1);
   ret[0] = (cp >> shift & utf[bytes]->mask) | utf[bytes]->lead;
@@ -172,7 +172,7 @@ int32_t *utf8Decode(char *str) {
   // "GC Warning: Repeated allocation of very large block (appr. size 100007936):
   // May lead to memory leak and poor performance"
   // which causes memory to be corrupted when the input string is big ( tested with 10MB string )
-  int32_t *output = (int32_t*)GC_MALLOC(sizeof(int32_t) * (strLength + 1));
+  int32_t *output = (int32_t*)MADLIB_ALLOC(sizeof(int32_t) * (strLength + 1));
   while (str[i] != '\0') {
     output[outputIndex] = utf8DecodeChar(&str[i], &i);
     outputIndex++;
@@ -190,7 +190,7 @@ char *madlib__char__internal__show(int32_t unicode) {
   char *inspected;
 
   if (unicode == '\n' || unicode == '\t' || unicode == '\r' || unicode == '\\' || unicode == '\'') {
-    char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * 5);
+    char *result = (char*)MADLIB_ALLOC_ATOMIC(sizeof(char) * 5);
     result[0] = '\'';
     result[1] = '\\';
     result[3] = '\'';
@@ -218,7 +218,7 @@ char *madlib__char__internal__show(int32_t unicode) {
   } else {
     char *encoded = utf8EncodeChar(unicode);
     size_t encodedLength = strlen(encoded);
-    char *full = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (encodedLength + 3));
+    char *full = (char*)MADLIB_ALLOC_ATOMIC(sizeof(char) * (encodedLength + 3));
     full[0] = '\'';
     memcpy(full + 1, encoded, encodedLength);
     full[1 + encodedLength] = '\'';

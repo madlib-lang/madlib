@@ -31,6 +31,7 @@ OBJS :=\
   $(BUILDDIR)/apply-pap.o\
   $(BUILDDIR)/stack.o\
   $(BUILDDIR)/gc.o\
+  $(BUILDDIR)/rc.o\
   $(BUILDDIR)/crypto.o\
   $(BUILDDIR)/sha256.o\
   $(BUILDDIR)/md5.o
