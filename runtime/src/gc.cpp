@@ -1,5 +1,4 @@
 
-#include <gc.h>
 #include "list.hpp"
 #include <stdint.h>
 #include <stdlib.h>
@@ -9,6 +8,10 @@
 #include <windows.h>
 #else
 #include <unistd.h>
+#endif
+
+#ifndef MADLIB_USE_RC
+#include <gc.h>
 #endif
 
 
@@ -28,6 +31,8 @@ static bool isTruthyEnvValue(const char *value) {
     || strcmp(value, "yes") == 0
     || strcmp(value, "YES") == 0;
 }
+
+#ifndef MADLIB_USE_RC
 
 static size_t clampSize(size_t value, size_t minValue, size_t maxValue) {
   if (value < minValue) {
@@ -128,6 +133,17 @@ void *madlib__gc__reserveListFromList(madlib__list__Node_t *list) {
 void madlib__gc__forceCollect() {
   GC_gcollect();
 }
+
+#else /* MADLIB_USE_RC */
+
+/* Under RC mode, GC functions are no-ops. */
+void madlib__gc__configureAfterInit() {}
+void __setFreeSpaceDivisor__() {}
+void *madlib__gc__reserveList(int64_t count) { (void)count; return NULL; }
+void *madlib__gc__reserveListFromList(madlib__list__Node_t *list) { (void)list; return NULL; }
+void madlib__gc__forceCollect() {}
+
+#endif /* MADLIB_USE_RC */
 
 #ifdef __cplusplus
 }

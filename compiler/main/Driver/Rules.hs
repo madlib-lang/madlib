@@ -79,6 +79,8 @@ import qualified Optimize.SimplifyCalls as SimplifyCalls
 import qualified Optimize.FoldCalls as FoldCalls
 import qualified Optimize.EscapeAnalysis as EscapeAnalysis
 import qualified Optimize.AllocationSinking as AllocationSinking
+import qualified Optimize.ReuseAnalysis as ReuseAnalysis
+import qualified Optimize.OwnershipAnalysis as OwnershipAnalysis
 import qualified Canonicalize.Rewrite as Rewrite
 import qualified Optimize.HigherOrderCopyPropagation as HigherOrderCopyPropagation
 import Run.OptimizationLevel
@@ -487,7 +489,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         let importPaths = Core.getImportAbsolutePath <$> Core.aimports folded
         importSummaries <- mapM (Rock.fetch . FunctionEscapeSummaries) importPaths
         let externalSummaries = Map.unions importSummaries
-        let escapeAnalyzed = EscapeAnalysis.analyzeAST externalSummaries folded
+        let escapeAnalyzed    = EscapeAnalysis.analyzeAST externalSummaries folded
         return (escapeAnalyzed, (mempty, mempty))
 
       _ ->

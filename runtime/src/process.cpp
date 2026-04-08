@@ -130,7 +130,7 @@ static void appendOutputChunk(char **output, size_t *size, size_t *capacity, con
       newCapacity *= 2;
     }
 
-    char *newOutput = (char *)GC_MALLOC_ATOMIC(newCapacity);
+    char *newOutput = (char *)malloc(newCapacity);
     if (*size > 0) {
       memcpy(newOutput, *output, *size);
     }
@@ -146,6 +146,20 @@ static void appendOutputChunk(char **output, size_t *size, size_t *capacity, con
 
 
 void __main__init__(int argc, char **argv) {
+  ARGC = argc;
+  ARGV = argv;
+
+#ifdef MADLIB_USE_RC
+  /* RC mode: skip GC init, just set up the custom stack and go. */
+  size_t size = 64 * 1024 * 1024;  // 64MB
+#if defined(_WIN32) || defined(__MINGW32__)
+  char *newStack = (char *)VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
+  char *newStack = (char *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+#endif
+  char *stackBottom = newStack + size;
+  madlib__stack__init(stackBottom, __main__start__);
+#else
   // GC_use_threads_discovery();
   GC_set_dont_precollect(1);
 
@@ -182,9 +196,6 @@ void __main__init__(int argc, char **argv) {
     );
   }
 
-  ARGC = argc;
-  ARGV = argv;
-
   size_t size = 64 * 1024 * 1024;  // 64MB
 #if defined(_WIN32) || defined(__MINGW32__)
   char *newStack = (char *)VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -200,13 +211,16 @@ void __main__init__(int argc, char **argv) {
 
   GC_allow_register_threads();
   madlib__stack__init(stackBottom, __main__start__);
+#endif
 }
 
 void madlib__gc__configureAfterInit();
 
 void madlib__process__internal__initExtra() {
+#ifndef MADLIB_USE_RC
   GC_INIT();
   madlib__gc__configureAfterInit();
+#endif
   if (getenv("UV_THREADPOOL_SIZE") == NULL) {
     unsigned int cpuCount = std::thread::hardware_concurrency();
     if (cpuCount == 0) {
@@ -219,7 +233,7 @@ void madlib__process__internal__initExtra() {
       poolSize = 32;
     }
 
-    char *threadPoolSetting = (char *)GC_MALLOC_ATOMIC(32);
+    char *threadPoolSetting = (char *)malloc(32);
     snprintf(threadPoolSetting, 32, "UV_THREADPOOL_SIZE=%u", poolSize);
     putenv(threadPoolSetting);
   }
@@ -252,7 +266,7 @@ madlib__list__Node_t *madlib__process__internal__getEnv() {
   char **env = environ;
   for (; *env != NULL; env++) {
     // *env has shape ENV_VAR=VALUE
-    madlib__tuple__Tuple_2_t *item = (madlib__tuple__Tuple_2_t *)GC_MALLOC(sizeof(madlib__tuple__Tuple_2_t));
+    madlib__tuple__Tuple_2_t *item = (madlib__tuple__Tuple_2_t *)malloc(sizeof(madlib__tuple__Tuple_2_t));
     size_t itemLength = strlen(*env);
     int keyLength = 0;
 
@@ -261,11 +275,11 @@ madlib__list__Node_t *madlib__process__internal__getEnv() {
 
     int valueLength = itemLength - keyLength - 1;
 
-    char *key = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (keyLength + 1));
+    char *key = (char *)malloc(sizeof(char) * (keyLength + 1));
     strncpy(key, *env, keyLength);
     key[keyLength] = '\0';
 
-    char *value = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (valueLength + 1));
+    char *value = (char *)malloc(sizeof(char) * (valueLength + 1));
     strncpy(value, *env + keyLength + 1, valueLength);
     value[valueLength] = '\0';
 
@@ -282,7 +296,7 @@ char *madlib__process__internal__getCurrentPath() {
   char cwd[PATH_MAX];
 
   if (getcwd(cwd, sizeof(cwd)) != NULL) {
-    char *res = (char*) GC_MALLOC(strlen(cwd) + 1);
+    char *res = (char*) malloc(strlen(cwd) + 1);
     memcpy(res, cwd, strlen(cwd));
     res[strlen(cwd)] = '\0';
     return res;
@@ -298,7 +312,7 @@ char *madlib__process__internal__getExecutablePath() {
 
   int r = uv_exepath(exePath, &size);
   if (r == 0) {
-    char *res = (char*) GC_MALLOC_ATOMIC(size + 1);
+    char *res = (char*) malloc(size + 1);
     memcpy(res, exePath, size);
     res[size] = '\0';
     return res;
@@ -329,7 +343,7 @@ void onChildExit(uv_process_t *req, int64_t exitCode, int termSignal) {
 
 
 void allocExecBuffer(uv_handle_t *handle, size_t suggestedSize, uv_buf_t *buffer) {
-  *buffer = uv_buf_init((char*)GC_MALLOC_ATOMIC(suggestedSize + 1), suggestedSize);
+  *buffer = uv_buf_init((char*)malloc(suggestedSize + 1), suggestedSize);
 }
 
 
@@ -342,11 +356,11 @@ void onExecStdoutRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
   if (nread > 0) {
     appendOutputChunk(&data->stdoutOutput, &data->stdoutSize, &data->stdoutCapacity, buf->base, (size_t)nread);
     if (buf->base != NULL) {
-      GC_FREE(buf->base);
+      free(buf->base);
     }
   } else {
     if (buf->base != NULL) {
-      GC_FREE(buf->base);
+      free(buf->base);
     }
     if (nread < 0 && nread != UV_EOF) {
       fprintf(stderr, "exec stdout read error: %s\n", uv_strerror(nread));
@@ -362,11 +376,11 @@ void onExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
   if (nread > 0) {
     appendOutputChunk(&data->stderrOutput, &data->stderrSize, &data->stderrCapacity, buf->base, (size_t)nread);
     if (buf->base != NULL) {
-      GC_FREE(buf->base);
+      free(buf->base);
     }
   } else {
     if (buf->base != NULL) {
-      GC_FREE(buf->base);
+      free(buf->base);
     }
     if (nread < 0 && nread != UV_EOF) {
       fprintf(stderr, "exec stderr read error: %s\n", uv_strerror(nread));
@@ -377,12 +391,12 @@ void onExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
 }
 
 ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, madlib__process__CommandOptions_t *commandOptions, PAP_t *callback) {
-  uv_process_t *childReq = (uv_process_t*)GC_MALLOC(sizeof(uv_process_t));
-  uv_process_options_t *options = (uv_process_options_t*)GC_MALLOC(sizeof(uv_process_options_t));
-  uv_pipe_t *stdoutPipe = (uv_pipe_t*)GC_MALLOC(sizeof(uv_pipe_t));
-  uv_pipe_t *stderrPipe = (uv_pipe_t*)GC_MALLOC(sizeof(uv_pipe_t));
+  uv_process_t *childReq = (uv_process_t*)malloc(sizeof(uv_process_t));
+  uv_process_options_t *options = (uv_process_options_t*)malloc(sizeof(uv_process_options_t));
+  uv_pipe_t *stdoutPipe = (uv_pipe_t*)malloc(sizeof(uv_pipe_t));
+  uv_pipe_t *stderrPipe = (uv_pipe_t*)malloc(sizeof(uv_pipe_t));
 
-  ExecData_t *data = (ExecData_t*)GC_MALLOC(sizeof(ExecData_t));
+  ExecData_t *data = (ExecData_t*)malloc(sizeof(ExecData_t));
   data->callback = callback;
   data->req = childReq;
   data->options = options;
@@ -390,9 +404,9 @@ ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, 
   data->stderrSize = 0;
   data->stdoutCapacity = 64;
   data->stderrCapacity = 64;
-  data->stdoutOutput = (char*)GC_MALLOC_ATOMIC(data->stdoutCapacity);
+  data->stdoutOutput = (char*)malloc(data->stdoutCapacity);
   (data->stdoutOutput)[0] = '\0';
-  data->stderrOutput = (char*)GC_MALLOC_ATOMIC(data->stderrCapacity);
+  data->stderrOutput = (char*)malloc(data->stderrCapacity);
   (data->stderrOutput)[0] = '\0';
   data->stdoutPipe = (uv_stream_t *)stdoutPipe;
   data->stderrPipe = (uv_stream_t *)stderrPipe;
@@ -425,11 +439,11 @@ ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, 
       globBuffer.gl_pathv[0] = command;
       args = globBuffer.gl_pathv;
     } else {
-      args = (char**)GC_MALLOC(sizeof(char*));
+      args = (char**)malloc(sizeof(char*));
       args[0] = command;
     }
   #else
-    args = (char**)GC_MALLOC(sizeof(char*) * (argc + 1));
+    args = (char**)malloc(sizeof(char*) * (argc + 1));
     args[0] = command;
 
     for (int i = 0; i < argc; i++) {
@@ -452,7 +466,7 @@ ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, 
 
   madlib__list__Node_t *envItems = (madlib__list__Node_t *)commandOptions->env;
   int itemCount = madlib__list__length(envItems);
-  char **env = (char**)GC_MALLOC(sizeof(char*) * (itemCount + 1));
+  char **env = (char**)malloc(sizeof(char*) * (itemCount + 1));
   int index = 0;
 
   while (envItems->next != NULL) {
@@ -461,7 +475,7 @@ ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, 
     char *value = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->second;
     size_t valueLength = strlen(value);
 
-    env[index] = (char*) GC_MALLOC_ATOMIC(keyLength + valueLength + 2);
+    env[index] = (char*) malloc(keyLength + valueLength + 2);
     memcpy(env[index], key, keyLength);
     env[index][keyLength] = '=';
     memcpy(env[index] + keyLength + 1, value, valueLength);
@@ -539,7 +553,7 @@ void onBufferedExecStdoutRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t
     __applyPAP__(handle->callback, 2, buf->base, "");
   } else {
     if (buf->base != NULL) {
-      GC_FREE(buf->base);
+      free(buf->base);
     }
     if (nread < 0 && nread != UV_EOF) {
       fprintf(stderr, "buffered exec stdout read error: %s\n", uv_strerror(nread));
@@ -557,7 +571,7 @@ void onBufferedExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t
     __applyPAP__(handle->callback, 2, "", buf->base);
   } else {
     if (buf->base != NULL) {
-      GC_FREE(buf->base);
+      free(buf->base);
     }
     if (nread < 0 && nread != UV_EOF) {
       fprintf(stderr, "buffered exec stderr read error: %s\n", uv_strerror(nread));
@@ -568,12 +582,12 @@ void onBufferedExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t
 }
 
 BufferedExecData_t *madlib__process__bufferedExec(char *command, madlib__list__Node_t *argList, madlib__process__CommandOptions_t *commandOptions, PAP_t *callback, PAP_t *doneCallback) {
-  uv_process_t *childReq = (uv_process_t*)GC_MALLOC(sizeof(uv_process_t));
-  uv_process_options_t *options = (uv_process_options_t*)GC_MALLOC(sizeof(uv_process_options_t));
-  uv_pipe_t *stdoutPipe = (uv_pipe_t*)GC_MALLOC(sizeof(uv_pipe_t));
-  uv_pipe_t *stderrPipe = (uv_pipe_t*)GC_MALLOC(sizeof(uv_pipe_t));
+  uv_process_t *childReq = (uv_process_t*)malloc(sizeof(uv_process_t));
+  uv_process_options_t *options = (uv_process_options_t*)malloc(sizeof(uv_process_options_t));
+  uv_pipe_t *stdoutPipe = (uv_pipe_t*)malloc(sizeof(uv_pipe_t));
+  uv_pipe_t *stderrPipe = (uv_pipe_t*)malloc(sizeof(uv_pipe_t));
 
-  BufferedExecData_t *data = (BufferedExecData_t*)GC_MALLOC(sizeof(BufferedExecData_t));
+  BufferedExecData_t *data = (BufferedExecData_t*)malloc(sizeof(BufferedExecData_t));
   data->callback = callback;
   data->doneCallback = doneCallback;
   data->req = childReq;
@@ -582,9 +596,9 @@ BufferedExecData_t *madlib__process__bufferedExec(char *command, madlib__list__N
   data->stderrSize = 0;
   data->stdoutCapacity = 0;
   data->stderrCapacity = 0;
-  data->stdoutOutput = (char*)GC_MALLOC_ATOMIC(sizeof(char));
+  data->stdoutOutput = (char*)malloc(sizeof(char));
   (data->stdoutOutput)[0] = '\0';
-  data->stderrOutput = (char*)GC_MALLOC_ATOMIC(sizeof(char));
+  data->stderrOutput = (char*)malloc(sizeof(char));
   (data->stderrOutput)[0] = '\0';
   data->stdoutPipe = (uv_stream_t *)stdoutPipe;
   data->stderrPipe = (uv_stream_t *)stderrPipe;
@@ -617,11 +631,11 @@ BufferedExecData_t *madlib__process__bufferedExec(char *command, madlib__list__N
       globBuffer.gl_pathv[0] = command;
       args = globBuffer.gl_pathv;
     } else {
-      args = (char**)GC_MALLOC(sizeof(char*));
+      args = (char**)malloc(sizeof(char*));
       args[0] = command;
     }
   #else
-    args = (char**)GC_MALLOC(sizeof(char*) * (argc + 1));
+    args = (char**)malloc(sizeof(char*) * (argc + 1));
     args[0] = command;
 
     for (int i = 0; i < argc; i++) {
@@ -644,7 +658,7 @@ BufferedExecData_t *madlib__process__bufferedExec(char *command, madlib__list__N
 
   madlib__list__Node_t *envItems = (madlib__list__Node_t *)commandOptions->env;
   int itemCount = madlib__list__length(envItems);
-  char **env = (char**)GC_MALLOC(sizeof(char*) * (itemCount + 1));
+  char **env = (char**)malloc(sizeof(char*) * (itemCount + 1));
   int index = 0;
 
   while (envItems->next != NULL) {
@@ -653,7 +667,7 @@ BufferedExecData_t *madlib__process__bufferedExec(char *command, madlib__list__N
     char *value = (char*)((madlib__tuple__Tuple_2_t*)envItems->value)->second;
     size_t valueLength = strlen(value);
 
-    env[index] = (char*) GC_MALLOC_ATOMIC(keyLength + valueLength + 2);
+    env[index] = (char*) malloc(keyLength + valueLength + 2);
     memcpy(env[index], key, keyLength);
     env[index][keyLength] = '=';
     memcpy(env[index] + keyLength + 1, value, valueLength);
@@ -757,22 +771,24 @@ void onThreadLoopWalk(uv_handle_t *handle, void *arg) {
 
 
 void runThread(uv_work_t *req) {
+#ifndef MADLIB_USE_RC
   struct GC_stack_base sb;
   GC_get_stack_base(&sb);
   GC_register_my_thread(&sb);
   GC_INIT();
+#endif
   __initEventLoopOnly__();
   uv_loop_t *threadLoop = getLoop();
   ThreadData_t *data = (ThreadData_t*) req->data;
 
-  PAP_t *goodCallbackArg = (PAP_t*) GC_MALLOC(sizeof(PAP_t));
+  PAP_t *goodCallbackArg = (PAP_t*) malloc(sizeof(PAP_t));
   goodCallbackArg->fn = (void*)goodCallbackFn;
   goodCallbackArg->arity = 2;
   goodCallbackArg->missingArgCount = 2;
   goodCallbackArg->env = NULL;
   goodCallbackArg->env_is_atomic = 0;
 
-  PAP_t *badCallbackArg = (PAP_t*) GC_MALLOC(sizeof(PAP_t));
+  PAP_t *badCallbackArg = (PAP_t*) malloc(sizeof(PAP_t));
   badCallbackArg->fn = (void*)badCallbackFn;
   badCallbackArg->arity = 2;
   badCallbackArg->missingArgCount = 2;
@@ -786,7 +802,9 @@ void runThread(uv_work_t *req) {
 
   uv_run(threadLoop, UV_RUN_DEFAULT);
 
+#ifndef MADLIB_USE_RC
   GC_unregister_my_thread();
+#endif
 
   int r = uv_loop_close(threadLoop);
   if (r != 0) {
@@ -800,7 +818,7 @@ void runThread(uv_work_t *req) {
     // Now we're safe.
     r = uv_loop_close(threadLoop);
   }
-  GC_FREE(threadLoop);
+  free(threadLoop);
 }
 
 
@@ -811,8 +829,8 @@ void afterThread(uv_work_t *req, int status) {
   void *result = data->result;
   bool isBad = data->isBad;
   bool hasFinished = data->hasFinished;
-  GC_FREE(data);
-  GC_FREE(req);
+  free(data);
+  free(req);
 
   if (!hasFinished) {
     __applyPAP__(badCallback, 1, result);
@@ -821,8 +839,8 @@ void afterThread(uv_work_t *req, int status) {
 
 
 uv_work_t * madlib__process__thread(PAP_t *fn, PAP_t *badCallback, PAP_t *goodCallback) {
-  uv_work_t *req = (uv_work_t*) GC_MALLOC_UNCOLLECTABLE(sizeof(uv_work_t));
-  ThreadData_t *data = (ThreadData_t*) GC_MALLOC_UNCOLLECTABLE(sizeof(ThreadData_t));
+  uv_work_t *req = (uv_work_t*) malloc(sizeof(uv_work_t));
+  ThreadData_t *data = (ThreadData_t*) malloc(sizeof(ThreadData_t));
   data->badCallback = badCallback;
   data->goodCallback = goodCallback;
   data->threadFn = fn;
@@ -842,13 +860,13 @@ void madlib__process__cancelThread(uv_work_t *req) {
 
 
 uv_rwlock_t *madlib__process__makeLock(void *_) {
-  uv_rwlock_t *lock = (uv_rwlock_t*) GC_MALLOC(sizeof(uv_rwlock_t));
+  uv_rwlock_t *lock = (uv_rwlock_t*) malloc(sizeof(uv_rwlock_t));
   uv_rwlock_init(lock);
   return lock;
 }
 
 uv_mutex_t *madlib__process__makeMutex(void *_) {
-  uv_mutex_t *mutex = (uv_mutex_t*) GC_MALLOC(sizeof(uv_mutex_t));
+  uv_mutex_t *mutex = (uv_mutex_t*) malloc(sizeof(uv_mutex_t));
   uv_mutex_init(mutex);
   return mutex;
 }

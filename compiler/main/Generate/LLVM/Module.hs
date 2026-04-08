@@ -356,9 +356,6 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
   extern (AST.mkName "madlib__list__internal__push")                 [Type.ptr Type.i8, listType] listType
   extern (AST.mkName "madlib__list__concat")                         [listType, listType] listType
 
-  extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
-  extern (AST.mkName "GC_malloc_atomic")       [Type.i64] (Type.ptr Type.i8)
-
   -- Perceus RC runtime functions
   extern (AST.mkName "rc_alloc")           [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "rc_inc")             [Type.ptr Type.i8] Type.void
@@ -680,7 +677,7 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " " <> ListUtils.join " " staticLibs
-        <> " -lruntime -lgc -lgccpp -luv -lpcre2-8"
+        <> " -lruntime -luv -lpcre2-8"
         <> " -lcurl -framework CoreFoundation -framework SystemConfiguration -framework CoreFoundation -lssl -lcrypto -lz"
         <> " " <> ldflags' <> " "
         <>" -o " <> executablePath
@@ -692,7 +689,7 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " " <> ListUtils.join " " staticLibs
-        <> " -lruntime -lmman -lgc -lgccpp -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32"
+        <> " -lruntime -lmman -luv -lpcre2-8 -pthread -ldl -lws2_32 -liphlpapi -lUserEnv -lcurl -lz -lssl -lcrypto -lgdi32 -lcrypt32 -lwldap32 -lws2_32"
         <> " " <> ldflags' <> " "
         <> " -o " <> executablePath
 
@@ -703,6 +700,6 @@ buildTarget options staticLibs entrypoint = do
         <> " " <> runtimeLibPathOpt
         <> " " <> runtimeBuildPathOpt
         <> " " <> ListUtils.join " " staticLibs
-        <> " -lruntime -lgc -lgccpp -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -Wl,--allow-multiple-definition"
+        <> " -lruntime -luv -lpcre2-8 -lcurl -lssl -lcrypto -lz -pthread -ldl -Wl,--allow-multiple-definition"
         <> " " <> ldflags' <> " "
         <> " -o " <> executablePath

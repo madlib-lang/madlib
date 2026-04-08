@@ -31,7 +31,6 @@ OBJS :=\
   $(BUILDDIR)/apply-pap.o\
   $(BUILDDIR)/stack.o\
   $(BUILDDIR)/gc.o\
-  $(BUILDDIR)/rc.o\
   $(BUILDDIR)/crypto.o\
   $(BUILDDIR)/sha256.o\
   $(BUILDDIR)/md5.o
@@ -60,7 +59,7 @@ build/stack.o:
 	fi
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CXX) -DCURL_STATICLIB -DPCRE2_STATIC -I$(INCLUDEDIR) -std=c++14 -O3 -fPIC $(CXXFLAGS) -c $< -o $@
+	$(CXX) -DCURL_STATICLIB -DMADLIB_USE_RC -DPCRE2_STATIC -I$(INCLUDEDIR) -std=c++14 -O3 -fPIC $(CXXFLAGS) -c $< -o $@
 
 build/libruntime.a: $(OBJS)
 	$(AR) rc $@ $^

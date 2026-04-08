@@ -47,7 +47,7 @@ import           Data.ByteString.Short        (ShortByteString)
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex, isEnumADT, isNewtypeADT, isSingleConstructorADT, retrieveConstructorMaxArity, buildLLVMType, primitiveTupleFieldType)
-import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, gcMalloc)
+import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, rcAlloc)
 import           Generate.LLVM.Boxing         (unbox)
 import           Generate.LLVM.Debug          (makeDILocation)
 import           Generate.LLVM.WithMetadata   (callWithMetadata, callMallocWithMetadata)
@@ -326,7 +326,7 @@ generateSymbolTableForPattern ctx env symbolTable baseExp pat = case pat of
             let restStructType = Type.StructureType False (List.replicate restCount boxType)
 
             -- Allocate a flat struct for the rest record
-            restPtr <- callMallocWithMetadata (makeDILocation env (Core.getArea pat)) gcMalloc [(Operand.ConstantOperand $ sizeof' restStructType, [])]
+            restPtr <- callMallocWithMetadata (makeDILocation env (Core.getArea pat)) rcAlloc [(Operand.ConstantOperand $ sizeof' restStructType, [])]
             restPtr' <- ctxSafeBitcast ctx restPtr (Type.ptr restStructType)
 
             -- Copy rest fields from source record

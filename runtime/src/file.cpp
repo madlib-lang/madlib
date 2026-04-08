@@ -22,7 +22,7 @@ static void appendReadChunk(ReadData_t *data, const char *chunk, int64_t chunkSi
       newCapacity *= 2;
     }
 
-    char *nextContent = (char *)GC_MALLOC_ATOMIC((size_t)newCapacity);
+    char *nextContent = (char *)malloc((size_t)newCapacity);
     if (data->currentSize > 0) {
       memcpy(nextContent, data->fileContent, (size_t)data->currentSize);
     }
@@ -62,10 +62,10 @@ void onReadError(uv_fs_t *req) {
     uv_fs_close(getLoop(), &closeReq, openRequest->result, NULL);
   }
 
-  GC_FREE(dataBuffer);
-  GC_FREE(data);
-  GC_FREE(openRequest);
-  GC_FREE(readRequest);
+  free(dataBuffer);
+  free(data);
+  free(openRequest);
+  free(readRequest);
 
   __applyPAP__(callback, 2, boxedError, result);
 }
@@ -92,7 +92,7 @@ void onRead(uv_fs_t *req) {
     // box the result
     if (((ReadData_t *)req->data)->readBytes) {
       madlib__bytearray__ByteArray_t *arr =
-          (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
+          (madlib__bytearray__ByteArray_t *)malloc(sizeof(madlib__bytearray__ByteArray_t));
       arr->bytes = (unsigned char *)((ReadData_t *)req->data)->fileContent;
       arr->length = ((ReadData_t *)req->data)->currentSize;
       arr->capacity = ((ReadData_t *)req->data)->currentSize;
@@ -109,10 +109,10 @@ void onRead(uv_fs_t *req) {
     uv_fs_t *readRequest = ((ReadData_t *)req->data)->readRequest;
     void *data = (ReadData_t *)req->data;
 
-    GC_FREE(dataBuffer);
-    GC_FREE(data);
-    GC_FREE(openRequest);
-    GC_FREE(readRequest);
+    free(dataBuffer);
+    free(data);
+    free(openRequest);
+    free(readRequest);
   } else {
     appendReadChunk((ReadData_t *)req->data, ((ReadData_t *)req->data)->dataBuffer, req->result);
 
@@ -141,17 +141,17 @@ void onReadFileOpen(uv_fs_t *req) {
 
 ReadData_t *madlib__file__read(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
-  uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  char *dataBuffer = (char *)GC_MALLOC_ATOMIC(sizeof(char) * BUFFER_SIZE);
+  uv_fs_t *openReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+  uv_fs_t *readReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+  char *dataBuffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 
   // we allocate and initialize the data of requests
-  readReq->data = GC_MALLOC(sizeof(ReadData_t));
+  readReq->data = malloc(sizeof(ReadData_t));
   ((ReadData_t *)readReq->data)->callback = callback;
   ((ReadData_t *)readReq->data)->readRequest = readReq;
   ((ReadData_t *)readReq->data)->openRequest = openReq;
   ((ReadData_t *)readReq->data)->dataBuffer = dataBuffer;
-  ((ReadData_t *)readReq->data)->fileContent = (char *)GC_MALLOC_ATOMIC(BUFFER_SIZE);
+  ((ReadData_t *)readReq->data)->fileContent = (char *)malloc(BUFFER_SIZE);
   ((ReadData_t *)readReq->data)->fileContent[0] = '\0';
   ((ReadData_t *)readReq->data)->currentCapacity = BUFFER_SIZE;
   ((ReadData_t *)readReq->data)->currentSize = 0;
@@ -211,10 +211,10 @@ void onBufferedReadError(uv_fs_t *req) {
     uv_fs_close(getLoop(), &closeReq, openRequest->result, NULL);
   }
 
-  GC_FREE(dataBuffer);
-  GC_FREE(data);
-  GC_FREE(openRequest);
-  GC_FREE(readRequest);
+  free(dataBuffer);
+  free(data);
+  free(openRequest);
+  free(readRequest);
 
   __applyPAP__(callback, 1, boxedError);
 }
@@ -247,14 +247,14 @@ void onBufferedRead(uv_fs_t *req) {
     uv_fs_t *readRequest = ((BufferedReadData_t *)req->data)->readRequest;
     void *data = (BufferedReadData_t *)req->data;
 
-    GC_FREE(dataBuffer);
-    GC_FREE(data);
-    GC_FREE(openRequest);
-    GC_FREE(readRequest);
+    free(dataBuffer);
+    free(data);
+    free(openRequest);
+    free(readRequest);
   } else {
       madlib__bytearray__ByteArray_t *arr =
-          (madlib__bytearray__ByteArray_t *)GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
-      arr->bytes = (unsigned char *)GC_MALLOC_ATOMIC(req->result);
+          (madlib__bytearray__ByteArray_t *)malloc(sizeof(madlib__bytearray__ByteArray_t));
+      arr->bytes = (unsigned char *)malloc(req->result);
       arr->length = req->result;
       arr->capacity = req->result;
 
@@ -294,12 +294,12 @@ void onBufferedReadFileOpen(uv_fs_t *req) {
 
 BufferedReadData_t *madlib__file__openFileForBufferedRead(char *filepath, PAP_t *openCallback, PAP_t *errorCallback) {
   // we allocate request objects and the buffer
-  uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  char *dataBuffer = (char *)GC_MALLOC_ATOMIC(sizeof(char) * BUFFER_SIZE);
+  uv_fs_t *openReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+  uv_fs_t *readReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+  char *dataBuffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 
   // we allocate and initialize the data of requests
-  readReq->data = GC_MALLOC(sizeof(BufferedReadData_t));
+  readReq->data = malloc(sizeof(BufferedReadData_t));
   ((BufferedReadData_t *)readReq->data)->openCallback = openCallback;
   ((BufferedReadData_t *)readReq->data)->errorCallback = errorCallback;
   ((BufferedReadData_t *)readReq->data)->readRequest = readReq;
@@ -342,17 +342,17 @@ void madlib__file__cancelBufferedRead(BufferedReadData_t *req) {
 
 ReadData_t *madlib__file__readBytes(char *filepath, PAP_t *callback) {
   // we allocate request objects and the buffer
-  uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  uv_fs_t *readReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  char *dataBuffer = (char *)GC_MALLOC_ATOMIC(sizeof(char) * BUFFER_SIZE);
+  uv_fs_t *openReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+  uv_fs_t *readReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+  char *dataBuffer = (char *)malloc(sizeof(char) * BUFFER_SIZE);
 
   // we allocate and initialize the data of requests
-  readReq->data = GC_MALLOC(sizeof(ReadData_t));
+  readReq->data = malloc(sizeof(ReadData_t));
   ((ReadData_t *)readReq->data)->callback = callback;
   ((ReadData_t *)readReq->data)->readRequest = readReq;
   ((ReadData_t *)readReq->data)->openRequest = openReq;
   ((ReadData_t *)readReq->data)->dataBuffer = dataBuffer;
-  ((ReadData_t *)readReq->data)->fileContent = (char *)GC_MALLOC_ATOMIC(BUFFER_SIZE);
+  ((ReadData_t *)readReq->data)->fileContent = (char *)malloc(BUFFER_SIZE);
   ((ReadData_t *)readReq->data)->fileContent[0] = '\0';
   ((ReadData_t *)readReq->data)->currentCapacity = BUFFER_SIZE;
   ((ReadData_t *)readReq->data)->currentSize = 0;
@@ -392,9 +392,9 @@ void onWriteError(uv_fs_t *req) {
   }
 
   // free resources
-  GC_FREE(((WriteData_t *)req->data)->openRequest);
-  GC_FREE(req->data);
-  GC_FREE(req);
+  free(((WriteData_t *)req->data)->openRequest);
+  free(req->data);
+  free(req);
 
 
   __applyPAP__(callback, 2, boxedError, result);
@@ -416,9 +416,9 @@ void onWrite(uv_fs_t *req) {
     int openResult = data->openRequest->result;
 
     // free resources
-    GC_FREE(data->openRequest);
-    GC_FREE(data);
-    GC_FREE(req);
+    free(data->openRequest);
+    free(data);
+    free(req);
 
     // close file
     if (openResult >= 0) {
@@ -451,11 +451,11 @@ void onWriteFileOpen(uv_fs_t *req) {
 // Callback receives unit in case of success
 WriteData_t *madlib__file__write(char *filepath, char *content, PAP_t *callback) {
   // we allocate request objects and the buffer
-  uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  uv_fs_t *writeReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
+  uv_fs_t *openReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+  uv_fs_t *writeReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
 
   // we allocate and initialize the data of requests
-  writeReq->data = GC_MALLOC(sizeof(WriteData_t));
+  writeReq->data = malloc(sizeof(WriteData_t));
   ((WriteData_t *)writeReq->data)->callback = callback;
   ((WriteData_t *)writeReq->data)->writeRequest = writeReq;
   ((WriteData_t *)writeReq->data)->openRequest = openReq;
@@ -477,11 +477,11 @@ WriteData_t *madlib__file__write(char *filepath, char *content, PAP_t *callback)
 // Callback receives unit in case of success
 WriteData_t *madlib__file__writeBytes(char *filepath, madlib__bytearray__ByteArray_t *content, PAP_t *callback) {
   // we allocate request objects and the buffer
-  uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  uv_fs_t *writeReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
+  uv_fs_t *openReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+  uv_fs_t *writeReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
 
   // we allocate and initialize the data of requests
-  writeReq->data = GC_MALLOC(sizeof(WriteData_t));
+  writeReq->data = malloc(sizeof(WriteData_t));
   ((WriteData_t *)writeReq->data)->callback = callback;
   ((WriteData_t *)writeReq->data)->writeRequest = writeReq;
   ((WriteData_t *)writeReq->data)->openRequest = openReq;
@@ -532,9 +532,9 @@ void onBufferedWriteError(uv_fs_t *req) {
   }
 
   // free resources
-  GC_FREE(handle->openRequest);
-  GC_FREE(req->data);
-  GC_FREE(req);
+  free(handle->openRequest);
+  free(req->data);
+  free(req);
 
   __applyPAP__(handle->errorCallback, 1, boxedError);
 }
@@ -589,11 +589,11 @@ void onBufferedWriteFileOpen(uv_fs_t *req) {
 // Callback receives unit in case of success
 BufferedWriteData_t *madlib__file__openBufferedFileForWrite(char *filepath, PAP_t *openCallback, PAP_t *errorCallback) {
   // we allocate request objects and the buffer
-  uv_fs_t *openReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
-  uv_fs_t *writeReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
+  uv_fs_t *openReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
+  uv_fs_t *writeReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
 
   // we allocate and initialize the data of requests
-  writeReq->data = GC_MALLOC(sizeof(BufferedWriteData_t));
+  writeReq->data = malloc(sizeof(BufferedWriteData_t));
   ((BufferedWriteData_t *)writeReq->data)->openCallback = openCallback;
   ((BufferedWriteData_t *)writeReq->data)->errorCallback = errorCallback;
   ((BufferedWriteData_t *)writeReq->data)->writeRequest = writeReq;
@@ -644,15 +644,15 @@ void onFileExists(uv_fs_t *req) {
   __applyPAP__(((FileExistData_t *)req->data)->callback, 1, (void *)(int64_t)result);
 
   // free memory
-  GC_FREE(req->data);
-  GC_FREE(req);
+  free(req->data);
+  free(req);
 }
 
 
 uv_fs_t *madlib__file__exists(char *filepath, PAP_t *callback) {
-  uv_fs_t *accessReq = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
+  uv_fs_t *accessReq = (uv_fs_t *)malloc(sizeof(uv_fs_t));
 
-  accessReq->data = GC_MALLOC(sizeof(FileExistData_t));
+  accessReq->data = malloc(sizeof(FileExistData_t));
   ((FileExistData_t *)accessReq->data)->callback = callback;
 
   uv_fs_access(getLoop(), accessReq, filepath, F_OK, onFileExists);

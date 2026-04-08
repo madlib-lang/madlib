@@ -62,6 +62,7 @@ library
       Generate.LLVM.Builtins
       Generate.LLVM.ClosureConvert
       Generate.LLVM.Debug
+      Generate.LLVM.Drop
       Generate.LLVM.Emit
       Generate.LLVM.Function
       Generate.LLVM.Helper
@@ -97,6 +98,8 @@ library
       MadlibDotJson.MadlibVersion
       Optimize.AllocationSinking
       Optimize.EscapeAnalysis
+      Optimize.OwnershipAnalysis
+      Optimize.ReuseAnalysis
       Optimize.EtaExpansion
       Optimize.EtaReduction
       Optimize.FoldCalls

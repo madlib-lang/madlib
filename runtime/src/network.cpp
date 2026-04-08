@@ -13,7 +13,7 @@ extern "C" {
 
 char *copyString(char *src) {
   size_t nameLength = strlen(src);
-  char *dest = (char*) GC_MALLOC_ATOMIC(nameLength + 1);
+  char *dest = (char*) malloc(nameLength + 1);
   memcpy(dest, src, nameLength);
   dest[nameLength] = '\0';
   return dest;
@@ -39,23 +39,23 @@ madlib__list__Node_t *madlib__network__readNetworkInterfaces() {
     i = count;
 
     while (i--) {
-        void **networkInterface = (void**) GC_MALLOC(sizeof(void*) * NETIF_FIELD_COUNT);
+        void **networkInterface = (void**) malloc(sizeof(void*) * NETIF_FIELD_COUNT);
 
         uv_interface_address_t interface_a = info[i];
 
-        madlib__maybe__Maybe_t *ipv4Maybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
+        madlib__maybe__Maybe_t *ipv4Maybe = (madlib__maybe__Maybe_t*) malloc(sizeof(madlib__maybe__Maybe_t));
         ipv4Maybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
         networkInterface[NETIF_IPV4] = ipv4Maybe;
 
-        madlib__maybe__Maybe_t *ipv4MaskMaybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
+        madlib__maybe__Maybe_t *ipv4MaskMaybe = (madlib__maybe__Maybe_t*) malloc(sizeof(madlib__maybe__Maybe_t));
         ipv4MaskMaybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
         networkInterface[NETIF_IPV4MASK] = ipv4MaskMaybe;
 
-        madlib__maybe__Maybe_t *ipv6Maybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
+        madlib__maybe__Maybe_t *ipv6Maybe = (madlib__maybe__Maybe_t*) malloc(sizeof(madlib__maybe__Maybe_t));
         ipv6Maybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
         networkInterface[NETIF_IPV6] = ipv6Maybe;
 
-        madlib__maybe__Maybe_t *ipv6MaskMaybe = (madlib__maybe__Maybe_t*) GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
+        madlib__maybe__Maybe_t *ipv6MaskMaybe = (madlib__maybe__Maybe_t*) malloc(sizeof(madlib__maybe__Maybe_t));
         ipv6MaskMaybe->index = madlib__maybe__Maybe_NOTHING_INDEX;
         networkInterface[NETIF_IPV6MASK] = ipv6MaskMaybe;
 

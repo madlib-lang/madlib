@@ -4,8 +4,11 @@
 #include <uv.h>
 #include <curl/curl.h>
 #include <stdlib.h>
+#include <string.h>
 #include <cmath>
+#ifndef MADLIB_USE_RC
 #include <gc.h>
+#endif
 
 #include "apply-pap.hpp"
 
@@ -183,41 +186,57 @@ int libuvErrorToMadlibIOError(int libuvError) {
 
 
 void *GC_callocWrap(size_t m, size_t n) {
-  return GC_MALLOC_UNCOLLECTABLE((m) * (n));
+  return malloc((m) * (n));
 }
 
 void *GC_mallocWrap(size_t size) {
-  return GC_MALLOC_UNCOLLECTABLE(size);
+  return malloc(size);
 }
 
 void GC_freeWrap(void *ptr) {
-  GC_FREE(ptr);
+  free(ptr);
 }
 
 void *GC_reallocWrap(void *ptr, size_t size) {
+#ifdef MADLIB_USE_RC
+  return realloc(ptr, size);
+#else
   return GC_REALLOC(ptr, size);
+#endif
 }
 
 char *GC_strdupWrap(const char *s) {
+#ifdef MADLIB_USE_RC
+  size_t len = strlen(s) + 1;
+  char *dup = (char *)malloc(len);
+  if (dup) memcpy(dup, s, len);
+  return dup;
+#else
   return GC_STRDUP(s);
+#endif
 }
 
 void __initEventLoopOnly__() {
-  loop = (uv_loop_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_loop_t));
+  loop = (uv_loop_t *)malloc(sizeof(uv_loop_t));
   uv_loop_init(loop);
 }
 
 void madlib__gc__configureAfterInit();
 
 void __initEventLoop__() {
+#ifdef MADLIB_USE_RC
+  /* RC mode: no GC_INIT, no custom allocators needed. */
+  curl_global_init(CURL_GLOBAL_ALL);
+#else
   GC_INIT();
   madlib__gc__configureAfterInit();
   curl_global_init(CURL_GLOBAL_ALL);
   curl_global_init_mem(CURL_GLOBAL_ALL, GC_mallocWrap, GC_freeWrap,
                        GC_reallocWrap, GC_strdupWrap, GC_callocWrap);
   uv_replace_allocator(GC_mallocWrap, GC_reallocWrap, GC_callocWrap, GC_freeWrap);
+#endif
 
-  loop = (uv_loop_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_loop_t));
+  loop = (uv_loop_t *)malloc(sizeof(uv_loop_t));
   uv_loop_init(loop);
 }
 
@@ -261,13 +280,13 @@ void __startEventLoop__() {
     r = uv_loop_close(loop);
   }
 
-  GC_FREE(loop);
+  free(loop);
   curl_global_cleanup();
 }
 
 
 void onTimeoutHandleClose(uv_handle_t *handle) {
-  GC_FREE(handle);
+  free(handle);
 }
 
 // set timeout
@@ -285,7 +304,7 @@ void __clearTimeout__(uv_timer_t *handle) {
 
 uv_timer_t *__setTimeout__(PAP_t *pap, int64_t millis) {
   uv_timer_t *handle =
-      (uv_timer_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_timer_t));
+      (uv_timer_t *)malloc(sizeof(uv_timer_t));
   handle->data = (void *)pap;
   uv_timer_init(loop, handle);
   uv_timer_start(handle, forwardTimeoutCallback, millis, 0);

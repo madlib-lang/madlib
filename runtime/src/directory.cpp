@@ -17,7 +17,7 @@ void onDirScan(uv_fs_t *req) {
 
     while (uv_fs_scandir_next(req, &dirh) != UV_EOF) {
         size_t itemLength = strlen(dirh.name);
-        char *item = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (itemLength + 1));
+        char *item = (char*)malloc(sizeof(char) * (itemLength + 1));
 
         strncpy(item, dirh.name, itemLength);
         item[itemLength] = '\0';
@@ -27,13 +27,13 @@ void onDirScan(uv_fs_t *req) {
 
     int64_t *boxedError = (int64_t*)0;
 
-    GC_FREE(req);
+    free(req);
 
     __applyPAP__(callback, 2, boxedError, result);
   } else {
     int64_t *boxedError = (int64_t*)libuvErrorToMadlibIOError(req->result);
 
-    GC_FREE(req);
+    free(req);
 
     __applyPAP__(callback, 2, boxedError, result);
   }
@@ -41,7 +41,7 @@ void onDirScan(uv_fs_t *req) {
 
 
 uv_fs_t *madlib__directory__read(char *dir, PAP_t *callback) {
-  uv_fs_t *req = (uv_fs_t *)GC_MALLOC(sizeof(uv_fs_t));
+  uv_fs_t *req = (uv_fs_t *)malloc(sizeof(uv_fs_t));
   req->data = callback;
   uv_fs_scandir(getLoop(), req, dir, 0, onDirScan);
 

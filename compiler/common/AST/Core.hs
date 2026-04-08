@@ -49,6 +49,14 @@ data Metadata
   | ReferenceArgument
   | MutatingFunctionRef
   | StackAllocatable
+  | ReuseCandidate String
+    -- ^ FBIP reuse: attached to constructor-call expressions that can reuse
+    -- the memory of a pattern-match scrutinee.  The String is the name of the
+    -- scrutinee variable whose allocation may be reused via @rc_reuse@.
+  | OwnedArg
+    -- ^ Perceus ownership: attached to call arguments that are NOT the last
+    -- use of a variable.  The LLVM codegen emits @rc_inc@ before passing
+    -- these arguments to the callee.
   deriving(Eq, Show, Ord, Generic, Hashable)
 
 -- TODO: remove Area, we don't care anymore at this stage
@@ -617,6 +625,21 @@ isReferenceToMutatingFunction = elem MutatingFunctionRef
 
 isStackAllocatable :: [Metadata] -> Bool
 isStackAllocatable = elem StackAllocatable
+
+-- | True if the expression carries a ReuseCandidate annotation.
+isReuseCandidate :: [Metadata] -> Bool
+isReuseCandidate = any (\case { ReuseCandidate _ -> True; _ -> False })
+
+-- | Extract the scrutinee variable name from a ReuseCandidate annotation, if present.
+getReuseCandidateVar :: [Metadata] -> Maybe String
+getReuseCandidateVar mds =
+  case [ v | ReuseCandidate v <- mds ] of
+    (v : _) -> Just v
+    []      -> Nothing
+
+-- | True if an argument is annotated as OwnedArg (needs rc_inc before passing).
+isOwnedArg :: [Metadata] -> Bool
+isOwnedArg = elem OwnedArg
 
 
 getImportName :: Core ImportInfo -> String

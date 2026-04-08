@@ -1,7 +1,9 @@
 #ifndef FILESYSTEM_H
 #define FILESYSTEM_H
 
+#ifndef MADLIB_USE_RC
 #include <gc.h>
+#endif
 #include <uv.h>
 
 #include "apply-pap.hpp"

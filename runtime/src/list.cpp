@@ -1,4 +1,7 @@
 
+#ifndef MADLIB_USE_RC
+#  include <gc.h>
+#endif
 #include "rc.h"
 #include "list.hpp"
 
@@ -63,7 +66,7 @@ madlib__list__Node_t *madlib__list__map(PAP_t *pap,
 
   size_t itemCount = madlib__list__length(list);
   int nodesIndex = 1;
-  madlib__list__Node_t *nodes = (madlib__list__Node_t *)GC_MALLOC(
+  madlib__list__Node_t *nodes = (madlib__list__Node_t *)MADLIB_ALLOC(
       sizeof(madlib__list__Node_t) * (itemCount + 1));
   madlib__list__Node_t *newList = nodes;
   madlib__list__Node_t *head = newList;
@@ -121,7 +124,7 @@ madlib__list__Node_t *madlib__list__concat(madlib__list__Node_t *a,
     return a;
   } else {
     size_t aLen = madlib__list__length(a);
-    madlib__list__Node_t *nodes = (madlib__list__Node_t *)GC_MALLOC(
+    madlib__list__Node_t *nodes = (madlib__list__Node_t *)MADLIB_ALLOC(
         sizeof(madlib__list__Node_t) * aLen);
     madlib__list__Node_t *current = a;
 
@@ -160,7 +163,7 @@ madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list) {
   }
 
   size_t len = madlib__list__length(list);
-  madlib__list__Node_t *nodes = (madlib__list__Node_t *)GC_MALLOC(
+  madlib__list__Node_t *nodes = (madlib__list__Node_t *)MADLIB_ALLOC(
       sizeof(madlib__list__Node_t) * (len + 1));
   madlib__list__Node_t *current = list;
 

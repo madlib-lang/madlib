@@ -24,17 +24,34 @@
  * cycle collector (same structural guarantee Koka relies on).
  * ----------------------------------------------------------------------- */
 
-#define RC_HEADER_SIZE 8
+#define RC_HEADER_SIZE 16
 #define RC_STICKY INT32_MAX
+#define RC_MAGIC ((int32_t)0x4D414400)  /* "MAD\0" */
 
 typedef struct {
+    int32_t magic;
     int32_t refcount;
     int32_t size_class;
+    int32_t _pad;
 } madlib__rc__Header_t;
 
 /* Get the header of a pointer returned by rc_alloc. */
 static inline madlib__rc__Header_t* rc_header(void* ptr) {
     return (madlib__rc__Header_t*)((char*)ptr - RC_HEADER_SIZE);
+}
+
+/* Check if a pointer is RC-managed (has a valid header with RC_MAGIC).
+ * On 64-bit systems, malloc returns addresses above 4GB.  inttoptr-encoded
+ * primitives (Integer, Char, Byte, Short, enum tags) are below 4GB.
+ * IEEE 754 floats are above 4GB but rarely have the magic sentinel. */
+static inline int rc_is_managed(void* ptr) {
+    if (!ptr) return 0;
+    uintptr_t addr = (uintptr_t)ptr;
+    /* Reject addresses below 4GB (inttoptr-encoded primitives and enum tags) */
+    if (addr < (uintptr_t)0x100000000ULL) return 0;
+    /* Check magic sentinel */
+    madlib__rc__Header_t* h = rc_header(ptr);
+    return h->magic == RC_MAGIC;
 }
 
 /* Drop function type: called when an object's refcount reaches 0 to
@@ -77,6 +94,17 @@ void* rc_reuse(void* ptr, int64_t new_size);
 
 #ifdef MADLIB_RC_DEBUG
 void rc_report_leaks(void);
+#endif
+
+/* ---------------------------------------------------------------------------
+ * Perceus drop specialization — built-in type drop functions
+ * Only compiled (and needed) under MADLIB_USE_RC.
+ * --------------------------------------------------------------------------- */
+#ifdef MADLIB_USE_RC
+void rc_drop_list(void *ptr);
+void rc_drop_array(void *ptr);
+void rc_drop_bytearray(void *ptr);
+void rc_drop_pap(void *ptr);
 #endif
 
 #ifdef __cplusplus

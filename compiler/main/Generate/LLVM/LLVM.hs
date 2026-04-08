@@ -129,6 +129,31 @@ storeItem basePtr _ (item, index) = do
   store ptr 0 item
   return ()
 
+-- | True if the LLVM type is a pointer (i.e., a heap-allocated RC-managed value).
+-- i64, i1, double etc. are primitives that never have RC headers.
+isPointerType :: Type.Type -> Bool
+isPointerType (Type.PointerType _ _) = True
+isPointerType _                      = False
+
+-- | Emit rc_inc on an operand, only if it has pointer type.
+-- Safe to call on any operand — non-pointers are silently ignored.
+emitRCInc :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m ()
+emitRCInc op = case typeOf op of
+  Type.PointerType _ _ -> do
+    boxed <- safeBitcast op boxType
+    _ <- call rcInc [(boxed, [])]
+    return ()
+  _ -> return ()
+
+-- | Emit rc_dec on an operand, only if it has pointer type.
+emitRCDec :: (MonadIRBuilder m, MonadModuleBuilder m) => Operand -> m ()
+emitRCDec op = case typeOf op of
+  Type.PointerType _ _ -> do
+    boxed <- safeBitcast op boxType
+    _ <- call rcDec [(boxed, [])]
+    return ()
+  _ -> return ()
+
 storeArrayItem :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Operand, Integer) -> m ()
 storeArrayItem basePtr _ (item, index) = do
   ptr <- gep basePtr [i32ConstOp index]
@@ -369,7 +394,13 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
               store newPAP' 0 unboxed'
               storeItem envPtr' () (newPAP, index)
 
-            _ ->
+            _ -> do
+              -- Perceus: rc_inc each captured heap value entering the PAP env.
+              -- Without this, values with refcount=1 that are later rc_dec'd at a
+              -- ReferenceStore site will be freed while the PAP env still holds the ptr.
+              -- Guard: skip rc_inc for primitive types (Float, Integer, Boolean, etc.)
+              -- whose values are encoded as inttoptr pointers, not actual heap pointers.
+              Monad.when (isPointerType (typeOf boxed) && not (isAtomicType argType)) $ emitRCInc boxed
               storeItem envPtr' () (boxed, index)
         )
         ()
@@ -862,15 +893,27 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
         return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr')
       else if Core.isReferenceStore metadata then do
         (_, exp', _) <- generateExp env { isTopLevel = False } symbolTable e
+        let expMadlibType = Core.getType e
+            isHeapManaged = isPointerType (typeOf exp') && not (isAtomicType expMadlibType)
         case Map.lookup name symbolTable of
           Just (Symbol (LocalVariableSymbol ptr) _) -> do
             ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
+            -- Perceus: rc_inc new value before overwriting the ref cell.
+            -- We do NOT rc_dec the old value here because the new value may reference
+            -- the old value (e.g. acc := [x, ...acc] — new list's tail IS old acc).
+            -- The old value's lifetime is managed at scope exit / enclosing scope.
+            -- Guard: only for heap-managed types (not primitives encoded as inttoptr)
+            Monad.when isHeapManaged $
+              emitRCInc exp'
             store ptr' 0 exp'
             return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr)
 
           -- Case of mutation within a tco optimized function
           Just (Symbol (TCOParamSymbol ptr) _) -> do
             ptr' <- safeBitcast ptr (Type.ptr $ typeOf exp')
+            -- Perceus: rc_inc new value only (same reasoning as above).
+            Monad.when isHeapManaged $
+              emitRCInc exp'
             store ptr' 0 exp'
             return (Map.insert name (tcoParamSymbol ptr exp') symbolTable, exp', Just ptr)
 

@@ -4,7 +4,9 @@
   #define GC_THREADS
 #endif
 
+#ifndef MADLIB_USE_RC
 #include <gc.h>
+#endif
 #include <uv.h>
 #include "list.hpp"
 #include "dictionary.hpp"

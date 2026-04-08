@@ -1,7 +1,9 @@
 #ifndef STDIO_H
 #define STDIO_H
 
+#ifndef MADLIB_USE_RC
 #include <gc.h>
+#endif
 #include <stdlib.h>
 #include <uv.h>
 

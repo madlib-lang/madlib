@@ -1,7 +1,9 @@
 #ifndef HTTP_H
 #define HTTP_H
 
+#ifndef MADLIB_USE_RC
 #include <gc.h>
+#endif
 #include <stdint.h>
 #include <curl/curl.h>
 #include "apply-pap.hpp"
