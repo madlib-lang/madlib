@@ -207,9 +207,14 @@ data FunctionCtx m = FunctionCtx
     -- function scope exit.  Called from generateExp when a ScopeDrop-annotated
     -- Assignment is processed.  Each generateFunction call installs a fresh
     -- implementation backed by a per-function IORef.
-  , ctxEmitRCDec :: Operand -> m ()
-    -- ^ Emit an rc_dec call on the given operand.  Provided as a callback to
-    -- break the circular dependency between Function.hs and LLVM.hs.
+  , ctxEmitRCDecForType :: Operand -> IT.Type -> m ()
+    -- ^ Emit an rc_dec (or rc_dec_with_drop) call on the given operand using
+    -- the appropriate drop function for the Madlib type.  For leaf types
+    -- (String, simple ADTs) this is a plain rc_dec.  For compound types
+    -- (List, Array, user ADTs with heap fields) this emits rc_dec_with_drop
+    -- with the correct drop function so child allocations are also freed.
+    -- Provided as a callback to break the circular dependency between
+    -- Function.hs and LLVM.hs.
   }
 
 -- Symbol constructors (duplicated from LLVM.hs to avoid circular imports)
@@ -371,12 +376,13 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
             liftIO $ modifyIORef scopeDropRef ((op, t) :)
         }
 
-  -- Helper: emit rc_dec for all accumulated scope drops, skipping the return value.
+  -- Helper: emit rc_dec_with_drop for all accumulated scope drops, skipping the return value.
+  -- Uses ctxEmitRCDecForType so compound types (List, ADT, etc.) recursively free children.
   let emitScopeDrops returnOp = do
         drops <- liftIO $ readIORef scopeDropRef
         mapM_ (\(op, t) ->
           Monad.when (op /= returnOp && not (isAtomicType t)) $
-            ctxEmitRCDec ctx' op
+            ctxEmitRCDecForType ctx' op t
           ) drops
 
   function <- functionWithMetadata debugMetadata functionName' params' boxType $ \params ->

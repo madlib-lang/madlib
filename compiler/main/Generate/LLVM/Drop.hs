@@ -42,6 +42,7 @@ The function:
 module Generate.LLVM.Drop
   ( generateDropFunctions
   , dropFnForType
+  , runtimeDropFnForType
   , isRCManagedType
   , nullDropFn
   ) where
@@ -150,6 +151,23 @@ dropFnForType symbolTable t = case t of
   IT.TApp f _ -> dropFnForType symbolTable f
   -- Everything else: no children known, use rc_dec with null drop
   _ -> Nothing
+
+
+-- | Like 'dropFnForType' but ONLY returns runtime-defined drop functions
+-- (rc_drop_list, rc_drop_array, rc_drop_bytearray, rc_drop_pap).
+-- Returns Nothing for user-defined ADTs to avoid referencing symbols that
+-- may not be declared in the current module's LLVM IR.
+-- Use this when generating ad-hoc rc_dec_with_drop calls (e.g. scope drops)
+-- rather than inside generated drop functions (which have full linkage).
+runtimeDropFnForType :: IT.Type -> Maybe Operand.Operand
+runtimeDropFnForType t = case t of
+  IT.TCon (IT.TC "Array"    _) _ _ -> Just (externalDropFn "rc_drop_array")
+  IT.TCon (IT.TC "ByteArray"_) _ _ -> Just (externalDropFn "rc_drop_bytearray")
+  IT.TApp (IT.TCon (IT.TC "List"  _) _ _) _ -> Just (externalDropFn "rc_drop_list")
+  IT.TApp (IT.TCon (IT.TC "Array" _) _ _) _ -> Just (externalDropFn "rc_drop_array")
+  IT.TApp (IT.TApp (IT.TCon (IT.TC "(->)" _) _ _) _) _ -> Just (externalDropFn "rc_drop_pap")
+  IT.TApp f _  -> runtimeDropFnForType f
+  _            -> Nothing
 
 
 -- | Make a reference to an external (runtime or previously emitted) drop fn.

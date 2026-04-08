@@ -164,6 +164,19 @@ void GC_enable(void) {}
 void rc_drop_list(void *ptr) {
     madlib__list__Node_t *node = (madlib__list__Node_t *)ptr;
 
+    /* Bulk-allocated list detection (e.g. [1, 2, 3] literals):
+     * All nodes are laid out contiguously in a single rc_alloc block.
+     * For such lists, rc_header(interior_node) points WITHIN the root
+     * allocation block — not to the block's own header.  We detect this
+     * with a range check and skip freeing those "fake" headers.
+     *
+     * For individually-allocated nodes (built by repeat/map/cons), every
+     * node has its own rc_alloc block whose header is OUTSIDE any other
+     * allocation, so the range check correctly does NOT match them. */
+    madlib__rc__Header_t *root_h = rc_header(ptr);
+    uintptr_t root_start = (uintptr_t)root_h;
+    uintptr_t root_end   = root_start + (uintptr_t)(uint32_t)root_h->size_class;
+
     /* Decrement the value of this node (element type unknown — use rc_dec).
      * In RC mode, rc_dec on a primitive-encoded pointer is safe because
      * the pointer will have been sanity-checked by the LLVM codegen before
@@ -179,6 +192,20 @@ void rc_drop_list(void *ptr) {
         if (cur->value == NULL && cur->next == NULL) break;
 
         madlib__rc__Header_t *h = rc_header(cur);
+        uintptr_t h_addr = (uintptr_t)h;
+
+        /* Interior node of a bulk-allocated list: its "header" address falls
+         * within the root block.  Decrement its element but do NOT free — the
+         * entire block is freed by the caller (rc_dec_with_drop) after this
+         * drop function returns. */
+        if (h_addr > root_start && h_addr < root_end) {
+            if (cur->value != NULL) {
+                rc_dec(cur->value);
+            }
+            cur = cur->next;
+            continue;
+        }
+
         if (h->refcount >= RC_STICKY) break;  /* immortal sentinel */
         if (h->refcount > 1) {
             h->refcount--;  /* shared tail — just decrement, stop walking */

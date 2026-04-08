@@ -62,6 +62,7 @@ import qualified Generate.LLVM.Operators      as Ops
 import qualified Generate.LLVM.PatternMatch   as PM
 import qualified Generate.LLVM.Function       as Fn
 import qualified Generate.LLVM.Module         as Mod
+import qualified Generate.LLVM.Drop           as Drop
 
 -- | Inbounds GEP — shadows LLVM.IRBuilder.Instruction.gep
 gep :: (HasCallStack, MonadIRBuilder m, MonadModuleBuilder m) => Operand -> [Operand] -> m Operand
@@ -152,6 +153,30 @@ emitRCDec op = case typeOf op of
     boxed <- safeBitcast op boxType
     _ <- call rcDec [(boxed, [])]
     return ()
+  _ -> return ()
+
+-- | Emit rc_dec_with_drop on an operand for a given Madlib type.
+-- For compound types (List, ADT with heap fields, Array, PAP) this passes
+-- the appropriate drop function so child allocations are recursively freed.
+-- For leaf types (String, enum ADTs, primitives) falls back to plain rc_dec.
+-- Safe to call on any operand — non-pointers are silently ignored.
+emitRCDecForType :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> IT.Type -> m ()
+emitRCDecForType _symbolTable op t = case typeOf op of
+  Type.PointerType _ _ -> do
+    boxed <- safeBitcast op boxType
+    -- Use runtime-defined drop functions only (List, Array, ByteArray, PAP).
+    -- User-defined ADT drop functions are NOT referenced here to avoid
+    -- undefined-global errors — those symbols are only declared in the ADT's
+    -- defining module.  For user ADTs, plain rc_dec frees the top-level struct;
+    -- recursive child drops are handled by the dedicated drop-function chain
+    -- generated in Drop.hs when the ADT is defined.
+    case Drop.runtimeDropFnForType t of
+      Nothing    -> do
+        _ <- call rcDec [(boxed, [])]
+        return ()
+      Just dropF -> do
+        _ <- call rcDecWithDrop [(boxed, []), (dropF, [])]
+        return ()
   _ -> return ()
 
 storeArrayItem :: (MonadIRBuilder m, MonadModuleBuilder m) =>  Operand -> () -> (Operand, Integer) -> m ()
@@ -1295,7 +1320,7 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     return (symbolTable, Operand.ConstantOperand $ Constant.Int 32 (fromIntegral $ fromEnum c), Nothing)
 
   Core.Typed _ _ _ (Core.Do exps) -> do
-    (ret, boxed) <- Fn.generateDoExps makeFunctionCtx env symbolTable exps
+    (ret, boxed) <- Fn.generateDoExps (makeFunctionCtx symbolTable) env symbolTable exps
     return (symbolTable, ret, boxed)
 
   Core.Typed _ area metadata (Core.TupleConstructor exps) -> do
@@ -1746,18 +1771,26 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
 -- | Create the FunctionCtx for Function.hs callbacks.
 -- The ctxRegisterScopeDrop is a no-op by default; generateFunction overrides it
 -- with a per-function IORef-backed implementation.
-makeFunctionCtx :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => Fn.FunctionCtx m
-makeFunctionCtx = Fn.FunctionCtx
+-- | Create the FunctionCtx for Function.hs callbacks.
+-- ctxRegisterScopeDrop is a no-op default; generateFunction overrides it with
+-- a per-function IORef-backed implementation.
+-- ctxEmitRCDecForType uses the provided symbolTable for drop-function lookup;
+-- callers should pass the most complete symbolTable available (post-constructors).
+makeFunctionCtx :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => SymbolTable -> Fn.FunctionCtx m
+makeFunctionCtx _symbolTable = Fn.FunctionCtx
   { Fn.ctxGenerateExp       = generateExp
   , Fn.ctxSafeBitcast       = safeBitcast
   , Fn.ctxAddrSpaceCast     = addrspacecast
   , Fn.ctxStoreItem         = storeItem
-  , Fn.ctxRegisterScopeDrop = \_ _ -> return ()  -- no-op default; overridden per function
-  , Fn.ctxEmitRCDec         = emitRCDec
+  , Fn.ctxRegisterScopeDrop = \_ _ -> return ()
+  , Fn.ctxEmitRCDecForType  = emitRCDecForType Map.empty
   }
 
 
--- | Re-export compileModule with callbacks filled in
+-- | Re-export compileModule with callbacks filled in.
+-- makeFunctionCtx is now a function SymbolTable -> FunctionCtx, so Module.hs can
+-- build the ctx after ADT constructors are in the symbol table (needed for correct
+-- rc_dec_with_drop dispatch on user-defined ADTs).
 compileModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m) => Options -> Core.AST -> m (SymbolTable, Env, ByteString.ByteString)
 compileModule = Mod.compileModule makeFunctionCtx safeBitcast
 

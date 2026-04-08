@@ -281,11 +281,11 @@ callModuleFunctions allModulePaths = case allModulePaths of
 
 
 generateLLVMModule :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, Writer.MonadFix m, MonadModuleBuilder m)
-                   => FunctionCtx (IRBuilderT m)
+                   => (SymbolTable -> FunctionCtx (IRBuilderT m))
                    -> (Operand -> Type -> IRBuilderT m Operand)
                    -> Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
 generateLLVMModule _ _ _ _ _ _ Core.AST{ Core.apath = Nothing } = error "generateLLVMModule: AST has no path"
-generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
+generateLLVMModule mkCtx safeBitcastFn env isMain currentModulePaths initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
   env' <-
     if envIsDebugBuild env then do
       fileSymbolId <- newMetadataId
@@ -322,6 +322,10 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
 
   symbolTableWithConstructors <- generateConstructors env' initialSymbolTable (atypedecls ast)
   let symbolTableWithTopLevel  = List.foldr (flip (addTopLevelFnToSymbolTable env')) symbolTableWithConstructors (aexps ast)
+
+  -- Create the FunctionCtx now that constructors are in the symbol table.
+  -- This allows ctxEmitRCDecForType to correctly identify enum ADTs (zero-arity).
+  let ctx = mkCtx symbolTableWithConstructors
 
   let moduleHash = hashModulePath ast
   let moduleFunctionName =
@@ -363,6 +367,11 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
   extern (AST.mkName "rc_dec_with_drop")   [Type.ptr Type.i8, Type.ptr (Type.FunctionType Type.void [Type.ptr Type.i8] False)] Type.void
   extern (AST.mkName "rc_is_unique")       [Type.ptr Type.i8] Type.i1
   extern (AST.mkName "rc_reuse")           [Type.ptr Type.i8, Type.i64] (Type.ptr Type.i8)
+  -- RC drop functions used as callbacks in rc_dec_with_drop for compound types
+  extern (AST.mkName "rc_drop_list")       [Type.ptr Type.i8] Type.void
+  extern (AST.mkName "rc_drop_array")      [Type.ptr Type.i8] Type.void
+  extern (AST.mkName "rc_drop_bytearray")  [Type.ptr Type.i8] Type.void
+  extern (AST.mkName "rc_drop_pap")        [Type.ptr Type.i8] Type.void
 
   extern (AST.mkName "!=")                     [boxType, boxType, boxType] boxType
 
@@ -411,7 +420,7 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
 
 
 generateModule :: (MonadIO m, Rock.MonadFetch Query.Query m, Writer.MonadFix m)
-               => (forall n. (MonadIO n, Writer.MonadWriter SymbolTable n, State.MonadState Int n, MonadFix.MonadFix n, MonadIRBuilder n, MonadModuleBuilder n) => FunctionCtx n)
+               => (forall n. (MonadIO n, Writer.MonadWriter SymbolTable n, State.MonadState Int n, MonadFix.MonadFix n, MonadIRBuilder n, MonadModuleBuilder n) => SymbolTable -> FunctionCtx n)
                -> (forall n. MonadIRBuilder n => Operand -> Type -> n Operand)
                -> Options -> AST -> m (LLVMAST.Module, SymbolTable, Env)
 generateModule mkCtx safeBitcastFn options ast@Core.AST{ apath = Just modulePath } = do
@@ -456,7 +465,7 @@ generateModule _ _ _ _ =
 
 
 compileModule :: (Rock.MonadFetch Query.Query m, MonadIO m, Writer.MonadFix m)
-              => (forall n. (MonadIO n, Writer.MonadWriter SymbolTable n, State.MonadState Int n, MonadFix.MonadFix n, MonadIRBuilder n, MonadModuleBuilder n) => FunctionCtx n)
+              => (forall n. (MonadIO n, Writer.MonadWriter SymbolTable n, State.MonadState Int n, MonadFix.MonadFix n, MonadIRBuilder n, MonadModuleBuilder n) => SymbolTable -> FunctionCtx n)
               -> (forall n. MonadIRBuilder n => Operand -> Type -> n Operand)
               -> Options -> Core.AST -> m (SymbolTable, Env, ByteString.ByteString)
 compileModule _ _ _ Core.AST { Core.apath = Nothing } = return (mempty, initialEnv, Char8.pack "")

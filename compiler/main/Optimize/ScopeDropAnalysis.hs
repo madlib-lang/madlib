@@ -70,11 +70,15 @@ annotateTopLevel exp = case exp of
 -- | Annotate a function/branch body (list of expressions).
 -- The last expression's value is the return value — bindings that ARE the
 -- return value must not be marked ScopeDrop.
+-- Additionally, variables consumed by calls (passed as non-OwnedArg arguments)
+-- have ownership transferred to the callee and must NOT be ScopeDrop'd.
 annotateBody :: [Exp] -> [Exp]
 annotateBody [] = []
 annotateBody exps =
-  let returnNames = collectReturnNames (last exps)
-  in  map (annotateExp returnNames) exps
+  let returnNames   = collectReturnNames (last exps)
+      consumedNames = collectConsumedNames exps
+      protectedNames = Set.union returnNames consumedNames
+  in  map (annotateExp protectedNames) exps
 
 
 -- | Collect ALL variable names referenced (transitively) from the return
@@ -128,6 +132,51 @@ collectReturnNames exp = case exp of
 
     collectFromBranch is = case is of
       Typed _ _ _ (Is _ body) -> collectReturnNames body
+      _                       -> Set.empty
+
+
+-- | Collect names of variables that are consumed by function calls in the
+-- body (passed as arguments WITHOUT OwnedArg metadata).  These variables have
+-- their ownership transferred to the callee and must NOT be ScopeDrop'd —
+-- the callee is now responsible for freeing them.
+--
+-- This is critical for in-place TRMC (e.g. map reusing the input list) where
+-- the callee returns the same pointer as the input.  Without this guard,
+-- both the input binding and the result binding would be ScopeDrop'd, causing
+-- a double-free.
+collectConsumedNames :: [Exp] -> Set.Set String
+collectConsumedNames = Set.unions . map consumedInExp
+  where
+    consumedInExp exp = case exp of
+      Typed _ _ _ (Assignment _ rhs) ->
+        consumedInExp rhs
+
+      Typed _ _ _ (Call fn args) ->
+        let consumedArgs = Set.unions $ map consumedVar args
+            recurse      = Set.unions $ consumedInExp fn : map consumedInExp args
+        in  Set.union consumedArgs recurse
+
+      Typed _ _ _ (Do exps) ->
+        collectConsumedNames exps
+
+      Typed _ _ _ (Where scrut branches) ->
+        Set.union (consumedInExp scrut)
+                  (Set.unions $ map consumedInBranch branches)
+
+      Typed _ _ _ (If cond t f) ->
+        Set.unions [consumedInExp cond, consumedInExp t, consumedInExp f]
+
+      _ -> Set.empty
+
+    -- A direct Var argument that does NOT carry OwnedArg is consumed by the
+    -- callee — ownership transfers, so the binding must not be ScopeDrop'd.
+    consumedVar arg = case arg of
+      Typed _ _ metadata (Var name _)
+        | not (isOwnedArg metadata) -> Set.singleton name
+      _ -> Set.empty
+
+    consumedInBranch is = case is of
+      Typed _ _ _ (Is _ body) -> consumedInExp body
       _                       -> Set.empty
 
 
