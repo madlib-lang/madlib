@@ -293,29 +293,35 @@ retrieveArgs :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadIRB
 retrieveArgs metadata argExps exps =
   mapM
     (\(metadata, argExp, (st, arg, maybeBoxedArg)) ->
-      let innerExp = unwrapDoExp argExp
+      let innerExp          = unwrapDoExp argExp
           effectiveMetadata = Core.getMetadata innerExp
-      in case maybeBoxedArg of
-      Just boxed | Core.isReferenceArgument metadata || Core.isReferenceArgument effectiveMetadata ->
-        return boxed
-
-      _ ->
-        -- Check if the argument is a variable with a known boxed form
-        case innerExp of
-          Core.Typed _ _ _ (Core.Var name _) ->
-            case Map.lookup name st of
-              Just (Symbol (BoxedVariableSymbol boxed) _) ->
-                return boxed
+          madlibType        = Core.getType innerExp
+          -- OwnedArg: this variable is live after the call — emit rc_inc to retain ownership.
+          -- Guard: only for heap-managed types (not primitives encoded as inttoptr).
+          shouldRCInc = (Core.isOwnedArg metadata || Core.isOwnedArg effectiveMetadata)
+                     && not (isAtomicType madlibType)
+      in do
+        boxed <- case maybeBoxedArg of
+          Just b | Core.isReferenceArgument metadata || Core.isReferenceArgument effectiveMetadata ->
+            return b
+          _ ->
+            -- Check if the argument is a variable with a known boxed form
+            case innerExp of
+              Core.Typed _ _ _ (Core.Var name _) ->
+                case Map.lookup name st of
+                  Just (Symbol (BoxedVariableSymbol b) _) ->
+                    return b
+                  _ | typeOf arg == boxType ->
+                    return arg
+                  _ ->
+                    box arg
               _ | typeOf arg == boxType ->
                 return arg
               _ ->
                 box arg
-
-          _ | typeOf arg == boxType ->
-            return arg
-
-          _ ->
-            box arg
+        -- Emit rc_inc AFTER boxing so we increment the actual i8* that gets passed.
+        Monad.when shouldRCInc $ emitRCInc boxed
+        return boxed
     )
     (List.zip3 metadata argExps exps)
 
@@ -1737,13 +1743,17 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     error $ "not implemented\n\n" ++ ppShow exp
 
 
--- | Create the FunctionCtx for Function.hs callbacks
+-- | Create the FunctionCtx for Function.hs callbacks.
+-- The ctxRegisterScopeDrop is a no-op by default; generateFunction overrides it
+-- with a per-function IORef-backed implementation.
 makeFunctionCtx :: (Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => Fn.FunctionCtx m
 makeFunctionCtx = Fn.FunctionCtx
-  { Fn.ctxGenerateExp  = generateExp
-  , Fn.ctxSafeBitcast  = safeBitcast
-  , Fn.ctxAddrSpaceCast = addrspacecast
-  , Fn.ctxStoreItem    = storeItem
+  { Fn.ctxGenerateExp       = generateExp
+  , Fn.ctxSafeBitcast       = safeBitcast
+  , Fn.ctxAddrSpaceCast     = addrspacecast
+  , Fn.ctxStoreItem         = storeItem
+  , Fn.ctxRegisterScopeDrop = \_ _ -> return ()  -- no-op default; overridden per function
+  , Fn.ctxEmitRCDec         = emitRCDec
   }
 
 

@@ -57,6 +57,11 @@ data Metadata
     -- ^ Perceus ownership: attached to call arguments that are NOT the last
     -- use of a variable.  The LLVM codegen emits @rc_inc@ before passing
     -- these arguments to the callee.
+  | ScopeDrop
+    -- ^ Perceus RC: attached to Assignment expressions whose bound heap value
+    -- must be @rc_dec@'d when it goes out of scope (end of function body or
+    -- branch body).  Only set for heap-managed (non-atomic) bindings that are
+    -- NOT the function's return value.
   deriving(Eq, Show, Ord, Generic, Hashable)
 
 -- TODO: remove Area, we don't care anymore at this stage
@@ -640,6 +645,10 @@ getReuseCandidateVar mds =
 -- | True if an argument is annotated as OwnedArg (needs rc_inc before passing).
 isOwnedArg :: [Metadata] -> Bool
 isOwnedArg = elem OwnedArg
+
+-- | True if a binding is annotated as ScopeDrop (value must be rc_dec'd at scope exit).
+isScopeDrop :: [Metadata] -> Bool
+isScopeDrop = elem ScopeDrop
 
 
 getImportName :: Core ImportInfo -> String

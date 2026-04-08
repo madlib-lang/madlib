@@ -81,6 +81,7 @@ import qualified Optimize.EscapeAnalysis as EscapeAnalysis
 import qualified Optimize.AllocationSinking as AllocationSinking
 import qualified Optimize.ReuseAnalysis as ReuseAnalysis
 import qualified Optimize.OwnershipAnalysis as OwnershipAnalysis
+import qualified Optimize.ScopeDropAnalysis as ScopeDropAnalysis
 import qualified Canonicalize.Rewrite as Rewrite
 import qualified Optimize.HigherOrderCopyPropagation as HigherOrderCopyPropagation
 import Run.OptimizationLevel
@@ -497,11 +498,16 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   PropagatedAST path -> nonInput $ do
     coreAST <- Rock.fetch $ CoreAST path
-    if optOptimizationLevel options > O2 then do
-      (propagatedAST, _) <- runStateT (HigherOrderCopyPropagation.propagateAST coreAST) (HigherOrderCopyPropagation.PropagationState 0 [] Map.empty)
-      return (propagatedAST, (mempty, mempty))
-    else
-      return (coreAST, (mempty, mempty))
+    baseAST <-
+      if optOptimizationLevel options > O2 then do
+        (propagatedAST, _) <- runStateT (HigherOrderCopyPropagation.propagateAST coreAST) (HigherOrderCopyPropagation.PropagationState 0 [] Map.empty)
+        return propagatedAST
+      else
+        return coreAST
+    -- Ownership + ScopeDrop analysis must run at ALL optimization levels — RC correctness requires it.
+    let ownedAnnotated = OwnershipAnalysis.annotateAST baseAST
+        scopeAnnotated = ScopeDropAnalysis.annotateAST ownedAnnotated
+    return (scopeAnnotated, (mempty, mempty))
 
   ForeignCoreExp modulePath name -> nonInput $ do
     coreAST <- Rock.fetch $ CoreAST modulePath

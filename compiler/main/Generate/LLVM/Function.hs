@@ -54,12 +54,13 @@ import qualified Infer.Type                   as IT
 import           Infer.Type                   (isFunctionType)
 import           Explain.Location             (Area)
 import           Data.ByteString.Short        (ShortByteString)
-import           Control.Monad.IO.Class       (MonadIO)
+import           Control.Monad.IO.Class       (MonadIO, liftIO)
+import           Data.IORef
 
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, papType, sizeof', buildLLVMType, buildLLVMParamType, retrieveConstructorStructType, adtSymbol)
-import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcDisable, gcEnable, rcAlloc, chooseRCAlloc)
+import           Generate.LLVM.Builtins       (i8ConstOp, i32ConstOp, i64ConstOp, doubleConstOp, gcDisable, gcEnable, rcAlloc, chooseRCAlloc, isAtomicType, rcDec)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callMallocWithMetadata, storeWithMetadata)
 import           Generate.LLVM.Debug
@@ -201,12 +202,17 @@ data FunctionCtx m = FunctionCtx
   , ctxSafeBitcast  :: Operand -> Type -> m Operand
   , ctxAddrSpaceCast :: Operand -> Type -> m Operand
   , ctxStoreItem    :: Operand -> () -> (Operand, Integer) -> m ()
+  , ctxRegisterScopeDrop :: Operand -> IT.Type -> m ()
+    -- ^ Register a (value, madlib-type) pair to be rc_dec'd at the enclosing
+    -- function scope exit.  Called from generateExp when a ScopeDrop-annotated
+    -- Assignment is processed.  Each generateFunction call installs a fresh
+    -- implementation backed by a per-function IORef.
+  , ctxEmitRCDec :: Operand -> m ()
+    -- ^ Emit an rc_dec call on the given operand.  Provided as a callback to
+    -- break the circular dependency between Function.hs and LLVM.hs.
   }
 
 -- Symbol constructors (duplicated from LLVM.hs to avoid circular imports)
-
-varSymbol :: Operand -> Symbol
-varSymbol = Symbol VariableSymbol
 
 localVarSymbol :: Operand -> Operand -> Symbol
 localVarSymbol ptr = Symbol (LocalVariableSymbol ptr)
@@ -286,11 +292,24 @@ generateBody ctx env symbolTable exps = case exps of
     return (result, boxed)
 
   (exp : es) -> do
-    (symbolTable', _, _) <- ctxGenerateExp ctx env symbolTable exp
+    (symbolTable', val, _) <- ctxGenerateExp ctx env symbolTable exp
+    -- If this expression is a ScopeDrop assignment, register the value for rc_dec at scope exit.
+    registerDropIfNeeded ctx exp val
     generateBody ctx env symbolTable' es
 
   [] ->
     error "Unreachable: generateBody called with empty expression list"
+
+
+-- | After generating a non-last expression, check if it's a ScopeDrop assignment
+-- and register the bound value with ctxRegisterScopeDrop.
+registerDropIfNeeded :: Monad m => FunctionCtx m -> Core.Exp -> Operand -> m ()
+registerDropIfNeeded ctx exp val = case exp of
+  Core.Typed _ _ metadata (Core.Assignment _ rhs)
+    | Core.isScopeDrop metadata
+    , not (isAtomicType (Core.getType rhs)) ->
+      ctxRegisterScopeDrop ctx val (Core.getType rhs)
+  _ -> return ()
 
 
 generateExternFunction :: (Writer.MonadWriter SymbolTable m, MonadFix.MonadFix m, MonadModuleBuilder m) => Env -> SymbolTable -> IT.Qual IT.Type -> String -> Int -> Operand -> m SymbolTable
@@ -343,8 +362,29 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
     else
       return (env, [])
 
+  -- Per-function IORef collecting (operand, madlib-type) pairs to rc_dec at scope exit.
+  -- Fresh for each generateFunction call so nested functions don't interfere.
+  scopeDropRef <- liftIO $ newIORef []
+
+  let ctx' = ctx
+        { ctxRegisterScopeDrop = \op t ->
+            liftIO $ modifyIORef scopeDropRef ((op, t) :)
+        }
+
+  -- Helper: emit rc_dec for all accumulated scope drops, skipping the return value.
+  let emitScopeDrops returnOp = do
+        drops <- liftIO $ readIORef scopeDropRef
+        mapM_ (\(op, t) ->
+          Monad.when (op /= returnOp && not (isAtomicType t)) $
+            ctxEmitRCDec ctx' op
+          ) drops
+
   function <- functionWithMetadata debugMetadata functionName' params' boxType $ \params ->
     if Core.isTCODefinition metadata then mdo
+      -- NOTE: for TCO definitions, we use ctx (no-op scope drop) rather than ctx'.
+      -- Scope drops do not work with TCO loops because the IORef would accumulate
+      -- entries across iterations, causing double-frees. TCO param lifetimes are
+      -- managed separately via updateTCOArg (Phase C.3).
       entry          <- block `named` "entry"
       continue       <- alloca Type.i1 Nothing 0
 
@@ -559,7 +599,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
       let symbolTableWithParams = symbolTable <> Map.fromList (List.map (\(a, b, _) -> (a, b)) paramsWithNames)
 
 
-      -- Generate body
+      -- Generate body (use ctx — no scope drops in TCO loops)
       (generatedBody, maybeBoxed) <- generateBody ctx env' { recursionData = Just recData } symbolTableWithParams body
 
       shouldLoop <- load continue 0
@@ -586,7 +626,7 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
       paramsWithNames <- mapM
         (\(Typed paramQt paramArea metadata paramName, param) ->
             if Core.isReferenceParameter metadata then do
-              param' <- ctxSafeBitcast ctx param (Type.ptr boxType)
+              param' <- ctxSafeBitcast ctx' param (Type.ptr boxType)
               loaded <- load param' 0
               unboxed <- unbox env' symbolTable paramQt loaded
               return (paramName, localVarSymbol param unboxed, unboxed)
@@ -603,10 +643,13 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
 
       let symbolTableWithParams = symbolTable <> Map.fromList (List.map (\(a, b, _) -> (a, b)) paramsWithNames)
 
-      (generatedBody, _) <- generateBody ctx env' symbolTableWithParams body
+      (generatedBody, _) <- generateBody ctx' env' symbolTableWithParams body
 
-      boxed <- box generatedBody
-      ret boxed
+      -- Emit rc_dec for scope-dropped bindings, excluding the return value.
+      boxedResult <- box generatedBody
+      emitScopeDrops boxedResult
+
+      ret boxedResult
 
   Writer.tell $ Map.singleton functionName (fnSymbol totalArity function)
   return $ Map.insert functionName (fnSymbol totalArity function) symbolTable
