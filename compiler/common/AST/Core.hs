@@ -62,6 +62,17 @@ data Metadata
     -- must be @rc_dec@'d when it goes out of scope (end of function body or
     -- branch body).  Only set for heap-managed (non-atomic) bindings that are
     -- NOT the function's return value.
+  | RefCellDrop
+    -- ^ Perceus RC: attached to ReferenceAllocation Assignment expressions
+    -- whose ref cell is non-escaping.  At scope exit, the VALUE currently
+    -- stored in the ref cell is @rc_dec@'d, then the outer cell box itself is
+    -- @rc_dec@'d.  Separate from ScopeDrop because the cell is an alloca
+    -- (stack pointer) rather than a raw heap value.
+  | PatternVarDrop [String]
+    -- ^ Perceus RC: attached to @Is@ nodes (pattern match branches).  Lists
+    -- the names of pattern-bound variables that must be @rc_dec@'d after the
+    -- branch body executes.  Only includes heap-managed (non-atomic) bindings
+    -- that are neither the branch return value nor consumed by a call in the body.
   deriving(Eq, Show, Ord, Generic, Hashable)
 
 -- TODO: remove Area, we don't care anymore at this stage
@@ -649,6 +660,18 @@ isOwnedArg = elem OwnedArg
 -- | True if a binding is annotated as ScopeDrop (value must be rc_dec'd at scope exit).
 isScopeDrop :: [Metadata] -> Bool
 isScopeDrop = elem ScopeDrop
+
+-- | True if a ReferenceAllocation binding is annotated as RefCellDrop
+-- (the stored value + outer cell box must be rc_dec'd at scope exit).
+isRefCellDrop :: [Metadata] -> Bool
+isRefCellDrop = elem RefCellDrop
+
+-- | Extract the list of pattern-variable names to rc_dec from a PatternVarDrop
+-- annotation, or empty list if not annotated.
+getPatternVarDropNames :: [Metadata] -> [String]
+getPatternVarDropNames [] = []
+getPatternVarDropNames (PatternVarDrop names : _) = names
+getPatternVarDropNames (_ : rest) = getPatternVarDropNames rest
 
 
 getImportName :: Core ImportInfo -> String

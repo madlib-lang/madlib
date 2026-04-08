@@ -164,7 +164,11 @@ emitRCDecForType :: (MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> O
 emitRCDecForType _symbolTable op t = case typeOf op of
   Type.PointerType _ _ -> do
     boxed <- safeBitcast op boxType
-    -- Use runtime-defined drop functions only (List, Array, ByteArray, PAP).
+    -- Use runtime-defined drop functions for compound types that have them.
+    -- For records and tuples, we use plain rc_dec. This means that when a
+    -- record/tuple is freed (refcount hits 0), its child fields are leaked —
+    -- but this is safe (no use-after-free). Proper structural drop functions
+    -- for records/tuples require generating per-type drop functions (TODO).
     -- User-defined ADT drop functions are NOT referenced here to avoid
     -- undefined-global errors — those symbols are only declared in the ADT's
     -- defining module.  For user ADTs, plain rc_dec frees the top-level struct;
@@ -415,8 +419,9 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
       envPtr  <- callMallocWithMetadata (makeDILocation env area) envMallocFn [(Operand.ConstantOperand $ sizeof' envType, [])]
       envPtr' <- safeBitcast envPtr (Type.ptr envType)
 
+      let argMetadatas = Core.getMetadata <$> args
       Monad.foldM_
-        (\_ (boxed, index, argType, unboxed) ->
+        (\_ ((boxed, index, argType, unboxed), argMeta) ->
           case typeOf unboxed of
             Type.PointerType (Type.StructureType _ [Type.PointerType _ _, Type.IntegerType 32, Type.IntegerType 32, Type.PointerType _ _, Type.IntegerType 8]) _ | IT.isFunctionType argType && Maybe.isJust (recursionData env) -> do
               unboxed' <- load unboxed 0
@@ -429,13 +434,16 @@ generateApplicationForKnownFunction env symbolTable area returnQualType arity fn
               -- Perceus: rc_inc each captured heap value entering the PAP env.
               -- Without this, values with refcount=1 that are later rc_dec'd at a
               -- ReferenceStore site will be freed while the PAP env still holds the ptr.
-              -- Guard: skip rc_inc for primitive types (Float, Integer, Boolean, etc.)
-              -- whose values are encoded as inttoptr pointers, not actual heap pointers.
-              Monad.when (isPointerType (typeOf boxed) && not (isAtomicType argType)) $ emitRCInc boxed
+              -- For ref cell captures (ReferenceArgument), ALWAYS rc_inc the outer box
+              -- regardless of the inner type — the box itself is heap-allocated and
+              -- RefCellDrop will rc_dec it at scope exit of the allocating function.
+              let isRefArg = Core.isReferenceArgument argMeta
+              let shouldInc = isPointerType (typeOf boxed) && (isRefArg || not (isAtomicType argType))
+              Monad.when shouldInc $ emitRCInc boxed
               storeItem envPtr' () (boxed, index)
         )
         ()
-        $ List.zip4 boxedArgs [0..] (Core.getType <$> args) ((\(_, a, _) -> a) <$> args')
+        $ List.zip (List.zip4 boxedArgs [0..] (Core.getType <$> args) ((\(_, a, _) -> a) <$> args')) argMetadatas
 
       papPtr  <- callMallocWithMetadata (makeDILocation env area) rcAlloc [(Operand.ConstantOperand $ sizeof' papStructType, [])]
       papPtr' <- safeBitcast papPtr (Type.ptr papStructType)
@@ -921,6 +929,9 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             e
 
         store ptr' 0 exp'
+        -- Return Just ptr' so that generateBody's registerDropIfNeeded can register
+        -- this ref cell for RefCellDrop at scope exit (load stored value, rc_dec it,
+        -- then rc_dec the outer cell box).
         return (Map.insert name (localVarSymbol ptr exp') symbolTable, exp', Just ptr')
       else if Core.isReferenceStore metadata then do
         (_, exp', _) <- generateExp env { isTopLevel = False } symbolTable e
@@ -1346,6 +1357,17 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     let expsWithIds = List.zip fieldVals [0..]
         elemTypes   = (\e -> let (_ IT.:=> et) = Core.getQualType e in et) <$> exps
         mallocFn    = chooseRCAlloc elemTypes
+    -- rc_inc each heap-managed field: the tuple now owns a reference to each child.
+    -- Without this, a ScopeDrop rc_dec on the field's original binding would free it
+    -- while the tuple still holds the pointer.
+    -- Newtype ADTs (single constructor, single field) are erased to their inner value
+    -- (stored as inttoptr for atomic inner types, or as a plain pointer for heap inner
+    -- types).  Under the ownership model, if a newtype value is stored into a tuple the
+    -- original binding is in consumedNames and is NOT ScopeDrop'd — so rc_inc is
+    -- unnecessary and, for inttoptr-encoded newtypes, unsafe (rc_inc on a large integer
+    -- masquerading as a pointer crashes the RC magic-sentinel check).
+    Monad.forM_ (List.zip fieldVals elemTypes) $ \(fv, et) ->
+      Monad.when (not (isAtomicType et) && not (isNewtypeADT symbolTable et)) $ emitRCInc fv
     tuplePtr  <- allocateStruct env area metadata tupleType mallocFn
     tuplePtr' <- safeBitcast tuplePtr (Type.ptr tupleType)
     Monad.foldM_ (storeItem tuplePtr') () expsWithIds
@@ -1608,12 +1630,14 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
               _                  -> []
         let baseStructType  = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> baseFieldTypes')
         basePtr <- safeBitcast baseOperand (Type.ptr baseStructType)
-        -- Copy each base field to its position in the result struct (field types are preserved)
-        Monad.forM_ baseFieldNames $ \fieldName -> do
+        -- Copy each base field to its position in the result struct (field types are preserved).
+        -- rc_inc each heap-managed copied field: the new record now co-owns the reference.
+        Monad.forM_ (List.zip baseFieldNames baseFieldTypes') $ \(fieldName, ft) -> do
           let srcIndex = recordFieldIndex fieldName baseRecType
           let dstIndex = recordFieldIndex fieldName recType
           srcPtr <- gep basePtr [i32ConstOp 0, i32ConstOp srcIndex]
           srcVal <- load srcPtr 0
+          Monad.when (not (isAtomicType ft)) $ emitRCInc srcVal
           dstPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp dstIndex]
           store dstPtr 0 srcVal
 
@@ -1636,6 +1660,8 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             else if typeOf val == fieldType
                    then return val
                    else unbox env symbolTable qt val
+        -- rc_inc heap-managed fields: the record now owns a reference to each child.
+        Monad.when (fieldType == boxType) $ emitRCInc fieldVal
         fieldPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp index]
         store fieldPtr 0 fieldVal
 
@@ -1782,8 +1808,9 @@ makeFunctionCtx _symbolTable = Fn.FunctionCtx
   , Fn.ctxSafeBitcast       = safeBitcast
   , Fn.ctxAddrSpaceCast     = addrspacecast
   , Fn.ctxStoreItem         = storeItem
-  , Fn.ctxRegisterScopeDrop = \_ _ -> return ()
-  , Fn.ctxEmitRCDecForType  = emitRCDecForType Map.empty
+  , Fn.ctxRegisterScopeDrop   = \_ _ -> return ()
+  , Fn.ctxRegisterRefCellDrop = \_ _ -> return ()
+  , Fn.ctxEmitRCDecForType    = emitRCDecForType Map.empty
   }
 
 

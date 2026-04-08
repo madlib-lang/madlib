@@ -207,6 +207,11 @@ data FunctionCtx m = FunctionCtx
     -- function scope exit.  Called from generateExp when a ScopeDrop-annotated
     -- Assignment is processed.  Each generateFunction call installs a fresh
     -- implementation backed by a per-function IORef.
+  , ctxRegisterRefCellDrop :: Operand -> IT.Type -> m ()
+    -- ^ Register a ref cell (alloca ptr, inner-madlib-type) pair to be dropped
+    -- at scope exit: load the stored value, rc_dec_with_drop it, then rc_dec
+    -- the outer cell box.  Called for RefCellDrop-annotated ReferenceAllocation
+    -- assignments.
   , ctxEmitRCDecForType :: Operand -> IT.Type -> m ()
     -- ^ Emit an rc_dec (or rc_dec_with_drop) call on the given operand using
     -- the appropriate drop function for the Madlib type.  For leaf types
@@ -297,23 +302,37 @@ generateBody ctx env symbolTable exps = case exps of
     return (result, boxed)
 
   (exp : es) -> do
-    (symbolTable', val, _) <- ctxGenerateExp ctx env symbolTable exp
-    -- If this expression is a ScopeDrop assignment, register the value for rc_dec at scope exit.
-    registerDropIfNeeded ctx exp val
+    (symbolTable', val, maybeExtra) <- ctxGenerateExp ctx env symbolTable exp
+    -- If this expression is a ScopeDrop or RefCellDrop assignment, register for rc_dec at scope exit.
+    registerDropIfNeeded ctx exp val maybeExtra
     generateBody ctx env symbolTable' es
 
   [] ->
     error "Unreachable: generateBody called with empty expression list"
 
 
--- | After generating a non-last expression, check if it's a ScopeDrop assignment
--- and register the bound value with ctxRegisterScopeDrop.
-registerDropIfNeeded :: Monad m => FunctionCtx m -> Core.Exp -> Operand -> m ()
-registerDropIfNeeded ctx exp val = case exp of
+-- | After generating a non-last expression, check if it's a ScopeDrop or
+-- RefCellDrop assignment and register with the appropriate drop callback.
+--
+-- For ScopeDrop: register (val, type) — val is the heap pointer to rc_dec.
+-- For RefCellDrop: register (ptr', innerType) where ptr' is the alloca typed
+--   pointer (so 'load ptr' 0' gives the current stored value at scope exit)
+--   and innerType is the Madlib type of the stored value.  The 'maybeExtra'
+--   parameter carries the Just ptr' from the ReferenceAllocation codegen.
+registerDropIfNeeded :: Monad m => FunctionCtx m -> Core.Exp -> Operand -> Maybe Operand -> m ()
+registerDropIfNeeded ctx exp val maybeExtra = case exp of
   Core.Typed _ _ metadata (Core.Assignment _ rhs)
     | Core.isScopeDrop metadata
     , not (isAtomicType (Core.getType rhs)) ->
       ctxRegisterScopeDrop ctx val (Core.getType rhs)
+  Core.Typed _ _ metadata (Core.Assignment _ rhs)
+    | Core.isRefCellDrop metadata ->
+      case maybeExtra of
+        Just cellPtr ->
+          let innerType = Core.getType rhs
+          in  Monad.when (not (isAtomicType innerType)) $
+                ctxRegisterRefCellDrop ctx cellPtr innerType
+        Nothing -> return ()
   _ -> return ()
 
 
@@ -367,23 +386,38 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
     else
       return (env, [])
 
-  -- Per-function IORef collecting (operand, madlib-type) pairs to rc_dec at scope exit.
-  -- Fresh for each generateFunction call so nested functions don't interfere.
-  scopeDropRef <- liftIO $ newIORef []
+  -- Per-function IORefs for scope drops (fresh per generateFunction call so nested
+  -- functions don't interfere).
+  scopeDropRef    <- liftIO $ newIORef []
+  refCellDropRef  <- liftIO $ newIORef []
 
   let ctx' = ctx
-        { ctxRegisterScopeDrop = \op t ->
+        { ctxRegisterScopeDrop   = \op t ->
             liftIO $ modifyIORef scopeDropRef ((op, t) :)
+        , ctxRegisterRefCellDrop = \cellPtr t ->
+            liftIO $ modifyIORef refCellDropRef ((cellPtr, t) :)
         }
 
   -- Helper: emit rc_dec_with_drop for all accumulated scope drops, skipping the return value.
   -- Uses ctxEmitRCDecForType so compound types (List, ADT, etc.) recursively free children.
+  -- Also drops ref cells: loads the stored value, dec_with_drop it, then dec the cell box.
   let emitScopeDrops returnOp = do
         drops <- liftIO $ readIORef scopeDropRef
         mapM_ (\(op, t) ->
           Monad.when (op /= returnOp && not (isAtomicType t)) $
             ctxEmitRCDecForType ctx' op t
           ) drops
+        refDrops <- liftIO $ readIORef refCellDropRef
+        mapM_ (\(cellPtr, innerT) -> do
+          val <- load cellPtr 0
+          Monad.when (not (isAtomicType innerT)) $
+            ctxEmitRCDecForType ctx' val innerT
+          -- rc_dec the outer cell box itself (the rc_alloc'd wrapper, no children).
+          -- box converts the typed alloca ptr back to the i8* rc_alloc'd address.
+          cellBoxed <- box cellPtr
+          _ <- call rcDec [(cellBoxed, [])]
+          return ()
+          ) refDrops
 
   function <- functionWithMetadata debugMetadata functionName' params' boxType $ \params ->
     if Core.isTCODefinition metadata then mdo

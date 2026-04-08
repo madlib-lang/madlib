@@ -18,6 +18,7 @@ module Generate.LLVM.PatternMatch
   ) where
 
 import qualified Data.Map                     as Map
+import qualified Data.Set                     as Set
 import qualified Data.List                    as List
 import qualified Data.Tuple                   as Tuple
 import qualified Control.Monad                as Monad
@@ -47,8 +48,8 @@ import           Data.ByteString.Short        (ShortByteString)
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
 import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex, isEnumADT, isNewtypeADT, isSingleConstructorADT, retrieveConstructorMaxArity, buildLLVMType, primitiveTupleFieldType)
-import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, rcAlloc)
-import           Generate.LLVM.Boxing         (unbox)
+import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, rcAlloc, rcDec, rcIsUnique)
+import           Generate.LLVM.Boxing         (unbox, box)
 import           Generate.LLVM.Debug          (makeDILocation)
 import           Generate.LLVM.WithMetadata   (callWithMetadata, callMallocWithMetadata)
 import           Generate.LLVM.TypeOf         (Typed(typeOf))
@@ -135,13 +136,49 @@ getConIsId symbolTable (Core.Typed _ _ _ (Core.Is pat _)) = case pat of
 getConIsId _ _ = error "Switch: getConIsId called on invalid Is node"
 
 
+-- | Emit rc_dec for pattern-bound variables listed in a PatternVarDrop annotation.
+-- The drop-names list is pre-computed by ScopeDropAnalysis — only names that are
+-- neither returned nor consumed by the branch body are included.
+-- Uses plain rc_dec (no structural child drop) — safe because rc_is_managed in
+-- the runtime filters inttoptr-encoded primitives, so this is a no-op for atomics.
+--
+-- Perceus correctness: pattern variables are only owned (and thus droppable) when
+-- the scrutinee is uniquely owned (refcount == 1). If the scrutinee is shared
+-- (refcount > 1), the pattern vars are BORROWS and must NOT be rc_dec'd.
+-- We check rc_is_unique(scrutinee) once and conditionally emit all drops.
+emitPatternVarDrops :: (MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m) => SymbolTable -> Operand -> [String] -> m ()
+emitPatternVarDrops symbolTable scrutinee dropNames = do
+  let droppable = [ (name, op)
+                  | name <- dropNames
+                  , Just (Symbol VariableSymbol op) <- [Map.lookup name symbolTable]
+                  , Type.PointerType _ _ <- [typeOf op]
+                  ]
+  Monad.unless (null droppable) $ mdo
+    -- Check if the scrutinee is uniquely owned. Only drop if unique (Perceus rule:
+    -- pattern vars borrow from shared scrutinees, own from unique scrutinees).
+    boxedScrutinee <- box scrutinee
+    isUnique <- call rcIsUnique [(boxedScrutinee, [])]
+    condBr isUnique dropBlock mergeBlock
+
+    dropBlock <- block `named` "patVarDrop"
+    Monad.forM_ droppable $ \(_, op) -> do
+      boxed <- box op
+      _ <- call rcDec [(boxed, [])]
+      return ()
+    br mergeBlock
+
+    mergeBlock <- block `named` "patVarDropMerge"
+    return ()
+
+
 -- | Generate a single switch case block: bind pattern variables, eval body, branch to exit.
 generateSwitchCase :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
                    => PatternCtx m -> Env -> SymbolTable -> AST.Name -> Operand -> Core.Is -> m (AST.Name, [(Operand, AST.Name)])
-generateSwitchCase ctx env symbolTable exitBlock whereExp (Core.Typed _ _ _ (Core.Is pat body)) = do
+generateSwitchCase ctx env symbolTable exitBlock whereExp (Core.Typed _ _ isMetadata (Core.Is pat body)) = do
   caseBlock <- block `named` "switchCase"
   symbolTable' <- generateSymbolTableForPattern ctx env symbolTable whereExp pat
   (_, result, _) <- ctxGenerateExp ctx env symbolTable' body
+  emitPatternVarDrops symbolTable' whereExp (Core.getPatternVarDropNames isMetadata)
   retBlock <- currentBlock
   br exitBlock
   return (caseBlock, [(result, retBlock)])
@@ -173,9 +210,10 @@ generateSwitchBranches ctx env symbolTable exitBlock whereExp iss = mdo
   -- Default block: first catch-all branch, or unreachable
   defaultBlock <- block `named` "switchDefault"
   defaultPhis <- case catchAlls of
-    (Core.Typed _ _ _ (Core.Is pat body) : _) -> do
+    (Core.Typed _ _ isMetadata (Core.Is pat body) : _) -> do
       symbolTable' <- generateSymbolTableForPattern ctx env symbolTable whereExp pat
       (_, result, _) <- ctxGenerateExp ctx env symbolTable' body
+      emitPatternVarDrops symbolTable' whereExp (Core.getPatternVarDropNames isMetadata)
       retBlock <- currentBlock
       br exitBlock
       return [(result, retBlock)]
@@ -189,7 +227,7 @@ generateSwitchBranches ctx env symbolTable exitBlock whereExp iss = mdo
 generateBranch :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
                => PatternCtx m -> Env -> SymbolTable -> Bool -> AST.Name -> Operand -> Core.Is -> m [(Operand, AST.Name)]
 generateBranch ctx env symbolTable hasMore exitBlock whereExp is = case is of
-  Core.Typed _ _ _ (Core.Is pat exp) -> mdo
+  Core.Typed _ _ isMetadata (Core.Is pat exp) -> mdo
     test      <- generateBranchTest ctx env symbolTable pat whereExp
     currBlock <- currentBlock
     condBr test branchExpBlock nextBlock
@@ -198,6 +236,7 @@ generateBranch ctx env symbolTable hasMore exitBlock whereExp is = case is of
     symbolTable' <- generateSymbolTableForPattern ctx env symbolTable whereExp pat
     (_, branchResult, _) <- ctxGenerateExp ctx env symbolTable' exp
     branchResult' <- return branchResult
+    emitPatternVarDrops symbolTable' whereExp (Core.getPatternVarDropNames isMetadata)
     retBlock <- currentBlock
     br exitBlock
 

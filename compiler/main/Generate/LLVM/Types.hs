@@ -27,6 +27,8 @@ module Generate.LLVM.Types
   , isSingleConstructorADT
     -- * Tuple arity detection
   , tupleArity
+  , isTupleType
+  , getTupleElemTypes
     -- * Record helpers
   , flatRecordType
   , recordFieldIndex
