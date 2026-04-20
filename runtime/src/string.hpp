@@ -32,9 +32,16 @@ char *madlib__string__trimEnd(char *s);
 
 madlib__maybe__Maybe_t *madlib__string__charAt(int64_t n, unsigned char *s);
 
+// Byte-offset-based O(1) access (used by the index-based Parse module)
+madlib__maybe__Maybe_t *madlib__string__byteCharAt(int64_t byteOffset, unsigned char *s);
+int64_t                  madlib__string__byteCharWidth(int64_t byteOffset, unsigned char *s);
+int64_t                  madlib__string__byteLength(unsigned char *s);
+bool                     madlib__string__byteStartsWith(char *target, int64_t byteOffset, char *s);
+
 char *madlib__string__internal__show(char *s);
 
 char *madlib__string__internal__concat(char *s1, char *s2);
+char *madlib__string__concat_n(int64_t count, ...);
 
 char *stripTrailingZeros(char *number);
 

@@ -1,0 +1,318 @@
+import { assertEquals, test } from "Test"
+import List from "List"
+import String from "String"
+
+import StringBuilder from "StringBuilder"
+
+
+// --- Construction ---
+
+test(
+  "new creates an empty builder",
+  () => assertEquals(StringBuilder.toString(StringBuilder.new()), ""),
+)
+
+test(
+  "isEmpty on new builder returns true",
+  () => assertEquals(StringBuilder.isEmpty(StringBuilder.new()), true),
+)
+
+test(
+  "isEmpty on non-empty builder returns false",
+  () => assertEquals(StringBuilder.isEmpty(StringBuilder.append("x", StringBuilder.new())), false),
+)
+
+test(
+  "ofString initializes with given string",
+  () => assertEquals(StringBuilder.toString(StringBuilder.ofString("hello")), "hello"),
+)
+
+test(
+  "ofString - unicode content",
+  () => assertEquals(StringBuilder.toString(StringBuilder.ofString("café")), "café"),
+)
+
+test(
+  "withCapacity creates a usable empty builder",
+  () => assertEquals(StringBuilder.toString(StringBuilder.append("test", StringBuilder.withCapacity(1024))), "test"),
+)
+
+
+// --- Append ---
+
+test(
+  "append single string",
+  () => assertEquals(StringBuilder.toString(StringBuilder.append("hello", StringBuilder.new())), "hello"),
+)
+
+test(
+  "append multiple strings in sequence",
+  () => do {
+    sb = StringBuilder.append("world", StringBuilder.append(", ", StringBuilder.append("hello", StringBuilder.new())))
+    return assertEquals(StringBuilder.toString(sb), "hello, world")
+  },
+)
+
+test(
+  "append empty string is a no-op",
+  () => assertEquals(StringBuilder.toString(StringBuilder.append("", StringBuilder.append("hello", StringBuilder.new()))), "hello"),
+)
+
+test(
+  "append unicode string",
+  () => assertEquals(StringBuilder.toString(StringBuilder.append("é", StringBuilder.append("caf", StringBuilder.new()))), "café"),
+)
+
+test(
+  "appendChar appends a single ASCII character",
+  () => assertEquals(StringBuilder.toString(StringBuilder.appendChar('!', StringBuilder.append("hello", StringBuilder.new()))), "hello!"),
+)
+
+test(
+  "appendChar appends a unicode character",
+  () => assertEquals(StringBuilder.toString(StringBuilder.appendChar('é', StringBuilder.append("caf", StringBuilder.new()))), "café"),
+)
+
+test(
+  "appendChar appends a 4-byte unicode codepoint",
+  () => assertEquals(StringBuilder.toString(StringBuilder.appendChar('𝄞', StringBuilder.new())), "𝄞"),
+)
+
+test(
+  "appendLine appends string followed by newline",
+  () => assertEquals(StringBuilder.toString(StringBuilder.appendLine("hello", StringBuilder.new())), "hello\n"),
+)
+
+test(
+  "appendLine on empty builder",
+  () => assertEquals(StringBuilder.toString(StringBuilder.appendLine("", StringBuilder.new())), "\n"),
+)
+
+test(
+  "appendMany appends all strings from a list",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.appendMany(["a", "b", "c"], StringBuilder.new())),
+    "abc",
+  ),
+)
+
+test(
+  "appendMany on empty list is a no-op",
+  () => assertEquals(StringBuilder.toString(StringBuilder.appendMany([], StringBuilder.new())), ""),
+)
+
+test(
+  "appendMany is equivalent to repeated append",
+  () => do {
+    parts = ["foo", "bar", "baz"]
+    via_many = StringBuilder.toString(StringBuilder.appendMany(parts, StringBuilder.new()))
+    via_append = StringBuilder.toString(StringBuilder.append("baz", StringBuilder.append("bar", StringBuilder.append("foo", StringBuilder.new()))))
+    return assertEquals(via_many, via_append)
+  },
+)
+
+
+// --- Prepend ---
+
+test(
+  "prepend inserts string at the beginning",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.prepend("hello, ", StringBuilder.append("world", StringBuilder.new()))),
+    "hello, world",
+  ),
+)
+
+test(
+  "prepend on empty builder",
+  () => assertEquals(StringBuilder.toString(StringBuilder.prepend("hello", StringBuilder.new())), "hello"),
+)
+
+test(
+  "prependChar inserts character at the beginning",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.prependChar('H', StringBuilder.append("ello", StringBuilder.new()))),
+    "Hello",
+  ),
+)
+
+test(
+  "prependChar - unicode",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.prependChar('é', StringBuilder.append("caf", StringBuilder.new()))),
+    "écaf",
+  ),
+)
+
+
+// --- Insert ---
+
+test(
+  "insert at position 0 is equivalent to prepend",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.insert(0, "pre-", StringBuilder.append("suffix", StringBuilder.new()))),
+    "pre-suffix",
+  ),
+)
+
+test(
+  "insert at end is equivalent to append",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.insert(6, "-suf", StringBuilder.append("prefix", StringBuilder.new()))),
+    "prefix-suf",
+  ),
+)
+
+test(
+  "insert in the middle",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.insert(5, " beautiful", StringBuilder.append("hello world", StringBuilder.new()))),
+    "hello beautiful world",
+  ),
+)
+
+
+// --- Delete / Replace ---
+
+test(
+  "deleteRange removes byte range",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.deleteRange(5, 12, StringBuilder.append("hello, world!", StringBuilder.new()))),
+    "hello!",
+  ),
+)
+
+test(
+  "deleteRange with start == end is a no-op",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.deleteRange(3, 3, StringBuilder.append("hello", StringBuilder.new()))),
+    "hello",
+  ),
+)
+
+test(
+  "replace substitutes a byte range with a new string",
+  () => assertEquals(
+    StringBuilder.toString(StringBuilder.replace(7, 12, "Madlib", StringBuilder.append("hello, world!", StringBuilder.new()))),
+    "hello, Madlib!",
+  ),
+)
+
+
+// --- Reverse ---
+
+test(
+  "reverse reverses ASCII string",
+  () => assertEquals(StringBuilder.toString(StringBuilder.reverse(StringBuilder.append("hello", StringBuilder.new()))), "olleh"),
+)
+
+test(
+  "reverse handles UTF-8 multi-byte characters",
+  () => assertEquals(StringBuilder.toString(StringBuilder.reverse(StringBuilder.append("café", StringBuilder.new()))), "éfac"),
+)
+
+test(
+  "reverse on empty builder stays empty",
+  () => assertEquals(StringBuilder.toString(StringBuilder.reverse(StringBuilder.new())), ""),
+)
+
+test(
+  "reverse single character",
+  () => assertEquals(StringBuilder.toString(StringBuilder.reverse(StringBuilder.append("a", StringBuilder.new()))), "a"),
+)
+
+
+// --- Clear ---
+
+test(
+  "clear resets to empty",
+  () => assertEquals(StringBuilder.toString(StringBuilder.clear(StringBuilder.append("hello", StringBuilder.new()))), ""),
+)
+
+test(
+  "clear then append works correctly",
+  () => do {
+    sb = StringBuilder.clear(StringBuilder.append("old", StringBuilder.new()))
+    return assertEquals(StringBuilder.toString(StringBuilder.append("new", sb)), "new")
+  },
+)
+
+
+// --- Length ---
+
+test(
+  "length returns 0 for new builder",
+  () => assertEquals(StringBuilder.length(StringBuilder.new()), 0),
+)
+
+test(
+  "length tracks bytes after appends",
+  () => assertEquals(
+    StringBuilder.length(StringBuilder.append("world", StringBuilder.append("hello", StringBuilder.new()))),
+    10,
+  ),
+)
+
+test(
+  "length is byte length (multi-byte chars count as multiple bytes)",
+  () => assertEquals(StringBuilder.length(StringBuilder.append("café", StringBuilder.new())), 5),
+)
+
+
+// --- toString idempotency ---
+
+test(
+  "toString can be called multiple times and returns same result",
+  () => do {
+    sb = StringBuilder.append("hello", StringBuilder.new())
+    s1 = StringBuilder.toString(sb)
+    s2 = StringBuilder.toString(sb)
+    return assertEquals(s1, s2)
+  },
+)
+
+test(
+  "toString on empty builder returns empty string",
+  () => assertEquals(StringBuilder.toString(StringBuilder.new()), ""),
+)
+
+
+// --- Large-input / concat-loop performance test ---
+
+test(
+  "appendMany 5000 single-char tokens produces correct length",
+  () => do {
+    parts = List.repeat("x", 5000)
+    sb = StringBuilder.appendMany(parts, StringBuilder.new())
+    return assertEquals(StringBuilder.length(sb), 5000)
+  },
+)
+
+test(
+  "concat loop result matches String.repeat",
+  () => do {
+    n = 1000
+    parts = List.repeat("a", n)
+    fromBuilder = StringBuilder.toString(StringBuilder.appendMany(parts, StringBuilder.new()))
+    fromRepeat = String.repeat('a', n)
+    return assertEquals(fromBuilder, fromRepeat)
+  },
+)
+
+
+// --- Round-trip tests ---
+
+test(
+  "ofString then toString is identity for ASCII",
+  () => do {
+    s = "The quick brown fox"
+    return assertEquals(StringBuilder.toString(StringBuilder.ofString(s)), s)
+  },
+)
+
+test(
+  "ofString then toString is identity for unicode",
+  () => do {
+    s = "café au lait 𝄞"
+    return assertEquals(StringBuilder.toString(StringBuilder.ofString(s)), s)
+  },
+)

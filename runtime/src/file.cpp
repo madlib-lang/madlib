@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "event-loop.hpp"
+#include "string_header.hpp"
 
 
 #ifdef __cplusplus
@@ -45,7 +46,8 @@ void onReadError(uv_fs_t *req) {
     return;
   }
 
-  char *result = (char*)"";
+  char *result = madlib__string__alloc_bytes(0);
+  result[0] = '\0';
 
   int64_t *boxedError = (int64_t *)libuvErrorToMadlibIOError(req->result);
 
@@ -99,8 +101,13 @@ void onRead(uv_fs_t *req) {
 
       __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, (void *)arr);
     } else {
+      // wrap the accumulated buffer into a proper madlib string before handing to Madlib
+      int64_t contentSize = ((ReadData_t *)req->data)->currentSize;
+      char *wrappedContent = madlib__string__alloc_bytes((uint32_t)contentSize);
+      memcpy(wrappedContent, ((ReadData_t *)req->data)->fileContent, (size_t)contentSize);
+      wrappedContent[contentSize] = '\0';
       // call the callback
-      __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, ((ReadData_t *)req->data)->fileContent);
+      __applyPAP__(((ReadData_t *)req->data)->callback, 2, boxedError, wrappedContent);
     }
 
     // free resources
@@ -193,8 +200,6 @@ void onBufferedReadError(uv_fs_t *req) {
   if (((BufferedReadData_t *)req->data)->canceled) {
     return;
   }
-
-  char *result = (char*)"";
 
   int64_t *boxedError = (int64_t *)libuvErrorToMadlibIOError(req->result);
 
@@ -380,7 +385,8 @@ void onWriteError(uv_fs_t *req) {
     return;
   }
 
-  char *result = (char *)"\0";
+  char *result = madlib__string__alloc_bytes(0);
+  result[0] = '\0';
 
   int64_t *boxedError = (int64_t *)libuvErrorToMadlibIOError(req->result);
 

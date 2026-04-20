@@ -2,6 +2,7 @@
 #include "stdio.hpp"
 #include <string.h>
 #include "event-loop.hpp"
+#include "string_header.hpp"
 #include <iostream>
 #include <cstring>
 
@@ -11,7 +12,8 @@ extern "C" {
 
 
 void onError(StdinData_t *stdinData, int libUvError) {
-  char *boxedResult = (char*)"\0";
+  char *boxedResult = madlib__string__alloc_bytes(0);
+  boxedResult[0] = '\0';
 
   int64_t *boxedError = (int64_t *)libuvErrorToMadlibIOError(libUvError);
 
@@ -65,13 +67,18 @@ void onStdinReadLine(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer)
     if (foundLineReturn) {
       stdinData->done = true;
       void *cb = stdinData->callback;
-      void *result = stdinData->data;
+      int currentSize = stdinData->currentSize;
+      char *rawData = stdinData->data;
 
       uv_read_stop(stream);
       uv_close((uv_handle_t*)stream, onStdInPipeClose);
       GC_FREE(stdinData);
 
       int64_t *boxedError = (int64_t *)0;
+
+      char *result = madlib__string__alloc_bytes((uint32_t)currentSize);
+      memcpy(result, rawData, currentSize);
+      result[currentSize] = '\0';
 
       __applyPAP__(cb, 2, boxedError, result);
     }
@@ -90,18 +97,19 @@ void onStdinRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer) {
     stdinData->done = true;
     if (nread == UV_EOF) {
       uv_read_stop(stream);
-      char *result = NULL;
-      if (stdinData->data == NULL) {
-        result = (char*)"";
-      } else {
-        result = stdinData->data;
-      }
+      int currentSize = stdinData->currentSize;
+      char *rawData = stdinData->data;
       void *cb = stdinData->callback;
 
       GC_FREE(stdinData);
       uv_close((uv_handle_t*) stream, onStdInPipeClose);
 
       int64_t *boxedError = (int64_t *)0;
+      char *result = madlib__string__alloc_bytes((uint32_t)currentSize);
+      if (rawData != NULL && currentSize > 0) {
+        memcpy(result, rawData, currentSize);
+      }
+      result[currentSize] = '\0';
       __applyPAP__(cb, 2, boxedError, result);
     } else {
       // error
@@ -161,9 +169,8 @@ void onStdinKeyPress(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buffer)
     uv_read_stop(stream);
     onError(stdinData, nread);
   } else if (nread > 0) {
-    int bytesToUse = 0;
-    char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (nread + 1));
-    memcpy(result, buffer->base, nread * sizeof(char));
+    char *result = madlib__string__alloc_bytes((uint32_t)nread);
+    memcpy(result, buffer->base, nread);
     result[nread] = '\0';
     void *cb = stdinData->callback;
     __applyPAP__(cb, 1, result);

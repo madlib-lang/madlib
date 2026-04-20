@@ -318,6 +318,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/hocp-recursive-param-pattern-shadow"
         , "compiler/test/Blackbox/test-cases/param-destructuring"
         , "compiler/test/Blackbox/test-cases/assign-destructuring"
+        , "compiler/test/Blackbox/test-cases/unit-type-consistency"
         ]
 
   forM_ cases $ \casePath -> do

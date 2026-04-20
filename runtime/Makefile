@@ -20,6 +20,7 @@ OBJS :=\
   $(BUILDDIR)/number.o\
   $(BUILDDIR)/math.o\
   $(BUILDDIR)/string.o\
+  $(BUILDDIR)/string_builder.o\
   $(BUILDDIR)/char.o\
   $(BUILDDIR)/event-loop.o\
   $(BUILDDIR)/process.o\

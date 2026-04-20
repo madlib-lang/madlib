@@ -2,6 +2,7 @@
 #include <string.h>
 #include "event-loop.hpp"
 #include "list.hpp"
+#include "string_header.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,9 +18,8 @@ void onDirScan(uv_fs_t *req) {
 
     while (uv_fs_scandir_next(req, &dirh) != UV_EOF) {
         size_t itemLength = strlen(dirh.name);
-        char *item = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (itemLength + 1));
-
-        strncpy(item, dirh.name, itemLength);
+        char *item = madlib__string__alloc_bytes((uint32_t)itemLength);
+        memcpy(item, dirh.name, itemLength);
         item[itemLength] = '\0';
 
         result = madlib__list__internal__append(item, result);

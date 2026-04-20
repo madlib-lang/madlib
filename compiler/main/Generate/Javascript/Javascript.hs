@@ -477,7 +477,7 @@ emitExp env config (Typed qt area metadata exp) =
           docText v
 
         Literal LUnit ->
-          "({ __constructor: \"Unit\", __args: [] })"
+          "undefined"
 
         TypedHole ->
           "(() => { throw 'Typed hole reached, exiting.' })()"

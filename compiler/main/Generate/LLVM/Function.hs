@@ -526,14 +526,13 @@ generateFunction ctx env symbolTable metadata (ps IT.:=> t) area functionName co
                   }
             else
               error "Unreachable: unrecognized TCO recursion kind"
-      -- Disable GC during right-list TRMC loops: the arena allocator only adds
-      -- live data (all nodes are reachable via the list chain), so GC scans
-      -- during the loop are pure overhead. Re-enabled after the loop exits.
-      let isListRecursive = Core.isRightListRecursiveDefinition metadata
-                         || Core.isInPlaceListRecursiveDefinition metadata
-      Monad.when isListRecursive $ do
-        _ <- call gcDisable []
-        return ()
+      -- Note: we used to GC_disable around right-list TRMC loops, but this could
+      -- leave GC permanently disabled if any code path inside the loop returned
+      -- without going through the re-enable block (including nested list-recursive
+      -- calls that cause unbalanced disable/enable pairs at exceptional exits).
+      -- The optimization saved GC scans on arena-allocated list nodes, but the
+      -- correctness cost (runaway heap growth → main thread pegged) outweighs it.
+      let isListRecursive = False
 
       br loop
 

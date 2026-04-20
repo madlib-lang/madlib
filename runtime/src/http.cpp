@@ -9,6 +9,15 @@
 #include "event-loop.hpp"
 #include "bytearray.hpp"
 #include "maybe.hpp"
+#include "string_header.hpp"
+
+static char *copyCStringToMadlib(const char *src) {
+  size_t len = strlen(src);
+  char *dst = madlib__string__alloc_bytes((uint32_t)len);
+  memcpy(dst, src, len);
+  dst[len] = '\0';
+  return dst;
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -151,7 +160,7 @@ void callCallback(RequestData_t *requestData, CURLcode curlCode) {
     madlib__http__ClientError_1_t *clientError =
         (madlib__http__ClientError_1_t *)GC_MALLOC(sizeof(madlib__http__ClientError_1_t));
     clientError->index = mapCurlErrorToClientErrorIndex(curlCode);
-    clientError->arg0 = (char*) curl_easy_strerror(curlCode);
+    clientError->arg0 = copyCStringToMadlib(curl_easy_strerror(curlCode));
 
     madlib__http__Error_ClientError_t *error =
         (madlib__http__Error_ClientError_t *)GC_MALLOC(sizeof(madlib__http__Error_ClientError_t));
@@ -170,7 +179,10 @@ void callCallback(RequestData_t *requestData, CURLcode curlCode) {
       ((madlib__bytearray__ByteArray_t*)boxedBody)->length = requestData->responseSize;
       ((madlib__bytearray__ByteArray_t*)boxedBody)->capacity = requestData->responseSize;
     } else {
-      boxedBody = requestData->body;
+      char *wrappedBody = madlib__string__alloc_bytes((uint32_t)requestData->responseSize);
+      memcpy(wrappedBody, requestData->body, requestData->responseSize);
+      wrappedBody[requestData->responseSize] = '\0';
+      boxedBody = wrappedBody;
     }
 
     // box headers
@@ -193,7 +205,7 @@ void callCallback(RequestData_t *requestData, CURLcode curlCode) {
       madlib__http__ClientError_1_t *clientError =
         (madlib__http__ClientError_1_t *)GC_MALLOC(sizeof(madlib__http__ClientError_1_t));
       clientError->index = mapCurlErrorToClientErrorIndex(curlCode);
-      clientError->arg0 = (char*) curl_easy_strerror(curlCode);
+      clientError->arg0 = copyCStringToMadlib(curl_easy_strerror(curlCode));
 
       madlib__http__Error_BadResponse_t *error =
           (madlib__http__Error_BadResponse_t *)GC_MALLOC(sizeof(madlib__http__Error_BadResponse_t));
@@ -356,14 +368,16 @@ static size_t onHeaderWrite(void *data, size_t size, size_t nmemb, void *userp) 
     extraValueOffset += 1;
   }
 
-  char *headerName = (char *)GC_MALLOC_ATOMIC(nameLength + 1);
-  char *headerValue = (char *)GC_MALLOC_ATOMIC(valueLength + 1);
+  size_t actualValueLength = valueLength - extraValueOffset - 3;
+
+  char *headerName = madlib__string__alloc_bytes((uint32_t)nameLength);
+  char *headerValue = madlib__string__alloc_bytes((uint32_t)actualValueLength);
 
   strncpy(headerName, strData, nameLength);
-  strncpy(headerValue, strData + nameLength + extraValueOffset + 1, valueLength - extraValueOffset - 3);
+  strncpy(headerValue, strData + nameLength + extraValueOffset + 1, actualValueLength);
 
   headerName[nameLength] = '\0';
-  headerValue[valueLength - extraValueOffset - 3] = '\0';
+  headerValue[actualValueLength] = '\0';
 
   header->name = headerName;
   header->value = headerValue;

@@ -1,6 +1,6 @@
 import {} from "Char"
 import { EQ, GT, LT, eq } from "Compare"
-import { Just } from "Maybe"
+import { Just, Nothing } from "Maybe"
 import { assertEquals, test } from "Test"
 
 import String from "./String"
@@ -183,4 +183,236 @@ test(
     _ <- assertEquals(String.padEnd('-', 3, "<"), "<--")
     return assertEquals(String.padEnd('-', 3, "cool"), "cool")
   },
+)
+
+// --- length ---
+
+test(
+  "length - ascii",
+  () => assertEquals(String.length("hello"), 5),
+)
+
+test(
+  "length - unicode multi-byte",
+  () => assertEquals(String.length("café"), 4),
+)
+
+test(
+  "length - empty string",
+  () => assertEquals(String.length(""), 0),
+)
+
+test(
+  "length - called multiple times returns same result",
+  () => do {
+    s = "The quick brown fox"
+    _ <- assertEquals(String.length(s), 19)
+    _ <- assertEquals(String.length(s), 19)
+    return assertEquals(String.length(s), 19)
+  },
+)
+
+test(
+  "length - 4-byte unicode codepoints",
+  () => assertEquals(String.length("𝄞𝄞𝄞"), 3),
+)
+
+// --- equality ---
+
+test(
+  "equality - equal ascii strings",
+  () => assertEquals("hello" == "hello", true),
+)
+
+test(
+  "equality - different lengths reject fast",
+  () => assertEquals("hello" == "hi", false),
+)
+
+test(
+  "equality - same length different content",
+  () => assertEquals("abc" == "abd", false),
+)
+
+test(
+  "equality - unicode equal",
+  () => assertEquals("café" == "café", true),
+)
+
+test(
+  "equality - unicode different",
+  () => assertEquals("café" == "cafe", false),
+)
+
+test(
+  "equality - empty strings",
+  () => assertEquals("" == "", true),
+)
+
+// --- slice ---
+
+test(
+  "slice - positive indices",
+  () => assertEquals(String.slice(1, 4, "hello"), "ell"),
+)
+
+test(
+  "slice - start=0",
+  () => assertEquals(String.slice(0, 3, "hello"), "hel"),
+)
+
+test(
+  "slice - end=0 means full string from start",
+  () => assertEquals(String.slice(2, 0, "hello"), "llo"),
+)
+
+test(
+  "slice - unicode aware",
+  () => assertEquals(String.slice(1, 3, "café"), "af"),
+)
+
+test(
+  "slice - negative start",
+  () => assertEquals(String.slice(-3, 0, "hello"), "llo"),
+)
+
+test(
+  "slice - empty result when start >= end",
+  () => assertEquals(String.slice(3, 2, "hello"), ""),
+)
+
+// --- trim ---
+
+test(
+  "trim - removes both ends",
+  () => assertEquals(String.trim("  hello  "), "hello"),
+)
+
+test(
+  "trim - removes only spaces",
+  () => assertEquals(String.trim("\t hello \n"), "hello"),
+)
+
+test(
+  "trim - already trimmed",
+  () => assertEquals(String.trim("hello"), "hello"),
+)
+
+test(
+  "trim - empty string",
+  () => assertEquals(String.trim(""), ""),
+)
+
+test(
+  "trimStart - removes only leading whitespace",
+  () => assertEquals(String.trimStart("  hello  "), "hello  "),
+)
+
+test(
+  "trimEnd - removes only trailing whitespace",
+  () => assertEquals(String.trimEnd("  hello  "), "  hello"),
+)
+
+// --- concat ---
+
+test(
+  "concat - empty strings",
+  () => assertEquals("" ++ "", ""),
+)
+
+test(
+  "concat - empty + non-empty",
+  () => assertEquals("" ++ "hello", "hello"),
+)
+
+test(
+  "concat - non-empty + empty",
+  () => assertEquals("hello" ++ "", "hello"),
+)
+
+test(
+  "concat - unicode",
+  () => assertEquals("caf" ++ "é", "café"),
+)
+
+test(
+  "concat - long strings",
+  () => assertEquals(
+    String.length(String.repeat('a', 1000) ++ String.repeat('b', 1000)),
+    2000,
+  ),
+)
+
+// --- join / split round-trip ---
+
+test(
+  "join - empty list",
+  () => assertEquals(String.join(", ", []), ""),
+)
+
+test(
+  "join - single element",
+  () => assertEquals(String.join(", ", ["hello"]), "hello"),
+)
+
+test(
+  "join - unicode separator",
+  () => assertEquals(String.join("•", ["a", "b", "c"]), "a•b•c"),
+)
+
+test(
+  "split - unicode content",
+  () => assertEquals(String.split(",", "café,latte"), ["café", "latte"]),
+)
+
+test(
+  "fromList/toList round-trip - unicode",
+  () => do {
+    s = "café"
+    return assertEquals(String.fromList(String.toList(s)), s)
+  },
+)
+
+test(
+  "fromList/toList round-trip - 4-byte codepoints",
+  () => do {
+    s = "𝄞𝄡𝄢"
+    return assertEquals(String.fromList(String.toList(s)), s)
+  },
+)
+
+// --- prependChar / appendChar ---
+
+test(
+  "prependChar - unicode",
+  () => assertEquals(String.prependChar('é', "cafe"), "écafe"),
+)
+
+test(
+  "appendChar - unicode",
+  () => assertEquals(String.appendChar('é', "caf"), "café"),
+)
+
+test(
+  "prependChar then appendChar round-trip",
+  () => assertEquals(String.prependChar('a', String.appendChar('c', "b")), "abc"),
+)
+
+// --- isEmpty ---
+
+test(
+  "isEmpty - empty",
+  () => assertEquals(String.isEmpty(""), true),
+)
+
+test(
+  "isEmpty - non-empty",
+  () => assertEquals(String.isEmpty("a"), false),
+)
+
+// --- firstChar / lastChar ---
+
+test(
+  "charAt - out of bounds returns Nothing",
+  () => assertEquals(String.charAt(100, "hello"), Nothing),
 )

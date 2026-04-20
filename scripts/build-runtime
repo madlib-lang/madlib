@@ -7,3 +7,9 @@
 # TARGET: one of WIN_X64, LINUX_X64, MUSL_X64, MACOS_X64, MACOS_ARM64, default MACOS_ARM64
 
 make -C runtime -j
+
+# Deploy libruntime.a to the pkg directory so the installed madlib binary picks it up.
+PKG_RUNTIME="./pkg/node_modules/binary-install/node_modules/.bin/runtime/build"
+if [ -d "$PKG_RUNTIME" ]; then
+  cp runtime/build/libruntime.a "$PKG_RUNTIME/libruntime.a"
+fi

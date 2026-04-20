@@ -33,6 +33,7 @@ module Generate.LLVM.Builtins
   , areStringsEqual
   , areStringsNotEqual
   , strConcat
+  , strConcatN
     -- * Allocation helpers
   , isAtomicType
   , chooseMalloc
@@ -171,6 +172,11 @@ areStringsNotEqual =
 strConcat :: Operand
 strConcat =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType stringType [stringType, stringType] False) (mkName "madlib__string__internal__concat"))
+
+-- | Variadic n-ary concat: madlib__string__concat_n(count, s1, s2, ..., sN)
+strConcatN :: Operand
+strConcatN =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType stringType [Type.i64] True) (mkName "madlib__string__concat_n"))
 
 
 -- Allocation helpers

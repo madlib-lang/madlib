@@ -4,6 +4,7 @@
 #include "maybe.hpp"
 #include "record.hpp"
 #include "network.hpp"
+#include "string_header.hpp"
 #include <string.h>
 
 
@@ -13,7 +14,7 @@ extern "C" {
 
 char *copyString(char *src) {
   size_t nameLength = strlen(src);
-  char *dest = (char*) GC_MALLOC_ATOMIC(nameLength + 1);
+  char *dest = madlib__string__alloc_bytes((uint32_t)nameLength);
   memcpy(dest, src, nameLength);
   dest[nameLength] = '\0';
   return dest;

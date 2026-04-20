@@ -42,7 +42,7 @@ import qualified System.IO                    as SystemIO
 import           System.Environment           (getEnv)
 import           Control.Exception            (try)
 
-import           LLVM.Target                  (withHostTargetMachineDefault)
+import           LLVM.Target                  (withHostTargetMachineDefault, getTargetMachineDataLayout)
 import           LLVM.Module                  (withModuleFromAST, moduleObject, moduleLLVMAssembly)
 import           LLVM.AST                     as AST hiding (function)
 import qualified LLVM.AST                     as LLVMAST
@@ -286,6 +286,9 @@ generateLLVMModule :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadS
                    -> Env -> Bool -> [String] -> SymbolTable -> AST -> m ()
 generateLLVMModule _ _ _ _ _ _ Core.AST{ Core.apath = Nothing } = error "generateLLVMModule: AST has no path"
 generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbolTable ast@Core.AST{ Core.apath = Just astPath } = do
+  -- Reset the string literal deduplication cache for this compilation unit.
+  -- Each module gets a fresh cache so identical literals within a module share one global.
+  liftIO resetLitCache
   env' <-
     if envIsDebugBuild env then do
       fileSymbolId <- newMetadataId
@@ -349,6 +352,7 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
   extern (AST.mkName "madlib__string__internal__areStringsEqual")    [stringType, stringType] Type.i1
   extern (AST.mkName "madlib__string__internal__areStringsNotEqual") [stringType, stringType] Type.i1
   extern (AST.mkName "madlib__string__internal__concat")             [stringType, stringType] stringType
+  externVarArgs (AST.mkName "madlib__string__concat_n")              [Type.i64] stringType
 
   extern (AST.mkName "madlib__list__internal__hasMinLength")         [Type.i64, listType] Type.i1
   extern (AST.mkName "madlib__list__internal__hasLength")            [Type.i64, listType] Type.i1
@@ -444,7 +448,11 @@ generateModule mkCtx safeBitcastFn options ast@Core.AST{ apath = Just modulePath
       return []
 
   ((mod, table), _) <- State.runStateT (Writer.runWriterT $ buildModuleT (stringToShortByteString moduleName) (generateLLVMModule mkCtx safeBitcastFn envForAST isMain importModulePaths symbolTable ast)) 0
-  return (mod, table, envForAST)
+  -- Set the target data layout so that sizeof' (the GEP-null trick) and all struct
+  -- field offsets are computed using the real ABI alignment (e.g. i64 at offset 8
+  -- in {i32, i64} on AArch64, not offset 4 as in an unspecified packed layout).
+  dl <- liftIO $ withHostTargetMachineDefault getTargetMachineDataLayout
+  return (mod { LLVMAST.moduleDataLayout = Just dl }, table, envForAST)
 
 generateModule _ _ _ _ =
   error "generateModule: invalid arguments"
