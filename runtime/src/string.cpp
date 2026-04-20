@@ -588,59 +588,61 @@ char *madlib__string__fromList(madlib__list__Node_t *list) {
   return result;
 }
 
+static madlib__list__Node_t *madlib__string__appendSplitPart(
+  madlib__list__Node_t *current,
+  const char *start,
+  size_t partLength
+) {
+  char *part = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (partLength + 1));
+  if (partLength > 0) {
+    memcpy(part, start, partLength);
+  }
+  part[partLength] = '\0';
+
+  madlib__list__Node_t *node = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
+  node->value = part;
+  node->next = NULL;
+  current->next = node;
+  return node;
+}
+
 madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
   size_t separatorLength = strlen(separator);
-  if (separatorLength == 0) {
-    separatorLength = 1;
-  }
-  
   madlib__list__Node_t *result = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
   madlib__list__Node_t *current = result;
 
-  while (str != NULL && *str != '\0') {
-    char *found = strstr(str, separator);
-    size_t partLength = 0;
-    if (found == NULL) {
-      partLength = strlen(str);
-    } else {
-      partLength = found - str;
+  if (separatorLength == 0) {
+    if (str == NULL || *str == '\0') {
+      return NULL;
     }
 
-    if (partLength == 0 && found != NULL && strlen(separator) > 0) {
-      // Consecutive separators: produce empty string and skip past separator
-      char *part = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 1);
-      part[0] = '\0';
-
-      madlib__list__Node_t *node = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
-      node->value = part;
-      node->next = NULL;
-      current = current->next = node;
-
-      str = found + separatorLength;
-      continue;
-    } else if (partLength == 0) {
-      partLength = 1;
+    int32_t *chars = utf8Decode(str);
+    for (int i = 0; chars[i] != 0; i++) {
+      char *encoded = utf8EncodeChar(chars[i]);
+      current = madlib__string__appendSplitPart(current, encoded, strlen(encoded));
     }
+  } else {
+    char *cursor = str;
+    while (true) {
+      char *found = strstr(cursor, separator);
+      if (found == NULL) {
+        current = madlib__string__appendSplitPart(current, cursor, strlen(cursor));
+        break;
+      }
 
-    char *part = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (partLength + 1));
-    memcpy(part, str, partLength);
-    part[partLength] = '\0';
+      current = madlib__string__appendSplitPart(current, cursor, found - cursor);
+      cursor = found + separatorLength;
 
-    madlib__list__Node_t *node = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
-    node->value = part;
-    node->next = NULL;
-    current = current->next = node;
-
-    str = found;
-    if (found != NULL) {
-      str = found + separatorLength;
+      if (*cursor == '\0') {
+        current = madlib__string__appendSplitPart(current, cursor, 0);
+        break;
+      }
     }
   }
 
   madlib__list__Node_t *last = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
   last->value = NULL;
   last->next = NULL;
-
   current->next = last;
 
   return result->next;

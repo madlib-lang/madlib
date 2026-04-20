@@ -44,7 +44,7 @@ madlib__list__Node_t *madlib__string__toList(char *str);
 
 char *madlib__string__fromList(madlib__list__Node_t *list);
 
-madlib__list__Node_t *madlib__string__split(char *str, char *separator);
+madlib__list__Node_t *madlib__string__split(char *separator, char *str);
 
 char *madlib__string__join(char *separator, madlib__list__Node_t *items);
 

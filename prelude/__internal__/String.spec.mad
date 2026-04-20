@@ -55,8 +55,23 @@ test(
 )
 
 test(
+  "split should preserve trailing empty items",
+  () => assertEquals(String.split("\n", "line1\nline2\n"), ["line1", "line2", ""]),
+)
+
+test(
+  "split should return one empty item for empty input with a non-empty separator",
+  () => assertEquals(String.split("\n", ""), [""]),
+)
+
+test(
   "lines should split a string by line returns",
   () => assertEquals(String.lines("line1\nline2"), ["line1", "line2"]),
+)
+
+test(
+  "lines should preserve a trailing empty line when the string ends with a newline",
+  () => assertEquals(String.lines("line1\nline2\n"), ["line1", "line2", ""]),
 )
 
 test(
