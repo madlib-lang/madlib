@@ -1,0 +1,347 @@
+import List from "List"
+
+
+/**
+ * StringBuilder is a mutable, growable string buffer.
+ *
+ * Use it to construct strings incrementally without the O(n²) cost of
+ * repeated `++` concatenation. When you are done building, call `toString`
+ * to get the final immutable String in a single allocation.
+ *
+ * @since 0.24.0
+ * @example
+ * import StringBuilder from "StringBuilder"
+ *
+ * result = pipe(
+ *   StringBuilder.append("world"),
+ *   StringBuilder.append(", "),
+ *   StringBuilder.prepend("Hello"),
+ *   StringBuilder.toString,
+ * )(StringBuilder.new())
+ * // "Hello, world"
+ */
+export type StringBuilder = StringBuilder
+
+
+// ---------------------------------------------------------------------------
+// LLVM backend — thin wrappers over C functions in string_builder.cpp
+// ---------------------------------------------------------------------------
+
+#iftarget llvm
+
+/**
+ * Create a new empty StringBuilder.
+ *
+ * @since 0.24.0
+ */
+new :: {} -> StringBuilder
+export new = extern "madlib__string__builder__new"
+
+/**
+ * Create a StringBuilder pre-initialized with the contents of a string.
+ *
+ * @since 0.24.0
+ */
+ofString :: String -> StringBuilder
+export ofString = extern "madlib__string__builder__ofString"
+
+/**
+ * Create a StringBuilder with a pre-allocated capacity (avoids early resizing).
+ *
+ * @since 0.24.0
+ */
+withCapacity :: Integer -> StringBuilder
+export withCapacity = extern "madlib__string__builder__withCapacity"
+
+/**
+ * Append a string to the builder and return the builder.
+ *
+ * @since 0.24.0
+ */
+append :: String -> StringBuilder -> StringBuilder
+export append = extern "madlib__string__builder__append"
+
+/**
+ * Append a single character to the builder.
+ *
+ * @since 0.24.0
+ */
+appendChar :: Char -> StringBuilder -> StringBuilder
+export appendChar = extern "madlib__string__builder__appendChar"
+
+/**
+ * Append a string followed by a newline character.
+ *
+ * @since 0.24.0
+ */
+appendLine :: String -> StringBuilder -> StringBuilder
+export appendLine = extern "madlib__string__builder__appendLine"
+
+/**
+ * Prepend a string at the beginning of the builder.
+ *
+ * @since 0.24.0
+ */
+prepend :: String -> StringBuilder -> StringBuilder
+export prepend = extern "madlib__string__builder__prepend"
+
+/**
+ * Prepend a single character at the beginning of the builder.
+ *
+ * @since 0.24.0
+ */
+prependChar :: Char -> StringBuilder -> StringBuilder
+export prependChar = extern "madlib__string__builder__prependChar"
+
+/**
+ * Insert a string at the given byte offset.
+ *
+ * @since 0.24.0
+ */
+insert :: Integer -> String -> StringBuilder -> StringBuilder
+export insert = extern "madlib__string__builder__insert"
+
+/**
+ * Delete the byte range [start, end) from the builder.
+ *
+ * @since 0.24.0
+ */
+deleteRange :: Integer -> Integer -> StringBuilder -> StringBuilder
+export deleteRange = extern "madlib__string__builder__deleteRange"
+
+/**
+ * Replace the byte range [start, end) with a new string.
+ *
+ * @since 0.24.0
+ */
+replace :: Integer -> Integer -> String -> StringBuilder -> StringBuilder
+export replace = extern "madlib__string__builder__replace"
+
+/**
+ * Reverse the contents of the builder (UTF-8 aware).
+ *
+ * @since 0.24.0
+ */
+reverse :: StringBuilder -> StringBuilder
+export reverse = extern "madlib__string__builder__reverse"
+
+/**
+ * Reset the builder to empty, keeping the allocated capacity.
+ *
+ * @since 0.24.0
+ */
+clear :: StringBuilder -> StringBuilder
+export clear = extern "madlib__string__builder__clear"
+
+/**
+ * Produce the final String in a single allocation.
+ *
+ * @since 0.24.0
+ */
+toString :: StringBuilder -> String
+export toString = extern "madlib__string__builder__toString"
+
+/**
+ * Current byte length of the buffered content.
+ *
+ * @since 0.24.0
+ */
+length :: StringBuilder -> Integer
+export length = extern "madlib__string__builder__length"
+
+/**
+ * True if no content has been appended yet.
+ *
+ * @since 0.24.0
+ */
+isEmpty :: StringBuilder -> Boolean
+export isEmpty = extern "madlib__string__builder__isEmpty"
+
+#elseif js
+
+// JS backend: StringBuilder is a plain JS object { parts: string[], len: number }
+// toString uses Array.join('') which V8 optimizes to a single allocation.
+
+/**
+ * Create a new empty StringBuilder.
+ *
+ * @since 0.24.0
+ */
+new :: {} -> StringBuilder
+export new = () => #- ({ parts: [], len: 0 }) -#
+
+/**
+ * Create a StringBuilder pre-initialized with the contents of a string.
+ *
+ * @since 0.24.0
+ */
+ofString :: String -> StringBuilder
+export ofString = (s) => #- ({ parts: [s], len: s.length }) -#
+
+/**
+ * Create a StringBuilder with a pre-allocated capacity (no-op hint on JS).
+ *
+ * @since 0.24.0
+ */
+withCapacity :: Integer -> StringBuilder
+export withCapacity = (_) => #- ({ parts: [], len: 0 }) -#
+
+/**
+ * Append a string to the builder and return the builder.
+ *
+ * @since 0.24.0
+ */
+append :: String -> StringBuilder -> StringBuilder
+export append = (s, sb) => #- (sb.parts.push(s), sb.len += s.length, sb) -#
+
+/**
+ * Append a single character to the builder.
+ *
+ * @since 0.24.0
+ */
+appendChar :: Char -> StringBuilder -> StringBuilder
+export appendChar = (c, sb) => #- (sb.parts.push(c), sb.len += c.length, sb) -#
+
+/**
+ * Append a string followed by a newline character.
+ *
+ * @since 0.24.0
+ */
+appendLine :: String -> StringBuilder -> StringBuilder
+export appendLine = (s, sb) => #- (sb.parts.push(s, "\n"), sb.len += s.length + 1, sb) -#
+
+/**
+ * Prepend a string at the beginning of the builder.
+ *
+ * @since 0.24.0
+ */
+prepend :: String -> StringBuilder -> StringBuilder
+export prepend = (s, sb) => #- (sb.parts.unshift(s), sb.len += s.length, sb) -#
+
+/**
+ * Prepend a single character at the beginning of the builder.
+ *
+ * @since 0.24.0
+ */
+prependChar :: Char -> StringBuilder -> StringBuilder
+export prependChar = (c, sb) => #- (sb.parts.unshift(c), sb.len += c.length, sb) -#
+
+/**
+ * Insert a string at the given character offset.
+ *
+ * @since 0.24.0
+ */
+insert :: Integer -> String -> StringBuilder -> StringBuilder
+export insert = (idx, s, sb) => #- (() => {
+  const str = sb.parts.join('')
+  const result = str.slice(0, idx) + s + str.slice(idx)
+  sb.parts = [result]
+  sb.len = result.length
+  return sb
+})() -#
+
+/**
+ * Delete the character range [start, end) from the builder.
+ *
+ * @since 0.24.0
+ */
+deleteRange :: Integer -> Integer -> StringBuilder -> StringBuilder
+export deleteRange = (start, end, sb) => #- (() => {
+  const str = sb.parts.join('')
+  const result = str.slice(0, start) + str.slice(end)
+  sb.parts = [result]
+  sb.len = result.length
+  return sb
+})() -#
+
+/**
+ * Replace the character range [start, end) with a new string.
+ *
+ * @since 0.24.0
+ */
+replace :: Integer -> Integer -> String -> StringBuilder -> StringBuilder
+export replace = (start, end, s, sb) => #- (() => {
+  const str = sb.parts.join('')
+  const result = str.slice(0, start) + s + str.slice(end)
+  sb.parts = [result]
+  sb.len = result.length
+  return sb
+})() -#
+
+/**
+ * Reverse the contents of the builder (surrogate-pair aware via spread).
+ *
+ * @since 0.24.0
+ */
+reverse :: StringBuilder -> StringBuilder
+export reverse = (sb) => #- (() => {
+  const result = [...sb.parts.join('')].reverse().join('')
+  sb.parts = [result]
+  sb.len = result.length
+  return sb
+})() -#
+
+/**
+ * Reset the builder to empty.
+ *
+ * @since 0.24.0
+ */
+clear :: StringBuilder -> StringBuilder
+export clear = (sb) => #- (sb.parts = [], sb.len = 0, sb) -#
+
+/**
+ * Produce the final String. V8 optimizes join('') to a single allocation.
+ *
+ * @since 0.24.0
+ */
+toString :: StringBuilder -> String
+export toString = (sb) => #- (() => {
+  const s = sb.parts.join('')
+  sb.parts = [s]
+  return s
+})() -#
+
+/**
+ * Current UTF-8 byte length of the buffered content.
+ *
+ * @since 0.24.0
+ */
+length :: StringBuilder -> Integer
+export length = (sb) => #- (() => {
+  const str = sb.parts.join('')
+  let n = 0
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i)
+    if (c < 0x80) n++
+    else if (c < 0x800) n += 2
+    else if ((c & 0xFC00) === 0xD800) { n += 4; i++ }
+    else n += 3
+  }
+  return n
+})() -#
+
+/**
+ * True if no content has been appended yet.
+ *
+ * @since 0.24.0
+ */
+isEmpty :: StringBuilder -> Boolean
+export isEmpty = (sb) => #- (sb.len === 0) -#
+
+#endif
+
+
+// ---------------------------------------------------------------------------
+// Target-independent combinators built on the primitives above
+// ---------------------------------------------------------------------------
+
+/**
+ * Append all strings in a list to the builder.
+ * More efficient than repeated calls to append because the list is traversed once.
+ *
+ * @since 0.24.0
+ * @example
+ * appendMany(["a", "b", "c"], new()) |> toString  // "abc"
+ */
+appendMany :: List String -> StringBuilder -> StringBuilder
+export appendMany = (xs, sb) => List.reduce((b, s) => append(s, b), sb, xs)

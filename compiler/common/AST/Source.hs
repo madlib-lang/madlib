@@ -110,6 +110,12 @@ data PatternField
   deriving(Eq, Show, Generic, Hashable)
 
 
+data Param
+  = ParamName (Source Name)
+  | ParamPattern Pattern
+  deriving(Eq, Show, Generic, Hashable)
+
+
 type Pattern = Source Pattern_
 data Pattern_
   = PVar Name
@@ -163,12 +169,13 @@ data Exp_
   | UnOp Exp Exp
   | BinOp Exp Exp Exp
   | App Exp [Exp]
-  | Abs [Source Name] [Exp]
-  | AbsWithMultilineBody [Source Name] [Exp]
+  | Abs [Param] [Exp]
+  | AbsWithMultilineBody [Param] [Exp]
   | Return Exp
   | Access Exp Exp
   | ArrayAccess Exp Exp
   | Assignment Name Exp
+  | PatternAssignment Pattern Exp
   | Mutate Exp Exp
   | Record [Field]
   | While Exp Exp

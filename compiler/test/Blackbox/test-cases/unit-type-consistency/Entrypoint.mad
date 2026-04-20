@@ -1,0 +1,41 @@
+import IO from "IO"
+import type { Maybe } from "Maybe"
+import { Just } from "Maybe"
+
+
+// {} stored in a tuple, then extracted — the unit value flows through memory
+makeUnitTuple :: {} -> #[{}, Integer]
+makeUnitTuple = (u) => #[u, 42]
+
+extractUnit :: #[{}, Integer] -> {}
+extractUnit = (t) => where(t) {
+  #[u, _] => u
+}
+
+// {} returned from a function that takes no meaningful argument
+identityUnit :: {} -> {}
+identityUnit = (_) => {}
+
+// {} wrapped in a constructor, then compared to the same wrapper with a literal {}
+wrapUnit :: {} -> Maybe {}
+wrapUnit = (u) => Just(u)
+
+main = () => {
+  // Case 1: {} extracted from a tuple must equal the {} literal
+  // Bug: extractUnit(makeUnitTuple({})) produces `undefined` (call-arg opt)
+  // but {} literal produces { __constructor: "Unit", __args: [] }
+  u = extractUnit(makeUnitTuple({}))
+  IO.log(u == {})
+
+  // Case 2: {} from identity function == {} literal
+  v = identityUnit({})
+  IO.log(v == {})
+
+  // Case 3: show(unit) must be consistent regardless of origin
+  IO.log(show(u))
+  IO.log(show({}))
+
+  // Case 4: wrapped in Maybe — both sides should be equal
+  IO.log(Just({}) == Just({}))
+  IO.log(wrapUnit({}) == Just({}))
+}

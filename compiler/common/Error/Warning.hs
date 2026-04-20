@@ -20,7 +20,8 @@ data WarningKind
   | MissingMethods [String]
   | IncompletePattern [String]
   | RedundantPattern
-  | TypedHoleFound Type
+  | TypedHoleFound Type [(String, Scheme)]
+  -- ^ hole type, ranked list of (name, scheme) pairs from the local env that match
   deriving(Eq, Show, Ord)
 
 

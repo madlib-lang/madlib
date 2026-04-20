@@ -2,9 +2,9 @@
 #include <gc.h>
 #include "char.hpp"
 
-
 #include <string.h>
 #include "string.hpp"
+#include "string_header.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,7 +134,8 @@ int utf8CodepointLength(const uint32_t cp)
 char *utf8EncodeChar(int32_t cp)
 {
   const int bytes = utf8CodepointLength(cp);
-  uint8_t *ret = (uint8_t*) GC_MALLOC_ATOMIC(bytes + 1);
+  // char_len = 1: every encoded char is exactly one Unicode codepoint.
+  uint8_t *ret = (uint8_t*) madlib__string__alloc(bytes, 1);
 
   int shift = utf[0]->bits_stored * (bytes - 1);
   ret[0] = (cp >> shift & utf[bytes]->mask) | utf[bytes]->lead;
@@ -166,7 +167,7 @@ int32_t utf8DecodeChar(const char *chr, int *inputIndex)
 int32_t *utf8Decode(char *str) {
   int i = 0;
   int outputIndex = 0;
-  size_t strLength = strlen(str);
+  size_t strLength = madstr_byte_len(str);
 
   // Note: using GC_MALLOC_ATOMIC seems to cause to following warning:
   // "GC Warning: Repeated allocation of very large block (appr. size 100007936):

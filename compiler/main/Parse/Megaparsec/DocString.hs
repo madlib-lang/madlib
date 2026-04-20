@@ -104,6 +104,17 @@ extractTags input = go input "" []
     go ('@':'s':'i':'n':'c':'e':rest) desc tags =
       let (tagContent, remaining) = extractTagContent rest
       in  go remaining desc (SinceTag TargetAll (processCharacters [tagContent]) : tags)
+    go ('@':'p':'a':'r':'a':'m':rest) desc tags =
+      let rest'              = dropWhile (== ' ') rest
+          (name, rest'')     = span (\c -> c /= ' ' && c /= '\n') rest'
+          (tagContent, remaining) = extractTagContent (dropWhile (== ' ') rest'')
+      in  go remaining desc (ParamTag TargetAll name (processCharacters [tagContent]) : tags)
+    go ('@':'r':'e':'t':'u':'r':'n':'s':rest) desc tags =
+      let (tagContent, remaining) = extractTagContent rest
+      in  go remaining desc (ReturnsTag TargetAll (processCharacters [tagContent]) : tags)
+    go ('@':'d':'e':'p':'r':'e':'c':'a':'t':'e':'d':rest) desc tags =
+      let (tagContent, remaining) = extractTagContent rest
+      in  go remaining desc (DeprecatedTag TargetAll (processCharacters [tagContent]) : tags)
     go (c:rest) desc tags = go rest (desc ++ [c]) tags
 
     extractTagContent :: String -> (String, String)

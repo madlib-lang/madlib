@@ -26,6 +26,8 @@ import qualified Control.Monad.State          as State
 import           Control.Monad.IO.Class       (MonadIO, liftIO)
 import           GHC.Stack                    (HasCallStack)
 import           System.Random                (randomIO)
+import           Data.Bits                    ((.&.), (.|.), shiftR)
+import           Data.IORef                   (readIORef, modifyIORef')
 import           Text.Show.Pretty             (ppShow)
 
 import           LLVM.AST                     as AST hiding (function)
@@ -225,33 +227,43 @@ emptyList env area = do
 
 buildStr :: (MonadIRBuilder m, MonadModuleBuilder m, MonadIO m) => Env -> Area -> String -> m Operand
 buildStr _env _area s = do
-  let asText     = Text.pack s
-      bs         = TextEncoding.encodeUtf8 asText
-      bytes      = ByteString.unpack bs
-      charCodes  = (fromEnum <$> bytes) ++ [0]
-      charCodes' = toInteger <$> charCodes
-
-  let llvmVals  = fmap (Constant.Int 8) charCodes'
-  let char      = IntegerType 8
-  let charArray = Constant.Array char llvmVals
-  let ty        = typeOf charArray
-
-  r <- randomIO
-  nm <- freshName (stringToShortByteString $ show (r :: Int))
-
-  emitDefn $ GlobalDefinition globalVariableDefaults
-    { Global.name                  = nm
-    , Global.type'                 = ty
-    , Global.linkage               = Linkage.External
-    , Global.isConstant            = True
-    , Global.initializer           = Just charArray
-    , Global.unnamedAddr           = Just GlobalAddr
-    }
-
-  let op = Operand.ConstantOperand $ Constant.GetElementPtr True
-                           (Constant.GlobalReference (ptr ty) nm)
-                           [(Constant.Int 32 0), (Constant.Int 32 0)]
-  safeBitcast op stringType
+  let bs      = TextEncoding.encodeUtf8 (Text.pack s)
+      bytes   = ByteString.unpack bs
+      byteLen = length bytes
+      -- Count non-continuation bytes: ASCII (< 0x80) or leading bytes (>= 0xC0)
+      charLen = length $ filter (\b -> b < 0x80 || b >= 0xC0) bytes
+      -- flags: HAS_HEADER(0x01) | SSO(0x02 if <=15 bytes) | PRECOMPUTED(0x04)
+      flags   = (1 .|. (if byteLen <= 15 then 2 else 0) .|. 4) :: Int
+  cache <- liftIO (readIORef globalLitCache)
+  case Map.lookup bs cache of
+    Just op -> return op
+    Nothing -> do
+      let nm        = mkName $ "madstr_" ++ fnv1aHex bs
+          hdr       = [ Constant.Int 32 (fromIntegral byteLen)
+                      , Constant.Int 8  (fromIntegral $ charLen .&. 0xFF)
+                      , Constant.Int 8  (fromIntegral $ (charLen `shiftR` 8) .&. 0xFF)
+                      , Constant.Int 8  (fromIntegral $ (charLen `shiftR` 16) .&. 0xFF)
+                      , Constant.Int 8  (fromIntegral flags) ]
+          charCodes = map (Constant.Int 8 . toInteger . fromEnum) bytes ++ [Constant.Int 8 0]
+          dataArr   = Constant.Array (IntegerType 8) charCodes
+          struct    = Constant.Struct Nothing False (hdr ++ [dataArr])
+          structTy  = typeOf struct
+          -- GEP into field 5 (the data array), element 0 → i8* in addrspace(0)
+          gepConst  = Constant.GetElementPtr True
+                        (Constant.GlobalReference (Type.ptr structTy) nm)
+                        [Constant.Int 32 0, Constant.Int 32 5, Constant.Int 32 0]
+          -- Cast from addrspace(0) i8* to addrspace(1) i8* (stringType)
+          op        = Operand.ConstantOperand $ Constant.AddrSpaceCast gepConst stringType
+      emitDefn $ GlobalDefinition globalVariableDefaults
+        { Global.name        = nm
+        , Global.type'       = structTy
+        , Global.linkage     = Linkage.LinkOnce
+        , Global.isConstant  = True
+        , Global.initializer = Just struct
+        , Global.unnamedAddr = Just GlobalAddr
+        }
+      liftIO $ modifyIORef' globalLitCache (Map.insert bs op)
+      return op
 
 
 -- | Unwrap Do blocks in an expression to get the innermost non-Do expression.
@@ -497,6 +509,14 @@ normalizeDoWrappers exp = case exp of
         let (unwrappedValue, effects) = unwrapCallFnDo value
         in  (Core.Typed fqt fa fm (Core.FieldSpread unwrappedValue), effects)
       _ -> (field, [])
+
+
+-- | Flatten a left-associative ++ chain into a flat list of operands.
+-- e.g. ((a ++ b) ++ c) ++ d  →  [a, b, c, d]
+collectConcatChain :: Core.Exp -> [Core.Exp]
+collectConcatChain (Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "++" _)) [l, r])) =
+  collectConcatChain l ++ collectConcatChain r
+collectConcatChain e = [e]
 
 
 -- returns a (SymbolTable, Operand, Maybe Operand) where the maybe operand is a possible boxed value when available
@@ -944,10 +964,19 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     return (symbolTable, result, Nothing)
 
   Core.Typed _ area _ (Core.Call (Core.Typed _ _ _ (Core.Var "++" _)) [leftOperand, rightOperand]) -> do
-    (_, leftOperand', _)  <- generateExp env symbolTable leftOperand
-    (_, rightOperand', _) <- generateExp env symbolTable rightOperand
-    result <- callWithMetadata (makeDILocation env area) strConcat [(leftOperand', []), (rightOperand', [])]
-    return (symbolTable, result, Nothing)
+    let chain = collectConcatChain leftOperand ++ collectConcatChain rightOperand
+    case chain of
+      [l, r] -> do
+        (_, l', _) <- generateExp env symbolTable l
+        (_, r', _) <- generateExp env symbolTable r
+        result <- callWithMetadata (makeDILocation env area) strConcat [(l', []), (r', [])]
+        return (symbolTable, result, Nothing)
+      _ -> do
+        ops <- mapM (\e -> (\(_, o, _) -> o) <$> generateExp env symbolTable e) chain
+        let count = Operand.ConstantOperand $ Constant.Int 64 (fromIntegral $ length chain)
+        result <- callWithMetadata (makeDILocation env area) strConcatN
+                    ((count, []) : map (, []) ops)
+        return (symbolTable, result, Nothing)
 
   Core.Typed _ _ _ (Core.Call (Core.Typed _ _ _ (Core.Var "&&" _)) [leftOperand, rightOperand]) -> mdo
     (_, leftOperand', _)  <- generateExp env symbolTable leftOperand

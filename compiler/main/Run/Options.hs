@@ -3,6 +3,9 @@ module Run.Options where
 import Utils.PathUtils (PathUtils)
 import Run.Target (Target)
 import Run.OptimizationLevel (OptimizationLevel)
+import Run.SourceMapMode (SourceMapMode)
+import Run.ErrorFormat (ErrorFormat(..))
+import Run.PGOMode (PGOMode(..))
 
 
 data Options
@@ -23,4 +26,7 @@ data Options
     , optOptimizationLevel :: OptimizationLevel
     , optLspMode :: Bool
     , optEmitLLVM :: Bool
+    , optSourceMaps :: SourceMapMode
+    , optErrorFormat :: ErrorFormat
+    , optPGOMode :: PGOMode
     }

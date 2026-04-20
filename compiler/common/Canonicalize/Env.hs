@@ -75,6 +75,7 @@ initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Array", tArray)
                       [ ("Eq", Interface [TV 0 Star] [] ["=="])
                       , ("Comparable", Interface [TV 0 Star] [IsIn "Eq" [TVar $ TV 0 Star] Nothing] ["compare"])
                       , ("Show", Interface [TV 0 Star] [] ["show"])
+                      , ("Json", Interface [TV 0 Star] [] ["toJson", "fromJson"])
                       ]
                  , envCurrentPath = ""
                  , envFromDictionaryListName = ""

@@ -9,6 +9,9 @@ import           Paths_madlib                   ( version )
 import           Text.PrettyPrint.ANSI.Leijen   ( string )
 import           Run.Target
 import           Run.OptimizationLevel
+import           Run.SourceMapMode
+import           Run.ErrorFormat
+import           Run.PGOMode
 
 
 data ConfigCommand
@@ -32,6 +35,9 @@ data Command
       , compileCoverage :: Bool
       , compileOptimizationLevel :: OptimizationLevel
       , compileEmitLLVM :: Bool
+      , compileSourceMaps :: SourceMapMode
+      , compileErrorFormat :: ErrorFormat
+      , compilePGOMode :: PGOMode
       }
   | Test
       { testInput :: FilePath
@@ -43,8 +49,11 @@ data Command
       , testSuiteFilter :: Maybe String
       , testTestIndex :: Maybe Int
       , testEmitLLVM :: Bool
+      , testErrorFormat :: ErrorFormat
       }
   | Install
+  | Add { addUrl :: String, addName :: Maybe String }
+  | Remove { removeName :: String }
   | New { newFolder :: FilePath }
   | Doc { docInput :: FilePath }
   | Format { formatInput :: FilePath, formatTextInput :: String, fix :: Bool, width :: Int }
@@ -117,6 +126,30 @@ parseEmitLLVM :: Parser Bool
 parseEmitLLVM =
   switch (long "emit-llvm" <> help "emit LLVM IR (.ll files) alongside compilation" <> showDefault)
 
+parseSourceMaps :: Parser SourceMapMode
+parseSourceMaps =
+      flag' ExternalSourceMap (long "source-maps" <> help "Emit source map (.mjs.map) files alongside compiled JS modules")
+  <|> flag' InlineSourceMap   (long "source-maps-inline" <> help "Embed source maps inline inside compiled JS modules")
+  <|> pure NoSourceMap
+
+parsePGO :: Parser PGOMode
+parsePGO =
+      flag' PGOInstrument (long "pgo-instrument" <> help "Instrument binary for PGO profiling")
+  <|> (PGOOptimize <$> strOption (long "pgo-optimize" <> metavar "FILE" <> help "Use PGO profile data from FILE"))
+  <|> pure NoPGO
+
+parseErrorFormat :: Parser ErrorFormat
+parseErrorFormat = option
+  (eitherReader $ \case
+    "text" -> Right TextFormat
+    "json" -> Right JsonFormat
+    s      -> Left $ "'" <> s <> "' is not a valid error format, possible values are 'text' or 'json'.")
+  (  long "error-format"
+  <> metavar "FORMAT"
+  <> value TextFormat
+  <> help "Error output format: 'text' (default) for human-readable output, 'json' for machine-readable newline-delimited JSON"
+  )
+
 
 parseLimitedTargetOption :: ReadM Target
 parseLimitedTargetOption = eitherReader $ \case
@@ -156,6 +189,26 @@ parseTarget = option
 
 parseInstall :: Parser Command
 parseInstall = pure Install
+
+parseAddUrl :: Parser String
+parseAddUrl = strArgument (metavar "URL" <> help "URL of the package to add")
+
+parseAddName :: Parser (Maybe String)
+parseAddName = optional $ strOption
+  (  long "name"
+  <> short 'n'
+  <> metavar "NAME"
+  <> help "Alias/name for the package (defaults to last URL segment)"
+  )
+
+parseAdd :: Parser Command
+parseAdd = Add <$> parseAddUrl <*> parseAddName
+
+parseRemoveName :: Parser String
+parseRemoveName = strArgument (metavar "NAME" <> help "Name of the package to remove")
+
+parseRemove :: Parser Command
+parseRemove = Remove <$> parseRemoveName
 
 
 parseGenerateHashInput :: Parser FilePath
@@ -235,6 +288,9 @@ parseCompile =
     <*> parseCoverage
     <*> parseOptimizationLevel
     <*> parseEmitLLVM
+    <*> parseSourceMaps
+    <*> parseErrorFormat
+    <*> parsePGO
 
 parseTestInput :: Parser FilePath
 parseTestInput =
@@ -249,7 +305,7 @@ parseTestIndex =
   optional $ option auto (long "test-index" <> short 'n' <> metavar "INDEX" <> help "Run only the nth test (0-based) within matching suites")
 
 parseTest :: Parser Command
-parseTest = Test <$> parseTestInput <*> parseTarget <*> parseDebug <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel <*> parseSuiteFilter <*> parseTestIndex <*> parseEmitLLVM
+parseTest = Test <$> parseTestInput <*> parseTarget <*> parseDebug <*> parseWatch <*> parseCoverage <*> parseOptimizationLevel <*> parseSuiteFilter <*> parseTestIndex <*> parseEmitLLVM <*> parseErrorFormat
 
 
 parseRunInput :: Parser FilePath
@@ -342,6 +398,8 @@ parseCommand =
     <> command "run"     (parseRun `withInfo` "run a madlib module or package")
     <> command "test"    (parseTest `withInfo` "test tools")
     <> command "install" (parseInstall `withInfo` "install madlib packages")
+    <> command "add"     (parseAdd `withInfo` "add a package dependency")
+    <> command "remove"  (parseRemove `withInfo` "remove a package dependency")
     <> command "package" (parsePackage `withInfo` "packages a library")
     <> command "new"     (parseNew `withInfo` "create a new project")
     <> command "doc"     (parseDoc `withInfo` "generate documentation")

@@ -45,17 +45,22 @@ mutexUnlock :: Mutex -> {}
 export mutexUnlock = extern "madlib__process__mutexUnlock"
 
 
-threadFFI :: ((e -> {}) -> (a -> {}) -> {}) -> (e -> {}) -> (a -> {}) -> {}
+type ThreadHandle = ThreadHandle
+threadFFI :: ((e -> {}) -> (a -> {}) -> {}) -> (e -> {}) -> (a -> {}) -> ThreadHandle
 threadFFI = extern "madlib__process__thread"
+
+cancelThreadFFI :: ThreadHandle -> {}
+cancelThreadFFI = extern "madlib__process__cancelThread"
 
 
 create :: ((e -> {}) -> (a -> {}) -> {}) -> Wish e a
 export create = (handler) => Wish(
   (bad, good) => {
-    threadFFI(handler, bad, good)
+    handle = threadFFI(handler, bad, good)
 
-    // TODO: implement cancellation function
-    return () => {}
+    return () => {
+      cancelThreadFFI(handle)
+    }
   },
 )
 

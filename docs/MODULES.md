@@ -60,4 +60,36 @@ fulfill(
 ```
 
 ### Import aliases
-TBD
+Import aliases let you define short names for directory paths in `madlib.json` so that
+imports within your project are always written relative to a fixed root rather than using
+relative `../` paths.
+
+Aliases are defined in the `importAliases` field of `madlib.json`:
+```json
+{
+  "importAliases": {
+    ".": "src"
+  }
+}
+```
+The special alias `.` maps to `@`. With the example above, any file in the project can
+import from `src/` using the `@` prefix:
+```madlib
+import MyComponent from "@/components/MyComponent"
+```
+
+You can define multiple aliases for deeper sub-trees:
+```json
+{
+  "importAliases": {
+    ".":     "src",
+    "views": "src/views"
+  }
+}
+```
+which allows:
+```madlib
+import AView from "@views/AView"
+```
+
+See [PACKAGES.md](PACKAGES.md) for the full `madlib.json` format.

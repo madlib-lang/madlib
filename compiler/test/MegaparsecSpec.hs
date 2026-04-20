@@ -159,6 +159,296 @@ spec = describe "Megaparsec parser" $ do
       , "g = (x) => x"
       ]) `shouldSatisfy` isRight
 
+  it "parses runTestSuite full pipe body" $
+    parse (unlines
+      [ "runTestSuite :: (Show e, Show f) => String"
+      , "  -> ({} -> Wish e a)"
+      , "  -> ({} -> Wish f b)"
+      , "  -> List (Wish TestResult TestResult)"
+      , "  -> Wish {} TestReport"
+      , "runTestSuite = (suitePath, beforeAll, afterAll, testsInSuite) => pipe("
+      , "  (tests) => {"
+      , "    pipe("
+      , "      Dictionary.insert(suitePath, SuiteResult(List.length(tests), 0, 0)),"
+      , "      collector.setResults,"
+      , "    )(collector.getResults())"
+      , ""
+      , "    return tests"
+      , "  },"
+      , "  map("
+      , "    Wish.bichain("
+      , "      pipe("
+      , "        updateSuiteResult(suitePath),"
+      , "        resultToReport,"
+      , "        of,"
+      , "      ),"
+      , "      pipe("
+      , "        updateSuiteResult(suitePath),"
+      , "        resultToReport,"
+      , "        of,"
+      , "      ),"
+      , "    ),"
+      , "  ),"
+      , "  Wish.parallel,"
+      , "  (testsWish) => Monad.andDo("
+      , "    testsWish,"
+      , "    Wish.mapRej("
+      , "      (err) => IO.red(`${CHAR_CROSS} suite failed in beforeAll:`),"
+      , "      beforeAll(),"
+      , "    ),"
+      , "  ),"
+      , "  (testsWish) => do {"
+      , "    result <- testsWish"
+      , "    _ <- Wish.mapRej("
+      , "      (err) => IO.red(`${CHAR_CROSS} suite failed in afterAll:`),"
+      , "      afterAll(),"
+      , "    )"
+      , "    return of(result)"
+      , "  },"
+      , "  map("
+      , "    pipe("
+      , "      List.reduce(mergeReports, EMPTY_REPORT),"
+      , "      where {"
+      , "        TestReport(msg, total, success, failed) =>"
+      , "          (total == 0 || failed > 0)"
+      , "            ? TestReport("
+      , "              `${suitePath}\\n${msg}${generateReportSuiteEndMessage(testsInSuite)}`,"
+      , "              total,"
+      , "              success,"
+      , "              failed,"
+      , "            )"
+      , "            : TestReport(\"\", total, success, failed)"
+      , "      },"
+      , "    ),"
+      , "  ),"
+      , "  Wish.chainRej("
+      , "    (err) => {"
+      , "      failSuite(suitePath)"
+      , "      return of("
+      , "        TestReport("
+      , "          `${suitePath}\\n${err}\\n${generateReportSuiteEndMessage(testsInSuite)}`,"
+      , "          List.length(testsInSuite),"
+      , "          0,"
+      , "          List.length(testsInSuite),"
+      , "        ),"
+      , "      )"
+      , "    },"
+      , "  ),"
+      , ")(testsInSuite)"
+      , ""
+      , "g :: Integer -> Integer"
+      , "g = (x) => x"
+      ]) `shouldSatisfy` isRight
+
+  it "parses runTestSuite with Wish.chainRej" $
+    parse (unlines
+      [ "f = (suitePath, testsInSuite) => pipe("
+      , "  Wish.chainRej("
+      , "    (err) => {"
+      , "      failSuite(suitePath)"
+      , "      return of("
+      , "        TestReport("
+      , "          `${suitePath}\\n${err}\\n${generateMsg(testsInSuite)}`,"
+      , "          List.length(testsInSuite),"
+      , "          0,"
+      , "          List.length(testsInSuite),"
+      , "        ),"
+      , "      )"
+      , "    },"
+      , "  ),"
+      , ")(testsInSuite)"
+      , ""
+      , "g :: Integer -> Integer"
+      , "g = (x) => x"
+      ]) `shouldSatisfy` isRight
+
+  it "parses runTestSuite with Wish.bichain" $
+    parse (unlines
+      [ "f = (suitePath, testsInSuite) => pipe("
+      , "  map("
+      , "    Wish.bichain("
+      , "      pipe("
+      , "        updateSuiteResult(suitePath),"
+      , "        resultToReport,"
+      , "        of,"
+      , "      ),"
+      , "      pipe("
+      , "        updateSuiteResult(suitePath),"
+      , "        resultToReport,"
+      , "        of,"
+      , "      ),"
+      , "    ),"
+      , "  ),"
+      , "  Wish.parallel,"
+      , "  (testsWish) => Monad.andDo("
+      , "    testsWish,"
+      , "    Wish.mapRej("
+      , "      (err) => IO.red(\"error\"),"
+      , "      beforeAll(),"
+      , "    ),"
+      , "  ),"
+      , "  (testsWish) => do {"
+      , "    result <- testsWish"
+      , "    _ <- Wish.mapRej("
+      , "      (err) => IO.red(\"error\"),"
+      , "      afterAll(),"
+      , "    )"
+      , "    return of(result)"
+      , "  },"
+      , ")(testsInSuite)"
+      , ""
+      , "g :: Integer -> Integer"
+      , "g = (x) => x"
+      ]) `shouldSatisfy` isRight
+
+  it "parses runTestSuite with do-block assignment" $
+    parse (unlines
+      [ "f = (testsWish, afterAll) => do {"
+      , "  result <- testsWish"
+      , "  _ <- Wish.mapRej("
+      , "    (err) => IO.red(\"error\"),"
+      , "    afterAll(),"
+      , "  )"
+      , "  return of(result)"
+      , "}"
+      , ""
+      , "g :: Integer -> Integer"
+      , "g = (x) => x"
+      ]) `shouldSatisfy` isRight
+
+  it "parses runAllTestSuites type annotation" $
+    parse (unlines
+      [ "runAllTestSuites :: ("
+      , "  Show e,"
+      , "  Show f"
+      , ") => List #[String, {} -> Wish e a, {} -> Wish f b, List (Wish TestResult TestResult)] -> {} -> {}"
+      , "export runAllTestSuites = (testSuites) => testSuites"
+      , ""
+      , "g :: Integer -> Integer"
+      , "g = (x) => x"
+      ]) `shouldSatisfy` isRight
+
+  it "parses TestReport where pattern in pipe" $
+    parse (unlines
+      [ "f = (suitePath, testsInSuite) => pipe("
+      , "  map("
+      , "    pipe("
+      , "      List.reduce(mergeReports, EMPTY_REPORT),"
+      , "      where {"
+      , "        TestReport(msg, total, success, failed) =>"
+      , "          (total == 0 || failed > 0)"
+      , "            ? TestReport("
+      , "              \"hello\","
+      , "              total,"
+      , "              success,"
+      , "              failed,"
+      , "            )"
+      , "            : TestReport(\"\", total, success, failed)"
+      , "      },"
+      , "    ),"
+      , "  ),"
+      , ")(testsInSuite)"
+      , ""
+      , ""
+      , "g :: Integer -> Integer"
+      , "g = (x) => x"
+      ]) `shouldSatisfy` isRight
+
+  it "parses IS_COLOR_ENABLED do block pattern" $
+    parse (unlines
+      [ "IS_COLOR_ENABLED :: Boolean"
+      , "IS_COLOR_ENABLED = do {"
+      , "  noColor = Process.getEnv(\"NO_COLOR\")"
+      , "  return noColor == Just(\"\") || noColor == Nothing"
+      , "}"
+      , ""
+      , "PREFIX_RUNS :: String"
+      , "PREFIX_RUNS = \"hello\""
+      ]) `shouldSatisfy` isRight
+
+  it "parses if with do block (no braces)" $
+    parse (unlines
+      [ "f = (x) => {"
+      , "  if (x) do {"
+      , "    g(x)"
+      , "  }"
+      , "  return x"
+      , "}"
+      , ""
+      , "h :: Integer -> Integer"
+      , "h = (x) => x"
+      ]) `shouldSatisfy` isRight
+
+  it "parses template string with hex escape and interpolation" $
+    parse (unlines
+      [ "f :: Integer -> String"
+      , "f = (x) => `\\x1b[${show(x)}A`"
+      , ""
+      , "G :: String"
+      , "G = \"hello\""
+      ]) `shouldSatisfy` isRight
+
+  it "parses uppercase constant with type annotation" $
+    parse (unlines
+      [ "PREFIX_RUNS :: String"
+      , "PREFIX_RUNS = \"hello\""
+      ]) `shouldSatisfy` isRight
+
+  it "parses uppercase constant :: type then TkTypeName = exp" $
+    parse (unlines
+      [ "IS_COLOR_ENABLED :: Boolean"
+      , "IS_COLOR_ENABLED = true"
+      , ""
+      , "PREFIX_RUNS :: String"
+      , "PREFIX_RUNS = \"hello\""
+      ]) `shouldSatisfy` isRight
+
+  it "parses float literal with _f suffix" $
+    parse "f = (x) => x > 90_f" `shouldSatisfy` isRight
+
+  it "parses multiline template string interpolation" $
+    parse (unlines
+      [ "f = (x) => `passed: ${"
+      , "  show(x)"
+      , "}  end`"
+      , ""
+      , "g :: Integer -> Integer"
+      , "g = (x) => x"
+      ]) `shouldSatisfy` isRight
+
+  it "parses runAllTestSuites full body" $
+    parse (unlines
+      [ "runAllTestSuites :: ("
+      , "  Show e,"
+      , "  Show f"
+      , ") => List #[String, {} -> Wish e a, {} -> Wish f b, List (Wish TestResult TestResult)] -> {} -> {}"
+      , "export runAllTestSuites = (testSuites) => pipe("
+      , "  map("
+      , "    where {"
+      , "      #[path, beforeAll, afterAll, tests] =>"
+      , "        runTestSuite(path, beforeAll, afterAll, tests)"
+      , "    },"
+      , "  ),"
+      , "  (suites) => {"
+      , "    if (IS_COLOR_ENABLED) {"
+      , "      printSuiteResults(collector.getResults())"
+      , "    }"
+      , "    return suites"
+      , "  },"
+      , "  Wish.parallel,"
+      , "  map(List.reduce(mergeReports, EMPTY_REPORT)),"
+      , "  Wish.fulfill("
+      , "    () => ({}),"
+      , "    (report) => {"
+      , "      if (!IS_COLOR_ENABLED) {"
+      , "        printSuiteResults(collector.getResults())"
+      , "      }"
+      , "      IO.put(getMessage(report))"
+      , "    },"
+      , "  ),"
+      , ")(testSuites)"
+      ]) `shouldSatisfy` isRight
+
   mapM_ (\name -> it ("parses " ++ name) $ parseFile (preludeDir ++ "/" ++ name))
     [ "Wish.mad"
     , "__BUILTINS__.mad"

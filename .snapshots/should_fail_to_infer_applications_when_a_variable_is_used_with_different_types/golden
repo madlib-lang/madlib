@@ -10947,7 +10947,30 @@
             (fromList []))
          (TApp
             (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star)))
-         (FromFunctionArgument "slice" 3))
+         (FromFunctionArgument
+            "slice"
+            3
+            (Just
+               FunctionContext
+                 { fcExpectedType =
+                     TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star))
+                 , fcFullSignature =
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star))))
+                       (TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star)))
+                 , fcTotalParams = 1
+                 }))
+         (Just
+            SecondaryLocation
+              { slPath = "Module.mad"
+              , slArea = Area (Loc 1028 49 14) (Loc 1053 49 39)
+              , slMessage = "'slice' is applied here"
+              }))
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 1055 49 41) (Loc 1060 49 46)

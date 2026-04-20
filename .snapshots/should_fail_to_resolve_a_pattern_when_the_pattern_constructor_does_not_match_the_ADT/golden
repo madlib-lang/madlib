@@ -1379,7 +1379,8 @@
             (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
             (TVar (TV 4 Star)))
          (TCon (TC "Failure" Star) "Module.mad")
-         FromPatternMatch)
+         (FromPatternMatch 1)
+         Nothing)
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 120 7 16) (Loc 121 7 17)

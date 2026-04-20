@@ -1,6 +1,8 @@
 #include <gc.h>
+#include "string_header.hpp"
 #include "string.hpp"
 #include <string.h>
+#include <stdarg.h>
 
 #define PCRE2_CODE_UNIT_WIDTH 8
 #include <pcre2.h>
@@ -16,9 +18,25 @@
 extern "C" {
 #endif
 
+// ---- Core allocation --------------------------------------------------------
+
+char *madlib__string__alloc(uint32_t byte_len, uint32_t char_len) {
+    // Phase 2 SSO: strings that fit in 15 bytes use a fixed 24-byte object
+    // (8-byte header + 15 bytes data + 1 NUL), avoiding a separate GC slot for tiny strings.
+    size_t total = (byte_len <= 15)
+        ? 24u
+        : (size_t)(sizeof(MadlibStringHeader) + byte_len + 1);
+    uint8_t *raw = (uint8_t*)GC_MALLOC_ATOMIC(total);
+    MadlibStringHeader *h = (MadlibStringHeader*)raw;
+    h->byte_len = byte_len;
+    madstr_set_char_len(h, char_len);
+    h->flags = MADSTR_HAS_HEADER | (byte_len <= 15 ? MADSTR_SSO : 0u);
+    return (char*)(raw + sizeof(MadlibStringHeader));
+}
+
 char *madlib__string__replace(char *regex, char *replace, char *str) {
   int errornumber;
-  size_t inputLength = strlen(str);
+  size_t inputLength = madstr_byte_len(str);
   PCRE2_SIZE erroroffset;
   pcre2_code *re = pcre2_compile(
     (PCRE2_SPTR)regex,
@@ -38,23 +56,27 @@ char *madlib__string__replace(char *regex, char *replace, char *str) {
   size_t bufferLength = bufferLengthToUse;
   char *buffer = (char*)GC_MALLOC_ATOMIC(sizeof(char)*bufferLength);
 
-  int result = pcre2_substitute(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, PCRE2_SUBSTITUTE_GLOBAL, NULL, NULL, (PCRE2_SPTR)replace, PCRE2_ZERO_TERMINATED, (PCRE2_UCHAR*) buffer, &bufferLength);
+  int subResult = pcre2_substitute(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, PCRE2_SUBSTITUTE_GLOBAL, NULL, NULL, (PCRE2_SPTR)replace, PCRE2_ZERO_TERMINATED, (PCRE2_UCHAR*) buffer, &bufferLength);
 
-  while (result == PCRE2_ERROR_NOMEMORY) {
+  while (subResult == PCRE2_ERROR_NOMEMORY) {
     bufferLengthToUse = bufferLength = bufferLengthToUse * 2;
     buffer = (char*)GC_MALLOC_ATOMIC(sizeof(char)*bufferLength);
-    result = pcre2_substitute(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, PCRE2_SUBSTITUTE_GLOBAL, NULL, NULL, (PCRE2_SPTR)replace, PCRE2_ZERO_TERMINATED, (PCRE2_UCHAR*) buffer, &bufferLength);
+    subResult = pcre2_substitute(re, (PCRE2_SPTR)str, PCRE2_ZERO_TERMINATED, 0, PCRE2_SUBSTITUTE_GLOBAL, NULL, NULL, (PCRE2_SPTR)replace, PCRE2_ZERO_TERMINATED, (PCRE2_UCHAR*) buffer, &bufferLength);
   }
 
   pcre2_code_free(re);
 
-  return buffer;
+  // bufferLength is now the number of bytes written (excluding NUL) per PCRE2 docs.
+  char *result = madlib__string__alloc_bytes((uint32_t)bufferLength);
+  memcpy(result, buffer, bufferLength);
+  result[bufferLength] = '\0';
+  return result;
 }
 
 
 bool madlib__string__match(char *regex, char *str) {
   int errornumber;
-  size_t inputLength = strlen(str);
+  size_t inputLength = madstr_byte_len(str);
   PCRE2_SIZE erroroffset;
   pcre2_code *re = pcre2_compile(
     (PCRE2_SPTR)regex,
@@ -89,14 +111,18 @@ bool madlib__string__match(char *regex, char *str) {
 
 
 bool madlib__string__internal__eq(char *s1, char *s2) {
-  if (strcmp(s1, s2) == 0) {
-    return true;
-  } else {
-    return false;
+  const MadlibStringHeader *h1 = ((const MadlibStringHeader*)s1) - 1;
+  const MadlibStringHeader *h2 = ((const MadlibStringHeader*)s2) - 1;
+  if ((h1->flags & MADSTR_HAS_HEADER) && (h2->flags & MADSTR_HAS_HEADER)) {
+    if (h1->byte_len != h2->byte_len) return false;
+    return memcmp(s1, s2, h1->byte_len) == 0;
   }
+  return strcmp(s1, s2) == 0;
 }
 
 int64_t madlib__string__compare(char *s1, char *s2) {
+  // Fast-reject: if byte lengths differ we still need lexicographic order,
+  // so we can only skip the compare if we know they're equal length and equal bytes.
   int64_t result = strcmp(s1, s2);
   if (result < 0) {
     return -1;
@@ -108,40 +134,55 @@ int64_t madlib__string__compare(char *s1, char *s2) {
 }
 
 bool madlib__string__internal__areStringsEqual(char *s1, char *s2) {
-  if (strcmp(s1, s2) == 0) {
-    return true;
-  } else {
-    return false;
+  const MadlibStringHeader *h1 = ((const MadlibStringHeader*)s1) - 1;
+  const MadlibStringHeader *h2 = ((const MadlibStringHeader*)s2) - 1;
+  if ((h1->flags & MADSTR_HAS_HEADER) && (h2->flags & MADSTR_HAS_HEADER)) {
+    if (h1->byte_len != h2->byte_len) return false;   // O(1) fast reject
+    return memcmp(s1, s2, h1->byte_len) == 0;          // SIMD-eligible
   }
+  return strcmp(s1, s2) == 0;
 }
 
 bool madlib__string__internal__areStringsNotEqual(char *s1, char *s2) {
-  if (strcmp(s1, s2) == 0) {
-    return false;
-  } else {
-    return true;
+  const MadlibStringHeader *h1 = ((const MadlibStringHeader*)s1) - 1;
+  const MadlibStringHeader *h2 = ((const MadlibStringHeader*)s2) - 1;
+  if ((h1->flags & MADSTR_HAS_HEADER) && (h2->flags & MADSTR_HAS_HEADER)) {
+    if (h1->byte_len != h2->byte_len) return true;    // O(1) fast reject
+    return memcmp(s1, s2, h1->byte_len) != 0;
   }
+  return strcmp(s1, s2) != 0;
 }
 
 int64_t madlib__string__length(unsigned char *s) {
+  // O(1) fast path: return cached char count if header is present and populated.
+  MadlibStringHeader *h = ((MadlibStringHeader*)s) - 1;
+  if (h->flags & MADSTR_HAS_HEADER) {
+    uint32_t cached = madstr_char_len(h);
+    if (cached != MADSTR_CHAR_LEN_UNKNOWN) return (int64_t)cached;
+  }
+
+  // O(n) scan — first call only for runtime-allocated strings;
+  // always for FFI strings (no header).
   int64_t length = 0;
   int skipCount = 0;
+  const unsigned char *p = s;
 
-  while (*s != '\0' || skipCount != 0) {
+  while (*p != '\0' || skipCount != 0) {
     if (skipCount > 0) {
       skipCount--;
     } else {
       length++;
-
-      if (*s >= 0xf0) {
-        skipCount = 3;
-      } else if (*s >= 0xe0) {
-        skipCount = 2;
-      } else if (*s >= 0xc0) {
-        skipCount = 1;
-      }
+      if      (*p >= 0xf0) skipCount = 3;
+      else if (*p >= 0xe0) skipCount = 2;
+      else if (*p >= 0xc0) skipCount = 1;
     }
-    s++;
+    p++;
+  }
+
+  // Write back into the header — but only for mutable (non-literal) strings.
+  // Literals have MADSTR_PRECOMPUTED set and live in read-only memory.
+  if ((h->flags & MADSTR_HAS_HEADER) && !(h->flags & MADSTR_PRECOMPUTED)) {
+    madstr_set_char_len(h, (uint32_t)length);
   }
 
   return length;
@@ -157,9 +198,9 @@ int makeNextSize(int oldSize) {
 }
 
 char *madlib__string__internal__show(char *input) {
-  int initialLength = strlen(input);
+  int initialLength = (int)madstr_byte_len(input);
   int currentLength = initialLength + (initialLength + 3) * 0.1;
-  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (currentLength + 1));
+  char *result = madlib__string__alloc_bytes((uint32_t)currentLength);
   int currentIndex = 1;
 
   result[0] = '"';
@@ -169,7 +210,7 @@ char *madlib__string__internal__show(char *input) {
     if (currentLength - currentIndex < 4) {
       currentLength = makeNextSize(currentLength);
 
-      char *resized = (char *)GC_MALLOC_ATOMIC(sizeof(char) * currentLength);
+      char *resized = madlib__string__alloc_bytes((uint32_t)currentLength);
       memcpy(resized, result, sizeof(char) * (currentIndex + 1));
       result = resized;
     }
@@ -209,6 +250,13 @@ char *madlib__string__internal__show(char *input) {
 
   result[currentIndex] = '"';
   result[currentIndex + 1] = '\0';
+
+  // Fix: after growing-and-copying, the header byte_len reflects the capacity, not the
+  // actual content length.  Update it so madstr_byte_len() returns the correct value.
+  MadlibStringHeader *h = ((MadlibStringHeader*)result) - 1;
+  if (h->flags & MADSTR_HAS_HEADER) {
+      h->byte_len = (uint32_t)(currentIndex + 1);  // content bytes (excl. NUL)
+  }
 
   return result;
 }
@@ -252,6 +300,49 @@ madlib__maybe__Maybe_t *madlib__string__charAt(int64_t n, unsigned char *s) {
 }
 
 
+// ---------------------------------------------------------------------------
+// Byte-offset-based O(1) access — used by the index-based Parse module
+// ---------------------------------------------------------------------------
+
+// O(1): read the codepoint starting at a given byte offset.
+// Returns Just(codepoint) or Nothing if the offset is at the NUL terminator.
+madlib__maybe__Maybe_t *madlib__string__byteCharAt(int64_t byteOffset, unsigned char *s) {
+  const unsigned char *ptr = s + byteOffset;
+  madlib__maybe__Maybe_t *result = (madlib__maybe__Maybe_t*)GC_MALLOC(sizeof(madlib__maybe__Maybe_t));
+  if (*ptr == '\0') {
+    result->index = madlib__maybe__Maybe_NOTHING_INDEX;
+    result->data  = NULL;
+    return result;
+  }
+  int dummy = 0;
+  int32_t cp = utf8DecodeChar((const char*)ptr, &dummy);
+  result->index = madlib__maybe__Maybe_JUST_INDEX;
+  result->data  = (void*)(intptr_t)cp;
+  return result;
+}
+
+// O(1): byte width (1–4) of the UTF-8 codepoint starting at the given byte offset.
+int64_t madlib__string__byteCharWidth(int64_t byteOffset, unsigned char *s) {
+  unsigned char b = s[byteOffset];
+  if (b < 0x80) return 1;
+  else if (b < 0xE0) return 2;
+  else if (b < 0xF0) return 3;
+  else return 4;
+}
+
+// O(1): byte length via the MadlibStringHeader (falls back to strlen for FFI strings).
+int64_t madlib__string__byteLength(unsigned char *s) {
+  return (int64_t)madstr_byte_len((const char*)s);
+}
+
+// O(|target|): true iff target == input[byteOffset .. byteOffset+|target|).
+bool madlib__string__byteStartsWith(char *target, int64_t byteOffset, char *s) {
+  size_t len = madstr_byte_len(target);
+  return memcmp(s + byteOffset, target, len) == 0;
+}
+
+// ---------------------------------------------------------------------------
+
 char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
   int skipCount = 0;
   int initialEnd = end;
@@ -290,14 +381,23 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
   }
 
   if (initialEnd == 0) {
-    return (char*)s;
+    // Allocate a proper madlib string instead of returning a raw interior pointer.
+    // Interior pointers lack a MadlibStringHeader; returning one would corrupt
+    // any downstream madstr_byte_len / header read.
+    size_t remaining = strlen((const char*)s);
+    char *result = madlib__string__alloc_bytes((uint32_t)remaining);
+    if (remaining > 0) {
+      memcpy(result, s, remaining);
+    }
+    result[remaining] = '\0';
+    return result;
   }
 
   unsigned char *startPtr = s;
 
   // the input string was shorter than the start so we return an empty string
   if (start > 0) {
-    char *empty = (char *)GC_MALLOC_ATOMIC(sizeof(char));
+    char *empty = madlib__string__alloc(0, 0);
     *empty = '\0';
     return empty;
   }
@@ -322,7 +422,7 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
     s++;
   }
 
-  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (bytesToCopy + 1));
+  char *result = madlib__string__alloc_bytes((uint32_t)bytesToCopy);
   memcpy(result, startPtr, bytesToCopy);
   result[bytesToCopy] = '\0';
 
@@ -331,9 +431,9 @@ char *madlib__string__slice(int64_t start, int64_t end, unsigned char *s) {
 
 char *madlib__string__prependChar(int32_t c, char* s) {
   char *encoded = utf8EncodeChar(c);
-  size_t encodedLength = strlen(encoded);
-  size_t stringLength = strlen(s);
-  char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (stringLength + encodedLength + 1));
+  size_t encodedLength = madstr_byte_len(encoded);
+  size_t stringLength = madstr_byte_len(s);
+  char *result = madlib__string__alloc_bytes((uint32_t)(stringLength + encodedLength));
   memcpy(result, encoded, encodedLength);
   memcpy(result + encodedLength, s, stringLength);
   result[stringLength + encodedLength] = '\0';
@@ -342,9 +442,9 @@ char *madlib__string__prependChar(int32_t c, char* s) {
 
 char *madlib__string__appendChar(int32_t c, char* s) {
   char *encoded = utf8EncodeChar(c);
-  size_t encodedLength = strlen(encoded);
-  size_t stringLength = strlen(s);
-  char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (stringLength + encodedLength + 1));
+  size_t encodedLength = madstr_byte_len(encoded);
+  size_t stringLength = madstr_byte_len(s);
+  char *result = madlib__string__alloc_bytes((uint32_t)(stringLength + encodedLength));
   memcpy(result, s, stringLength);
   memcpy(result + stringLength, encoded, encodedLength);
   result[stringLength + encodedLength] = '\0';
@@ -353,7 +453,7 @@ char *madlib__string__appendChar(int32_t c, char* s) {
 
 char *madlib__string__trim(char *s) {
   char *startPtr = s;
-  size_t strLength = strlen(s);
+  size_t strLength = madstr_byte_len(s);
   int removeFromStart = 0;
   int removeFromEnd = 0;
 
@@ -379,7 +479,7 @@ char *madlib__string__trim(char *s) {
   }
 
   size_t newSize = strLength - removeFromStart - removeFromEnd;
-  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (newSize + 1));
+  char *result = madlib__string__alloc_bytes((uint32_t)newSize);
   memcpy(result, startPtr + removeFromStart, newSize);
   result[newSize] = '\0';
 
@@ -388,7 +488,7 @@ char *madlib__string__trim(char *s) {
 
 char *madlib__string__trimStart(char *s) {
   char *startPtr = s;
-  size_t strLength = strlen(s);
+  size_t strLength = madstr_byte_len(s);
   int removeFromStart = 0;
 
   while (*s != '\0') {
@@ -402,7 +502,7 @@ char *madlib__string__trimStart(char *s) {
   }
 
   size_t newSize = strLength - removeFromStart;
-  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (newSize + 1));
+  char *result = madlib__string__alloc_bytes((uint32_t)newSize);
   memcpy(result, startPtr + removeFromStart, newSize);
   result[newSize] = '\0';
 
@@ -410,7 +510,7 @@ char *madlib__string__trimStart(char *s) {
 }
 
 char *madlib__string__trimEnd(char *s) {
-  size_t strLength = strlen(s);
+  size_t strLength = madstr_byte_len(s);
   int removeFromEnd = 0;
   char *end = s + strLength - 1;
 
@@ -424,7 +524,7 @@ char *madlib__string__trimEnd(char *s) {
   }
 
   size_t newSize = strLength - removeFromEnd;
-  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (newSize + 1));
+  char *result = madlib__string__alloc_bytes((uint32_t)newSize);
   memcpy(result, s, newSize);
   result[newSize] = '\0';
 
@@ -432,11 +532,12 @@ char *madlib__string__trimEnd(char *s) {
 }
 
 char *madlib__string__internal__concat(char *s1, char *s2) {
-  size_t len1 = strlen(s1);
-  size_t len2 = strlen(s2);
-  char *result = (char *)GC_MALLOC_ATOMIC((len1 + len2 + 1) * sizeof(char));
+  size_t len1 = madstr_byte_len(s1);
+  size_t len2 = madstr_byte_len(s2);
+  char *result = madlib__string__alloc((uint32_t)(len1 + len2), MADSTR_CHAR_LEN_UNKNOWN);
   memcpy(result, s1, len1);
-  memcpy(result + len1, s2, len2 + 1);
+  memcpy(result + len1, s2, len2);
+  result[len1 + len2] = '\0';
   return result;
 }
 
@@ -444,21 +545,46 @@ char *madlib__string__concat(char *s1, char *s2) {
   return madlib__string__internal__concat(s1, s2);
 }
 
+// Concatenate `count` strings in a single allocation — used by the ++ chain-fusion optimisation.
+char *madlib__string__concat_n(int64_t count, ...) {
+  va_list args, args2;
+  va_start(args, count);
+  va_copy(args2, args);
+
+  size_t total = 0;
+  for (int64_t i = 0; i < count; i++) {
+    total += madstr_byte_len(va_arg(args, char*));
+  }
+  va_end(args);
+
+  char *result = madlib__string__alloc((uint32_t)total, MADSTR_CHAR_LEN_UNKNOWN);
+  size_t off = 0;
+  for (int64_t i = 0; i < count; i++) {
+    char *s = va_arg(args2, char*);
+    size_t len = madstr_byte_len(s);
+    memcpy(result + off, s, len);
+    off += len;
+  }
+  result[total] = '\0';
+  va_end(args2);
+  return result;
+}
+
 char *madlib__string__join(char *separator, madlib__list__Node_t *items) {
-  size_t separatorLength = strlen(separator);
+  size_t separatorLength = madstr_byte_len(separator);
   size_t itemCount = 0;
   size_t totalLength = 0;
 
   madlib__list__Node_t *current = items;
   while (current != NULL && current->value != NULL) {
     char *item = (char *)current->value;
-    totalLength += strlen(item);
+    totalLength += madstr_byte_len(item);
     itemCount += 1;
     current = current->next;
   }
 
   if (itemCount == 0) {
-    char *empty = (char *)GC_MALLOC_ATOMIC(sizeof(char));
+    char *empty = madlib__string__alloc(0, 0);
     empty[0] = '\0';
     return empty;
   }
@@ -467,14 +593,14 @@ char *madlib__string__join(char *separator, madlib__list__Node_t *items) {
     totalLength += separatorLength * (itemCount - 1);
   }
 
-  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (totalLength + 1));
+  char *result = madlib__string__alloc_bytes((uint32_t)totalLength);
   size_t offset = 0;
   size_t index = 0;
 
   current = items;
   while (current != NULL && current->value != NULL) {
     char *item = (char *)current->value;
-    size_t itemLength = strlen(item);
+    size_t itemLength = madstr_byte_len(item);
     memcpy(result + offset, item, itemLength);
     offset += itemLength;
 
@@ -492,8 +618,8 @@ char *madlib__string__join(char *separator, madlib__list__Node_t *items) {
 }
 
 char *stripTrailingZeros(char *number) {
-  int length = strlen(number);
-  char *end = number + strlen(number) - 1;
+  int length = (int)strlen(number);  // input is always a raw (non-header) buffer
+  char *end = number + length - 1;
   int charsToRemove = 0;
 
   while (*end == '0' && charsToRemove < length) {
@@ -505,9 +631,10 @@ char *stripTrailingZeros(char *number) {
     charsToRemove += 1;
   }
 
-  char *result = (char *)GC_MALLOC_ATOMIC(length - charsToRemove + 1);
-  memcpy(result, number, length - charsToRemove);
-  result[length - charsToRemove] = '\0';
+  int resultLen = length - charsToRemove;
+  char *result = madlib__string__alloc_bytes((uint32_t)resultLen);
+  memcpy(result, number, resultLen);
+  result[resultLen] = '\0';
 
   return result;
 }
@@ -521,21 +648,18 @@ char *madlib__string__mapChars(PAP_t *pap, char *str) {
     i++;
   }
 
-  // TODO: Seems to be bad here
   char **encodedChars = (char **)GC_MALLOC(sizeof(char *) * i);
-  int j = 0;
   size_t fullLength = 0;
   for (int j = 0; j < i; j++) {
     char *encoded = utf8EncodeChar(chars[j]);
-    fullLength += strlen(encoded);
+    fullLength += madstr_byte_len(encoded);
     encodedChars[j] = encoded;
   }
 
-  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (fullLength + 1));
-  j = 0;
+  char *result = madlib__string__alloc_bytes((uint32_t)fullLength);
   size_t offset = 0;
   for (int j = 0; j < i; j++) {
-    size_t sizeOfChar = strlen(encodedChars[j]);
+    size_t sizeOfChar = madstr_byte_len(encodedChars[j]);
     memcpy(&result[offset], encodedChars[j], sizeOfChar);
     offset += sizeOfChar;
   }
@@ -570,17 +694,17 @@ char *madlib__string__fromList(madlib__list__Node_t *list) {
 
   while (list->value != NULL) {
     char *encoded = utf8EncodeChar((int32_t)(int64_t)list->value);
-    fullLength += strlen(encoded);
+    fullLength += madstr_byte_len(encoded);
     encodedChars[j] = encoded;
     j++;
     list = list->next;
   }
 
-  char *result = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (fullLength + 1));
+  char *result = madlib__string__alloc_bytes((uint32_t)fullLength);
   size_t offset = 0;
   for (int i = 0; i < charCount; i++) {
     if (encodedChars[i] != NULL) {
-      size_t sizeOfChar = strlen(encodedChars[i]);
+      size_t sizeOfChar = madstr_byte_len(encodedChars[i]);
       memcpy(result + offset, encodedChars[i], sizeOfChar);
       offset += sizeOfChar;
     }
@@ -591,59 +715,62 @@ char *madlib__string__fromList(madlib__list__Node_t *list) {
   return result;
 }
 
-madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
-  size_t separatorLength = strlen(separator);
-  if (separatorLength == 0) {
-    separatorLength = 1;
+static madlib__list__Node_t *madlib__string__appendSplitPart(
+  madlib__list__Node_t *current,
+  const char *start,
+  size_t partLength
+) {
+  char *part = madlib__string__alloc_bytes((uint32_t)partLength);
+  if (partLength > 0) {
+    memcpy(part, start, partLength);
   }
-  
+  part[partLength] = '\0';
+
+  madlib__list__Node_t *node = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
+  node->value = part;
+  node->next = NULL;
+  current->next = node;
+  return node;
+}
+
+madlib__list__Node_t *madlib__string__split(char *separator, char *str) {
+  size_t separatorLength = madstr_byte_len(separator);
   madlib__list__Node_t *result = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
   madlib__list__Node_t *current = result;
 
-  while (str != NULL && *str != '\0') {
-    char *found = strstr(str, separator);
-    size_t partLength = 0;
-    if (found == NULL) {
-      partLength = strlen(str);
-    } else {
-      partLength = found - str;
+  if (separatorLength == 0) {
+    if (str == NULL || *str == '\0') {
+      return NULL;
     }
 
-    if (partLength == 0 && found != NULL && strlen(separator) > 0) {
-      // Consecutive separators: produce empty string and skip past separator
-      char *part = (char *)GC_MALLOC_ATOMIC(sizeof(char) * 1);
-      part[0] = '\0';
-
-      madlib__list__Node_t *node = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
-      node->value = part;
-      node->next = NULL;
-      current = current->next = node;
-
-      str = found + separatorLength;
-      continue;
-    } else if (partLength == 0) {
-      partLength = 1;
+    int32_t *chars = utf8Decode(str);
+    for (int i = 0; chars[i] != 0; i++) {
+      char *encoded = utf8EncodeChar(chars[i]);
+      current = madlib__string__appendSplitPart(current, encoded, madstr_byte_len(encoded));
     }
+  } else {
+    char *cursor = str;
+    while (true) {
+      char *found = strstr(cursor, separator);
+      if (found == NULL) {
+        // cursor is an interior pointer — no header before it, use strlen
+        current = madlib__string__appendSplitPart(current, cursor, strlen(cursor));
+        break;
+      }
 
-    char *part = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (partLength + 1));
-    memcpy(part, str, partLength);
-    part[partLength] = '\0';
+      current = madlib__string__appendSplitPart(current, cursor, found - cursor);
+      cursor = found + separatorLength;
 
-    madlib__list__Node_t *node = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
-    node->value = part;
-    node->next = NULL;
-    current = current->next = node;
-
-    str = found;
-    if (found != NULL) {
-      str = found + separatorLength;
+      if (*cursor == '\0') {
+        current = madlib__string__appendSplitPart(current, cursor, 0);
+        break;
+      }
     }
   }
 
   madlib__list__Node_t *last = (madlib__list__Node_t *)GC_MALLOC(sizeof(madlib__list__Node_t));
   last->value = NULL;
   last->next = NULL;
-
   current->next = last;
 
   return result->next;
@@ -661,8 +788,8 @@ unsigned char *madlib__string__toLower(unsigned char *str) { return __strToLower
 
 
 unsigned char *__strToLower__(unsigned char *s) {
-  size_t length = strlen((char*)s);
-  unsigned char *copy = (unsigned char*)GC_MALLOC_ATOMIC(sizeof(unsigned char) * (length + 1));
+  size_t length = madstr_byte_len((const char*)s);
+  unsigned char *copy = (unsigned char*)madlib__string__alloc_bytes((uint32_t)length);
   memcpy(copy, s, length + 1);
   unsigned char *p = copy;
   unsigned char *pExtChar = 0;
@@ -1321,8 +1448,8 @@ unsigned char *__strToLower__(unsigned char *s) {
 }
 
 unsigned char *__strToUpper__(unsigned char *s) {
-  size_t length = strlen((char *)s);
-  unsigned char *copy = (unsigned char *)GC_MALLOC_ATOMIC(sizeof(unsigned char) * (length + 1));
+  size_t length = madstr_byte_len((const char*)s);
+  unsigned char *copy = (unsigned char*)madlib__string__alloc_bytes((uint32_t)length);
   memcpy(copy, s, length + 1);
 
   unsigned char *p = copy;

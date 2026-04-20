@@ -4,7 +4,8 @@
 module Infer.MonomorphizationState where
 
 import           Infer.Type
-import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Map.Strict as Map
 import Data.IORef
 import GHC.IO (unsafePerformIO)
 import AST.Solved
@@ -18,9 +19,19 @@ data ImportType
   | ExpressionImport
   deriving(Eq, Ord, Show, Generic, Hashable)
 
-monomorphizationState :: IORef (Map.Map FunctionId MonomorphizationRequest)
+-- | The hot lookup map uses HashMap for O(1) amortised lookup.
+-- FunctionId keys contain Type values; HashMap uses hash-then-Eq which
+-- avoids the full structural Ord comparison that Data.Map requires at
+-- every tree node.
+monomorphizationState :: IORef (HM.HashMap FunctionId MonomorphizationRequest)
 {-# NOINLINE monomorphizationState #-}
-monomorphizationState = unsafePerformIO $ newIORef Map.empty
+monomorphizationState = unsafePerformIO $ newIORef HM.empty
+
+-- Secondary index: module path → subset of monomorphizationState for that module.
+-- Updated in sync with monomorphizationState by newRequest/setRequestResult.
+monomorphizationStateByModule :: IORef (Map.Map FilePath (HM.HashMap FunctionId MonomorphizationRequest))
+{-# NOINLINE monomorphizationStateByModule #-}
+monomorphizationStateByModule = unsafePerformIO $ newIORef Map.empty
 
 -- Outer Map is where the import is needed
 -- Inner Map is where the imported names come from and gives a list of names to be imported
@@ -35,10 +46,11 @@ monomorphicMethods = unsafePerformIO $ newIORef Set.empty
 
 data ScopeState
   = ScopeState
-      { ssRequests :: Map.Map FunctionId MonomorphizationRequest
+      { ssRequests :: HM.HashMap FunctionId MonomorphizationRequest
       , ssDefinitions :: Map.Map String Exp
+      , ssNameCounts :: Map.Map String Int  -- tracks how many instances of each function name exist
       }
-      deriving(Eq, Ord, Show)
+      deriving(Eq, Show)
 
 -- State for local functions that need to be monomorphized
 -- Each item in the list is a full state for a given scope
@@ -75,7 +87,7 @@ makeMonomorphizedName :: String -> FilePath -> Type -> IO String
 makeMonomorphizedName fnName modulePath t = do
   state <- readIORef monomorphizationState
   let fnId = FunctionId fnName modulePath t
-  case Map.lookup fnId state of
+  case HM.lookup fnId state of
     Just MonomorphizationRequest { mrIndex } ->
       return $ buildMonomorphizedName fnName mrIndex
 
@@ -84,29 +96,29 @@ makeMonomorphizedName fnName modulePath t = do
 
 newRequest :: String -> FilePath -> Bool -> Type -> IO String
 newRequest fnName modulePath isNullaryMethod t = do
-  atomicModifyIORef
-    monomorphizationState
-    (\state ->
-      let nextIndex = Map.size state
-          fnId = FunctionId fnName modulePath t
-          req = MonomorphizationRequest nextIndex Nothing isNullaryMethod
-      in  (Map.insert fnId req state, ())
-    )
-
+  let fnId = FunctionId fnName modulePath t
+  req <- atomicModifyIORef monomorphizationState $ \state ->
+    let nextIndex = HM.size state
+        req = MonomorphizationRequest nextIndex Nothing isNullaryMethod
+    in  (HM.insert fnId req state, req)
+  atomicModifyIORef monomorphizationStateByModule $ \byModule ->
+    let inner = Map.findWithDefault HM.empty modulePath byModule
+    in  (Map.insert modulePath (HM.insert fnId req inner) byModule, ())
   makeMonomorphizedName fnName modulePath t
 
 setRequestResult :: String -> FilePath -> Bool -> Type -> Exp -> IO ()
 setRequestResult fnName modulePath isNullaryMethod t result = do
-  atomicModifyIORef
-    monomorphizationState
-    (\state ->
-      let fnId = FunctionId fnName modulePath t
-          updatedReq = case Map.lookup fnId state of
-            Just req ->
-              req{ mrResult = Just result, mrIsNullaryMethod = isNullaryMethod }
+  let fnId = FunctionId fnName modulePath t
+  updatedReq <- atomicModifyIORef monomorphizationState $ \state ->
+    let updatedReq = case HM.lookup fnId state of
+          Just req -> req{ mrResult = Just result, mrIsNullaryMethod = isNullaryMethod }
+          Nothing  -> MonomorphizationRequest (-1) (Just result) isNullaryMethod
+    in  (HM.insert fnId updatedReq state, updatedReq)
+  atomicModifyIORef monomorphizationStateByModule $ \byModule ->
+    let inner = Map.findWithDefault HM.empty modulePath byModule
+    in  (Map.insert modulePath (HM.insert fnId updatedReq inner) byModule, ())
 
-            Nothing ->
-              MonomorphizationRequest (-1) (Just result) isNullaryMethod
-          updatedState = Map.insert fnId updatedReq state
-      in  (updatedState, ())
-    )
+lookupByModulePath :: FilePath -> IO (HM.HashMap FunctionId MonomorphizationRequest)
+lookupByModulePath modulePath = do
+  byModule <- readIORef monomorphizationStateByModule
+  return $ Map.findWithDefault HM.empty modulePath byModule

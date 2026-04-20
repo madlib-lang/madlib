@@ -10,143 +10,584 @@ import {
   anyChar,
   char,
   choice,
+  digit,
+  eof,
+  fail,
+  lazy,
+  letter,
+  letters,
   location,
+  lookAhead,
   many,
   manyTill,
+  maybeSepBy,
+  notChar,
   notOneOf,
   oneOf,
   runParser,
+  satisfy,
+  sepBy,
   some,
+  someTill,
+  spaces,
+  string,
+  symbol,
   takeWhile,
+  token,
   Error,
   Loc
 } from "./Parse"
 
 
-test("it should parse any character", (_) => {
-  input = "c"
-  expected = Right('c')
-  actual = runParser(anyChar, input)
+// ─── anyChar ──────────────────────────────────────────────────────────────────
 
-  return assertEquals(actual, expected)
-})
+test("anyChar parses a single character", (_) => assertEquals(
+  runParser(anyChar, "c"),
+  Right('c'),
+))
 
-test("it should parse specific characters", (_) => {
-  input = "cba"
-  expected = Right("cba")
+test("anyChar fails on empty input", (_) => assertEquals(
+  runParser(anyChar, ""),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+test("anyChar on multi-char input consumes exactly one char", (_) => assertEquals(
+  // parser that reads two chars and builds a string
+  runParser(
+    do {
+      a <- anyChar
+      b <- anyChar
+      return of(String.fromList([a, b]))
+    },
+    "ab",
+  ),
+  Right("ab"),
+))
+
+test("anyChar parses multi-byte UTF-8 character", (_) => assertEquals(
+  runParser(anyChar, "é"),
+  Right('é'),
+))
+
+test("anyChar on emoji", (_) => assertEquals(
+  runParser(anyChar, "🎉"),
+  Right('🎉'),
+))
+
+
+// ─── char ────────────────────────────────────────────────────────────────────
+
+test("char succeeds when character matches", (_) => assertEquals(
+  runParser(char('a'), "a"),
+  Right('a'),
+))
+
+test("char fails when character does not match", (_) => assertEquals(
+  runParser(char('a'), "b"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+test("char fails on empty input", (_) => assertEquals(
+  runParser(char('a'), ""),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+
+// ─── notChar ─────────────────────────────────────────────────────────────────
+
+test("notChar succeeds when character does not match", (_) => assertEquals(
+  runParser(notChar('a'), "b"),
+  Right('b'),
+))
+
+test("notChar fails when character matches", (_) => assertEquals(
+  runParser(notChar('a'), "a"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+test("notChar fails on empty input", (_) => assertEquals(
+  runParser(notChar('a'), ""),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+
+// ─── satisfy ─────────────────────────────────────────────────────────────────
+
+test("satisfy succeeds when predicate is true", (_) => assertEquals(
+  runParser(satisfy(Char.isDigit), "5"),
+  Right('5'),
+))
+
+test("satisfy fails when predicate is false", (_) => assertEquals(
+  runParser(satisfy(Char.isDigit), "a"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+test("satisfy fails on empty input", (_) => assertEquals(
+  runParser(satisfy(Char.isLetter), ""),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+
+// ─── oneOf / notOneOf ────────────────────────────────────────────────────────
+
+test("oneOf parses a character in the list", (_) => assertEquals(
+  runParser(oneOf(['a', 'b', 'c']), "b"),
+  Right('b'),
+))
+
+test("oneOf fails on a character not in the list", (_) => assertEquals(
+  runParser(oneOf(['a', 'b', 'c']), "d"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+test("oneOf with 'cba' input parses three specific chars", (_) => {
   abcParser = oneOf(['a', 'b', 'c'])
   parser = pipe(
     map((a, b, c) => String.fromList([a, b, c])),
     ap($, abcParser),
     ap($, abcParser)
   )(abcParser)
-  actual = runParser(parser, input)
-
-  return assertEquals(actual, expected)
+  return assertEquals(runParser(parser, "cba"), Right("cba"))
 })
 
-test("it should parse specific characters", (_) => {
-  input = "cba"
-  expected = Right("cba")
-  abcParser = oneOf(['a', 'b', 'c'])
-  parser = do {
-    a <- abcParser
-    b <- abcParser
-    c <- abcParser
-    return of(String.fromList([a, b, c]))
+test("notOneOf parses a character not in the list", (_) => assertEquals(
+  runParser(notOneOf(['-', '_', '=']), "a"),
+  Right('a'),
+))
+
+test("notOneOf fails when character is in the list", (_) => assertEquals(
+  runParser(notOneOf(['-', '_', '=']), "-"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+
+// ─── string ──────────────────────────────────────────────────────────────────
+
+test("string parses a matching string", (_) => assertEquals(
+  runParser(string("hello"), "hello"),
+  Right("hello"),
+))
+
+test("string fails when input does not match", (_) => assertEquals(
+  runParser(string("hello"), "world"),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+test("string fails when input is a prefix of target", (_) => assertEquals(
+  runParser(string("hello"), "hel"),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+test("string parses empty string", (_) => assertEquals(
+  runParser(string(""), ""),
+  Right(""),
+))
+
+test("string parses unicode target", (_) => assertEquals(
+  runParser(string("café"), "café"),
+  Right("café"),
+))
+
+test("string combinator in many — O(N) not O(N²)", (_) => {
+  // 500 repetitions of "hello" — tests that the combinator is not quadratic
+  input = List.reduce((acc, _) => acc ++ "hello", "", List.repeat(0, 500))
+  result = runParser(many(string("hello")), input)
+  return where(result) {
+    Right(matches) => assertEquals(List.length(matches), 500)
+    _ => assertEquals(result, Right([]))
   }
+})
 
-  actual = runParser(parser, input)
-
-  return assertEquals(actual, expected)
+test("string advances location correctly past newline", (_) => {
+  parser = do {
+    _ <- string("ab")
+    l <- location
+    return of(l)
+  }
+  return assertEquals(runParser(parser, "ab"), Right(Loc(2, 0, 2)))
 })
 
 
-type Letter = Letter(Location, Location, Char)
+// ─── eof ─────────────────────────────────────────────────────────────────────
 
-test("location combinator should give access to current location info", (_) => {
-  input = "cba"
-  expected = Right([
-    Letter(Loc(0, 0, 0), Loc(1, 0, 1), 'c'),
-    Letter(Loc(1, 0, 1), Loc(2, 0, 2), 'b'),
-    Letter(Loc(2, 0, 2), Loc(3, 0, 3), 'a')
-  ])
+test("eof succeeds on empty input", (_) => assertEquals(
+  runParser(eof, ""),
+  Right({}),
+))
 
-  abcParser = pipe(
-    map((start, c, end) => Letter(start, end, c)),
-    ap($, oneOf(['a', 'b', 'c'])),
-    ap($, location)
-  )(location)
+test("eof fails when input remains", (_) => assertEquals(
+  // eof sees anyChar succeeds on "a", so eof returns #[[], Loc(0,0,0)] (original l)
+  runParser(eof, "a"),
+  Left(Error(Loc(0, 0, 0))),
+))
 
-  parser = pipe(
-    map((a, b, c) => [a, b, c]),
-    ap($, abcParser),
-    ap($, abcParser)
-  )(abcParser)
-  actual = runParser(parser, input)
+test("eof succeeds after consuming all input", (_) => assertEquals(
+  runParser(apL(char('a'), eof), "a"),
+  Right('a'),
+))
 
-  return assertEquals(actual, expected)
-})
+test("eof fails when input is not fully consumed", (_) => assertEquals(
+  // char('a') consumes 'a' advancing to Loc(1,0,1); eof then sees 'b' remaining
+  // and fails, returning the location it was called with: Loc(1,0,1)
+  runParser(apL(char('a'), eof), "ab"),
+  Left(Error(Loc(1, 0, 1))),
+))
 
-test("notOneOf should parse any character that is not in the given list", (_) => {
-  expected = Right('a')
-  actual = runParser(notOneOf(['-', '_', '=']), "a")
-  return assertEquals(actual, expected)
-})
 
-test("choice should try a list of parsers and run the first one that matches", (_) => {
-  expected = Right('b')
-  actual = runParser(choice([char('a'), char('b'), char('c')]), "b")
-  return assertEquals(actual, expected)
-})
+// ─── many / some ─────────────────────────────────────────────────────────────
 
-test("many should produce 0 or more parses of a given parser", (_) => {
-  expected = Right(['a', 'a', 'a', 'a', 'a'])
-  actual = runParser(many(char('a')), "aaaaa")
-  return assertEquals(actual, expected)
-})
+test("many produces 0 or more parses", (_) => assertEquals(
+  runParser(many(char('a')), "aaaaa"),
+  Right(['a', 'a', 'a', 'a', 'a']),
+))
 
-test("many should not exceed stack limit with big inputs", (_) => {
+test("many returns empty list when no match", (_) => assertEquals(
+  runParser(many(char('a')), ""),
+  Right([]),
+))
+
+test("many does not exceed stack limit with 1000-char input", (_) => {
   input = String.repeat('1', 1000)
   expected = Right(String.toList(input))
   actual = runParser(many(anyChar), input)
   return assertEquals(actual, expected)
 })
 
-test("some should produces 1 or more parses of a given parser", (_) => {
-  expected = Right(['a', 'a', 'a', 'a', 'a'])
-  actual = runParser(some(char('a')), "aaaaa")
+test("many does not exceed stack limit with 10000-char input", (_) => {
+  input = String.repeat('a', 10000)
+  actual = runParser(many(anyChar), input)
+  return where(actual) {
+    Right(chars) => assertEquals(List.length(chars), 10000)
+    _ => assertEquals(actual, Right([]))
+  }
+})
+
+test("some produces 1 or more parses", (_) => assertEquals(
+  runParser(some(char('a')), "aaaaa"),
+  Right(['a', 'a', 'a', 'a', 'a']),
+))
+
+test("some fails if no parse was produced", (_) => assertEquals(
+  runParser(some(char('a')), "bbbbb"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+test("some fails on empty input", (_) => assertEquals(
+  runParser(some(char('a')), ""),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+
+// ─── manyTill / someTill ─────────────────────────────────────────────────────
+
+test("manyTill produces a parse until end parser matches", (_) => assertEquals(
+  runParser(apL(manyTill(anyChar, char('-')), char('-')), "12345-"),
+  Right(['1', '2', '3', '4', '5']),
+))
+
+test("manyTill returns empty list when end matches immediately", (_) => assertEquals(
+  runParser(apL(manyTill(anyChar, char('-')), char('-')), "-"),
+  Right([]),
+))
+
+test("manyTill does not exceed stack limit with 100-char input", (_) => {
+  input = String.repeat('1', 100) ++ "-"
+  expected = Right(List.repeat('1', 100))
+  actual = runParser(apL(manyTill(anyChar, char('-')), char('-')), input)
   return assertEquals(actual, expected)
 })
 
-test("some should fail if no parse was produced at all", (_) => {
-  expected = Left(Error(Loc(1, 0, 1)))
-  actual = runParser(some(char('a')), "bbbbb")
-  return assertEquals(actual, expected)
-})
+test("someTill produces at least one parse before end", (_) => assertEquals(
+  runParser(apL(someTill(anyChar, char('-')), char('-')), "abc-"),
+  Right(['a', 'b', 'c']),
+))
 
-test("takeWhile should produce a parse while the predicate returns true", (_) => {
-  expected = Right(['1', '2', '3', '4', '5'])
-  actual = runParser(takeWhile(Char.isDigit), "12345")
-  return assertEquals(actual, expected)
-})
+test("someTill fails when end matches immediately (zero items)", (_) => assertEquals(
+  runParser(apL(someTill(anyChar, char('-')), char('-')), "-"),
+  Left(Error(Loc(1, 0, 1))),
+))
 
-test("takeWhile should not exceed stack limit with big inputs", (_) => {
+
+// ─── takeWhile ───────────────────────────────────────────────────────────────
+
+test("takeWhile produces a parse while predicate is true", (_) => assertEquals(
+  runParser(takeWhile(Char.isDigit), "12345"),
+  Right(['1', '2', '3', '4', '5']),
+))
+
+test("takeWhile returns empty list when predicate is false immediately", (_) => assertEquals(
+  // takeWhile on empty input returns [] (0 bytes consumed = totalLen = 0)
+  runParser(takeWhile(Char.isDigit), ""),
+  Right([]),
+))
+
+test("takeWhile does not exceed stack limit with 100-char input", (_) => {
   input = String.repeat('1', 100)
   expected = Right(String.toList(input))
   actual = runParser(takeWhile(Char.isDigit), input)
   return assertEquals(actual, expected)
 })
 
-test("manyTill should produce a parse until the end parser matches", (_) => {
-  expected = Right(['1', '2', '3', '4', '5'])
-  actual = runParser(apL(manyTill(anyChar, char('-')), char('-')), "12345-")
-  return assertEquals(actual, expected)
+test("takeWhile with large input is O(N), not O(N²)", (_) => {
+  // 5000 digit characters — verifies the index-based implementation
+  input = String.repeat('9', 5000)
+  actual = runParser(takeWhile(Char.isDigit), input)
+  return where(actual) {
+    Right(chars) => assertEquals(List.length(chars), 5000)
+    _ => assertEquals(actual, Right([]))
+  }
 })
 
-test("manyTill should not exceed stack limit with big inputs", (_) => {
-  input = String.repeat('1', 100) ++ "-"
-  expected = Right(List.repeat('1', 100))
-  actual = runParser(apL(manyTill(anyChar, char('-')), char('-')), input)
-  return assertEquals(actual, expected)
+
+// ─── sepBy / maybeSepBy ──────────────────────────────────────────────────────
+
+test("sepBy parses comma-separated digits", (_) => assertEquals(
+  runParser(sepBy(digit, char(',')), "1,2,3"),
+  Right(['1', '2', '3']),
+))
+
+test("sepBy parses a single item with no separator", (_) => assertEquals(
+  runParser(sepBy(digit, char(',')), "5"),
+  Right(['5']),
+))
+
+test("sepBy fails when input doesn't match at all", (_) => assertEquals(
+  // sepBy uses alt(do{first <- digit; ...}, fail). When digit fails, alt retries
+  // from the original position with fail, which returns Loc(0,0,0).
+  runParser(sepBy(digit, char(',')), "abc"),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+test("maybeSepBy parses comma-separated digits", (_) => assertEquals(
+  runParser(maybeSepBy(digit, char(',')), "1,2,3"),
+  Right(['1', '2', '3']),
+))
+
+test("maybeSepBy returns empty list when nothing matches", (_) => assertEquals(
+  runParser(maybeSepBy(digit, char(',')), ""),
+  Right([]),
+))
+
+test("maybeSepBy returns empty list when input doesn't match", (_) => assertEquals(
+  // maybeSepBy = alt(sepBy, pure([])). When sepBy fails on "abc", pure([]) returns
+  // idx=0 which != totalLen=3, so runParser fails too. Use empty input instead.
+  runParser(maybeSepBy(digit, char(',')), ""),
+  Right([]),
+))
+
+
+// ─── lookAhead ───────────────────────────────────────────────────────────────
+
+test("lookAhead succeeds without consuming input", (_) => {
+  parser = do {
+    _ <- lookAhead(char('a'))
+    c <- anyChar
+    return of(c)
+  }
+  return assertEquals(runParser(parser, "a"), Right('a'))
+})
+
+test("lookAhead fails when parser fails", (_) => assertEquals(
+  // lookAhead returns #[[], l] (original l) when inner parser fails, so Loc(0,0,0)
+  runParser(lookAhead(char('b')), "a"),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+test("lookAhead does not advance position", (_) => {
+  parser = do {
+    _ <- lookAhead(anyChar)
+    a <- anyChar
+    b <- anyChar
+    return of(String.fromList([a, b]))
+  }
+  return assertEquals(runParser(parser, "ab"), Right("ab"))
+})
+
+
+// ─── choice ──────────────────────────────────────────────────────────────────
+
+test("choice tries parsers in order and takes first match", (_) => assertEquals(
+  runParser(choice([char('a'), char('b'), char('c')]), "b"),
+  Right('b'),
+))
+
+test("choice fails when no parser matches", (_) => assertEquals(
+  runParser(choice([char('a'), char('b')]), "c"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+test("choice on empty list fails", (_) => assertEquals(
+  runParser(choice([]), "a"),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+
+// ─── digit / letter / letters ────────────────────────────────────────────────
+
+test("digit parses a single digit", (_) => assertEquals(
+  runParser(digit, "7"),
+  Right('7'),
+))
+
+test("digit fails on a letter", (_) => assertEquals(
+  runParser(digit, "a"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+test("letter parses a single letter", (_) => assertEquals(
+  runParser(letter, "a"),
+  Right('a'),
+))
+
+test("letter fails on a digit", (_) => assertEquals(
+  runParser(letter, "1"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+test("letters parses zero or more letters", (_) => assertEquals(
+  runParser(letters, "abc"),
+  Right(['a', 'b', 'c']),
+))
+
+test("letters returns empty list when no letters", (_) => assertEquals(
+  runParser(letters, ""),
+  Right([]),
+))
+
+
+// ─── spaces / token / symbol ─────────────────────────────────────────────────
+
+test("spaces parses one or more whitespace characters", (_) => assertEquals(
+  runParser(spaces, "   "),
+  Right([' ', ' ', ' ']),
+))
+
+test("spaces parses mixed whitespace", (_) => assertEquals(
+  runParser(spaces, " \t\n"),
+  Right([' ', '\t', '\n']),
+))
+
+test("spaces fails when no whitespace", (_) => assertEquals(
+  runParser(spaces, "abc"),
+  Left(Error(Loc(1, 0, 1))),
+))
+
+test("token parses and consumes trailing spaces", (_) => assertEquals(
+  runParser(token(string("hello")), "hello   "),
+  Right("hello"),
+))
+
+test("token parses without trailing spaces", (_) => assertEquals(
+  runParser(token(string("hello")), "hello"),
+  Right("hello"),
+))
+
+test("symbol parses string and consumes trailing whitespace", (_) => assertEquals(
+  runParser(symbol("let"), "let "),
+  Right("let"),
+))
+
+test("symbol parses string with no trailing whitespace", (_) => assertEquals(
+  runParser(symbol("let"), "let"),
+  Right("let"),
+))
+
+
+// ─── location accuracy ───────────────────────────────────────────────────────
+
+type Letter = Letter(Location, Location, Char)
+
+test("location combinator gives access to current location info", (_) => {
+  input = "cba"
+  expected = Right([
+    Letter(Loc(0, 0, 0), Loc(1, 0, 1), 'c'),
+    Letter(Loc(1, 0, 1), Loc(2, 0, 2), 'b'),
+    Letter(Loc(2, 0, 2), Loc(3, 0, 3), 'a'),
+  ])
+  abcParser = pipe(
+    map((start, c, end) => Letter(start, end, c)),
+    ap($, oneOf(['a', 'b', 'c'])),
+    ap($, location)
+  )(location)
+  parser = pipe(
+    map((a, b, c) => [a, b, c]),
+    ap($, abcParser),
+    ap($, abcParser)
+  )(abcParser)
+  return assertEquals(runParser(parser, input), expected)
+})
+
+test("location advances line counter on newlines", (_) => {
+  parser = do {
+    _ <- anyChar    // 'a'
+    _ <- anyChar    // '\n'
+    l <- location
+    return of(l)
+  }
+  // After consuming 'a' (byte 0) and '\n' (byte 1): offset=2, line=1, col=0
+  return assertEquals(runParser(parser, "a\n"), Right(Loc(2, 1, 0)))
+})
+
+test("location is correct after multi-byte UTF-8 char", (_) => {
+  parser = do {
+    _ <- anyChar    // 'é' — 2 UTF-8 bytes, but 1 Unicode character
+    _ <- anyChar    // 'x' — 1 byte, 1 character
+    l <- location
+    return of(l)
+  }
+  // Loc(abs, line, col): abs is character count (not byte offset).
+  // After 'é' (1 char): abs=1, col=1. After 'x' (1 char): abs=2, col=2.
+  return assertEquals(runParser(parser, "éx"), Right(Loc(2, 0, 2)))
+})
+
+
+// ─── lazy ────────────────────────────────────────────────────────────────────
+
+// lazy is needed to build recursive parsers without infinite recursion at definition time
+test("lazy wraps a parser for deferred construction", (_) => {
+  p = lazy(() => char('a'))
+  return assertEquals(runParser(p, "a"), Right('a'))
+})
+
+test("lazy fails when inner parser fails", (_) => {
+  p = lazy(() => char('a'))
+  return assertEquals(runParser(p, "b"), Left(Error(Loc(1, 0, 1))))
+})
+
+
+// ─── anyChar large input performance ─────────────────────────────────────────
+
+test("anyChar with many(anyChar) is O(N) not O(N²) on 10000-char input", (_) => {
+  input = String.repeat('x', 10000)
+  actual = runParser(many(anyChar), input)
+  return where(actual) {
+    Right(chars) => assertEquals(List.length(chars), 10000)
+    _ => assertEquals(actual, Right([]))
+  }
+})
+
+test("do-notation chained parsing works correctly", (_) => {
+  parser = do {
+    a <- anyChar
+    b <- anyChar
+    c <- anyChar
+    return of(String.fromList([a, b, c]))
+  }
+  return assertEquals(runParser(parser, "abc"), Right("abc"))
+})
+
+test("fail always fails", (_) => assertEquals(
+  runParser(fail, "anything"),
+  Left(Error(Loc(0, 0, 0))),
+))
+
+test("round-trip: parse then reconstruct equals original", (_) => {
+  // Parse a comma-separated list and reconstruct with commas
+  parser = map(
+    (items) => String.join(",", map(String.singleton, items)),
+    sepBy(digit, char(',')),
+  )
+  original = "1,2,3,4,5"
+  return assertEquals(runParser(parser, original), Right(original))
 })

@@ -360,6 +360,56 @@ export charAt = extern "madlib__string__charAt"
 
 #endif
 
+// ---------------------------------------------------------------------------
+// Byte-offset-based access — used internally by the Parse module for O(N) parsing
+// ---------------------------------------------------------------------------
+
+#iftarget js
+
+// On JS, "byte offset" means UTF-16 code-unit offset (what JS strings use natively).
+
+byteCharAt :: Integer -> String -> Maybe Char
+export byteCharAt = (offset, s) => #- (() => {
+  if (offset >= s.length) return {__constructor: "Nothing", __args: []}
+  const code = s.charCodeAt(offset)
+  // High surrogate: decode the full codepoint from the pair
+  if (code >= 0xD800 && code <= 0xDBFF) {
+    const low = s.charCodeAt(offset + 1)
+    return {__constructor: "Just", __args: [String.fromCodePoint(((code - 0xD800) << 10) + (low - 0xDC00) + 0x10000)]}
+  }
+  return {__constructor: "Just", __args: [s[offset]]}
+})() -#
+
+byteCharWidth :: Integer -> String -> Integer
+export byteCharWidth = (offset, s) => #- (() => {
+  const code = s.charCodeAt(offset)
+  return (code >= 0xD800 && code <= 0xDBFF) ? 2 : 1
+})() -#
+
+byteLength :: String -> Integer
+export byteLength = (s) => #- s.length -#
+
+byteStartsWith :: String -> Integer -> String -> Boolean
+export byteStartsWith = (target, offset, s) => #- s.startsWith(target, offset) -#
+
+#elseif llvm
+
+byteCharAt :: Integer -> String -> Maybe Char
+export byteCharAt = extern "madlib__string__byteCharAt"
+
+byteCharWidth :: Integer -> String -> Integer
+export byteCharWidth = extern "madlib__string__byteCharWidth"
+
+byteLength :: String -> Integer
+export byteLength = extern "madlib__string__byteLength"
+
+byteStartsWith :: String -> Integer -> String -> Boolean
+export byteStartsWith = extern "madlib__string__byteStartsWith"
+
+#endif
+
+// ---------------------------------------------------------------------------
+
 /**
  * Return the first character in a string
  * @since 0.18.7
@@ -430,7 +480,7 @@ export trimEnd = extern "madlib__string__trimEnd"
  * @since 0.18.7
  */
 length :: String -> Integer
-export length = (s) => #- { return s.length } -#
+export length = (s) => #- { return [...s].length } -#
 
 #elseif llvm
 

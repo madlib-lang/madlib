@@ -1,6 +1,7 @@
 
 #include <gc.h>
 #include "bytearray.hpp"
+#include "string_header.hpp"
 #include <stdio.h>
 #include <cstring>
 
@@ -57,56 +58,54 @@ char *madlib__bytearray__internal__show(madlib__bytearray__ByteArray_t *bytearra
   int64_t length = bytearray->length;
 
   if (length == 0) {
-    return (char*)"ByteArray([])";
+    char *empty = madlib__string__alloc_bytes(13);
+    memcpy(empty, "ByteArray([])", 13);
+    empty[13] = '\0';
+    return empty;
   }
 
-  int currentIndex = 0;
   char **inspectedItems = (char **)GC_MALLOC(length * sizeof(char *));
   size_t sizeOfItems = 0;
 
   for (int i = 0; i < length; i++) {
     inspectedItems[i] = madlib__number__internal__showByte(bytearray->bytes[i]);
-    sizeOfItems += strlen(inspectedItems[i]);
+    sizeOfItems += madstr_byte_len(inspectedItems[i]);
   }
 
-  size_t sizeOfSpacesAndCommas = (length - 1) * 2;
-  char *result = (char*)GC_MALLOC_ATOMIC(sizeof(char) * (sizeOfItems + sizeOfSpacesAndCommas + 12));
+  // Count group-separator spaces: one space after every 8th item (index 7, 15, …), not after last
+  size_t spacesCount = 0;
+  for (int i = 7; i < length - 1; i += 8) spacesCount++;
 
-  // Leading "ByteArray(["
-  strncpy(result, "ByteArray(", sizeof(char) * 10);
+  // "ByteArray(" (10) + items + spaces + ")" (1) = totalSize
+  size_t totalSize = 10 + sizeOfItems + spacesCount + 1;
+  char *result = madlib__string__alloc_bytes((uint32_t)totalSize);
+
+  memcpy(result, "ByteArray(", 10);
   size_t currentPosition = 10;
 
-  // Items
   for (int i = 0; i < length - 1; i++) {
-    size_t lengthOfItem = strlen(inspectedItems[i]);
-    strncpy(result + currentPosition, inspectedItems[i], lengthOfItem);
-    if ((i + 1) % 8 == 0 && i > 0 && i < length - 1) {
-      // add space separator
-      strncpy(result + currentPosition + lengthOfItem, " ", sizeof(char));
-      currentPosition += lengthOfItem + 1;
-    } else {
-      currentPosition += lengthOfItem;
+    size_t itemLen = madstr_byte_len(inspectedItems[i]);
+    memcpy(result + currentPosition, inspectedItems[i], itemLen);
+    currentPosition += itemLen;
+    if ((i + 1) % 8 == 0 && i > 0) {
+      result[currentPosition++] = ' ';
     }
   }
 
-  // Last item does not have ", " at the end
-  size_t lengthOfItem = strlen(inspectedItems[length - 1]);
-  strncpy(result + currentPosition, inspectedItems[length - 1], lengthOfItem);
-  strncpy(result + currentPosition + lengthOfItem, ")\0", sizeof(char) * 2);
+  size_t lastItemLen = madstr_byte_len(inspectedItems[length - 1]);
+  memcpy(result + currentPosition, inspectedItems[length - 1], lastItemLen);
+  currentPosition += lastItemLen;
+  result[currentPosition] = ')';
+  result[currentPosition + 1] = '\0';
 
   return result;
 }
 
 
 char *madlib__bytearray__toString(madlib__bytearray__ByteArray_t *arr) {
-  char *string = (char*) arr->bytes;
-
-  if (arr->length == 0 || arr->bytes[arr->length - 1] > 0) {
-    string = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (arr->length + 1));
-    memcpy(string, arr->bytes, arr->length);
-    string[arr->length] = '\0';
-  }
-
+  char *string = madlib__string__alloc_bytes((uint32_t)arr->length);
+  memcpy(string, arr->bytes, arr->length);
+  string[arr->length] = '\0';
   return string;
 }
 

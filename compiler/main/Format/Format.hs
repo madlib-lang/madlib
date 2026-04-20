@@ -23,6 +23,23 @@ import Data.Char (showLitChar)
 
 
 
+dedentJSBlock :: String -> String
+dedentJSBlock js =
+  let ls = lines js
+  in case ls of
+    []    -> js
+    [_]   -> js
+    _     ->
+      let indentedLines = filter (not . null) (tail ls)
+          minIndent = if null indentedLines
+                      then 0
+                      else minimum $ map (length . takeWhile (== ' ')) indentedLines
+          stripIndent l = if length l >= minIndent then drop minIndent l else l
+          firstLine = head ls
+          restLines = map stripIndent (tail ls)
+      in intercalate "\n" (firstLine : restLines)
+
+
 data Node
   = ImportNode Import
   | ExpNode Exp
@@ -127,17 +144,25 @@ argsToDoc comments args = case args of
     (Pretty.emptyDoc, comments)
 
 
-paramsToDoc :: [Comment] -> [Source String] -> (Pretty.Doc ann, [Comment])
+paramsToDoc :: [Comment] -> [Param] -> (Pretty.Doc ann, [Comment])
 paramsToDoc comments nodes = case nodes of
-  [Source area _ name] ->
+  [ParamName (Source area _ name)] ->
     let (commentsDoc, comments') = insertComments False area comments
     in  (commentsDoc <> Pretty.pretty name, comments')
 
-  (Source area _ name : more) ->
+  [ParamPattern pat] ->
+    (patternToDoc pat, comments)
+
+  (ParamName (Source area _ name) : more) ->
     let (commentsDoc, comments') = insertComments False area comments
         param                    = Pretty.pretty name <> Pretty.pretty ","
         (more', comments'')      = paramsToDoc comments' more
     in  (commentsDoc <> param <> Pretty.line <> more', comments'')
+
+  (ParamPattern pat : more) ->
+    let param               = patternToDoc pat <> Pretty.pretty ","
+        (more', comments')  = paramsToDoc comments more
+    in  (param <> Pretty.line <> more', comments')
 
   [] ->
     (Pretty.emptyDoc, comments)
@@ -934,6 +959,11 @@ expToDoc comments exp =
               (exp', comments'') = expToDoc comments' exp
           in  (name' <> Pretty.pretty " = " <> exp', comments'')
 
+        Source _ _ (PatternAssignment pat exp) ->
+          let pat'               = patternToDoc pat
+              (exp', comments'') = expToDoc comments' exp
+          in  (pat' <> Pretty.pretty " = " <> exp', comments'')
+
         Source _ _ (Mutate lhs exp) ->
           let (lhs', comments'') = expToDoc comments' lhs
               (exp', comments''') = expToDoc comments'' exp
@@ -1281,22 +1311,18 @@ expToDoc comments exp =
 
         Source _ _ (JSExp js) ->
           let lines' = lines js
-              -- TODO: this logic is still not correct and thus commented for now.
-              -- The issue is that if the fence starts with #- {\n  ...,
-              -- the space between #- and { will create an extra indentation level
-              -- and this will happen every time it is formatted, thus shifting the whole
-              -- fenced code to the right each application.
-              -- leadingSpaces = length $ takeWhile (== ' ') js
-              -- js' = Pretty.nesting $ \n -> Pretty.nest (leadingSpaces - n) $ Pretty.pretty js
-
-              js' = Pretty.nesting $ \x -> Pretty.nest (-x) $ Pretty.pretty js
+              dedented = dedentJSBlock js
+              jsAndClose = Pretty.nesting $ \x -> Pretty.nest (-x) $
+                if length lines' > 1 then
+                  let trailingNewline = if not (null js) && last js == '\n' then Pretty.hardline else Pretty.emptyDoc
+                  in  Pretty.pretty dedented <> trailingNewline <> Pretty.pretty "-#"
+                else
+                  Pretty.pretty dedented <> Pretty.pretty "-#"
           in
             if length lines' > 1 then
-              -- (Pretty.pretty "#-" <> Pretty.pretty js <> Pretty.pretty "-#", comments')
-              (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#", comments')
+              (Pretty.pretty "#-" <> jsAndClose, comments')
             else
-              -- (Pretty.group (Pretty.pretty "#-" <> Pretty.pretty js <> Pretty.pretty "-#"), comments')
-              (Pretty.group (Pretty.pretty "#-" <> js' <> Pretty.pretty "-#"), comments')
+              (Pretty.group (Pretty.pretty "#-" <> jsAndClose), comments')
 
         Source _ _ (JsxTag name props children) ->
           let (props', comments'')     = jsxPropsToDoc comments' props

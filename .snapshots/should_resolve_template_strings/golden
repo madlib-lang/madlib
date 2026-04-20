@@ -72,11 +72,11 @@
                               "_")
                            [ Typed
                                ([] :=> TCon (TC "String" Star) "prelude")
-                               (Area (Loc 71 4 3) (Loc 86 4 18))
+                               (Area (Loc 71 4 3) (Loc 85 4 17))
                                (TemplateString
                                   [ Typed
                                       ([] :=> TCon (TC "String" Star) "prelude")
-                                      (Area (Loc 72 4 4) (Loc 81 4 13))
+                                      (Area (Loc 71 4 3) (Loc 88 5 1))
                                       (LStr "probably ")
                                   , Typed
                                       ([] :=> TCon (TC "String" Star) "prelude")
@@ -84,7 +84,7 @@
                                       (Var "x" False)
                                   , Typed
                                       ([] :=> TCon (TC "String" Star) "prelude")
-                                      (Area (Loc 85 4 17) (Loc 86 4 18))
+                                      (Area (Loc 71 4 3) (Loc 85 4 17))
                                       (LStr "!")
                                   ])
                            , Typed
@@ -93,7 +93,7 @@
                                (TemplateString
                                   [ Typed
                                       ([] :=> TCon (TC "String" Star) "prelude")
-                                      (Area (Loc 91 5 4) (Loc 100 5 13))
+                                      (Area (Loc 90 5 3) (Loc 163 6 1))
                                       (LStr "3 + 7 is ")
                                   , Typed
                                       ([ IsIn

@@ -264,6 +264,21 @@ builtinsAccess name =
   ec $ Access (ec $ Var "__BUILTINS__") (ec $ Var $ '.' : name)
 
 
+jsonParseAccess :: String -> Exp
+jsonParseAccess name =
+  ec $ Access (ec $ Var "__JsonParse__") (ec $ Var $ '.' : name)
+
+
+jsonPrintAccess :: String -> Exp
+jsonPrintAccess name =
+  ec $ Access (ec $ Var "__JsonPrint__") (ec $ Var $ '.' : name)
+
+
+jsonValueAccess :: String -> Exp
+jsonValueAccess name =
+  ec $ Access (ec $ Var "__JsonValue__") (ec $ Var $ '.' : name)
+
+
 buildArgsComparisons :: Int -> [(String, String)] -> Exp
 buildArgsComparisons index args = case args of
   [(argLeft, argRight)] ->
@@ -342,7 +357,171 @@ buildFieldComparisons index fieldNames = case fieldNames of
 
 
 compareConstructors :: Constructor -> Constructor -> Ordering
-compareConstructors a b = compare (getConstructorName a) (getConstructorName b) 
+compareConstructors a b = compare (getConstructorName a) (getConstructorName b)
+
+
+-- --------------------------------------------------------------------------
+-- Json derive helpers
+-- --------------------------------------------------------------------------
+
+-- Build the toJson branch for a single constructor.
+-- e.g. Bar(a0, a1) => __JsonPrint__.object([#["$type", JsonString("Bar")], #["$0", toJson(a0)], #["$1", toJson(a1)]])
+buildToJsonIsForADTCtor :: Constructor -> Is
+buildToJsonIsForADTCtor ctor = case ctor of
+  Canonical _ (Constructor name typings _ _) ->
+    let vars      = generateCtorParamPatternNames 'a' typings
+        typeField = ec $ TupleConstructor
+                      [ ec $ LStr "$type"
+                      , ec $ App (jsonValueAccess "JsonString") (ec $ LStr name) True
+                      ]
+        argFields = zipWith
+                      (\i var -> ec $ TupleConstructor
+                        [ ec $ LStr ("$" <> show i)
+                        , ec $ App (ec $ Var "toJson") (ec $ Var var) True
+                        ])
+                      [0 :: Int ..]
+                      vars
+        allFields = ec . ListItem <$> (typeField : argFields)
+        body      = ec $ App (jsonPrintAccess "object") (ec $ ListConstructor allFields) True
+        pat       = ec $ PCon name (ec . PVar <$> vars)
+    in  ec $ Is pat body
+
+
+-- Build the fromJson dispatcher branch for a single constructor.
+-- e.g. "Bar" => __JsonParse__.map2((a0, a1) => Bar(a0, a1), field("$0", fromJson), field("$1", fromJson))
+buildFromJsonIsForADTCtor :: Constructor -> Is
+buildFromJsonIsForADTCtor ctor = case ctor of
+  Canonical _ (Constructor name typings _ _) ->
+    let arity    = length typings
+        vars     = generateCtorParamPatternNames 'a' typings
+        fieldParser i =
+          ec $ App
+            (ec $ App (jsonParseAccess "field") (ec $ LStr ("$" <> show i)) False)
+            (ec $ Var "fromJson")
+            True
+        -- Build Ctor(a0, a1, ...) applied curried
+        ctorApp  = foldl (\f v -> ec $ App f (ec $ Var v) True) (ec $ Var name) vars
+        -- Build the lambda (a0) => (a1) => ... Ctor(a0, a1, ...)
+        ctorFn   = foldr (\v body -> ec $ Abs (ec v) [body]) ctorApp vars
+        body
+          | arity == 0 = ec $ App (jsonParseAccess "succeed") (ec $ Var name) True
+          | otherwise  =
+              let mapN   = jsonParseAccess ("map" <> show arity)
+                  -- Apply mapN to ctorFn and each field parser
+                  withFn = ec $ App mapN ctorFn False
+              in  foldl (\acc p -> ec $ App acc p True) withFn (map fieldParser [0..arity-1])
+    in  ec $ Is (ec $ PStr name) body
+
+
+-- Generate a toJson implementation for an ADT.
+buildToJsonForADT :: [Constructor] -> Exp
+buildToJsonForADT ctors =
+  ec $ Abs (ec "__$a__")
+    [ ec $ Where (ec $ Var "__$a__")
+        (map buildToJsonIsForADTCtor ctors)
+    ]
+
+
+-- Generate a fromJson implementation for an ADT.
+-- Reads the "$type" field and dispatches to per-constructor parsers.
+buildFromJsonForADT :: [Constructor] -> Exp
+buildFromJsonForADT ctors =
+  let ctorBranches  = map buildFromJsonIsForADTCtor ctors
+      unknownBranch =
+        ec $ Is (ec PAny) $
+          ec $ App (jsonParseAccess "fail")
+            (ec $ App
+              (ec $ App (ec $ Var "mappend")
+                (ec $ LStr "Unknown constructor: ")
+                False)
+              (ec $ Var "__typeStr__")
+              True)
+            True
+      typeDispatch  =
+        ec $ Abs (ec "__typeStr__")
+          [ ec $ Where (ec $ Var "__typeStr__")
+              (ctorBranches ++ [unknownBranch])
+          ]
+      -- chain1 typeDispatch (field("$type", string))
+      typeParser    =
+        ec $ App
+          (ec $ App (jsonParseAccess "field") (ec $ LStr "$type") False)
+          (jsonParseAccess "string")
+          True
+  in  ec $ App
+        (ec $ App (jsonParseAccess "chain1") typeDispatch False)
+        typeParser
+        True
+
+
+deriveJsonADTInstance :: TypeDecl -> Maybe Instance
+deriveJsonADTInstance adt = case adt of
+  Canonical _ ADT { adtparams, adtconstructors, adtType } ->
+    let adtparams'     = Hashable.hash <$> adtparams
+        constructorTypes = getCtorType <$> adtconstructors
+        varsInType     = Set.toList $ Set.fromList $ concat $
+                           (\t -> mapMaybe (`searchTypeInConstructor` t) adtparams') <$> constructorTypes
+        instPreds      = (\varInType -> IsIn "Json" [varInType] Nothing) <$> varsInType
+        toJsonImpl     = buildToJsonForADT adtconstructors
+        fromJsonImpl   = buildFromJsonForADT adtconstructors
+        inst           =
+          ec $ Instance "Json" instPreds (IsIn "Json" [adtType] Nothing)
+            (Map.fromList
+              [ ("toJson",   ec $ Assignment "toJson"   toJsonImpl)
+              , ("fromJson", ec $ Assignment "fromJson" fromJsonImpl)
+              ])
+    in  Just inst
+
+  _ ->
+    Nothing
+
+
+-- Build toJson for a record: { field1: v1, ... } => __JsonPrint__.object([#["field1", toJson(v1)], ...])
+buildToJsonForRecord :: [String] -> Exp
+buildToJsonForRecord fieldNames =
+  let fieldPairs = map
+        (\fn -> ec $ ListItem $ ec $ TupleConstructor
+          [ ec $ LStr fn
+          , ec $ App (ec $ Var "toJson") (ec $ Access (ec $ Var "__$a__") (ec $ Var ('.' : fn))) True
+          ])
+        fieldNames
+  in  ec $ Abs (ec "__$a__")
+        [ ec $ App (jsonPrintAccess "object") (ec $ ListConstructor fieldPairs) True ]
+
+
+-- Build fromJson for a record using mapN over field parsers.
+buildFromJsonForRecord :: [String] -> Exp
+buildFromJsonForRecord fieldNames =
+  let arity       = length fieldNames
+      vars        = ('a' :) . show <$> [0 :: Int .. arity - 1]
+      fieldParser fn =
+        ec $ App
+          (ec $ App (jsonParseAccess "field") (ec $ LStr fn) False)
+          (ec $ Var "fromJson")
+          True
+      -- Build { f1: a0, f2: a1, ... } record expression
+      recordBody  = ec $ Record $
+        zipWith (\fn var -> ec $ Field (fn, ec $ Var var)) fieldNames vars
+      -- Build curried lambda (a0) => (a1) => ... { f1: a0, ... }
+      recordFn    = foldr (\v body -> ec $ Abs (ec v) [body]) recordBody vars
+  in  if arity == 0
+        then ec $ App (jsonParseAccess "succeed") (ec $ Record []) True
+        else
+          let mapN   = jsonParseAccess ("map" <> show arity)
+              withFn = ec $ App mapN recordFn False
+          in  foldl (\acc p -> ec $ App acc p True) withFn (map fieldParser fieldNames)
+
+
+deriveJsonRecordInstance :: FilePath -> [String] -> Instance
+deriveJsonRecordInstance astPath fieldNames =
+  let (instPreds, recordType) = generateRecordPredsAndType astPath "Json" fieldNames
+      toJsonImpl   = buildToJsonForRecord fieldNames
+      fromJsonImpl = buildFromJsonForRecord fieldNames
+  in  ec $ Instance "Json" instPreds (IsIn "Json" [recordType] Nothing)
+        (Map.fromList
+          [ ("toJson",   ec $ Assignment "toJson"   toJsonImpl)
+          , ("fromJson", ec $ Assignment "fromJson" fromJsonImpl)
+          ])
 
 
 deriveComparableADTInstance :: TypeDecl -> Maybe Instance
@@ -379,15 +558,19 @@ deriveComparableADTInstance adt = case adt of
     Nothing
 
 
+derivableInterfaces :: [String]
+derivableInterfaces = ["Comparable", "Json"]
+
+
 deriveInstances :: Can.Env -> [TypeDecl] -> [Src.Derived] -> CanonicalM [Instance]
 deriveInstances env localTypeDecls derived = case derived of
-  Src.Source area _ (Src.DerivedADT interfaceName _) : _ | interfaceName /= "Comparable" ->
+  Src.Source area _ (Src.DerivedADT interfaceName _) : _ | interfaceName `notElem` derivableInterfaces ->
     throwError $ CompilationError (InvalidInterfaceDerived interfaceName) (Context (Can.envCurrentPath env) area)
 
-  Src.Source area _ (Src.DerivedRecord interfaceName _) : _ | interfaceName /= "Comparable" ->
+  Src.Source area _ (Src.DerivedRecord interfaceName _) : _ | interfaceName `notElem` derivableInterfaces ->
     throwError $ CompilationError (InvalidInterfaceDerived interfaceName) (Context (Can.envCurrentPath env) area)
 
-  Src.Source area _ (Src.DerivedADT _ adtName) : next -> do
+  Src.Source area _ (Src.DerivedADT interfaceName adtName) : next -> do
     t <- catchError
       (lookupADT env adtName)
       (\(CompilationError e _) -> throwError $ CompilationError e (Context (Can.envCurrentPath env) area))
@@ -402,7 +585,10 @@ deriveInstances env localTypeDecls derived = case derived of
 
     case maybeADT of
       Just adt -> do
-        let derivedInstance = deriveComparableADTInstance adt
+        let derivedInstance = case interfaceName of
+              "Comparable" -> deriveComparableADTInstance adt
+              "Json"       -> deriveJsonADTInstance adt
+              _            -> Nothing
         nextInstances <- deriveInstances env localTypeDecls next
 
         case derivedInstance of
@@ -416,17 +602,22 @@ deriveInstances env localTypeDecls derived = case derived of
         let suggestions = findSimilar adtName (map getTypeDeclName localTypeDecls ++ Map.keys (Can.envTypeDecls env))
         in  throwError $ CompilationError (UnboundType adtName suggestions) (Context (Can.envCurrentPath env) area)
 
-  Src.Source _ _ (Src.DerivedRecord _ fieldNames) : next -> do
-    let (instPreds, recordType) = generateRecordPredsAndType (Can.envCurrentPath env) "Comparable" fieldNames
-        derivedInstance = ec (Instance "Comparable" instPreds (IsIn "Comparable" [recordType] Nothing) (
-            Map.singleton
-            "compare"
-            (
-              ec (Assignment "compare" (ec $ Abs (ec "__$a__") [ec $ Abs (ec "__$b__") [
-                buildFieldComparisons 0 fieldNames
-              ]]))
-            )
-          ))
+  Src.Source _ _ (Src.DerivedRecord interfaceName fieldNames) : next -> do
+    let derivedInstance = case interfaceName of
+          "Json" ->
+            deriveJsonRecordInstance (Can.envCurrentPath env) fieldNames
+          _ ->
+            -- "Comparable" (default)
+            let (instPreds, recordType) = generateRecordPredsAndType (Can.envCurrentPath env) "Comparable" fieldNames
+            in  ec (Instance "Comparable" instPreds (IsIn "Comparable" [recordType] Nothing) (
+                    Map.singleton
+                    "compare"
+                    (
+                      ec (Assignment "compare" (ec $ Abs (ec "__$a__") [ec $ Abs (ec "__$b__") [
+                        buildFieldComparisons 0 fieldNames
+                      ]]))
+                    )
+                  ))
 
     nextInstances <- deriveInstances env localTypeDecls next
     return $ derivedInstance : nextInstances

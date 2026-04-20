@@ -100,7 +100,8 @@
       (UnificationError
          (TCon (TC "String" Star) "prelude")
          (TCon (TC "Boolean" Star) "prelude")
-         FromIfCondition)
+         FromIfCondition
+         Nothing)
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 21 2 7) (Loc 27 2 13)

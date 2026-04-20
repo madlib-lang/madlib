@@ -42,6 +42,9 @@ import           Utils.PathUtils (defaultPathUtils)
 import           Control.Monad
 import qualified Driver
 import Run.OptimizationLevel
+import Run.SourceMapMode
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 
 
 getFilesForDoc :: FilePath -> IO [FilePath]
@@ -84,6 +87,9 @@ generateDocData rootFolder paths = do
           , optOptimizationLevel = O1
           , optLspMode = False
           , optEmitLLVM = False
+          , optSourceMaps = NoSourceMap
+          , optErrorFormat = TextFormat
+          , optPGOMode = NoPGO
           , optDebug = False
           }
   let llvmOptions =
@@ -103,6 +109,9 @@ generateDocData rootFolder paths = do
           , optOptimizationLevel = O1
           , optLspMode = False
           , optEmitLLVM = False
+          , optSourceMaps = NoSourceMap
+          , optErrorFormat = TextFormat
+          , optPGOMode = NoPGO
           , optDebug = False
           }
   jsMemoVar <- newIORef mempty

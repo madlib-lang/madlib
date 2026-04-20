@@ -1,4 +1,5 @@
 #include "date.hpp"
+#include "string_header.hpp"
 
 #include <gc.h>
 #include <math.h>
@@ -36,9 +37,9 @@ char *madlib__date__toISOString(int64_t epochMilliseconds) {
   int month = timeInfo.tm_mon + 1;
   int year = timeInfo.tm_year + 1900;
 
-  char *result = (char *)GC_MALLOC(25);
-  sprintf(result, "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", year, month, day, hours, minutes, seconds, milliseconds);
-
+  // ISO 8601: "YYYY-MM-DDTHH:mm:ss.sssZ" is always 24 bytes
+  char *result = madlib__string__alloc_bytes(24);
+  snprintf(result, 25, "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", year, month, day, hours, minutes, seconds, milliseconds);
   return result;
 }
 

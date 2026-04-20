@@ -22,6 +22,7 @@ import           Data.Constraint.Extras.TH (deriveArgDict)
 import           Data.Some
 import           Data.Hashable
 import qualified Data.Map as Map
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Set as Set
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.UTF8 as BSU
@@ -61,6 +62,7 @@ data Query a where
   ForeignScheme :: FilePath -> String -> Query (Maybe Scheme)
   ForeignFunctionScheme :: FilePath -> String -> Query (Maybe Scheme)
   ForeignExp :: FilePath -> String -> Query (Maybe Slv.Exp)
+  ResolvedExp :: FilePath -> String -> Query (Maybe (Slv.Exp, FilePath))
   ForeignMethod :: FilePath -> String -> Type -> Query (Maybe Slv.Exp)
   SolvedMethodNode :: String -> Type -> Query (Maybe (Slv.Exp, FilePath))
   DefinesInterfaceForMethod :: FilePath -> String -> Query Bool
@@ -70,7 +72,7 @@ data Query a where
 
   -- Monomorphization
   MonomorphizedProgram :: Query
-    ( Map.Map FunctionId MonomorphizationRequest
+    ( HM.HashMap FunctionId MonomorphizationRequest
     , Map.Map FilePath (Map.Map FilePath (Set.Set (String, Type, ImportType)))
     , Set.Set String
     )
@@ -160,6 +162,9 @@ instance Hashable (Query a) where
 
     ForeignExp modulePath expName ->
       hashWithSalt (hashWithSalt (hashWithSalt salt (17 :: Int)) modulePath) expName
+
+    ResolvedExp modulePath expName ->
+      hashWithSalt (hashWithSalt (hashWithSalt salt (38 :: Int)) modulePath) expName
 
     ForeignMethod modulePath methodName methodType ->
       hashWithSalt salt (modulePath, methodName, methodType, 18 :: Int)

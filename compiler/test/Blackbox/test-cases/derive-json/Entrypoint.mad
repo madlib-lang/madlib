@@ -1,0 +1,43 @@
+import IO from "IO"
+import Json from "Json"
+import type { Either } from "Either"
+import Array from "Array"
+
+// Nullary constructors (all used to avoid unused constructor warnings)
+type Color = Red | Green | Blue
+derive Json Color
+
+// Constructors with arguments
+type Point = Point(Float, Float)
+derive Json Point
+
+
+// Parameterized type (all constructors used)
+type Maybe2 a = Just2(a) | Nothing2
+derive Json Maybe2
+
+// Record derive
+derive Json { name, age }
+
+main = () => {
+  // Primitives
+  IO.log(Json.encode(42))
+  IO.log(Json.encode("hello"))
+  IO.log(Json.encode(true))
+
+  IO.log(Json.encode(Array.fromList([1, 2, 3])))
+  IO.log((Json.decode(`[1, 2, 3]`) :: Either String (Array Float)))
+
+  // ADT roundtrips — all constructors exercised
+  IO.log((Json.decode(Json.encode(Red)) :: Either String Color))
+  IO.log((Json.decode(Json.encode(Green)) :: Either String Color))
+  IO.log((Json.decode(Json.encode(Blue)) :: Either String Color))
+  IO.log((Json.decode(Json.encode(Point(1.5, 2.5))) :: Either String Point))
+  IO.log((Json.decode(Json.encode(Just2(99))) :: Either String (Maybe2 Integer)))
+
+  IO.log((Json.decode(Json.encode((Nothing2 :: Maybe2 Integer))) :: Either String (Maybe2 Integer)))
+
+  // Record roundtrip
+  encoded = Json.encode({ name: "Alice", age: 30 })
+  IO.log((Json.decode(encoded) :: Either String { name :: String, age :: Integer }))
+}

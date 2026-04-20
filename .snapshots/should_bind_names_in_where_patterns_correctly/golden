@@ -8,9 +8,7 @@
     }
 , []
 , [ CompilationError
-      (GrammarError
-         "Module.mad"
-         "unexpected \"[a\"\nexpecting \"/*\", \"//\", or \"=>\"\n")
+      (GrammarError "Module.mad" "unexpected [\n")
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 0 2 6) (Loc 0 2 7)

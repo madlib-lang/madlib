@@ -21,6 +21,9 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Utils.PathUtils as PathUtils
 import Run.Target
 import Run.OptimizationLevel
+import Run.SourceMapMode
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 import Control.Monad (forM_, forM)
 import Explain.Format
 import qualified Data.List as List
@@ -39,6 +42,9 @@ import           Paths_madlib                   ( version )
 import           Data.Version                   ( showVersion )
 import qualified Data.Maybe as Maybe
 import System.Environment (lookupEnv)
+import System.Directory (getHomeDirectory)
+import System.FilePath ((</>))
+import           Parse.DocString.DocString (DocString(..), DocStringTag(..), findParamTags, findReturnsTag, findDeprecatedTag, findExampleTag)
 
 
 
@@ -296,6 +302,28 @@ findTypeCommand options state name = do
       return $ ErrorResult $ "No type found for '" <> name <> "'"
 
 
+docCommand :: Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
+docCommand options state name = do
+  (docStrings, _, _) <- liftIO $ runTask state options Driver.Don'tPrune mempty $ do
+    Rock.fetch $ Query.DocStrings replModulePath
+  let found = List.find (\ds -> case ds of { FunctionDoc _ n _ _ -> n == name; _ -> False }) docStrings
+  case found of
+    Just (FunctionDoc _ _ desc tags) ->
+      let params     = findParamTags tags
+          returns    = findReturnsTag tags
+          deprecated = findDeprecatedTag tags
+          example    = findExampleTag tags
+          paramLines = if null params then ""
+                       else "\nParameters:\n" <> List.intercalate "\n" ((\(n, d) -> "  " <> n <> " - " <> d) <$> params)
+          returnsLine = maybe "" ("\nReturns: " <>) returns
+          deprecatedLine = maybe "" ("\nDeprecated: " <>) deprecated
+          exampleLine = maybe "" ("\nExample:\n  " <>) example
+          output = desc <> paramLines <> returnsLine <> deprecatedLine <> exampleLine
+      in  return $ CommandResult output
+    _ ->
+      return $ ErrorResult $ "No documentation found for '" <> name <> "'"
+
+
 data CommandResult
   = Exit
   | CommandNotFound String
@@ -348,6 +376,9 @@ evalCmd isColorful options state cmd = case cmd of
     else
       findTypeCommand options state $ List.head args''
 
+  'd':'o':'c':' ':args ->
+    docCommand options state (List.dropWhile Char.isSpace args)
+
   _ ->
     return $ CommandNotFound $ ':' : cmd
 
@@ -357,11 +388,19 @@ read :: Bool -> Haskeline.InputT IO (Maybe String)
 read isColorful = read' isColorful False []
 
 
+isIncompleteInput :: [String] -> Bool
+isIncompleteInput acc =
+  let combined = unlines acc
+      opens    = length (filter (== '{') combined) + length (filter (== '(') combined)
+      closes   = length (filter (== '}') combined) + length (filter (== ')') combined)
+  in  opens > closes
+
+
 read' :: Bool -> Bool -> [String] -> Haskeline.InputT IO (Maybe String)
 read' isColorful multi acc = do
   let start =
         if multi then
-          "| "
+          "... "
         else
           "> "
   maybeLine <- Haskeline.getInputLine start
@@ -371,7 +410,7 @@ read' isColorful multi acc = do
 
     Just line ->
       if not multi && null acc && (line == ":multi" || line == ":m") then do
-        -- we start multiline mode
+        -- we start explicit multiline mode
         liftIO $ putStrLn $ colorWhen isColorful Grey "-------- " <> colorWhen isColorful Yellow "Multiline Mode enabled" <> colorWhen isColorful Grey " ------------------------"
         liftIO $ putStrLn $ colorWhen isColorful Grey "You are now in multiline mode, to validate it enter a"
         liftIO $ putStrLn $ colorWhen isColorful Grey "dot ( '.' ) on an empty line"
@@ -383,12 +422,17 @@ read' isColorful multi acc = do
         else
           read' isColorful multi (acc ++ [line])
       else
-        return $ Just line
+        let newAcc = acc ++ [line]
+        in  if isIncompleteInput newAcc then
+              read' isColorful True newAcc
+            else
+              return $ Just $ unlines newAcc
 
 
 eval :: Bool -> Options.Options -> State -> String -> Haskeline.InputT IO CommandResult
 eval isColorful options state code =
-  case code of
+  let trimmed = List.dropWhileEnd Char.isSpace code
+  in  case trimmed of
     ':' : cmd ->
       evalCmd isColorful options state cmd
 
@@ -488,7 +532,10 @@ start target = do
           , Options.optOptimizationLevel = O1
           , Options.optLspMode = False
           , Options.optEmitLLVM = False
+          , Options.optSourceMaps = NoSourceMap
           , Options.optDebug = False
+          , Options.optErrorFormat = TextFormat
+          , Options.optPGOMode = NoPGO
           }
 
   putStrLn $ introduction isColorful
@@ -497,6 +544,8 @@ start target = do
   hSilence [stdout, stderr] $ liftIO $ runTask state options Driver.Don'tPrune (Map.singleton replModulePath startCode) $ do
     Rock.fetch $ Query.BuiltTarget replModulePath
 
-  Haskeline.runInputT Haskeline.defaultSettings $ loop isColorful options state
-  -- Haskeline.runInputT Haskeline.defaultSettings $ Haskeline.withInterrupt $ loop state
+  homeDir <- getHomeDirectory
+  let replSettings = Haskeline.defaultSettings { Haskeline.historyFile = Just (homeDir </> ".madlib_history") }
+  Haskeline.runInputT replSettings $ loop isColorful options state
+  -- Haskeline.runInputT replSettings $ Haskeline.withInterrupt $ loop state
   return ()

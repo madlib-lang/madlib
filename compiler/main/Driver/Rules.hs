@@ -36,6 +36,7 @@ import qualified Generate.LLVM.ClosureConvert  as ClosureConvert
 import qualified Generate.LLVM.LLVM            as LLVM
 import qualified Generate.LLVM.Env             as LLVMEnv
 import qualified Data.Map                      as Map
+import qualified Data.HashMap.Strict           as HM
 import qualified Data.Set                      as Set
 import           Control.Monad.State
 import           Control.Monad.Except
@@ -50,7 +51,9 @@ import Error.Warning
 import Canonicalize.CanonicalM (CanonicalState(CanonicalState, warnings, coverableInfo))
 import qualified Utils.PathUtils as PathUtils
 import qualified Generate.Javascript as Javascript
-import System.FilePath (takeDirectory, dropFileName, joinPath, takeExtension)
+import           Run.SourceMapMode
+import System.FilePath (takeDirectory, dropFileName, joinPath, takeExtension, takeFileName)
+import System.FilePath (isAbsolute)
 import Utils.Path
 import qualified Parse.Megaparsec.DocString as DocString
 import qualified Data.Maybe as Maybe
@@ -301,6 +304,28 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         (_ : next) ->
           findExpByName name next
 
+  ResolvedExp modulePath expName -> nonInput $ do
+    maybeExp <- Rock.fetch $ ForeignExp modulePath expName
+    case maybeExp of
+      Just found ->
+        return (Just (found, modulePath), (mempty, mempty))
+
+      Nothing -> do
+        (ast, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
+        case Slv.findForeignModuleForImportedName expName ast of
+          Just foreignModulePath -> do
+            found <- Rock.fetch $ ForeignExp foreignModulePath expName
+            case found of
+              Nothing -> do
+                resolved <- Rock.fetch $ ResolvedExp foreignModulePath expName
+                return (resolved, (mempty, mempty))
+
+              Just exp ->
+                return (Just (exp, foreignModulePath), (mempty, mempty))
+
+          _ ->
+            return (Nothing, (mempty, mempty))
+
   ForeignMethod modulePath methodName methodCallType -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
     matchingMethods <-
@@ -372,6 +397,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   MonomorphizedProgram -> nonInput $ do
     liftIO $ atomicModifyIORef monomorphizationState (const (mempty, ()))
+    liftIO $ atomicModifyIORef monomorphizationStateByModule (const (mempty, ()))
     liftIO $ atomicModifyIORef monomorphizationImports (const (mempty, ()))
     liftIO $ atomicModifyIORef monomorphicMethods (const (mempty, ()))
 
@@ -446,7 +472,8 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       _ -> do
         coreAst <- astToCore (optOptimized options) monomorphicAST
         let coreAst'         = SortExpressions.keepLastMainExpAndDeps coreAst
-            renamedAst       = Rename.renameAST coreAst'
+            sortedAst        = SortExpressions.sortASTExpressions coreAst'
+            renamedAst       = Rename.renameAST sortedAst
             reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST renamedAst else renamedAst
             tceResolved      = if optLevel > O0 then TCE.resolveAST reducedAst else reducedAst
         return (tceResolved, (mempty, mempty))
@@ -514,16 +541,36 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   GeneratedJSModule path -> nonInput $ do
     paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
     coreAst  <- Rock.fetch $ CoreAST path
-    jsModule <- liftIO $ Javascript.generateJSModule options paths coreAst
+    let coreAstWithPath = coreAst { Core.apath = Just path }
+    (jsModule, _mappings) <- liftIO $ Javascript.generateJSModule options paths coreAstWithPath
     return (jsModule, (mempty, mempty))
 
   BuiltJSModule path -> nonInput $ do
-    jsModule <- Rock.fetch $ GeneratedJSModule path
-    let computedOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
+    paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+    coreAst  <- Rock.fetch $ CoreAST path
+    let coreAstWithPath  = coreAst { Core.apath = Just path }
+        computedOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
 
+    (jsModule, mappings) <- liftIO $ Javascript.generateJSModule options paths coreAstWithPath
     liftIO $ do
       createDirectoryIfMissing True $ Path.takeDirectoryIfFile computedOutputPath
-      writeFile computedOutputPath jsModule
+      case optSourceMaps options of
+        NoSourceMap -> writeFile computedOutputPath jsModule
+        ExternalSourceMap -> do
+          -- Filter mappings: only keep entries whose source line is within
+          -- the actual source file.  Monomorphization can produce Core nodes
+          -- with areas from other (inlined) modules whose line numbers exceed
+          -- the current source file's line count.
+          srcLineCount <- Javascript.sourceFileLineCount path
+          let validMappings = Javascript.filterMappingsBySourceFile srcLineCount mappings
+          let (annotated, mapJson) = Javascript.makeExternalSourceMap path computedOutputPath validMappings jsModule
+          writeFile computedOutputPath annotated
+          writeFile (computedOutputPath <> ".map") mapJson
+        InlineSourceMap -> do
+          srcLineCount <- Javascript.sourceFileLineCount path
+          let validMappings = Javascript.filterMappingsBySourceFile srcLineCount mappings
+          let annotated = Javascript.makeInlineSourceMap path computedOutputPath validMappings jsModule
+          writeFile computedOutputPath annotated
     return (jsModule, (mempty, mempty))
 
   BuiltTarget path -> nonInput $ do
@@ -542,27 +589,24 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return ((), (globalWarnings, mempty))
 
     else do
-      mainAST <- mergedMainAST (optEntrypoint options)
-      let mainASTWithSortedExps = SortExpressions.sortASTExpressions mainAST
-      paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
-      jsModule <- liftIO $ Javascript.generateJSModule options paths mainASTWithSortedExps
-      let computedOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
-
-      liftIO $ do
-        createDirectoryIfMissing True $ Path.takeDirectoryIfFile computedOutputPath
-        writeFile computedOutputPath jsModule
+      paths <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+      let allPathsToEmit = removeDuplicates (path : paths)
+      let totalModules = length allPathsToEmit
+      forM_ (zip [(1 :: Int) ..] allPathsToEmit) $ \(moduleIndex, modulePath) -> do
+        _ <- Rock.fetch $ BuiltJSModule modulePath
+        liftIO $ putStrLn $ "[" <> show moduleIndex <> " of " <> show totalModules <> "] Compiled '" <> modulePath <> "'"
 
       liftIO $ Javascript.generateInternalsModule options
 
       when (optBundle options) $ do
         let mainOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
-        result <- liftIO $ Javascript.runBundle mainOutputPath (optTarget options)
+        result <- liftIO $ Javascript.runBundle mainOutputPath (optOutputPath options) (optTarget options) (optSourceMaps options)
         case result of
           Left err ->
             liftIO $ putStr err
 
           Right ("", stderr) ->
-            liftIO $ putStrLn stderr
+            liftIO $ unless (null stderr) $ putStrLn stderr
 
           Right (bundle, _) -> do
             liftIO $ writeFile (optOutputPath options) bundle
@@ -762,7 +806,7 @@ input = fmap ((, mempty) . (, Rock.Input))
 -- Test runner
 
 makeEmptyHook :: String -> Src.Exp
-makeEmptyHook hookName = Src.Source emptyArea TargetAll (Src.Export (Src.Source emptyArea TargetAll (Src.Assignment hookName (Src.Source emptyArea TargetAll (Src.Abs [Src.Source emptyArea TargetAll "_"] [Src.Source emptyArea TargetAll (Src.App (Src.Source emptyArea TargetAll (Src.Var "of")) [Src.Source emptyArea TargetAll Src.LUnit])])))))
+makeEmptyHook hookName = Src.Source emptyArea TargetAll (Src.Export (Src.Source emptyArea TargetAll (Src.Assignment hookName (Src.Source emptyArea TargetAll (Src.Abs [Src.ParamName (Src.Source emptyArea TargetAll "_")] [Src.Source emptyArea TargetAll (Src.App (Src.Source emptyArea TargetAll (Src.Var "of")) [Src.Source emptyArea TargetAll Src.LUnit])])))))
 
 
 updateHooks :: Bool -> Bool -> [Src.Exp] -> [Src.Exp]

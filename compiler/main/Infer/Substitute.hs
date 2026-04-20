@@ -19,16 +19,28 @@ class Substitutable a where
   apply :: Substitution -> a -> a
   ftv   :: a -> S.Set TVar
 
+{-# SPECIALIZE apply :: Substitution -> Type -> Type #-}
+{-# SPECIALIZE apply :: Substitution -> Scheme -> Scheme #-}
+{-# SPECIALIZE apply :: Substitution -> Pred -> Pred #-}
+{-# SPECIALIZE apply :: Substitution -> (Qual Type) -> (Qual Type) #-}
+{-# SPECIALIZE apply :: Substitution -> [Type] -> [Type] #-}
+{-# SPECIALIZE apply :: Substitution -> [Pred] -> [Pred] #-}
+
 
 instance Substitutable Pred where
-  apply s (IsIn i ts maybeArea) = IsIn i (apply s ts) maybeArea
+  apply s p@(IsIn i ts maybeArea)
+    | M.null s  = p
+    | otherwise = IsIn i (apply s ts) maybeArea
   ftv (IsIn _ ts _) = ftv ts
 
 instance Substitutable t => Substitutable (Qual t) where
-  apply s (ps :=> t) = apply s ps :=> apply s t
+  apply s qt@(ps :=> t)
+    | M.null s  = qt
+    | otherwise = apply s ps :=> apply s t
   ftv (ps :=> t) = ftv ps `S.union` ftv t
 
 instance Substitutable Type where
+  {-# INLINABLE apply #-}
   apply _ tc@(TCon _ _ _) =
     tc
 
@@ -115,6 +127,7 @@ instance Substitutable Type where
 
 
 instance Substitutable Scheme where
+  {-# INLINABLE apply #-}
   apply s sc@(Forall ks t)
     | M.null s  = sc
     | S.null (ftv t `S.intersection` M.keysSet s) = sc
@@ -122,6 +135,7 @@ instance Substitutable Scheme where
   ftv (Forall _ t) = ftv t
 
 instance Substitutable a => Substitutable [a] where
+  {-# INLINABLE apply #-}
   apply s xs | M.null s  = xs
              | otherwise = fmap (apply s) xs
   ftv   = foldMap ftv
@@ -192,7 +206,10 @@ compose :: Substitution -> Substitution -> Substitution
 compose !s1 s2
   | M.null s1 = s2
   | M.null s2 = M.map (apply s1) s1
-  | otherwise = M.map (apply s1) $ M.unionsWith mergeTypes [s2, M.map (apply s1) s1]
+  | otherwise =
+      let s1' = M.map (apply s1) s1
+          s2' = M.map (apply s1) s2
+      in  M.unionWith mergeTypes s2' s1'
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of

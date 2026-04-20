@@ -160,8 +160,10 @@ export object = (items) =>
   JsonObject(Dictionary.fromList(items))
 
 
-printJson :: Integer -> Value -> String
-export printJson = (width, value) => pipe(
+print :: Integer -> Value -> String
+export print = (width, value) => pipe(
   jsonToDoc,
   PP.prettyPrint(width)
 )(value)
+
+export printJson = print

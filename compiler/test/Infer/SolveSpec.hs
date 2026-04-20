@@ -4,6 +4,7 @@ import qualified Data.Map                      as M
 import           Test.Hspec                     ( describe
                                                 , it
                                                 , Spec
+                                                , shouldBe
                                                 )
 import           Test.Hspec.Golden              ( Golden(..) )
 import qualified Data.Text.IO                  as T
@@ -22,6 +23,9 @@ import           Canonicalize.CanonicalM
 import           Error.Error
 import           Run.Target
 import           Run.OptimizationLevel
+import           Run.SourceMapMode
+import           Run.ErrorFormat (ErrorFormat(..))
+import           Run.PGOMode (PGOMode(..))
 import           Canonicalize.AST              as Can
 import qualified Canonicalize.Env              as Can
 import           Error.Warning
@@ -37,6 +41,7 @@ import           GHC.IO (unsafePerformIO)
 import           Control.Monad (forM)
 import           System.FilePath (normalise)
 import Explain.Location
+import Explain.Format.TypeDiff (renderType)
 
 
 snapshotTest :: Show a => String -> a -> Golden Text
@@ -71,6 +76,9 @@ buildOptions entrypoint pathUtils =
     , optOptimizationLevel = O3
     , optLspMode = False
     , optEmitLLVM = False
+    , optSourceMaps = NoSourceMap
+    , optErrorFormat = TextFormat
+          , optPGOMode = NoPGO
     }
 
 
@@ -966,6 +974,21 @@ spec = do
             ]
           actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer record params that are partially used in abstractions" actual
+
+    it "should keep rest pattern inputs separate from spread-added fields" $ do
+      let code = unlines
+            [ "restTest = where {"
+            , "  { barf, ...raw } =>"
+            , "    { ...raw, snarf: barf }"
+            , "}"
+            ]
+          (ast, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+          restTestType = case lookup "restTest" (Slv.getAllExpsFromGlobalScope ast) of
+            Just exp -> renderType (Slv.getType exp)
+            Nothing -> error "restTest was not inferred"
+
+      errors `shouldBe` []
+      restTestType `shouldBe` "{ ...base, barf :: a } -> { ...base, snarf :: a }"
 
     it "should infer extensible records with typed holes" $ do
       let code   = unlines

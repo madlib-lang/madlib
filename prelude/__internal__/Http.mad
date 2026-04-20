@@ -203,6 +203,44 @@ const prelude_http_buildHeaderObj = (headerItems) => {
 const prelude_http_capitalizeHeaderName = (input) => input.replace(/(^|[\s-])\S/g, (match) => {
   return match.toUpperCase();
 });
+
+const prelude_http_nodeErrorToClientError = (err) => {
+  switch (err.code) {
+    case 'ENOTFOUND':
+      return { __constructor: "AddressNotFound", __args: [] }
+    case 'ECONNREFUSED':
+      return { __constructor: "ConnectionFailed", __args: [] }
+    case 'ECONNRESET':
+      return { __constructor: "ConnectionFailed", __args: [] }
+    case 'ETIMEDOUT':
+      return { __constructor: "Timeout", __args: [] }
+    case 'ETIMEOUT':
+      return { __constructor: "Timeout", __args: [] }
+    case 'EACCES':
+    case 'EPERM':
+      return { __constructor: "AccessDenied", __args: [] }
+    case 'ERR_TLS_CERT_ALTNAME_INVALID':
+    case 'UNABLE_TO_VERIFY_LEAF_SIGNATURE':
+    case 'CERT_HAS_EXPIRED':
+    case 'DEPTH_ZERO_SELF_SIGNED_CERT':
+    case 'ERR_TLS_CERT_REJECT':
+      return { __constructor: "InvalidSSLCertificate", __args: [] }
+    case 'ERR_SSL_WRONG_VERSION_NUMBER':
+    case 'ERR_SSL_PROTOCOL_ERROR':
+      return { __constructor: "SSLConnectionFailed", __args: [] }
+    case 'ERR_INVALID_URL':
+      return { __constructor: "BadUrl", __args: [err.message || "Invalid URL"] }
+    case 'HPE_INVALID_CONSTANT':
+    case 'HPE_INVALID_HEADER_TOKEN':
+    case 'HPE_UNEXPECTED_CONTENT_LENGTH':
+      return { __constructor: "MalformedResponse", __args: [] }
+    case 'ERR_HTTP2_ERROR':
+    case 'ERR_HTTP2_STREAM_ERROR':
+      return { __constructor: "Http2FramingError", __args: [] }
+    default:
+      return { __constructor: "InternalError", __args: [] }
+  }
+}
 {/Node}
 -#
 
@@ -240,8 +278,14 @@ _request = (_isJust, config) => Wish(
       }
 
       xhr.onerror = (err) => {
-        // TODO: need to check err and build a correct error here
+        if (xhr.status === 0) {
+          return bad({ __constructor: "ClientError", __args: [{ __constructor: "ConnectionFailed", __args: [] }] })
+        }
         return bad({ __constructor: "ClientError", __args: [{ __constructor: "InternalError", __args: [] }]})
+      }
+
+      xhr.ontimeout = () => {
+        return bad({ __constructor: "ClientError", __args: [{ __constructor: "Timeout", __args: [] }] })
       }
 
       xhr.onload = () => {
@@ -326,11 +370,7 @@ _request = (_isJust, config) => Wish(
           if (response.statusCode >= 400) {
             bad({ __constructor: "BadResponse", __args: [{ body: responseBody.toString(), status: response.statusCode, headers: headersList }] })
           } else {
-            if (response.headers["content-encoding"] === "gzip") {
-              good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
-            } else {
-              good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
-            }
+            good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
           }
         });
       });
@@ -341,7 +381,8 @@ _request = (_isJust, config) => Wish(
 
       req.on('error', (err) => {
         if (!isDone && err.name !== "AbortError") {
-          bad({ __constructor: "ClientError", __args: [{ __constructor: "InternalError", __args: [] }] })
+          const clientError = prelude_http_nodeErrorToClientError(err)
+          bad({ __constructor: "ClientError", __args: [clientError] })
         }
       })
       req.end();
@@ -406,8 +447,14 @@ export _requestBytes = (_isJust, config) => Wish(
       }
 
       xhr.onerror = (err) => {
-        // TODO: need to check err and build a correct error here
+        if (xhr.status === 0) {
+          return bad({ __constructor: "ClientError", __args: [{ __constructor: "ConnectionFailed", __args: [] }] })
+        }
         return bad({ __constructor: "ClientError", __args: [{ __constructor: "InternalError", __args: [] }] })
+      }
+
+      xhr.ontimeout = () => {
+        return bad({ __constructor: "ClientError", __args: [{ __constructor: "Timeout", __args: [] }] })
       }
 
       xhr.onload = () => {
@@ -513,9 +560,9 @@ export _requestBytes = (_isJust, config) => Wish(
       }
 
       req.on('error', (err) => {
-        // TODO: need to check error and build it correctly
         if (!isDone && err.name !== "AbortError") {
-          bad({ __constructor: "ClientError", __args: [{ __constructor: "InternalError", __args: [] }] })
+          const clientError = prelude_http_nodeErrorToClientError(err)
+          bad({ __constructor: "ClientError", __args: [clientError] })
         }
       })
       req.end();
@@ -528,7 +575,6 @@ export _requestBytes = (_isJust, config) => Wish(
 )
 
 
-// TODO: chain and look if status code is 302 -> request whatever is in location header
 requestBytes :: Request ByteArray -> Wish (Error ByteArray) (Response ByteArray)
 export requestBytes = (req) => pipe(
   _requestBytes(isJust),

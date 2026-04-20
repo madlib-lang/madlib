@@ -12,6 +12,7 @@ import           Run.GeneratePackage
 import           Run.Compile
 import           Run.CommandLine
 import           Run.PackageInstaller
+import           Run.PackageAdd
 import           Run.TestRunner
 import           Run.Package
 import           Run.Format
@@ -37,11 +38,17 @@ run cmd = do
             Left  e ->
               putStrLn e
 
-    Test entrypoint target debug watch coverage optLevel suiteFilter testIndex emitLLVM ->
-      runTests entrypoint target debug watch coverage optLevel suiteFilter testIndex emitLLVM
+    Test entrypoint target debug watch coverage optLevel suiteFilter testIndex emitLLVM errorFmt ->
+      runTests entrypoint target debug watch coverage optLevel suiteFilter testIndex emitLLVM errorFmt
 
     Install ->
       runPackageInstaller
+
+    Add { addUrl, addName } ->
+      addPackage addUrl addName
+
+    Remove { removeName } ->
+      removePackage removeName
 
     Package{ packageSubCommand, rebuild } ->
       runPackage packageSubCommand rebuild

@@ -92,7 +92,8 @@ BufferedWriteData_t *madlib__file__openBufferedFileForWrite(char *filepath, PAP_
 void madlib__file__cancelBufferedWrite(BufferedWriteData_t *req);
 void madlib__file__writeChunkToFile(BufferedWriteData_t *handle,  madlib__bytearray__ByteArray_t *chunk, PAP_t *cb, PAP_t *errorCallback);
 
-void madlib__file__exists(char *filepath, PAP_t *callback);
+uv_fs_t *madlib__file__exists(char *filepath, PAP_t *callback);
+void madlib__file__cancelExists(uv_fs_t *req);
 
 #ifdef __cplusplus
 }

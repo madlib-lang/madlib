@@ -1,0 +1,33 @@
+import IO from "IO"
+
+// Tuple assignment destructuring (top-level)
+tuple = #[10, 20]
+#[a, b] = tuple
+
+// Record assignment destructuring (top-level)
+record = { name: "Alice", age: 30 }
+{ name, age } = record
+
+main = () => {
+  // Top-level results
+  IO.putLine(show(a + b))
+  IO.putLine(name)
+  IO.putLine(show(age + 0))
+
+  // In-body tuple destructuring
+  pair = #[100, 200]
+  #[x, y] = pair
+  IO.putLine(show(x + y))
+
+  // In-body record destructuring
+  person = { first: "Bob", last: "Smith" }
+  { first, last } = person
+  IO.putLine(first)
+  IO.putLine(last)
+
+  // In-body record with rest
+  full = { q: 3, w: 4, e: 5 }
+  { q, ...rest } = full
+  IO.putLine(show(q + 0))
+  IO.putLine(show(rest))
+}

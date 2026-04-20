@@ -2,20 +2,17 @@
      │
    1 │ import {} from \"./Import\"
      • ┬────────────────────────
-     • ╰╸ I found an import cycle:
+     • ╰╸ This import creates a cycle:
      •    
-     •    Entrypoint.mad
-     •      -> Import.mad
-     •        -> Entrypoint.mad
-     •    
+     •      Entrypoint.mad
+     •      ↓
+     •      Import.mad
+     •      ↓
+     •      Entrypoint.mad
+     •      ↓  (loops back to start)
      •
-     │ Note: Import cycles are not allowed and usually show a design issue.
-     │ Hint: Consider splitting things in more modules in order to have
-     │       both modules import a common dependency instead of having
-     │       them being co-dependent.
-     │ Hint: Another solution would be to move
-     │       things that depend on the other module from the cycle into
-     │       the other in order to collocate things that depend on each
-     │       other.
+     │ Note: Circular imports are not allowed because there is no valid initialization order.
+     │ Hint: Extract the shared types or functions into a third module that both can import.
+     │ Hint: Alternatively, move the code that causes the cycle into one of the two modules.
 ─────╯
 

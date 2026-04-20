@@ -19,7 +19,7 @@ import {
 import List from "List"
 import { Just, Nothing } from "Maybe"
 import Parse from "Parse"
-import { char, choice, digit, many, notChar, runParser, sepBy, some, spaces, symbol } from "Parse"
+import { char, choice, digit, many, notChar, runParser, sepBy, some, spaces, symbol, token } from "Parse"
 import String from "String"
 
 
@@ -192,7 +192,7 @@ getParserFn = (parser) => where(parser) {
  */
 parse :: Parser a -> String -> Either String a
 export parse = (parser, input) => pipe(
-  runParser(jsonValue),
+  runParser(token(jsonValue)),
   where {
     Left(e) =>
       Left("Invalid json: " ++ show(e))

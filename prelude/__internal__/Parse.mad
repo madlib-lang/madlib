@@ -16,7 +16,14 @@ import String from "String"
 
 export type Location = Loc(Integer, Integer, Integer)
 
-export type Parser a = Parser(String -> Location -> #[List #[a, String], Location])
+// The internal parser function now takes:
+//   input     : String  — the full input, never changes
+//   byteOffset: Integer — current position (byte offset on LLVM, code-unit index on JS)
+//   loc       : Location
+// and returns:
+//   #[List #[a, Integer], Location]
+//   where the Integer in each result is the new byte offset after the parse.
+export type Parser a = Parser(String -> Integer -> Location -> #[List #[a, Integer], Location])
 
 export type Error = Error(Location)
 
@@ -28,10 +35,10 @@ incLoc = (c) => where {
 }
 
 
-parse :: Parser a -> String -> Location -> #[List #[a, String], Location]
-parse = (parser, input, loc) => where(parser) {
+parse :: Parser a -> String -> Integer -> Location -> #[List #[a, Integer], Location]
+parse = (parser, input, idx, loc) => where(parser) {
   Parser(fn) =>
-    fn(input, loc)
+    fn(input, idx, loc)
 }
 
 
@@ -45,15 +52,15 @@ parse = (parser, input, loc) => where(parser) {
  * runParser(anyChar, "a")
  */
 runParser :: Parser a -> String -> Either Error a
-export runParser = (m, s) => where(parse(m, s, Loc(0, 0, 0))) {
-  #[[#[res, ""]], _] =>
-    Right(res)
+export runParser = (m, s) => {
+  totalLen = String.byteLength(s)
+  return where(parse(m, s, 0, Loc(0, 0, 0))) {
+    #[[#[res, idx]], _] =>
+      idx == totalLen ? Right(res) : Left(Error(Loc(0, 0, 0)))
 
-  #[[#[_, rest]], l] =>
-    Left(Error(l))
-
-  #[_, l] =>
-    Left(Error(l))
+    #[_, l] =>
+      Left(Error(l))
+  }
 }
 
 
@@ -71,9 +78,9 @@ export fail = aempty
  */
 instance Functor Parser {
   map = (f, m) => Parser(
-    (s, l) => where(parse(m, s, l)) {
-      #[[#[a, b]], loc] =>
-        #[[#[f(a), b]], loc]
+    (input, idx, l) => where(parse(m, input, idx, l)) {
+      #[[#[a, newIdx]], loc] =>
+        #[[#[f(a), newIdx]], loc]
 
       #[_, loc] =>
         #[[], loc]
@@ -96,11 +103,11 @@ instance Functor Parser {
  */
 instance Applicative Parser {
   ap = (parserA, parserB) => Parser(
-    (s, l) => where(parse(parserA, s, l)) {
-      #[[#[f, s1]], l1] =>
-        where(parse(parserB, s1, l1)) {
-          #[[#[a, s2]], l2] =>
-            #[[#[f(a), s2]], l2]
+    (input, idx, l) => where(parse(parserA, input, idx, l)) {
+      #[[#[f, idx1]], l1] =>
+        where(parse(parserB, input, idx1, l1)) {
+          #[[#[a, idx2]], l2] =>
+            #[[#[f(a), idx2]], l2]
 
           #[_, l2] =>
             #[[], l2]
@@ -111,7 +118,7 @@ instance Applicative Parser {
     },
   )
 
-  pure = (a) => Parser((s, l) => #[[#[a, s]], l])
+  pure = (a) => Parser((_, idx, l) => #[[#[a, idx]], l])
 }
 
 
@@ -123,9 +130,9 @@ instance Applicative Parser {
  */
 instance Monad Parser {
   chain = (f, m) => Parser(
-    (s, l) => where(parse(m, s, l)) {
-      #[[#[a, s1]], l1] =>
-        parse(f(a), s1, l1)
+    (input, idx, l) => where(parse(m, input, idx, l)) {
+      #[[#[a, idx1]], l1] =>
+        parse(f(a), input, idx1, l1)
 
       #[_, ll] =>
         #[[], ll]
@@ -145,12 +152,12 @@ instance Monad Parser {
  * runParser(alt(char('c'), char('a')), "a") // Right "a"
  */
 instance Alternative Parser {
-  aempty = Parser((_, l) => #[[], l])
+  aempty = Parser((_, _, l) => #[[], l])
 
   alt = (ma, mb) => Parser(
-    (s, l) => where(parse(ma, s, l)) {
+    (input, idx, l) => where(parse(ma, input, idx, l)) {
       #[[], _] =>
-        parse(mb, s, l)
+        parse(mb, input, idx, l)
 
       res =>
         res
@@ -161,9 +168,9 @@ instance Alternative Parser {
 
 lazy :: ({} -> Parser a) -> Parser a
 export lazy = (wrapped) => Parser(
-  (input, loc) => where(wrapped({})) {
+  (input, idx, loc) => where(wrapped({})) {
     Parser(parserFn) =>
-      parserFn(input, loc)
+      parserFn(input, idx, loc)
   },
 )
 
@@ -172,15 +179,18 @@ export lazy = (wrapped) => Parser(
  * A parser combinator that matches any character and returns a Parser String
  * containing that character.
  *
+ * O(1) per call — advances by the UTF-8 byte width (or UTF-16 code-unit width
+ * on JS) of the matched character, no string allocation.
+ *
  * @since 0.0.1
  * @example
  * parse(anyChar, "?") // Right "?"
  */
 anyChar :: Parser Char
 export anyChar = Parser(
-  (s, l) => where(String.charAt(0, s)) {
+  (input, idx, l) => where(String.byteCharAt(idx, input)) {
     Just(c) =>
-      #[[#[c, String.drop(1, s)]], incLoc(c, l)]
+      #[[#[c, idx + String.byteCharWidth(idx, input)]], incLoc(c, l)]
 
     Nothing =>
       #[[], l]
@@ -217,7 +227,7 @@ export anyChar = Parser(
  * // ]
  */
 location :: Parser Location
-export location = Parser((s, l) => #[[#[l, s]], l])
+export location = Parser((_, idx, l) => #[[#[l, idx]], l])
 
 
 /**
@@ -264,6 +274,8 @@ export choice = (ps) => List.reduce(alt, fail, ps)
 /**
  * A parser combinator that applies 0 or more times the given parser.
  *
+ * O(N) — each iteration advances the offset by an integer, no string copies.
+ *
  * @since 0.0.1
  * @example
  * runParser(many(string("OK")), "OKOKOK") // Right ["OK", "OK", "OK"]
@@ -271,19 +283,21 @@ export choice = (ps) => List.reduce(alt, fail, ps)
  */
 many :: Parser a -> Parser (List a)
 export many = (p) => Parser(
-  (s, l) => {
-    rest = s
+  (input, startIdx, l) => {
+    idx = startIdx
     loc = l
     acc = []
     while(
-      where(parse(p, rest, loc)) {
-        #[[#[parsed, r]], loc_] =>
-          do {
-            rest := r
-            loc := loc_
-            acc := [parsed, ...acc]
-            return true
-          }
+      where(parse(p, input, idx, loc)) {
+        #[[#[parsed, newIdx]], loc_] =>
+          newIdx == idx
+            ? false  // zero-width match: stop to avoid infinite loop
+            : do {
+                idx := newIdx
+                loc := loc_
+                acc := [parsed, ...acc]
+                return true
+              }
 
         _ =>
           false
@@ -292,7 +306,7 @@ export many = (p) => Parser(
       {}
     }
 
-    return #[[#[List.reverse(acc), rest]], loc]
+    return #[[#[List.reverse(acc), idx]], loc]
   },
 )
 
@@ -322,19 +336,19 @@ export some = (p) => chain((first) => map((rest) => [first, ...rest], many(p)), 
  */
 manyTill :: Parser a -> Parser b -> Parser (List a)
 export manyTill = (p, end) => Parser(
-  (s, l) => {
+  (input, startIdx, l) => {
     result = maybeLoop(
-      #[s, l, []],
+      #[startIdx, l, []],
       (state) => where(state) {
-        #[ss, ll, acc] =>
-          where(parse(end, ss, ll)) {
+        #[idx, ll, acc] =>
+          where(parse(end, input, idx, ll)) {
             #[[#[_, _]], _] =>
               Nothing
 
             _ =>
-              where(parse(p, ss, ll)) {
-                #[[#[parsed, rest]], loc] =>
-                  Just(#[rest, loc, [parsed, ...acc]])
+              where(parse(p, input, idx, ll)) {
+                #[[#[parsed, newIdx]], loc] =>
+                  Just(#[newIdx, loc, [parsed, ...acc]])
 
                 _ =>
                   Nothing
@@ -344,8 +358,8 @@ export manyTill = (p, end) => Parser(
     )
 
     return where(result) {
-      #[rest, loc, parseResult] =>
-        #[[#[List.reverse(parseResult), rest]], loc]
+      #[idx, loc, parseResult] =>
+        #[[#[List.reverse(parseResult), idx]], loc]
     }
   },
 )
@@ -380,9 +394,9 @@ export someTill = (p, end) => chain(
  */
 lookAhead :: Parser a -> Parser a
 export lookAhead = (p) => Parser(
-  (s, l) => where(parse(p, s, l)) {
+  (input, idx, l) => where(parse(p, input, idx, l)) {
     #[[#[a, _]], _] =>
-      #[[#[a, s]], l]
+      #[[#[a, idx]], l]   // restore original offset — do not consume
 
     _ =>
       #[[], l]
@@ -399,14 +413,14 @@ export lookAhead = (p) => Parser(
  */
 takeWhile :: (Char -> Boolean) -> Parser (List Char)
 export takeWhile = (pred) => Parser(
-  (s, l) => {
+  (input, startIdx, l) => {
     result = maybeLoop(
-      #[s, l, []],
+      #[startIdx, l, []],
       (state) => where(state) {
-        #[ss, ll, acc] =>
-          where(parse(anyChar, ss, ll)) {
-            #[[#[parsed, rest]], loc] =>
-              pred(parsed) ? Just(#[rest, loc, [parsed, ...acc]]) : Nothing
+        #[idx, ll, acc] =>
+          where(parse(anyChar, input, idx, ll)) {
+            #[[#[parsed, newIdx]], loc] =>
+              pred(parsed) ? Just(#[newIdx, loc, [parsed, ...acc]]) : Nothing
 
             _ =>
               Nothing
@@ -415,8 +429,8 @@ export takeWhile = (pred) => Parser(
     )
 
     return where(result) {
-      #[rest, loc, parseResult] =>
-        #[[#[List.reverse(parseResult), rest]], loc]
+      #[idx, loc, parseResult] =>
+        #[[#[List.reverse(parseResult), idx]], loc]
     }
   },
 )
@@ -489,9 +503,9 @@ export notChar = pipe(
  */
 eof :: Parser {}
 export eof = Parser(
-  (s, l) => where(parse(anyChar, s, l)) {
+  (input, idx, l) => where(parse(anyChar, input, idx, l)) {
     #[[], _] =>
-      #[[#[{}, ""]], l]
+      #[[#[{}, idx]], l]
 
     _ =>
       #[[], l]
@@ -501,22 +515,20 @@ export eof = Parser(
 /**
  * A parser combinator that parses a given string.
  *
+ * O(|target|) — uses a single byte-level prefix comparison, no recursive drops.
+ *
  * @since 0.0.1
  * @example
  * runParser(string("hello world"), "hello world") // Right "hello world"
  * runParser(string("hello world"), "hello")       // Left (Loc 0 0 0)
  */
 string :: String -> Parser String
-export string = (s) => where(String.firstChar(s)) {
-  Just(c) =>
-    pipe(
-      map((a, b) => String.prependChar(a, b)),
-      ap($, string(String.drop(1, s))),
-    )(char(c))
-
-  Nothing =>
-    pure("")
-}
+export string = (target) => Parser(
+  (input, idx, l) =>
+    String.byteStartsWith(target, idx, input)
+      ? #[[#[target, idx + String.byteLength(target)]], List.reduce((loc, c) => incLoc(c, loc), l, String.toList(target))]
+      : #[[], l],
+)
 
 /**
  * A parser combinator that parses empty characters such as spaces, line returns

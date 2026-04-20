@@ -1,5 +1,6 @@
 #include "uv.h"
 #include "process.hpp"
+#include "string_header.hpp"
 #if defined(_WIN32) || defined(__MINGW32__)
 #include <windows.h>
 #else
@@ -228,7 +229,11 @@ void madlib__process__internal__initExtra() {
   srand(time(NULL));
 
   for (int i = ARGC - 1; i >= 0; i--) {
-    __args__ = madlib__list__push(ARGV[i], __args__);
+    size_t argLen = strlen(ARGV[i]);
+    char *arg = madlib__string__alloc_bytes((uint32_t)argLen);
+    memcpy(arg, ARGV[i], argLen);
+    arg[argLen] = '\0';
+    __args__ = madlib__list__push(arg, __args__);
   }
 }
 
@@ -261,11 +266,11 @@ madlib__list__Node_t *madlib__process__internal__getEnv() {
 
     int valueLength = itemLength - keyLength - 1;
 
-    char *key = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (keyLength + 1));
+    char *key = madlib__string__alloc_bytes((uint32_t)keyLength);
     strncpy(key, *env, keyLength);
     key[keyLength] = '\0';
 
-    char *value = (char *)GC_MALLOC_ATOMIC(sizeof(char) * (valueLength + 1));
+    char *value = madlib__string__alloc_bytes((uint32_t)valueLength);
     strncpy(value, *env + keyLength + 1, valueLength);
     value[valueLength] = '\0';
 
@@ -282,12 +287,33 @@ char *madlib__process__internal__getCurrentPath() {
   char cwd[PATH_MAX];
 
   if (getcwd(cwd, sizeof(cwd)) != NULL) {
-    char *res = (char*) GC_MALLOC(strlen(cwd) + 1);
-    memcpy(res, cwd, strlen(cwd));
-    res[strlen(cwd)] = '\0';
+    size_t len = strlen(cwd);
+    char *res = madlib__string__alloc_bytes((uint32_t)len);
+    memcpy(res, cwd, len);
+    res[len] = '\0';
     return res;
   } else {
-    return (char*)"";
+    char *empty = madlib__string__alloc_bytes(0);
+    empty[0] = '\0';
+    return empty;
+  }
+}
+
+
+char *madlib__process__internal__getExecutablePath() {
+  char exePath[PATH_MAX];
+  size_t size = PATH_MAX;
+
+  int r = uv_exepath(exePath, &size);
+  if (r == 0) {
+    char *res = madlib__string__alloc_bytes((uint32_t)size);
+    memcpy(res, exePath, size);
+    res[size] = '\0';
+    return res;
+  } else {
+    char *empty = madlib__string__alloc_bytes(0);
+    empty[0] = '\0';
+    return empty;
   }
 }
 
@@ -307,8 +333,16 @@ void onChildExit(uv_process_t *req, int64_t exitCode, int termSignal) {
   data->stdoutOutput[data->stdoutSize] = '\0';
   data->stderrOutput[data->stderrSize] = '\0';
 
+  char *wrappedStdout = madlib__string__alloc_bytes((uint32_t)data->stdoutSize);
+  memcpy(wrappedStdout, data->stdoutOutput, data->stdoutSize);
+  wrappedStdout[data->stdoutSize] = '\0';
+
+  char *wrappedStderr = madlib__string__alloc_bytes((uint32_t)data->stderrSize);
+  memcpy(wrappedStderr, data->stderrOutput, data->stderrSize);
+  wrappedStderr[data->stderrSize] = '\0';
+
   uv_close((uv_handle_t*) req, onChildClose);
-  __applyPAP__(data->callback, 3, boxedStatus, data->stdoutOutput, data->stderrOutput);
+  __applyPAP__(data->callback, 3, boxedStatus, wrappedStdout, wrappedStderr);
 }
 
 
@@ -329,8 +363,13 @@ void onExecStdoutRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
       GC_FREE(buf->base);
     }
   } else {
+    if (buf->base != NULL) {
+      GC_FREE(buf->base);
+    }
+    if (nread < 0 && nread != UV_EOF) {
+      fprintf(stderr, "exec stdout read error: %s\n", uv_strerror(nread));
+    }
     data->stopped = true;
-    // TODO: handle error
     uv_close((uv_handle_t*) stream, onPipeClose);
   }
 }
@@ -344,8 +383,13 @@ void onExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
       GC_FREE(buf->base);
     }
   } else {
+    if (buf->base != NULL) {
+      GC_FREE(buf->base);
+    }
+    if (nread < 0 && nread != UV_EOF) {
+      fprintf(stderr, "exec stderr read error: %s\n", uv_strerror(nread));
+    }
     data->stopped = true;
-    // TODO: handle error
     uv_close((uv_handle_t*) stream, onPipeClose);
   }
 }
@@ -463,12 +507,14 @@ ExecData_t *madlib__process__exec(char *command, madlib__list__Node_t *argList, 
 
   if (spawnResult) {
     int64_t *boxedStatus = (int64_t*)1;
-
-    size_t stdoutLength = strlen(data->stdoutOutput);
-    size_t stderrLength = strlen(data->stderrOutput);
     data->stopped = true;
 
-    __applyPAP__(callback, 3, boxedStatus, data->stdoutOutput, data->stderrOutput);
+    char *emptyStdout = madlib__string__alloc_bytes(0);
+    emptyStdout[0] = '\0';
+    char *emptyStderr = madlib__string__alloc_bytes(0);
+    emptyStderr[0] = '\0';
+
+    __applyPAP__(callback, 3, boxedStatus, emptyStdout, emptyStderr);
 
     return NULL;
   } else {
@@ -509,12 +555,20 @@ void onBufferedExecStdoutRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t
   BufferedExecData_t *handle = (BufferedExecData_t*)stream->data;
 
   if (nread > 0) {
-    buf->base[nread] = '\0';
-    int64_t *boxedStatus = (int64_t*)0;
-    __applyPAP__(handle->callback, 2, buf->base, "");
+    char *wrappedChunk = madlib__string__alloc_bytes((uint32_t)nread);
+    memcpy(wrappedChunk, buf->base, nread);
+    wrappedChunk[nread] = '\0';
+    char *emptyStderr = madlib__string__alloc_bytes(0);
+    emptyStderr[0] = '\0';
+    __applyPAP__(handle->callback, 2, wrappedChunk, emptyStderr);
   } else {
+    if (buf->base != NULL) {
+      GC_FREE(buf->base);
+    }
+    if (nread < 0 && nread != UV_EOF) {
+      fprintf(stderr, "buffered exec stdout read error: %s\n", uv_strerror(nread));
+    }
     handle->stopped = true;
-    // TODO: handle error
     uv_close((uv_handle_t*) stream, onPipeClose);
   }
 }
@@ -523,12 +577,20 @@ void onBufferedExecStderrRead(uv_stream_t *stream, ssize_t nread, const uv_buf_t
   BufferedExecData_t *handle = (BufferedExecData_t*)stream->data;
 
   if (nread > 0) {
-    buf->base[nread] = '\0';
-    int64_t *boxedStatus = (int64_t*)0;
-    __applyPAP__(handle->callback, 2, "", buf->base);
+    char *emptyStdout = madlib__string__alloc_bytes(0);
+    emptyStdout[0] = '\0';
+    char *wrappedChunk = madlib__string__alloc_bytes((uint32_t)nread);
+    memcpy(wrappedChunk, buf->base, nread);
+    wrappedChunk[nread] = '\0';
+    __applyPAP__(handle->callback, 2, emptyStdout, wrappedChunk);
   } else {
+    if (buf->base != NULL) {
+      GC_FREE(buf->base);
+    }
+    if (nread < 0 && nread != UV_EOF) {
+      fprintf(stderr, "buffered exec stderr read error: %s\n", uv_strerror(nread));
+    }
     handle->stopped = true;
-    // TODO: handle error
     uv_close((uv_handle_t*) stream, onPipeClose);
   }
 }
@@ -752,7 +814,7 @@ void runThread(uv_work_t *req) {
 
   uv_run(threadLoop, UV_RUN_DEFAULT);
 
-  // TODO: deregister thread
+  GC_unregister_my_thread();
 
   int r = uv_loop_close(threadLoop);
   if (r != 0) {
@@ -797,6 +859,13 @@ uv_work_t * madlib__process__thread(PAP_t *fn, PAP_t *badCallback, PAP_t *goodCa
   int r = uv_queue_work(getLoop(), req, runThread, afterThread);
 
   return req;
+}
+
+
+void madlib__process__cancelThread(uv_work_t *req) {
+  if (req != NULL) {
+    uv_cancel((uv_req_t*)req);
+  }
 }
 
 

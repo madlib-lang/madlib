@@ -63,7 +63,7 @@ data Literal
 -- CREATE SIMPLIFIED PATTERNS
 
 simplify :: Slv.AST -> Env -> Slv.Pattern -> Infer Pattern
-simplify _ _ (Slv.Untyped _ _)           = undefined
+simplify _ _ (Slv.Untyped _ _)           = return Anything
 simplify ast env (Slv.Typed (_ :=> t) _ pattern) = case pattern of
   Slv.PAny ->
     return Anything
@@ -141,8 +141,8 @@ simplify ast env (Slv.Typed (_ :=> t) _ pattern) = case pattern of
           pats' <- buildConsPattern pats
           return $ Ctor (ADTInfo 2 [conCtor, nilCtor]) "__Cons__" [pats', pat']
 
-        _ ->
-          undefined
+        [] ->
+          return $ Ctor (ADTInfo 2 [conCtor, nilCtor]) "__Nil__" []
 
   Slv.PSpread pattern ->
     simplify ast env pattern
@@ -196,7 +196,7 @@ checkExps ast env exps = do
 
 
 checkExp :: Slv.AST -> Env -> Slv.Exp -> Infer ()
-checkExp _ _ (Slv.Untyped _ _)                 = undefined
+checkExp _ _ (Slv.Untyped _ _)                 = return ()
 checkExp ast env (Slv.Typed _ area expression) =
   case expression of
     Slv.Assignment _ exp ->
@@ -263,7 +263,7 @@ checkExp ast env (Slv.Typed _ area expression) =
               checkExp ast env e
 
             Slv.Untyped _ _ ->
-              undefined
+              return ()
         )
         ()
         lis
@@ -278,7 +278,7 @@ checkExp ast env (Slv.Typed _ area expression) =
               checkExp ast env e
 
             Slv.Untyped _ _ ->
-              undefined
+              return ()
         )
         ()
         fields
@@ -325,7 +325,7 @@ checkCases ast env area cases = do
 
 
 checkCaseBranch :: Slv.AST -> Env -> [Slv.Pattern] -> Slv.Is -> Infer [Slv.Pattern]
-checkCaseBranch _ _ _ (Slv.Untyped _ _)                               = undefined
+checkCaseBranch _ _ patterns (Slv.Untyped _ _)                         = return patterns
 checkCaseBranch ast env patterns (Slv.Typed _ _ (Slv.Is pattern exp)) = do
   checkExp ast env exp
   return $ pattern : patterns
@@ -463,7 +463,7 @@ isMissing union ctors (Slv.Untyped _ (Slv.Constructor name params _)) =
     Nothing
   else
     Just (Ctor union name (replicate (length params) Anything))
-isMissing _ _ _ = undefined
+isMissing _ _ _ = Nothing
 
 
 recoverCtor :: ADTInfo -> String -> Int -> [Pattern] -> [Pattern]

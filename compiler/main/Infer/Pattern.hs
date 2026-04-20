@@ -14,6 +14,7 @@ import           Infer.Env
 import           Infer.Substitute
 import qualified Utils.Tuple                   as T
 import qualified Data.Map                      as M
+import qualified Data.HashMap.Strict           as HM
 import qualified Data.Set                      as S
 import           Data.List
 import           Error.Context
@@ -122,17 +123,14 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
     -- If there's a rest pattern, bind it to a record type that excludes matched fields
     (restVars, restPreds) <- case restName of
       Just restVarName -> do
-        -- Rest type: use the base row variable directly as the type
-        -- The baseRowVar represents all fields not explicitly matched.
-        -- When the pattern unifies with a concrete record, baseRowVar will be unified
-        -- to a record containing only the unmatched fields.
-        -- We create the rest type as just the row variable itself, which will be
-        -- substituted with the unmatched fields after unification.
+        -- Rest bindings are record values, not bare row variables.
+        -- `baseRowVar` tracks the unmatched tail of the scrutinee row, so expose the
+        -- bound name as an open record whose base is that row variable. This preserves
+        -- the "rest" fields for record spread/update without forcing newly-added fields
+        -- back into the input row.
         when (M.member restVarName vars) $
           throwError $ CompilationError (NameAlreadyDefined restVarName) (Context (envCurrentPath env) area)
-        -- The rest type is the row variable itself - it will be substituted with
-        -- a record containing only unmatched fields
-        let restType = baseRowVar
+        let restType = TRecord mempty (Just baseRowVar) mempty
         let restVar = M.singleton restVarName (toScheme restType)
         return (restVar, [])
       Nothing ->

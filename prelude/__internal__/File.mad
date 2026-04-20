@@ -158,7 +158,9 @@ export readBytes = (path) => Wish(
 exists :: String -> Wish {} Boolean
 export exists = (path) => Wish(
   (bad, good) => #- {
+    let cancelled = false;
     prelude_file_fs.access(path, prelude_file_fs.constants.F_OK, (err) => {
+      if (cancelled) { return; }
       if (err) {
         bad(null);
       } else {
@@ -166,8 +168,7 @@ export exists = (path) => Wish(
       }
     });
 
-    // TODO: handle cancellation function correctly
-    return () => {}
+    return () => { cancelled = true; }
   } -#,
 )
 
@@ -307,8 +308,11 @@ export writeBytes = (path, content) => Wish(
   },
 )
 
-existsFFI :: String -> (Boolean -> {}) -> {}
+existsFFI :: String -> (Boolean -> {}) -> OperationId
 existsFFI = extern "madlib__file__exists"
+
+cancelExists :: OperationId -> {}
+cancelExists = extern "madlib__file__cancelExists"
 
 
 /**
@@ -322,10 +326,15 @@ existsFFI = extern "madlib__file__exists"
 exists :: String -> Wish {} Boolean
 export exists = (path) => Wish(
   (bad, good) => {
-    existsFFI(path, (g) => g ? good(true) : bad({}))
+    done = false
+    id = existsFFI(path, (g) => {
+      done := true
+      g ? good(true) : bad({})
+    })
 
-    // TODO: handle cancellation function correctly
-    return () => {}
+    return () => {
+      if (!done) { cancelExists(id) }
+    }
   },
 )
 
