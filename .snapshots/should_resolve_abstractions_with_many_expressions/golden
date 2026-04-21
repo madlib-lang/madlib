@@ -177,7 +177,8 @@
                                                         ([ IsIn
                                                              "Number"
                                                              [ TCon (TC "Float" Star) "prelude" ]
-                                                             Nothing
+                                                             (Just
+                                                                (Area (Loc 59 3 11) (Loc 60 3 12)))
                                                          ] :=>
                                                            TApp
                                                              (TApp
@@ -259,7 +260,8 @@
                                                         ([ IsIn
                                                              "Comparable"
                                                              [ TCon (TC "Float" Star) "prelude" ]
-                                                             Nothing
+                                                             (Just
+                                                                (Area (Loc 83 4 21) (Loc 84 4 22)))
                                                          ] :=>
                                                            TApp
                                                              (TApp
@@ -376,7 +378,10 @@
                                                                    [ TCon
                                                                        (TC "Float" Star) "prelude"
                                                                    ]
-                                                                   Nothing
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 119 5 32)
+                                                                         (Loc 120 5 33)))
                                                                ] :=>
                                                                  TApp
                                                                    (TApp
@@ -476,7 +481,10 @@
                                                                    [ TCon
                                                                        (TC "Float" Star) "prelude"
                                                                    ]
-                                                                   Nothing
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 129 5 42)
+                                                                         (Loc 130 5 43)))
                                                                ] :=>
                                                                  TApp
                                                                    (TApp
@@ -580,7 +588,7 @@
                                                   ([ IsIn
                                                        "Eq"
                                                        [ TCon (TC "Float" Star) "prelude" ]
-                                                       Nothing
+                                                       (Just (Area (Loc 155 6 23) (Loc 157 6 25)))
                                                    ] :=>
                                                      TApp
                                                        (TApp
@@ -642,7 +650,10 @@
                                                                    [ TCon
                                                                        (TC "Float" Star) "prelude"
                                                                    ]
-                                                                   Nothing
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 151 6 19)
+                                                                         (Loc 152 6 20)))
                                                                ] :=>
                                                                  TApp
                                                                    (TApp

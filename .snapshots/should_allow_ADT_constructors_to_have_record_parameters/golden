@@ -600,7 +600,16 @@
                                                                                                         Star)
                                                                                                      "prelude")
                                                                                               ]
-                                                                                              Nothing
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       0
+                                                                                                       0
+                                                                                                       0)
+                                                                                                    (Loc
+                                                                                                       0
+                                                                                                       0
+                                                                                                       0)))
                                                                                           ] :=>
                                                                                             TApp
                                                                                               (TApp
@@ -1127,7 +1136,10 @@
                                                                                       Star)
                                                                                    "prelude")
                                                                             ]
-                                                                            Nothing
+                                                                            (Just
+                                                                               (Area
+                                                                                  (Loc 0 0 0)
+                                                                                  (Loc 0 0 0)))
                                                                         ] :=>
                                                                           TApp
                                                                             (TApp
@@ -1491,7 +1503,10 @@
                                                                    [ TCon
                                                                        (TC "Integer" Star) "prelude"
                                                                    ]
-                                                                   Nothing
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 103 5 27)
+                                                                         (Loc 104 5 28)))
                                                                ] :=>
                                                                  TApp
                                                                    (TApp

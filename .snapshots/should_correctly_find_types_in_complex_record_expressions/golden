@@ -2678,7 +2678,10 @@
                                                                       ([ IsIn
                                                                            "Eq"
                                                                            [ TVar (TV 79 Star) ]
-                                                                           Nothing
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 0 0 0)
+                                                                                 (Loc 0 0 0)))
                                                                        ] :=>
                                                                          TApp
                                                                            (TApp
@@ -2951,7 +2954,10 @@
                                                                                  "Eq"
                                                                                  [ TVar (TV 91 Star)
                                                                                  ]
-                                                                                 Nothing
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc 0 0 0)
+                                                                                       (Loc 0 0 0)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -3323,11 +3329,11 @@
                                                           ([ IsIn
                                                                "Monoid"
                                                                [ TCon (TC "String" Star) "prelude" ]
-                                                               Nothing
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            , IsIn
                                                                "Semigroup"
                                                                [ TCon (TC "String" Star) "prelude" ]
-                                                               Nothing
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -3388,7 +3394,9 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 104 Star) ] Nothing
+                                                               "Show"
+                                                               [ TVar (TV 104 Star) ]
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -3442,9 +3450,11 @@
                                                                               [ ( "bets"
                                                                                 , TVar (TV 104 Star)
                                                                                 )
+                                                                              , ( "players"
+                                                                                , TVar (TV 112 Star)
+                                                                                )
                                                                               ])
-                                                                           (Just
-                                                                              (TVar (TV 106 Star)))
+                                                                           Nothing
                                                                            (fromList [])))
                                                                      (TVar (TV 104 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -3497,11 +3507,11 @@
                                                           ([ IsIn
                                                                "Monoid"
                                                                [ TCon (TC "String" Star) "prelude" ]
-                                                               Nothing
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            , IsIn
                                                                "Semigroup"
                                                                [ TCon (TC "String" Star) "prelude" ]
-                                                               Nothing
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -3562,7 +3572,9 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 112 Star) ] Nothing
+                                                               "Show"
+                                                               [ TVar (TV 112 Star) ]
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -3613,7 +3625,10 @@
                                                                            "prelude")
                                                                         (TRecord
                                                                            (fromList
-                                                                              [ ( "players"
+                                                                              [ ( "bets"
+                                                                                , TVar (TV 104 Star)
+                                                                                )
+                                                                              , ( "players"
                                                                                 , TVar (TV 112 Star)
                                                                                 )
                                                                               ])

@@ -171,7 +171,9 @@
                                                         ([ IsIn
                                                              "Comparable"
                                                              [ TCon (TC "Integer" Star) "prelude" ]
-                                                             Nothing
+                                                             (Just
+                                                                (Area
+                                                                   (Loc 111 5 24) (Loc 112 5 25)))
                                                          ] :=>
                                                            TApp
                                                              (TApp
@@ -263,7 +265,10 @@
                                                                              (TC "Integer" Star)
                                                                              "prelude"
                                                                          ]
-                                                                         Nothing
+                                                                         (Just
+                                                                            (Area
+                                                                               (Loc 107 5 20)
+                                                                               (Loc 108 5 21)))
                                                                      ] :=>
                                                                        TApp
                                                                          (TApp

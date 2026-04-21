@@ -67,7 +67,11 @@
                                (Area (Loc 12 1 13) (Loc 21 1 22))
                                (App
                                   (Typed
-                                     ([ IsIn "Number" [ TVar (TV 2 Star) ] Nothing ] :=>
+                                     ([ IsIn
+                                          "Number"
+                                          [ TVar (TV 2 Star) ]
+                                          (Just (Area (Loc 14 1 15) (Loc 15 1 16)))
+                                      ] :=>
                                         TApp
                                           (TApp
                                              (TCon

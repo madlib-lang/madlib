@@ -610,7 +610,7 @@
                                                   ([ IsIn
                                                        "Semigroup"
                                                        [ TCon (TC "String" Star) "prelude" ]
-                                                       Nothing
+                                                       (Just (Area (Loc 593 30 21) (Loc 595 30 23)))
                                                    ] :=>
                                                      TApp
                                                        (TApp
@@ -1845,7 +1845,16 @@
                                                                                                98
                                                                                                Star)
                                                                                         ]
-                                                                                        Nothing
+                                                                                        (Just
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)))
                                                                                     ] :=>
                                                                                       TApp
                                                                                         (TApp
@@ -2236,7 +2245,10 @@
                                                                  ([ IsIn
                                                                       "Show"
                                                                       [ TVar (TV 110 Star) ]
-                                                                      Nothing
+                                                                      (Just
+                                                                         (Area
+                                                                            (Loc 0 0 0)
+                                                                            (Loc 0 0 0)))
                                                                   ] :=>
                                                                     TApp
                                                                       (TApp

@@ -84,7 +84,11 @@
                                            (Area (Loc 21 1 22) (Loc 26 1 27))
                                            (App
                                               (Typed
-                                                 ([ IsIn "Number" [ TVar (TV 4 Star) ] Nothing ] :=>
+                                                 ([ IsIn
+                                                      "Number"
+                                                      [ TVar (TV 4 Star) ]
+                                                      (Just (Area (Loc 23 1 24) (Loc 24 1 25)))
+                                                  ] :=>
                                                     TApp
                                                       (TApp
                                                          (TCon
@@ -215,7 +219,10 @@
                                             (Area (Loc 46 3 18) (Loc 51 3 23))
                                             (App
                                                (Typed
-                                                  ([ IsIn "Number" [ TVar (TV 10 Star) ] Nothing
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TVar (TV 10 Star) ]
+                                                       (Just (Area (Loc 48 3 20) (Loc 49 3 21)))
                                                    ] :=>
                                                      TApp
                                                        (TApp
@@ -285,7 +292,7 @@
                               ([ IsIn
                                    "Number"
                                    [ TVar (TV 15 Star) ]
-                                   (Just (Area (Loc 48 3 20) (Loc 49 3 21)))
+                                   (Just (Area (Loc 64 4 12) (Loc 67 4 15)))
                                ] :=>
                                  TApp
                                    (TApp
@@ -382,7 +389,7 @@
                                            ([ IsIn
                                                 "Number"
                                                 [ TCon (TC "Integer" Star) "prelude" ]
-                                                Nothing
+                                                (Just (Area (Loc 47 2 16) (Loc 50 2 19)))
                                             ] :=>
                                               TApp
                                                 (TApp

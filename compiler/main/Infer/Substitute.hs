@@ -47,61 +47,16 @@ instance Substitutable Type where
   apply s t@(TVar a) =
     case M.lookup a s of
       Nothing -> t
-      Just t' -> if occursCheck a t' then t else t'
+      Just t' -> if occursCheck a t' then t else apply s t'
 
   apply s (t1 `TApp` t2) =
     apply s t1 `TApp` apply s t2
 
-  apply s (TRecord fields (Just (TVar tv)) optionalFields) = case M.lookup tv s of
-    Just newBase@(TVar _) ->
-      -- Row variable substituted with another row variable - preserve it
-      TRecord (apply s <$> fields) (Just newBase) (apply s <$> optionalFields)
-
-    Just (TRecord fields' Nothing optionalFields') ->
-      -- Row variable substituted with a closed record - merge fields and remove row variable
-      TRecord (apply s <$> (fields <> fields')) Nothing (apply s <$> (optionalFields <> optionalFields'))
-
-    Just (TRecord fields' base' optionalFields') ->
-      -- Row variable substituted with an open record - merge fields and preserve the base
-      let appliedBase = apply s <$> base'
-      in  if appliedBase /= base' then
-            -- Base changed after substitution, recurse to handle nested substitutions
-            apply s $ TRecord (fields <> fields') appliedBase (optionalFields <> optionalFields')
-          else
-            -- Base unchanged, just merge fields
-            TRecord (apply s <$> (fields <> fields')) appliedBase (apply s <$> (optionalFields <> optionalFields'))
-
-    Nothing ->
-      -- Row variable not in substitution - keep it as is
-      TRecord (apply s <$> fields) (Just (TVar tv)) (apply s <$> optionalFields)
-
-    Just (TGen x) ->
-      -- Row variable substituted with a generic type variable - preserve it
-      TRecord (apply s <$> fields) (Just $ TGen x) (apply s <$> optionalFields)
-
-    Just otherType ->
-      -- Row variable substituted with a non-record type - try to apply substitution recursively
-      -- This handles cases where the substitution might resolve to a record after further application
-      let appliedOther = apply s otherType
-      in  case appliedOther of
-            TRecord fields' base' optionalFields' ->
-              -- After substitution, it became a record - merge fields
-              TRecord (apply s <$> (fields <> fields')) base' (apply s <$> (optionalFields <> optionalFields'))
-            _ ->
-              -- Still not a record - keep original row variable but apply substitution to fields
-              TRecord (apply s <$> fields) (Just (TVar tv)) (apply s <$> optionalFields)
-
-  apply s (TRecord fields (Just (TRecord fields' base optionalFields')) optionalFields) =
-    -- Base is already a record - merge and recurse
-    apply s $ TRecord (fields <> fields') base (optionalFields <> optionalFields')
-
-  apply s (TRecord fields Nothing optionalFields)
-    | M.null optionalFields =
-      -- No row variable, no optional fields - just apply substitution to main fields
-      TRecord (apply s <$> fields) Nothing mempty
-    | otherwise =
-      -- No row variable - merge optional fields into main fields and apply substitution
-      TRecord (apply s <$> (fields <> optionalFields)) Nothing mempty
+  apply s (TRecord fields base optionalFields) =
+    normalizeRecord
+      (apply s <$> fields)
+      (apply s <$> base)
+      (apply s <$> optionalFields)
 
   apply _ t = t
 
@@ -205,31 +160,8 @@ instance FtvOrdered t => FtvOrdered (Qual t) where
 compose :: Substitution -> Substitution -> Substitution
 compose !s1 s2
   | M.null s1 = s2
-  | M.null s2 = M.map (apply s1) s1
-  | otherwise =
-      let s1' = M.map (apply s1) s1
-          s2' = M.map (apply s1) s2
-      in  M.unionWith mergeTypes s2' s1'
- where
-  mergeTypes :: Type -> Type -> Type
-  mergeTypes t1 t2 = case (t1, t2) of
-    (TRecord fields1 base1 optionalFields1, TRecord fields2 base2 optionalFields2) ->
-      let base = base1 <|> base2
-      in  TRecord (M.unionWith mergeTypes fields1 fields2) base (optionalFields1 <> optionalFields2)
-
-    (TRecord fields base optionalFields, TVar _) ->
-      TRecord fields base optionalFields
-
-    (TVar _, TRecord fields base optionalFields) ->
-      TRecord fields base optionalFields
-
-    (TApp tl tr, TApp tl' tr') ->
-      let tl'' = mergeTypes tl tl'
-          tr'' = mergeTypes tr tr'
-      in  TApp tl'' tr''
-
-    (_, t) ->
-      t
+  | M.null s2 = s1
+  | otherwise = M.map (apply s1) s2 `M.union` s1
 
 merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext
@@ -249,3 +181,38 @@ buildVarSubsts t = case t of
 
   _ ->
     mempty
+
+
+normalizeRecord :: M.Map Id Type -> Maybe Type -> M.Map Id Type -> Type
+normalizeRecord fields maybeBase optionalFields = case maybeBase of
+  Nothing ->
+    if M.null optionalFields then
+      TRecord fields Nothing mempty
+    else
+      TRecord (fields <> optionalFields) Nothing mempty
+
+  Just base -> case base of
+    TVar _ ->
+      TRecord fields (Just base) optionalFields
+
+    TGen _ ->
+      TRecord fields (Just base) optionalFields
+
+    _ | Just (baseFields, nextBase, baseOptionalFields) <- expandRowBase base ->
+      normalizeRecord (fields <> baseFields) nextBase (optionalFields <> baseOptionalFields)
+
+    _ ->
+      error $
+        "Compiler bug: row variable substituted with a non-record base: " <> show base
+
+
+expandRowBase :: Type -> Maybe (M.Map Id Type, Maybe Type, M.Map Id Type)
+expandRowBase t = case t of
+  TRecord fields base optionalFields ->
+    Just (fields, base, optionalFields)
+
+  TAlias _ _ _ aliasType ->
+    expandRowBase aliasType
+
+  _ ->
+    Nothing

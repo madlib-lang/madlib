@@ -228,7 +228,10 @@
                                                                      ([ IsIn
                                                                           "Comparable"
                                                                           [ TVar (TV 18 Star) ]
-                                                                          Nothing
+                                                                          (Just
+                                                                             (Area
+                                                                                (Loc 64 2 29)
+                                                                                (Loc 66 2 31)))
                                                                       ] :=>
                                                                         TApp
                                                                           (TApp
@@ -501,7 +504,16 @@
                                                                                                     18
                                                                                                     Star)
                                                                                              ]
-                                                                                             Nothing
+                                                                                             (Just
+                                                                                                (Area
+                                                                                                   (Loc
+                                                                                                      107
+                                                                                                      2
+                                                                                                      72)
+                                                                                                   (Loc
+                                                                                                      108
+                                                                                                      2
+                                                                                                      73)))
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp

@@ -470,7 +470,16 @@
                                                                                                      18
                                                                                                      Star)
                                                                                               ]
-                                                                                              Nothing
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       0
+                                                                                                       0
+                                                                                                       0)
+                                                                                                    (Loc
+                                                                                                       0
+                                                                                                       0
+                                                                                                       0)))
                                                                                           ] :=>
                                                                                             TApp
                                                                                               (TApp
@@ -923,7 +932,10 @@
                                                                        ([ IsIn
                                                                             "Show"
                                                                             [ TVar (TV 30 Star) ]
-                                                                            Nothing
+                                                                            (Just
+                                                                               (Area
+                                                                                  (Loc 0 0 0)
+                                                                                  (Loc 0 0 0)))
                                                                         ] :=>
                                                                           TApp
                                                                             (TApp
@@ -1235,7 +1247,10 @@
                                                                    [ TCon
                                                                        (TC "Integer" Star) "prelude"
                                                                    ]
-                                                                   Nothing
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 129 6 18)
+                                                                         (Loc 130 6 19)))
                                                                ] :=>
                                                                  TApp
                                                                    (TApp

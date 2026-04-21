@@ -207,7 +207,10 @@
                                                                               (TC "Result" Star)
                                                                               "Module.mad"
                                                                           ]
-                                                                          Nothing
+                                                                          (Just
+                                                                             (Area
+                                                                                (Loc 119 5 17)
+                                                                                (Loc 121 5 19)))
                                                                       ] :=>
                                                                         TApp
                                                                           (TApp
@@ -686,7 +689,16 @@
                                                                                                Star)
                                                                                             "prelude"
                                                                                         ]
-                                                                                        Nothing
+                                                                                        (Just
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)))
                                                                                     ] :=>
                                                                                       TApp
                                                                                         (TApp
@@ -1036,7 +1048,10 @@
                                                                           (TC "String" Star)
                                                                           "prelude"
                                                                       ]
-                                                                      Nothing
+                                                                      (Just
+                                                                         (Area
+                                                                            (Loc 0 0 0)
+                                                                            (Loc 0 0 0)))
                                                                   ] :=>
                                                                     TApp
                                                                       (TApp

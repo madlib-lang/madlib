@@ -42,6 +42,23 @@ import           Control.Monad (forM)
 import           System.FilePath (normalise)
 import Explain.Location
 import Explain.Format.TypeDiff (renderType)
+import           Infer.Env                     ( Env(..)
+                                                , Interface(..)
+                                                , Instance(..)
+                                                )
+import           Infer.Exp                     ( split )
+import           Infer.Substitute              ( apply
+                                                , compose
+                                                )
+import           Infer.Type                    ( Kind(..)
+                                                , Pred(..)
+                                                , Qual((:=>))
+                                                , TVar(..)
+                                                , Type(..)
+                                                , tInteger
+                                                , tStr
+                                                )
+import qualified Driver.Rules                  as Rules
 
 
 snapshotTest :: Show a => String -> a -> Golden Text
@@ -166,8 +183,116 @@ inferManyModulesWithoutMain entrypoint modules = do
   return (M.map (\ast -> ast { Slv.aimports = map renameBuiltinsImport (Slv.aimports ast) }) solvedModules, warnings, errors)
 
 
+runInferTask action = do
+  let modulePath = "Module.mad"
+      options = (buildOptions modulePath defaultPathUtils) { optMustHaveMain = False }
+  initialState <- Driver.initialState
+  (result, _, _) <- Driver.runIncrementalTask
+    initialState
+    options
+    []
+    mempty
+    Don'tPrune
+    (fmap (fmap fst) $ Rules.runInfer action)
+  return result
+
+
+defaultingRegressionEnv :: Env
+defaultingRegressionEnv =
+  Env
+    { envVars = mempty
+    , envInterfaces = M.fromList
+        [ ( "Number"
+          , Interface
+              [TV 0 Star]
+              []
+              [Instance ([] :=> IsIn "Number" [tInteger] Nothing) mempty]
+          )
+        , ( "Foo"
+          , Interface
+              [TV 1 Star]
+              []
+              [ Instance
+                  ([IsIn "Number" [TVar (TV 2 Star)] Nothing] :=> IsIn "Foo" [tInteger] Nothing)
+                  mempty
+              ]
+          )
+        ]
+    , envConstructors = mempty
+    , envMethods = mempty
+    , envCurrentPath = "Module.mad"
+    , envInBody = False
+    , envNamesInScope = mempty
+    , envNamespacesInScope = mempty
+    , envImportInfo = []
+    , envPlaceholdersInScope = []
+    , envPlaceholdersToDelete = mempty
+    , envPatternBoundNames = mempty
+    }
+
+
 spec :: Spec
 spec = do
+  describe "substitute" $ do
+    it "should compose row substitutions like ordinary substitutions" $ do
+      let tvA = TV 0 Star
+          tvB = TV 1 Star
+          row = TV 2 Star
+          rowTail = TV 3 Star
+          t =
+            TRecord
+              (M.fromList [("x", TVar tvA)])
+              (Just (TVar row))
+              mempty
+          s1 = M.fromList
+            [ (tvB, tInteger)
+            , (rowTail, TRecord (M.fromList [("z", tStr)]) Nothing mempty)
+            ]
+          s2 = M.fromList
+            [ (tvA, TVar tvB)
+            , (row, TRecord (M.fromList [("y", TVar tvB)]) (Just (TVar rowTail)) mempty)
+            ]
+
+      apply (compose s1 s2) t `shouldBe` apply s1 (apply s2 t)
+
+    it "should make normalized row substitutions idempotent under apply" $ do
+      let tvA = TV 0 Star
+          tvB = TV 1 Star
+          row = TV 2 Star
+          rowTail = TV 3 Star
+          t =
+            TRecord
+              (M.fromList [("x", TVar tvA)])
+              (Just (TVar row))
+              mempty
+          s = compose
+            (M.fromList
+              [ (tvB, tInteger)
+              , (rowTail, TRecord (M.fromList [("z", tStr)]) Nothing mempty)
+              ]
+            )
+            (M.fromList
+              [ (tvA, TVar tvB)
+              , (row, TRecord (M.fromList [("y", TVar tvB)]) (Just (TVar rowTail)) mempty)
+              ]
+            )
+          once = apply s t
+
+      apply s once `shouldBe` once
+
+  describe "defaulting" $ do
+    it "should return second-pass defaulting substitutions from split" $ do
+      let tvA = TV 0 Star
+          tvB = TV 2 Star
+          preds =
+            [ IsIn "Foo" [TVar tvA] Nothing
+            , IsIn "Number" [TVar tvA] Nothing
+            ]
+          expectedSubst = M.fromList [(tvA, tInteger), (tvB, tInteger)]
+
+      result <- runInferTask (split True defaultingRegressionEnv [] [] preds)
+      result `shouldBe` Right ([], [], expectedSubst)
+
   describe "infer" $ do
     it "should infer abstractions" $ do
       let code   = "add = (b, c) => b + c"
@@ -1728,6 +1853,40 @@ spec = do
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer most general type for inner lambdas" actual
+
+    it "should keep local named functions polymorphic" $ do
+      let code = unlines
+            [ "main = () => {"
+            , "  id = (x) => x"
+            , "  a = id(1)"
+            , "  b = id(\"hello\")"
+            , "}"
+            ]
+      (_, _, errors) <- inferModule code
+      errors `shouldBe` []
+
+    it "should keep local non-function lets monomorphic" $ do
+      let code = unlines
+            [ "main = () => {"
+            , "  xs = []"
+            , "  ints = [1, ...xs]"
+            , "  strings = [\"hello\", ...xs]"
+            , "  return strings"
+            , "}"
+            ]
+      (_, _, errors) <- inferModule code
+      null errors `shouldBe` False
+
+    it "should keep top-level list bindings reusable" $ do
+      let code = unlines
+            [ "xs = []"
+            , "main = () => {"
+            , "  ints = [1, ...xs]"
+            , "  strings = [\"hello\", ...xs]"
+            , "}"
+            ]
+      (_, _, errors) <- inferModule code
+      errors `shouldBe` []
 
     it "should correctly find types in complex record expressions" $ do
       let code = unlines

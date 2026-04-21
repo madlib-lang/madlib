@@ -485,7 +485,7 @@
                                                   ([ IsIn
                                                        "Semigroup"
                                                        [ TCon (TC "String" Star) "prelude" ]
-                                                       Nothing
+                                                       (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
                                                    ] :=>
                                                      TApp
                                                        (TApp
@@ -778,7 +778,7 @@
                                      ([ IsIn
                                           "Functor"
                                           [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                                          Nothing
+                                          (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
                                       ] :=>
                                         TApp
                                           (TApp

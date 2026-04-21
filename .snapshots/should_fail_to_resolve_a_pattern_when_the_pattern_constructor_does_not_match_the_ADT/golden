@@ -570,7 +570,16 @@
                                                                                                28
                                                                                                Star)
                                                                                         ]
-                                                                                        Nothing
+                                                                                        (Just
+                                                                                           (Area
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)
+                                                                                              (Loc
+                                                                                                 0
+                                                                                                 0
+                                                                                                 0)))
                                                                                     ] :=>
                                                                                       TApp
                                                                                         (TApp
@@ -1174,7 +1183,10 @@
                                                                  ([ IsIn
                                                                       "Show"
                                                                       [ TVar (TV 47 Star) ]
-                                                                      Nothing
+                                                                      (Just
+                                                                         (Area
+                                                                            (Loc 0 0 0)
+                                                                            (Loc 0 0 0)))
                                                                   ] :=>
                                                                     TApp
                                                                       (TApp

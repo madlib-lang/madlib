@@ -313,7 +313,7 @@
                                            ([ IsIn
                                                 "Number"
                                                 [ TCon (TC "Integer" Star) "prelude" ]
-                                                Nothing
+                                                (Just (Area (Loc 98 5 22) (Loc 99 5 23)))
                                             ] :=>
                                               TApp
                                                 (TApp
@@ -362,7 +362,8 @@
                                                        ([ IsIn
                                                             "Number"
                                                             [ TCon (TC "Integer" Star) "prelude" ]
-                                                            Nothing
+                                                            (Just
+                                                               (Area (Loc 94 5 18) (Loc 95 5 19)))
                                                         ] :=>
                                                           TApp
                                                             (TApp

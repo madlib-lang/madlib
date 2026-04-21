@@ -5630,7 +5630,16 @@
                                                                                                            Star)
                                                                                                         "prelude"))
                                                                                               ]
-                                                                                              Nothing
+                                                                                              (Just
+                                                                                                 (Area
+                                                                                                    (Loc
+                                                                                                       0
+                                                                                                       0
+                                                                                                       0)
+                                                                                                    (Loc
+                                                                                                       0
+                                                                                                       0
+                                                                                                       0)))
                                                                                           ] :=>
                                                                                             TApp
                                                                                               (TApp
@@ -6823,7 +6832,10 @@
                                                                                       (TC "{}" Star)
                                                                                       "prelude"))
                                                                             ]
-                                                                            Nothing
+                                                                            (Just
+                                                                               (Area
+                                                                                  (Loc 0 0 0)
+                                                                                  (Loc 0 0 0)))
                                                                         ] :=>
                                                                           TApp
                                                                             (TApp
@@ -11315,7 +11327,11 @@
                               (Area (Loc 82 4 10) (Loc 99 4 27))
                               (App
                                  (Typed
-                                    ([ IsIn "Functor" [ TVar (TV 4 (Kfun Star Star)) ] Nothing ] :=>
+                                    ([ IsIn
+                                         "Functor"
+                                         [ TVar (TV 4 (Kfun Star Star)) ]
+                                         (Just (Area (Loc 82 4 10) (Loc 85 4 13)))
+                                     ] :=>
                                        TApp
                                          (TApp
                                             (TCon
@@ -11404,7 +11420,8 @@
                                                        ([ IsIn
                                                             "Number"
                                                             [ TCon (TC "Integer" Star) "prelude" ]
-                                                            Nothing
+                                                            (Just
+                                                               (Area (Loc 95 4 23) (Loc 96 4 24)))
                                                         ] :=>
                                                           TApp
                                                             (TApp
@@ -11880,7 +11897,8 @@
                                                                    "./ModuleA.mad")
                                                                 (TVar (TV 19 Star))
                                                             ]
-                                                            Nothing
+                                                            (Just
+                                                               (Area (Loc 158 9 8) (Loc 163 9 13)))
                                                         , IsIn
                                                             "Applicative"
                                                             [ TApp
@@ -11891,7 +11909,8 @@
                                                                    "./ModuleA.mad")
                                                                 (TVar (TV 19 Star))
                                                             ]
-                                                            Nothing
+                                                            (Just
+                                                               (Area (Loc 158 9 8) (Loc 163 9 13)))
                                                         ] :=>
                                                           TApp
                                                             (TApp
@@ -12172,7 +12191,10 @@
                                                                                 "./ModuleA.mad")
                                                                              (TVar (TV 19 Star))
                                                                          ]
-                                                                         Nothing
+                                                                         (Just
+                                                                            (Area
+                                                                               (Loc 172 9 22)
+                                                                               (Loc 174 9 24)))
                                                                      , IsIn
                                                                          "Applicative"
                                                                          [ TApp
@@ -12187,7 +12209,10 @@
                                                                                 "./ModuleA.mad")
                                                                              (TVar (TV 19 Star))
                                                                          ]
-                                                                         Nothing
+                                                                         (Just
+                                                                            (Area
+                                                                               (Loc 172 9 22)
+                                                                               (Loc 174 9 24)))
                                                                      ] :=>
                                                                        TApp
                                                                          (TApp
@@ -12331,7 +12356,16 @@
                                                                                             Star)
                                                                                          "prelude"
                                                                                      ]
-                                                                                     Nothing
+                                                                                     (Just
+                                                                                        (Area
+                                                                                           (Loc
+                                                                                              177
+                                                                                              9
+                                                                                              27)
+                                                                                           (Loc
+                                                                                              178
+                                                                                              9
+                                                                                              28)))
                                                                                  ] :=>
                                                                                    TApp
                                                                                      (TApp
@@ -12609,7 +12643,10 @@
                                                                          "./ModuleA.mad")
                                                                       (TVar (TV 19 Star))
                                                                   ]
-                                                                  Nothing
+                                                                  (Just
+                                                                     (Area
+                                                                        (Loc 131 8 8)
+                                                                        (Loc 134 8 11)))
                                                               ] :=>
                                                                 TApp
                                                                   (TApp
@@ -12824,7 +12861,16 @@
                                                                                             Star)
                                                                                          "prelude"
                                                                                      ]
-                                                                                     Nothing
+                                                                                     (Just
+                                                                                        (Area
+                                                                                           (Loc
+                                                                                              145
+                                                                                              8
+                                                                                              22)
+                                                                                           (Loc
+                                                                                              146
+                                                                                              8
+                                                                                              23)))
                                                                                  ] :=>
                                                                                    TApp
                                                                                      (TApp
@@ -13006,7 +13052,10 @@
                                                                          "./ModuleA.mad")
                                                                       (TVar (TV 19 Star))
                                                                   ]
-                                                                  Nothing
+                                                                  (Just
+                                                                     (Area
+                                                                        (Loc 118 7 3)
+                                                                        (Loc 120 7 5)))
                                                               , IsIn
                                                                   "Applicative"
                                                                   [ TApp
@@ -13019,7 +13068,10 @@
                                                                          "./ModuleA.mad")
                                                                       (TVar (TV 19 Star))
                                                                   ]
-                                                                  Nothing
+                                                                  (Just
+                                                                     (Area
+                                                                        (Loc 118 7 3)
+                                                                        (Loc 120 7 5)))
                                                               ] :=>
                                                                 TApp
                                                                   (TApp

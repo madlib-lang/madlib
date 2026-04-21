@@ -60,7 +60,9 @@
                                (App
                                   (Typed
                                      ([ IsIn
-                                          "Inspect" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                          "Inspect"
+                                          [ TCon (TC "Integer" Star) "prelude" ]
+                                          (Just (Area (Loc 397 24 3) (Loc 404 24 10)))
                                       ] :=>
                                         TApp
                                           (TApp
@@ -631,7 +633,10 @@
                                                                          (TC "String" Star)
                                                                          "prelude"
                                                                      ]
-                                                                     Nothing
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 368 20 73)
+                                                                           (Loc 370 20 75)))
                                                                  ] :=>
                                                                    TApp
                                                                      (TApp
@@ -794,7 +799,14 @@
                                                                                         Star)
                                                                                      "prelude"
                                                                                  ]
-                                                                                 Nothing
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          354 20 59)
+                                                                                       (Loc
+                                                                                          356
+                                                                                          20
+                                                                                          61)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
@@ -996,7 +1008,16 @@
                                                                                                     Star)
                                                                                                  "prelude"
                                                                                              ]
-                                                                                             Nothing
+                                                                                             (Just
+                                                                                                (Area
+                                                                                                   (Loc
+                                                                                                      346
+                                                                                                      20
+                                                                                                      51)
+                                                                                                   (Loc
+                                                                                                      348
+                                                                                                      20
+                                                                                                      53)))
                                                                                          ] :=>
                                                                                            TApp
                                                                                              (TApp
@@ -1177,7 +1198,16 @@
                                                                                                                 Star)
                                                                                                              "prelude"
                                                                                                          ]
-                                                                                                         Nothing
+                                                                                                         (Just
+                                                                                                            (Area
+                                                                                                               (Loc
+                                                                                                                  332
+                                                                                                                  20
+                                                                                                                  37)
+                                                                                                               (Loc
+                                                                                                                  334
+                                                                                                                  20
+                                                                                                                  39)))
                                                                                                      ] :=>
                                                                                                        TApp
                                                                                                          (TApp
@@ -1325,7 +1355,16 @@
                                                                                                                 17
                                                                                                                 Star)
                                                                                                          ]
-                                                                                                         Nothing
+                                                                                                         (Just
+                                                                                                            (Area
+                                                                                                               (Loc
+                                                                                                                  335
+                                                                                                                  20
+                                                                                                                  40)
+                                                                                                               (Loc
+                                                                                                                  342
+                                                                                                                  20
+                                                                                                                  47)))
                                                                                                      ] :=>
                                                                                                        TApp
                                                                                                          (TApp
@@ -1522,7 +1561,14 @@
                                                                                  "Inspect"
                                                                                  [ TVar (TV 18 Star)
                                                                                  ]
-                                                                                 Nothing
+                                                                                 (Just
+                                                                                    (Area
+                                                                                       (Loc
+                                                                                          357 20 62)
+                                                                                       (Loc
+                                                                                          364
+                                                                                          20
+                                                                                          69)))
                                                                              ] :=>
                                                                                TApp
                                                                                  (TApp
