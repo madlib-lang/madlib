@@ -88,7 +88,16 @@
                                       (LStr "!")
                                   ])
                            , Typed
-                               ([] :=> TCon (TC "String" Star) "prelude")
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 107 5 20) (Loc 108 5 21)))
+                                , IsIn
+                                    "Comparable"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 111 5 24) (Loc 112 5 25)))
+                                ] :=>
+                                  TCon (TC "String" Star) "prelude")
                                (Area (Loc 90 5 3) (Loc 161 5 74))
                                (TemplateString
                                   [ Typed

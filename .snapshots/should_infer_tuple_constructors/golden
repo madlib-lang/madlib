@@ -50,7 +50,19 @@
                               (Area (Loc 50 4 1) (Loc 50 4 1))
                               "_")
                            [ Typed
-                               ([] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 17 2 3) (Loc 27 2 13)))
+                                , IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 17 2 3) (Loc 27 2 13)))
+                                , IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 17 2 3) (Loc 27 2 13)))
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TApp
@@ -85,7 +97,11 @@
                                       (LNum "3")
                                   ])
                            , Typed
-                               ([] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 30 3 3) (Loc 49 3 22)))
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TApp

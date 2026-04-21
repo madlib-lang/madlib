@@ -149,7 +149,12 @@
                               (Area (Loc 45 2 25) (Loc 45 2 25))
                               "_")
                            [ Typed
-                               ([] :=> TCon (TC "Integer" Star) "prelude")
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 41 2 21) (Loc 44 2 24)))
+                                ] :=>
+                                  TCon (TC "Integer" Star) "prelude")
                                (Area (Loc 36 2 16) (Loc 44 2 24))
                                (App
                                   (Typed

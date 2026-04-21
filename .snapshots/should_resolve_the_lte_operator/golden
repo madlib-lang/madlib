@@ -50,7 +50,16 @@
                               (Area (Loc 22 1 23) (Loc 22 1 23))
                               "_")
                            [ Typed
-                               ([] :=> TCon (TC "Boolean" Star) "prelude")
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 15 1 16) (Loc 21 1 22)))
+                                , IsIn
+                                    "Comparable"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 17 1 18) (Loc 19 1 20)))
+                                ] :=>
+                                  TCon (TC "Boolean" Star) "prelude")
                                (Area (Loc 15 1 16) (Loc 21 1 22))
                                (App
                                   (Typed

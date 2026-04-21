@@ -52,6 +52,10 @@
                            [ Typed
                                ([ IsIn
                                     "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 15 1 16) (Loc 29 1 30)))
+                                , IsIn
+                                    "Number"
                                     [ TRecord
                                         (fromList [ ( "x" , TCon (TC "Integer" Star) "prelude" ) ])
                                         (Just (TVar (TV 4 Star)))

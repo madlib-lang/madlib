@@ -58,7 +58,11 @@
                               (Area (Loc 173 14 1) (Loc 173 14 1))
                               "_")
                            [ Typed
-                               ([] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 160 12 23) (Loc 161 12 24)))
+                                ] :=>
                                   TRecord
                                     (fromList
                                        [ ( "x" , TCon (TC "Float" Star) "prelude" )

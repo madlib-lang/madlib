@@ -536,7 +536,15 @@
                                                ])
                                         ])))
                            , Typed
-                               ([] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 290 23 3) (Loc 314 23 27)))
+                                , IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 295 23 8) (Loc 298 23 11)))
+                                ] :=>
                                   TRecord
                                     (fromList
                                        [ ( "p" , TCon (TC "Integer" Star) "prelude" )
@@ -656,7 +664,19 @@
                                               ]))
                                         True)))
                            , Typed
-                               ([] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 317 24 3) (Loc 354 24 40)))
+                                , IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 317 24 3) (Loc 354 24 40)))
+                                , IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 327 24 13) (Loc 330 24 16)))
+                                ] :=>
                                   TRecord
                                     (fromList
                                        [ ( "p" , TCon (TC "Integer" Star) "prelude" )
@@ -890,7 +910,11 @@
                                                ))
                                         ])))
                            , Typed
-                               ([] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 357 25 3) (Loc 388 25 34)))
+                                ] :=>
                                   TRecord
                                     (fromList
                                        [ ( "g" , TCon (TC "Integer" Star) "prelude" )

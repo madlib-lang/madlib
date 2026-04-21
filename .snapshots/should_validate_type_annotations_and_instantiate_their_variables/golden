@@ -184,7 +184,11 @@
                               (Area (Loc 136 7 1) (Loc 136 7 1))
                               "_")
                            [ Typed
-                               ([] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 129 6 26) (Loc 130 6 27)))
+                                ] :=>
                                   TApp
                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
                                     (TApp

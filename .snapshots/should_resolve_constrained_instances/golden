@@ -50,7 +50,21 @@
                               (Area (Loc 501 29 1) (Loc 501 29 1))
                               "_")
                            [ Typed
-                               ([] :=> TCon (TC "String" Star) "prelude")
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 480 28 3) (Loc 500 28 23)))
+                                , IsIn
+                                    "Inspect"
+                                    [ TApp
+                                        (TApp
+                                           (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                           (TCon (TC "Integer" Star) "prelude"))
+                                        (TCon (TC "Boolean" Star) "prelude")
+                                    ]
+                                    (Just (Area (Loc 480 28 3) (Loc 487 28 10)))
+                                ] :=>
+                                  TCon (TC "String" Star) "prelude")
                                (Area (Loc 480 28 3) (Loc 500 28 23))
                                (App
                                   (Typed

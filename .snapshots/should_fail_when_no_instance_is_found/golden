@@ -51,6 +51,10 @@
                               "_")
                            [ Typed
                                ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 397 24 3) (Loc 407 24 13)))
+                                , IsIn
                                     "Inspect"
                                     [ TCon (TC "Integer" Star) "prelude" ]
                                     (Just (Area (Loc 397 24 3) (Loc 404 24 10)))

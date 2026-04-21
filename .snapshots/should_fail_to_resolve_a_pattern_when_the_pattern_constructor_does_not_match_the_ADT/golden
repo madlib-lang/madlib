@@ -59,7 +59,12 @@
                                      (Area (Loc 81 5 13) (Loc 85 5 17))
                                      (Var "Nope" True)))
                            , Typed
-                               ([] :=> TCon (TC "Integer" Star) "prelude")
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 88 6 3) (Loc 142 9 4)))
+                                ] :=>
+                                  TCon (TC "Integer" Star) "prelude")
                                (Area (Loc 88 6 3) (Loc 142 9 4))
                                (Where
                                   (Typed

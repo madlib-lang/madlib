@@ -57,7 +57,11 @@
                                (Area (Loc 17 2 3) (Loc 19 2 5))
                                (ListConstructor [])
                            , Typed
-                               ([] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 22 3 3) (Loc 31 3 12)))
+                                ] :=>
                                   TApp
                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
                                     (TCon (TC "Integer" Star) "prelude"))

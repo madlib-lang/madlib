@@ -50,7 +50,27 @@
                               (Area (Loc 173 11 51) (Loc 173 11 51))
                               "_")
                            [ Typed
-                               ([] :=> TCon (TC "Boolean" Star) "prelude")
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 138 11 16) (Loc 172 11 50)))
+                                , IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 138 11 16) (Loc 172 11 50)))
+                                , IsIn
+                                    "Eq"
+                                    [ TRecord
+                                        (fromList
+                                           [ ( "x" , TCon (TC "Integer" Star) "prelude" )
+                                           , ( "y" , TCon (TC "Integer" Star) "prelude" )
+                                           ])
+                                        Nothing
+                                        (fromList [])
+                                    ]
+                                    (Just (Area (Loc 153 11 31) (Loc 155 11 33)))
+                                ] :=>
+                                  TCon (TC "Boolean" Star) "prelude")
                                (Area (Loc 138 11 16) (Loc 172 11 50))
                                (App
                                   (Typed

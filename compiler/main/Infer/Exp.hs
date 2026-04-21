@@ -334,8 +334,8 @@ postProcessBody discardError options env s expType es = do
               `S.union` ftv resolvedExpT
               `S.union` ftvForLetGenSet resolvedT
 
-        ps'' <- resolveResidualPreds discardError env area fs ps'
-        e'   <- updateExpTypesWithCurrent options env False
+        ps'' <- resolveResidualPreds discardError resolvedEnv area fs ps'
+        e'   <- updateExpTypesWithCurrent options resolvedEnv False
                   (updateQualType expr (ps'' :=> t))
 
         return (e' : resultsRev)
@@ -347,9 +347,9 @@ postProcessBody discardError options env s expType es = do
     return (finalS, reverse esRev)
 
 
--- | Resolve an expression's residual predicates. Entailable predicates are
--- dropped. Ambiguous predicates trigger a second defaulting pass; anything
--- still unsolvable produces an 'AmbiguousType' at @area@.
+-- | Resolve an expression's residual predicates. We first normalize with the
+-- same reduction step used by 'split' and then, only if ambiguities remain,
+-- try the same defaulting/instance-resolution loop.
 resolveResidualPreds
   :: Bool              -- ^ discard errors
   -> Env
@@ -358,15 +358,12 @@ resolveResidualPreds
   -> [Pred]            -- ^ predicates already reflecting the current substitution
   -> Infer [Pred]
 resolveResidualPreds discardError env area fs ps = do
-  prep <- CM.forM ps $ \p -> (p,) <$> entail env [] p
-  let (solved, unsolved) = partition snd prep
-      unsolvedPs         = map fst unsolved
-      solvedPs           = map fst solved
+  psReduced <- reduce env (updateRecordUpdatePreds ps)
 
-  if null unsolvedPs || null (ambiguities fs unsolvedPs) then
+  if null (ambiguities fs psReduced) then
     return ps
   else do
-    (sDef, unsolvedAfter1)  <- tryDefaults env unsolvedPs
+    (sDef, unsolvedAfter1)  <- tryDefaults env psReduced
     extendSubst sDef
     unsolvedApplied         <- applyCurrentSubst unsolvedAfter1
     (sDef', unsolvedAfter2) <- tryDefaults env unsolvedApplied
@@ -375,7 +372,7 @@ resolveResidualPreds discardError env area fs ps = do
     when (not (null unsolvedAfter2) && not discardError) $
       reportUnsolvedBodyPreds env area fs unsolvedAfter2
 
-    return (unsolvedAfter2 ++ solvedPs)
+    return ps
 
 
 reportUnsolvedBodyPreds :: Env -> Area -> [TVar] -> [Pred] -> Infer ()
@@ -1254,26 +1251,23 @@ split mustCheck env fs gs ps = do
 
 
 tryDefaults :: Env -> [Pred] -> Infer (Substitution, [Pred])
-tryDefaults env ps = tryDefaults' env ps ps
+tryDefaults env ps = tryDefaults' env ps
   where
-    -- Helper that takes the original predicate list to check against
-    tryDefaults' :: Env -> [Pred] -> [Pred] -> Infer (Substitution, [Pred])
-    tryDefaults' env originalPs remainingPs = case remainingPs of
+    tryDefaults' :: Env -> [Pred] -> Infer (Substitution, [Pred])
+    tryDefaults' env remainingPs = case remainingPs of
       (p : next) -> case p of
         IsIn "Number" [TVar tv] _ -> do
-          (nextSubst, nextPS) <- tryDefaults' env originalPs next
+          (nextSubst, nextPS) <- tryDefaults' env next
           let s = M.singleton tv tInteger
           return (s `compose` nextSubst, nextPS)
 
         IsIn "Bits" [TVar tv] _ -> do
-          (nextSubst, nextPS) <- tryDefaults' env originalPs next
+          (nextSubst, nextPS) <- tryDefaults' env next
           let s = M.singleton tv tInteger
           return (s `compose` nextSubst, nextPS)
 
         IsIn interface [t] _ | interface == "Eq" || interface == "Show" -> do
-          (nextSubst, nextPS) <- tryDefaults' env originalPs next
-          
-          -- Get vars from type AFTER substitution to see what's left
+          (nextSubst, nextPS) <- tryDefaults' env next
           let substitutedVars = getTypeVarsInType (apply nextSubst t)
           
           if null substitutedVars || isTVar t then
@@ -1281,45 +1275,45 @@ tryDefaults env ps = tryDefaults' env ps ps
           else do
             let tvs = getTV <$> substitutedVars
             
-            -- Check ORIGINAL predicate list (all predicates) for Number/Bits constraints
+            -- Check the full predicate list for Number/Bits constraints on the
+            -- same type variable, so we only default to Unit when no numeric
+            -- default should apply.
             let hasNumberOrBitsConstraint tv = any
                   (\pred -> case pred of
                     IsIn "Number" [TVar tv'] _ -> tv == tv'
-                    IsIn "Bits" [TVar tv'] _ -> tv == tv'
-                    _ -> False
+                    IsIn "Bits" [TVar tv'] _   -> tv == tv'
+                    _                          -> False
                   )
-                  originalPs
+                  ps
             
-            -- Also check if already substituted to Integer
             let isAlreadyInteger tv = case M.lookup tv nextSubst of
                   Just ty | ty == tInteger -> True
-                  _ -> False
+                  _                        -> False
 
             let tvs' = filter (\tv -> not (M.member tv nextSubst) && (hasNumberOrBitsConstraint tv || isAlreadyInteger tv)) tvs
-
-            let tvsWithoutNumberOrBits = filter (\tv -> 
-                    not (M.member tv nextSubst) && 
-                    not (hasNumberOrBitsConstraint tv) &&
-                    not (isAlreadyInteger tv)
-                  ) tvs
+            let tvsWithoutNumberOrBits = filter
+                  (\tv ->
+                    not (M.member tv nextSubst)
+                    && not (hasNumberOrBitsConstraint tv)
+                    && not (isAlreadyInteger tv)
+                  )
+                  tvs
             
-            -- Don't default variables in complex types to Unit - they might get Number constraints
-            -- through instance resolution. Only default simple type variables.
+            -- Only default simple type variables to Unit; this avoids forcing
+            -- complex types into Unit when they still have useful structure.
             let isSimpleTypeVar = isTVar t
-            let shouldDefaultToUnit tv = isSimpleTypeVar && not (hasNumberOrBitsConstraint tv) && not (isAlreadyInteger tv)
-            
-            sList <- mapM (\tv ->
-                -- If it has Number/Bits in original, default to Integer
+                shouldDefaultToUnit tv = isSimpleTypeVar && not (hasNumberOrBitsConstraint tv) && not (isAlreadyInteger tv)
+
+            sList <- mapM
+              (\tv ->
                 if hasNumberOrBitsConstraint tv || isAlreadyInteger tv
                   then return (Just (tv, tInteger))
                   else if shouldDefaultToUnit tv
-                  then return (Just (tv, tUnit))
-                  else
-                    -- Don't create a substitution - leave it ambiguous for now
-                    return Nothing
-              ) (tvs' ++ tvsWithoutNumberOrBits)
+                    then return (Just (tv, tUnit))
+                    else return Nothing
+              )
+              (tvs' ++ tvsWithoutNumberOrBits)
             let s = M.fromList $ catMaybes sList
-            
             return (s `compose` nextSubst, nextPS)
 
         _ -> do
@@ -1327,12 +1321,12 @@ tryDefaults env ps = tryDefaults' env ps ps
           case maybeFound of
             Just (Instance (instancePreds :=> pred) _) -> do
               s                   <- unify pred p
-              (nextSubst, nextPS) <- tryDefaults' env originalPs (next ++ apply s instancePreds)
+              (nextSubst, nextPS) <- tryDefaults' env (next ++ apply s instancePreds)
               return (nextSubst, nextPS)
 
             Nothing -> do
               parentPreds <- getParentPredsOnly env p
-              (nextSubst, nextPS) <- tryDefaults' env originalPs (parentPreds ++ next)
+              (nextSubst, nextPS) <- tryDefaults' env (parentPreds ++ next)
               return (nextSubst, p : nextPS)
 
       [] ->

@@ -1397,7 +1397,11 @@
                                               Nothing
                                               (fromList [])))))
                             , Typed
-                                ([] :=>
+                                ([ IsIn
+                                     "Number"
+                                     [ TCon (TC "Integer" Star) "prelude" ]
+                                     (Just (Area (Loc 625 26 3) (Loc 702 29 4)))
+                                 ] :=>
                                    TApp
                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
                                      (TRecord
