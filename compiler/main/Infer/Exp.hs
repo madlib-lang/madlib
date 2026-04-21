@@ -283,7 +283,25 @@ inferBody discardError options env (e : es) = do
   return (finalS, apply finalS $ returnPreds ++ ps', tb, e' : eb)
 
 
--- TODO: find out and comment why we need this
+-- | Second pass over a body's expressions, run after 'inferBody' has produced
+-- a final substitution for the whole body.
+--
+-- Each expression was typed against the substitution known *at its point in
+-- the body*, so its stored qual-type still refers to type variables that
+-- later expressions constrained. This pass:
+--
+--   1. Applies the accumulated substitution (and any predicate-defaulting
+--      substitution) to every expression's qual-type via 'updateExpTypes'.
+--   2. Checks each expression's residual predicates. Anything still
+--      unresolvable here is an ambiguity local to this body — we try
+--      defaulting and, if the predicate is still unreducible, raise an
+--      'AmbiguousType' error pointing at the *specific* expression's area.
+--      (Without this, the error would bubble up to the enclosing abstraction
+--      and lose its precise source location.)
+--
+-- The enclosing 'split' / 'generalize' at the let-binding level still runs
+-- afterwards; this pass only handles ambiguities that are scoped strictly
+-- within the body.
 postProcessBody :: Bool -> Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
 postProcessBody discardError options env s expType es = do
   -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
