@@ -1346,10 +1346,6 @@
                                                 "Number"
                                                 [ TCon (TC "Integer" Star) "prelude" ]
                                                 Nothing
-                                            , IsIn
-                                                "Number"
-                                                [ TCon (TC "Integer" Star) "prelude" ]
-                                                Nothing
                                             ] :=>
                                               TCon (TC "Point" Star) "./ModuleA.mad")
                                            (Area (Loc 47 3 7) (Loc 63 3 23))
@@ -1375,10 +1371,6 @@
                                                  (Var "P.Point" True))
                                               (Typed
                                                  ([ IsIn
-                                                      "Number"
-                                                      [ TCon (TC "Integer" Star) "prelude" ]
-                                                      Nothing
-                                                  , IsIn
                                                       "Number"
                                                       [ TCon (TC "Integer" Star) "prelude" ]
                                                       Nothing

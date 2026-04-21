@@ -9,7 +9,9 @@
         ]
     , aexps =
         [ Typed
-            ([ IsIn "Number" [ TVar (TV 2 Star) ] Nothing ] :=>
+            ([ IsIn
+                 "Number" [ TVar (TV 2 Star) ] (Just (Area (Loc 0 1 1) (Loc 5 1 6)))
+             ] :=>
                TVar (TV 2 Star))
             (Area (Loc 0 1 1) (Loc 5 1 6))
             (Assignment
@@ -56,7 +58,9 @@
                         (Area (Loc 37 5 1) (Loc 37 5 1))
                         "_")
                      [ Typed
-                         ([ IsIn "Number" [ TVar (TV 6 Star) ] Nothing ] :=>
+                         ([ IsIn
+                              "Number" [ TVar (TV 6 Star) ] (Just (Area (Loc 0 1 1) (Loc 5 1 6)))
+                          ] :=>
                             TVar (TV 6 Star))
                          (Area (Loc 20 3 3) (Loc 25 3 8))
                          (Assignment
@@ -67,7 +71,9 @@
                                (Area (Loc 24 3 7) (Loc 25 3 8))
                                (LNum "2")))
                      , Typed
-                         ([ IsIn "Number" [ TVar (TV 6 Star) ] Nothing ] :=>
+                         ([ IsIn
+                              "Number" [ TVar (TV 6 Star) ] (Just (Area (Loc 0 1 1) (Loc 5 1 6)))
+                          ] :=>
                             TVar (TV 6 Star))
                          (Area (Loc 35 4 10) (Loc 36 4 11))
                          (Var "a" False)

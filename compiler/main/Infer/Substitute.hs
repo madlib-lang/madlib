@@ -199,6 +199,12 @@ withSubstRestore action = do
   putSubst saved
   return result
 
+
+-- | Run @action@ with the substitution reset to identity, then restore the
+-- caller's substitution afterwards.
+withFreshSubst :: Infer a -> Infer a
+withFreshSubst action = withSubstRestore (putSubst nullSubst >> action)
+
 merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext
   where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (S.toList (M.keysSet s1 `S.intersection` M.keysSet s2))

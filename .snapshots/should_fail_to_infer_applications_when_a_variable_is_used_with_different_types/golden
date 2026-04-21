@@ -648,7 +648,11 @@
                           (TApp (TCon (TC "List" (Kfun Star Star)) "prelude") (TGen 0)))
                        (TCon (TC "Integer" Star) "prelude"))))
         , Typed
-            ([ IsIn "Number" [ TVar (TV 33 Star) ] Nothing ] :=>
+            ([ IsIn
+                 "Number"
+                 [ TVar (TV 33 Star) ]
+                 (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
+             ] :=>
                TVar (TV 33 Star))
             (Area (Loc 716 35 1) (Loc 763 38 5))
             (Assignment
@@ -658,13 +662,6 @@
                        "Number"
                        [ TVar (TV 33 Star) ]
                        (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                   , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
-                   , IsIn
-                       "Number"
-                       [ TVar (TV 33 Star) ]
-                       (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                   , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
-                   , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                    ] :=>
                      TVar (TV 33 Star))
                   (Area (Loc 722 35 7) (Loc 763 38 5))
@@ -674,12 +671,6 @@
                              "Number"
                              [ TVar (TV 33 Star) ]
                              (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                         , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
-                         , IsIn
-                             "Number"
-                             [ TVar (TV 33 Star) ]
-                             (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                         , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                          ] :=>
                            TApp
                              (TApp
@@ -693,12 +684,6 @@
                                    "Number"
                                    [ TVar (TV 33 Star) ]
                                    (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                               , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
-                               , IsIn
-                                   "Number"
-                                   [ TVar (TV 33 Star) ]
-                                   (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                               , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                ] :=>
                                  TVar (TV 33 Star))
                               (Area (Loc 722 35 7) (Loc 725 35 10))
@@ -708,12 +693,6 @@
                                     "Number"
                                     [ TVar (TV 33 Star) ]
                                     (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                                , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
-                                , IsIn
-                                    "Number"
-                                    [ TVar (TV 33 Star) ]
-                                    (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                                , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                 ] :=>
                                   TVar (TV 33 Star))
                                (Area (Loc 722 35 7) (Loc 758 37 15))
@@ -723,7 +702,6 @@
                                           "Number"
                                           [ TVar (TV 33 Star) ]
                                           (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                                      , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                       ] :=>
                                         TApp
                                           (TApp
@@ -738,7 +716,6 @@
                                                 "Number"
                                                 [ TVar (TV 33 Star) ]
                                                 (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                                            , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                             ] :=>
                                               TVar (TV 33 Star))
                                            (Area (Loc 747 37 4) (Loc 748 37 5))
@@ -748,7 +725,6 @@
                                                  "Number"
                                                  [ TVar (TV 33 Star) ]
                                                  (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                                             , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                              ] :=>
                                                TVar (TV 33 Star))
                                             (Area (Loc 753 37 10) (Loc 758 37 15))
@@ -814,7 +790,6 @@
                                                        "Number"
                                                        [ TVar (TV 33 Star) ]
                                                        (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                                                   , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                                    ] :=>
                                                      TVar (TV 33 Star))
                                                   (Area (Loc 757 37 14) (Loc 758 37 15))
@@ -826,12 +801,6 @@
                                           "Number"
                                           [ TVar (TV 33 Star) ]
                                           (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                                      , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
-                                      , IsIn
-                                          "Number"
-                                          [ TVar (TV 33 Star) ]
-                                          (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                                      , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                       ] :=>
                                         TVar (TV 33 Star))
                                      (Area (Loc 722 35 7) (Loc 742 36 15))
@@ -841,7 +810,6 @@
                                                 "Number"
                                                 [ TVar (TV 33 Star) ]
                                                 (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                                            , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                             ] :=>
                                               TApp
                                                 (TApp
@@ -857,7 +825,6 @@
                                                       "Number"
                                                       [ TVar (TV 33 Star) ]
                                                       (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                                                  , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                                   ] :=>
                                                     TVar (TV 33 Star))
                                                  (Area (Loc 731 36 4) (Loc 732 36 5))
@@ -867,7 +834,6 @@
                                                        "Number"
                                                        [ TVar (TV 33 Star) ]
                                                        (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                                                   , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                                    ] :=>
                                                      TVar (TV 33 Star))
                                                   (Area (Loc 737 36 10) (Loc 742 36 15))
@@ -943,8 +909,6 @@
                                                              (Just
                                                                 (Area
                                                                    (Loc 739 36 12) (Loc 740 36 13)))
-                                                         , IsIn
-                                                             "Number" [ TVar (TV 33 Star) ] Nothing
                                                          ] :=>
                                                            TVar (TV 33 Star))
                                                         (Area (Loc 741 36 14) (Loc 742 36 15))
@@ -956,7 +920,6 @@
                                                 "Number"
                                                 [ TVar (TV 33 Star) ]
                                                 (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                                            , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                                             ] :=>
                                               TVar (TV 33 Star))
                                            (Area (Loc 722 35 7) (Loc 725 35 10))
@@ -969,13 +932,6 @@
                              "Number"
                              [ TVar (TV 33 Star) ]
                              (Just (Area (Loc 755 37 12) (Loc 756 37 13)))
-                         , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
-                         , IsIn
-                             "Number"
-                             [ TVar (TV 33 Star) ]
-                             (Just (Area (Loc 739 36 12) (Loc 740 36 13)))
-                         , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
-                         , IsIn "Number" [ TVar (TV 33 Star) ] Nothing
                          ] :=>
                            TVar (TV 33 Star))
                         (Area (Loc 761 38 3) (Loc 762 38 4))
@@ -9180,14 +9136,6 @@
                                        , IsIn
                                            "Show"
                                            [ TVar (TV 189 Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"

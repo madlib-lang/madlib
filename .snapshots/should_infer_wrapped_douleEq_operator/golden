@@ -19,7 +19,6 @@
                        [ TCon (TC "Integer" Star) "prelude" ]
                        (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
                    , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    ] :=>
                      TCon (TC "Boolean" Star) "prelude")
                   (Area (Loc 4 1 5) (Loc 29 1 30))
@@ -182,7 +181,6 @@
                              "Eq"
                              [ TCon (TC "Integer" Star) "prelude" ]
                              (Just (Area (Loc 18 1 19) (Loc 20 1 21)))
-                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                          , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                          ] :=>
                            TCon (TC "Integer" Star) "prelude")

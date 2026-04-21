@@ -9,7 +9,11 @@
         ]
     , aexps =
         [ Typed
-            ([ IsIn "Number" [ TVar (TV 2 Star) ] Nothing ] :=>
+            ([ IsIn
+                 "Number"
+                 [ TVar (TV 2 Star) ]
+                 (Just (Area (Loc 13 1 14) (Loc 14 1 15)))
+             ] :=>
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -23,7 +27,6 @@
                        "Number"
                        [ TVar (TV 2 Star) ]
                        (Just (Area (Loc 13 1 14) (Loc 14 1 15)))
-                   , IsIn "Number" [ TVar (TV 2 Star) ] Nothing
                    ] :=>
                      TApp
                        (TApp
@@ -37,7 +40,6 @@
                              "Number"
                              [ TVar (TV 2 Star) ]
                              (Just (Area (Loc 13 1 14) (Loc 14 1 15)))
-                         , IsIn "Number" [ TVar (TV 2 Star) ] Nothing
                          ] :=>
                            TVar (TV 2 Star))
                         (Area (Loc 5 1 6) (Loc 6 1 7))
@@ -47,7 +49,6 @@
                               "Number"
                               [ TVar (TV 2 Star) ]
                               (Just (Area (Loc 13 1 14) (Loc 14 1 15)))
-                          , IsIn "Number" [ TVar (TV 2 Star) ] Nothing
                           ] :=>
                             TVar (TV 2 Star))
                          (Area (Loc 11 1 12) (Loc 16 1 17))
@@ -100,7 +101,6 @@
                                     "Number"
                                     [ TVar (TV 2 Star) ]
                                     (Just (Area (Loc 13 1 14) (Loc 14 1 15)))
-                                , IsIn "Number" [ TVar (TV 2 Star) ] Nothing
                                 ] :=>
                                   TVar (TV 2 Star))
                                (Area (Loc 15 1 16) (Loc 16 1 17))
@@ -149,7 +149,11 @@
                               (Area (Loc 52 4 1) (Loc 52 4 1))
                               "_")
                            [ Typed
-                               ([ IsIn "Number" [ TVar (TV 10 Star) ] Nothing ] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TVar (TV 10 Star) ]
+                                    (Just (Area (Loc 34 3 3) (Loc 35 3 4)))
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -158,7 +162,11 @@
                                (Area (Loc 34 3 3) (Loc 51 3 20))
                                (Mutate
                                   (Typed
-                                     ([ IsIn "Number" [ TVar (TV 10 Star) ] Nothing ] :=>
+                                     ([ IsIn
+                                          "Number"
+                                          [ TVar (TV 10 Star) ]
+                                          (Just (Area (Loc 13 1 14) (Loc 14 1 15)))
+                                      ] :=>
                                         TApp
                                           (TApp
                                              (TCon
@@ -172,7 +180,6 @@
                                           "Number"
                                           [ TVar (TV 10 Star) ]
                                           (Just (Area (Loc 48 3 17) (Loc 49 3 18)))
-                                      , IsIn "Number" [ TVar (TV 10 Star) ] Nothing
                                       ] :=>
                                         TApp
                                           (TApp
@@ -187,7 +194,6 @@
                                                 "Number"
                                                 [ TVar (TV 10 Star) ]
                                                 (Just (Area (Loc 48 3 17) (Loc 49 3 18)))
-                                            , IsIn "Number" [ TVar (TV 10 Star) ] Nothing
                                             ] :=>
                                               TVar (TV 10 Star))
                                            (Area (Loc 40 3 9) (Loc 41 3 10))
@@ -197,7 +203,6 @@
                                                  "Number"
                                                  [ TVar (TV 10 Star) ]
                                                  (Just (Area (Loc 48 3 17) (Loc 49 3 18)))
-                                             , IsIn "Number" [ TVar (TV 10 Star) ] Nothing
                                              ] :=>
                                                TVar (TV 10 Star))
                                             (Area (Loc 46 3 15) (Loc 51 3 20))
@@ -261,7 +266,6 @@
                                                        "Number"
                                                        [ TVar (TV 10 Star) ]
                                                        (Just (Area (Loc 48 3 17) (Loc 49 3 18)))
-                                                   , IsIn "Number" [ TVar (TV 10 Star) ] Nothing
                                                    ] :=>
                                                      TVar (TV 10 Star))
                                                   (Area (Loc 50 3 19) (Loc 51 3 20))

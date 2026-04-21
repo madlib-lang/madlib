@@ -74,7 +74,6 @@
                                           "Number"
                                           [ TCon (TC "Integer" Star) "prelude" ]
                                           (Just (Area (Loc 160 12 23) (Loc 161 12 24)))
-                                      , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       ] :=>
                                         TRecord
                                           (fromList
@@ -100,10 +99,6 @@
                                                  "Number"
                                                  [ TCon (TC "Integer" Star) "prelude" ]
                                                  (Just (Area (Loc 160 12 23) (Loc 161 12 24)))
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Integer" Star) "prelude" ]
-                                                 Nothing
                                              ] :=>
                                                TCon (TC "Integer" Star) "prelude")
                                             (Area (Loc 157 12 20) (Loc 164 12 27))
@@ -115,10 +110,6 @@
                                                         [ TCon (TC "Integer" Star) "prelude" ]
                                                         (Just
                                                            (Area (Loc 160 12 23) (Loc 161 12 24)))
-                                                    , IsIn
-                                                        "Number"
-                                                        [ TCon (TC "Integer" Star) "prelude" ]
-                                                        Nothing
                                                     ] :=>
                                                       TCon (TC "Integer" Star) "prelude")
                                                    (Area (Loc 160 12 23) (Loc 164 12 27))
@@ -152,10 +143,6 @@
                                                                  (Area
                                                                     (Loc 160 12 23)
                                                                     (Loc 161 12 24)))
-                                                          , IsIn
-                                                              "Number"
-                                                              [ TCon (TC "Integer" Star) "prelude" ]
-                                                              Nothing
                                                           ] :=>
                                                             TCon (TC "Integer" Star) "prelude")
                                                          (Area (Loc 161 12 24) (Loc 164 12 27))
@@ -168,7 +155,10 @@
                                (Area (Loc 169 13 3) (Loc 172 13 6))
                                (Access
                                   (Typed
-                                     ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                     ([ IsIn
+                                          "Number"
+                                          [ TCon (TC "Integer" Star) "prelude" ]
+                                          (Just (Area (Loc 160 12 23) (Loc 161 12 24)))
                                       ] :=>
                                         TRecord
                                           (fromList
@@ -1030,14 +1020,6 @@
                                        , IsIn
                                            "Show"
                                            [ TVar (TV 45 Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"

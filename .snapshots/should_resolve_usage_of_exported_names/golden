@@ -9,7 +9,11 @@
         ]
     , aexps =
         [ Typed
-            ([ IsIn "Number" [ TVar (TV 2 Star) ] Nothing ] :=>
+            ([ IsIn
+                 "Number"
+                 [ TVar (TV 2 Star) ]
+                 (Just (Area (Loc 22 1 23) (Loc 23 1 24)))
+             ] :=>
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -22,7 +26,6 @@
                        "Number"
                        [ TVar (TV 2 Star) ]
                        (Just (Area (Loc 22 1 23) (Loc 23 1 24)))
-                   , IsIn "Number" [ TVar (TV 2 Star) ] Nothing
                    ] :=>
                      TApp
                        (TApp
@@ -37,7 +40,6 @@
                              "Number"
                              [ TVar (TV 2 Star) ]
                              (Just (Area (Loc 22 1 23) (Loc 23 1 24)))
-                         , IsIn "Number" [ TVar (TV 2 Star) ] Nothing
                          ] :=>
                            TApp
                              (TApp
@@ -51,7 +53,6 @@
                                    "Number"
                                    [ TVar (TV 2 Star) ]
                                    (Just (Area (Loc 22 1 23) (Loc 23 1 24)))
-                               , IsIn "Number" [ TVar (TV 2 Star) ] Nothing
                                ] :=>
                                  TVar (TV 2 Star))
                               (Area (Loc 14 1 15) (Loc 15 1 16))
@@ -61,7 +62,6 @@
                                     "Number"
                                     [ TVar (TV 2 Star) ]
                                     (Just (Area (Loc 22 1 23) (Loc 23 1 24)))
-                                , IsIn "Number" [ TVar (TV 2 Star) ] Nothing
                                 ] :=>
                                   TVar (TV 2 Star))
                                (Area (Loc 20 1 21) (Loc 25 1 26))
@@ -116,7 +116,6 @@
                                           "Number"
                                           [ TVar (TV 2 Star) ]
                                           (Just (Area (Loc 22 1 23) (Loc 23 1 24)))
-                                      , IsIn "Number" [ TVar (TV 2 Star) ] Nothing
                                       ] :=>
                                         TVar (TV 2 Star))
                                      (Area (Loc 24 1 25) (Loc 25 1 26))
@@ -187,7 +186,6 @@
                                           "Number"
                                           [ TCon (TC "Integer" Star) "prelude" ]
                                           (Just (Area (Loc 41 2 16) (Loc 44 2 19)))
-                                      , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       ] :=>
                                         TCon (TC "Integer" Star) "prelude")
                                      (Area (Loc 45 2 20) (Loc 46 2 21))

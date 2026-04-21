@@ -336,7 +336,11 @@
                                                ])
                                         ])))
                            , Typed
-                               ([ IsIn "Number" [ TVar (TV 19 Star) ] Nothing ] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TVar (TV 19 Star) ]
+                                    (Just (Area (Loc 217 19 3) (Loc 246 19 32)))
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -549,7 +553,6 @@
                                           [ TCon (TC "Integer" Star) "prelude" ]
                                           (Just (Area (Loc 295 23 8) (Loc 298 23 11)))
                                       , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                                      , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       ] :=>
                                         TRecord
                                           (fromList
@@ -596,10 +599,6 @@
                                                 "Number"
                                                 [ TCon (TC "Integer" Star) "prelude" ]
                                                 (Just (Area (Loc 295 23 8) (Loc 298 23 11)))
-                                            , IsIn
-                                                "Number"
-                                                [ TCon (TC "Integer" Star) "prelude" ]
-                                                Nothing
                                             , IsIn
                                                 "Number"
                                                 [ TCon (TC "Integer" Star) "prelude" ]
@@ -676,7 +675,6 @@
                                           (Just (Area (Loc 327 24 13) (Loc 330 24 16)))
                                       , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                                      , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       ] :=>
                                         TRecord
                                           (fromList
@@ -697,10 +695,6 @@
                                                  "Number"
                                                  [ TCon (TC "Integer" Star) "prelude" ]
                                                  Nothing
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Integer" Star) "prelude" ]
-                                                 Nothing
                                              ] :=>
                                                TRecord
                                                  (fromList
@@ -716,10 +710,6 @@
                                                        "Number"
                                                        [ TCon (TC "Integer" Star) "prelude" ]
                                                        (Just (Area (Loc 327 24 13) (Loc 330 24 16)))
-                                                   , IsIn
-                                                       "Number"
-                                                       [ TCon (TC "Integer" Star) "prelude" ]
-                                                       Nothing
                                                    , IsIn
                                                        "Number"
                                                        [ TCon (TC "Integer" Star) "prelude" ]
@@ -792,10 +782,6 @@
                                                              (Just
                                                                 (Area
                                                                    (Loc 327 24 13) (Loc 330 24 16)))
-                                                         , IsIn
-                                                             "Number"
-                                                             [ TCon (TC "Integer" Star) "prelude" ]
-                                                             Nothing
                                                          , IsIn
                                                              "Number"
                                                              [ TCon (TC "Integer" Star) "prelude" ]
@@ -1056,7 +1042,11 @@
                                            (LChar '5'))
                                         True)))
                            , Typed
-                               ([ IsIn "Number" [ TVar (TV 51 Star) ] Nothing ] :=>
+                               ([ IsIn
+                                    "Number"
+                                    [ TVar (TV 51 Star) ]
+                                    (Just (Area (Loc 434 29 12) (Loc 435 29 13)))
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -1089,7 +1079,6 @@
                                           "Number"
                                           [ TVar (TV 51 Star) ]
                                           (Just (Area (Loc 434 29 12) (Loc 435 29 13)))
-                                      , IsIn "Number" [ TVar (TV 51 Star) ] Nothing
                                       ] :=>
                                         TApp
                                           (TApp
@@ -1125,7 +1114,6 @@
                                                 "Number"
                                                 [ TVar (TV 51 Star) ]
                                                 (Just (Area (Loc 434 29 12) (Loc 435 29 13)))
-                                            , IsIn "Number" [ TVar (TV 51 Star) ] Nothing
                                             ] :=>
                                               TRecord
                                                 (fromList [ ( "x" , TVar (TV 51 Star) ) ])
@@ -1138,7 +1126,6 @@
                                                  "Number"
                                                  [ TVar (TV 51 Star) ]
                                                  (Just (Area (Loc 434 29 12) (Loc 435 29 13)))
-                                             , IsIn "Number" [ TVar (TV 51 Star) ] Nothing
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -1168,7 +1155,6 @@
                                                        "Number"
                                                        [ TVar (TV 51 Star) ]
                                                        (Just (Area (Loc 434 29 12) (Loc 435 29 13)))
-                                                   , IsIn "Number" [ TVar (TV 51 Star) ] Nothing
                                                    ] :=>
                                                      TRecord
                                                        (fromList
@@ -1187,7 +1173,6 @@
                                                         [ TVar (TV 51 Star) ]
                                                         (Just
                                                            (Area (Loc 434 29 12) (Loc 435 29 13)))
-                                                    , IsIn "Number" [ TVar (TV 51 Star) ] Nothing
                                                     ] :=>
                                                       TRecord
                                                         (fromList
@@ -1239,10 +1224,6 @@
                                                                   (Area
                                                                      (Loc 434 29 12)
                                                                      (Loc 435 29 13)))
-                                                           , IsIn
-                                                               "Number"
-                                                               [ TVar (TV 51 Star) ]
-                                                               Nothing
                                                            ] :=>
                                                              TVar (TV 51 Star))
                                                           (Area (Loc 427 29 5) (Loc 437 29 15))
@@ -1256,10 +1237,6 @@
                                                                          (Area
                                                                             (Loc 434 29 12)
                                                                             (Loc 435 29 13)))
-                                                                  , IsIn
-                                                                      "Number"
-                                                                      [ TVar (TV 51 Star) ]
-                                                                      Nothing
                                                                   ] :=>
                                                                     TVar (TV 51 Star))
                                                                  (Area
@@ -1440,10 +1417,6 @@
                                                                                (Area
                                                                                   (Loc 434 29 12)
                                                                                   (Loc 435 29 13)))
-                                                                        , IsIn
-                                                                            "Number"
-                                                                            [ TVar (TV 51 Star) ]
-                                                                            Nothing
                                                                         ] :=>
                                                                           TVar (TV 51 Star))
                                                                        (Area
@@ -3892,14 +3865,6 @@
                                            [ TVar (TV 263 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 271 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -4620,24 +4585,8 @@
                                            [ TVar (TV 295 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 303 Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
@@ -6788,14 +6737,6 @@
                                            [ TVar (TV 127 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 135 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -7256,14 +7197,6 @@
                                        , IsIn
                                            "Show"
                                            [ TVar (TV 148 Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"

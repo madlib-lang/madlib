@@ -57,7 +57,7 @@
                                         (Just (TVar (TV 4 Star)))
                                         (fromList [])
                                     ]
-                                    Nothing
+                                    (Just (Area (Loc 15 1 16) (Loc 29 1 30)))
                                 ] :=>
                                   TRecord
                                     (fromList [ ( "x" , TCon (TC "Integer" Star) "prelude" ) ])
@@ -782,7 +782,7 @@
                    (Just (TVar (TV 4 Star)))
                    (fromList [])
                ]
-               Nothing
+               (Just (Area (Loc 15 1 16) (Loc 29 1 30)))
            ]
          ))
       Context

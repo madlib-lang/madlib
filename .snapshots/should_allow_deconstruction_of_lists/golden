@@ -19,11 +19,6 @@
                (Typed
                   ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                    ] :=>
                      TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
@@ -32,10 +27,6 @@
                   (Where
                      (Typed
                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                          ] :=>
                            TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")

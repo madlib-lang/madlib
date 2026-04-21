@@ -560,7 +560,10 @@
             (Assignment
                "drawShadows"
                (Typed
-                  ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                  ([ IsIn
+                       "Number"
+                       [ TCon (TC "Integer" Star) "prelude" ]
+                       (Just (Area (Loc 839 34 22) (Loc 844 34 27)))
                    ] :=>
                      TApp
                        (TApp
@@ -580,13 +583,19 @@
                   (Area (Loc 353 16 15) (Loc 864 36 2))
                   (Abs
                      (Typed
-                        ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                        ([ IsIn
+                             "Number"
+                             [ TCon (TC "Integer" Star) "prelude" ]
+                             (Just (Area (Loc 839 34 22) (Loc 844 34 27)))
                          ] :=>
                            TVar (TV 86 Star))
                         (Area (Loc 354 16 16) (Loc 360 16 22))
                         "shader")
                      [ Typed
-                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                         ([ IsIn
+                              "Number"
+                              [ TCon (TC "Integer" Star) "prelude" ]
+                              (Just (Area (Loc 839 34 22) (Loc 844 34 27)))
                           ] :=>
                             TApp
                               (TApp
@@ -602,7 +611,10 @@
                          (Area (Loc 353 16 15) (Loc 864 36 2))
                          (Abs
                             (Typed
-                               ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 839 34 22) (Loc 844 34 27)))
                                 ] :=>
                                   TRecord
                                     (fromList
@@ -614,8 +626,14 @@
                                (Area (Loc 362 16 24) (Loc 375 16 37))
                                "lightPosition")
                             [ Typed
-                                ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                                 , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
+                                ([ IsIn
+                                     "Number"
+                                     [ TCon (TC "Float" Star) "prelude" ]
+                                     (Just (Area (Loc 384 17 3) (Loc 510 22 5)))
+                                 , IsIn
+                                     "Number"
+                                     [ TCon (TC "Float" Star) "prelude" ]
+                                     (Just (Area (Loc 384 17 3) (Loc 510 22 5)))
                                  ] :=>
                                    TApp
                                      (TCon (TC "Array" (Kfun Star Star)) "prelude")
@@ -631,12 +649,6 @@
                                    "casterPoints"
                                    (Typed
                                       ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                                       , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                                       , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                                       , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                                       , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                                       , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                                       , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
                                        , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
                                        ] :=>
                                          TApp
@@ -687,30 +699,6 @@
                                             (Var "fromList" False))
                                          (Typed
                                             ([ IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Float" Star) "prelude" ]
-                                                 Nothing
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Float" Star) "prelude" ]
-                                                 Nothing
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Float" Star) "prelude" ]
-                                                 Nothing
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Float" Star) "prelude" ]
-                                                 Nothing
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Float" Star) "prelude" ]
-                                                 Nothing
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Float" Star) "prelude" ]
-                                                 Nothing
-                                             , IsIn
                                                  "Number"
                                                  [ TCon (TC "Float" Star) "prelude" ]
                                                  Nothing
@@ -1186,10 +1174,6 @@
                                            "Number"
                                            [ TCon (TC "Float" Star) "prelude" ]
                                            (Just (Area (Loc 609 25 49) (Loc 621 25 61)))
-                                       , IsIn
-                                           "Number"
-                                           [ TCon (TC "Float" Star) "prelude" ]
-                                           (Just (Area (Loc 609 25 49) (Loc 621 25 61)))
                                        ] :=>
                                          TApp
                                            (TCon (TC "Array" (Kfun Star Star)) "prelude")
@@ -1205,10 +1189,6 @@
                                          "backPoints"
                                          (Typed
                                             ([ IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Float" Star) "prelude" ]
-                                                 (Just (Area (Loc 609 25 49) (Loc 621 25 61)))
-                                             , IsIn
                                                  "Number"
                                                  [ TCon (TC "Float" Star) "prelude" ]
                                                  (Just (Area (Loc 609 25 49) (Loc 621 25 61)))
@@ -1358,10 +1338,6 @@
                                                      False))
                                                (Typed
                                                   ([ IsIn
-                                                       "Number"
-                                                       [ TCon (TC "Float" Star) "prelude" ]
-                                                       (Just (Area (Loc 609 25 49) (Loc 621 25 61)))
-                                                   , IsIn
                                                        "Number"
                                                        [ TCon (TC "Float" Star) "prelude" ]
                                                        (Just (Area (Loc 609 25 49) (Loc 621 25 61)))
@@ -1816,10 +1792,6 @@
                                            "Number"
                                            [ TCon (TC "Integer" Star) "prelude" ]
                                            (Just (Area (Loc 839 34 22) (Loc 844 34 27)))
-                                       , IsIn
-                                           "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                                       , IsIn
-                                           "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                        ] :=>
                                          TApp
                                            (TCon (TC "Array" (Kfun Star Star)) "prelude")
@@ -1838,14 +1810,6 @@
                                                  "Number"
                                                  [ TCon (TC "Integer" Star) "prelude" ]
                                                  (Just (Area (Loc 839 34 22) (Loc 844 34 27)))
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Integer" Star) "prelude" ]
-                                                 Nothing
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Integer" Star) "prelude" ]
-                                                 Nothing
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -1889,14 +1853,6 @@
                                                        "Number"
                                                        [ TCon (TC "Integer" Star) "prelude" ]
                                                        (Just (Area (Loc 839 34 22) (Loc 844 34 27)))
-                                                   , IsIn
-                                                       "Number"
-                                                       [ TCon (TC "Integer" Star) "prelude" ]
-                                                       Nothing
-                                                   , IsIn
-                                                       "Number"
-                                                       [ TCon (TC "Integer" Star) "prelude" ]
-                                                       Nothing
                                                    ] :=>
                                                      TApp
                                                        (TCon
@@ -1920,14 +1876,6 @@
                                                         [ TCon (TC "Integer" Star) "prelude" ]
                                                         (Just
                                                            (Area (Loc 839 34 22) (Loc 844 34 27)))
-                                                    , IsIn
-                                                        "Number"
-                                                        [ TCon (TC "Integer" Star) "prelude" ]
-                                                        Nothing
-                                                    , IsIn
-                                                        "Number"
-                                                        [ TCon (TC "Integer" Star) "prelude" ]
-                                                        Nothing
                                                     ] :=>
                                                       TApp
                                                         (TCon
@@ -2553,14 +2501,6 @@
                                                                  (Area
                                                                     (Loc 839 34 22)
                                                                     (Loc 844 34 27)))
-                                                          , IsIn
-                                                              "Number"
-                                                              [ TCon (TC "Integer" Star) "prelude" ]
-                                                              Nothing
-                                                          , IsIn
-                                                              "Number"
-                                                              [ TCon (TC "Integer" Star) "prelude" ]
-                                                              Nothing
                                                           ] :=>
                                                             TApp
                                                               (TCon
@@ -2669,13 +2609,6 @@
                                                                         "prelude"
                                                                     ]
                                                                     Nothing
-                                                                , IsIn
-                                                                    "Number"
-                                                                    [ TCon
-                                                                        (TC "Integer" Star)
-                                                                        "prelude"
-                                                                    ]
-                                                                    Nothing
                                                                 ] :=>
                                                                   TApp
                                                                     (TCon
@@ -2706,13 +2639,6 @@
                                                                (App
                                                                   (Typed
                                                                      ([ IsIn
-                                                                          "Number"
-                                                                          [ TCon
-                                                                              (TC "Integer" Star)
-                                                                              "prelude"
-                                                                          ]
-                                                                          Nothing
-                                                                      , IsIn
                                                                           "Number"
                                                                           [ TCon
                                                                               (TC "Integer" Star)
@@ -2960,15 +2886,6 @@
                                                                                     "prelude"
                                                                                 ]
                                                                                 Nothing
-                                                                            , IsIn
-                                                                                "Number"
-                                                                                [ TCon
-                                                                                    (TC
-                                                                                       "Integer"
-                                                                                       Star)
-                                                                                    "prelude"
-                                                                                ]
-                                                                                Nothing
                                                                             ] :=>
                                                                               TApp
                                                                                 (TApp
@@ -3042,15 +2959,6 @@
                                                                            (Abs
                                                                               (Typed
                                                                                  ([ IsIn
-                                                                                      "Number"
-                                                                                      [ TCon
-                                                                                          (TC
-                                                                                             "Integer"
-                                                                                             Star)
-                                                                                          "prelude"
-                                                                                      ]
-                                                                                      Nothing
-                                                                                  , IsIn
                                                                                       "Number"
                                                                                       [ TCon
                                                                                           (TC
@@ -3938,13 +3846,6 @@
                                                                               "prelude"
                                                                           ]
                                                                           Nothing
-                                                                      , IsIn
-                                                                          "Number"
-                                                                          [ TCon
-                                                                              (TC "Integer" Star)
-                                                                              "prelude"
-                                                                          ]
-                                                                          Nothing
                                                                       ] :=>
                                                                         TApp
                                                                           (TCon
@@ -4090,14 +3991,6 @@
                                                  "Number"
                                                  [ TCon (TC "Integer" Star) "prelude" ]
                                                  (Just (Area (Loc 839 34 22) (Loc 844 34 27)))
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Integer" Star) "prelude" ]
-                                                 Nothing
-                                             , IsIn
-                                                 "Number"
-                                                 [ TCon (TC "Integer" Star) "prelude" ]
-                                                 Nothing
                                              ] :=>
                                                TApp
                                                  (TCon (TC "Array" (Kfun Star Star)) "prelude")
@@ -6220,14 +6113,6 @@
                                            [ TVar (TV 228 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 236 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -6695,24 +6580,8 @@
                                            [ TVar (TV 249 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 257 Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"

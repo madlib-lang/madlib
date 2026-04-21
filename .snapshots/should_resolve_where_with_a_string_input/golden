@@ -9,17 +9,17 @@
         ]
     , aexps =
         [ Typed
-            ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
+            ([ IsIn
+                 "Number"
+                 [ TVar (TV 5 Star) ]
+                 (Just (Area (Loc 0 1 1) (Loc 67 6 2)))
+             ] :=>
                TVar (TV 5 Star))
             (Area (Loc 0 1 1) (Loc 67 6 2))
             (Assignment
                "x"
                (Typed
-                  ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing
-                   , IsIn "Number" [ TVar (TV 5 Star) ] Nothing
-                   , IsIn "Number" [ TVar (TV 5 Star) ] Nothing
-                   , IsIn "Number" [ TVar (TV 5 Star) ] Nothing
-                   ] :=>
+                  ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
                      TVar (TV 5 Star))
                   (Area (Loc 4 1 5) (Loc 67 6 2))
                   (Where

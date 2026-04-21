@@ -15,24 +15,14 @@
                "x"
                (Typed
                   ([ IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                    , IsIn "Number" [ TVar (TV 9 Star) ] Nothing
                    , IsIn "Number" [ TVar (TV 10 Star) ] Nothing
-                   , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                    ] :=>
                      TCon (TC "String" Star) "prelude")
                   (Area (Loc 4 1 5) (Loc 63 4 2))
                   (Where
                      (Typed
                         ([ IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                          ] :=>
                            TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")

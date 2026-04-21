@@ -49,7 +49,11 @@
                             True)
                      ])))
         , Typed
-            ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
+            ([ IsIn
+                 "Number"
+                 [ TVar (TV 5 Star) ]
+                 (Just (Area (Loc 51 2 25) (Loc 52 2 26)))
+             ] :=>
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -63,7 +67,6 @@
                        "Number"
                        [ TVar (TV 5 Star) ]
                        (Just (Area (Loc 51 2 25) (Loc 52 2 26)))
-                   , IsIn "Number" [ TVar (TV 5 Star) ] Nothing
                    ] :=>
                      TApp
                        (TApp
@@ -77,7 +80,6 @@
                              "Number"
                              [ TVar (TV 5 Star) ]
                              (Just (Area (Loc 51 2 25) (Loc 52 2 26)))
-                         , IsIn "Number" [ TVar (TV 5 Star) ] Nothing
                          ] :=>
                            TVar (TV 5 Star))
                         (Area (Loc 43 2 17) (Loc 44 2 18))
@@ -87,7 +89,6 @@
                               "Number"
                               [ TVar (TV 5 Star) ]
                               (Just (Area (Loc 51 2 25) (Loc 52 2 26)))
-                          , IsIn "Number" [ TVar (TV 5 Star) ] Nothing
                           ] :=>
                             TVar (TV 5 Star))
                          (Area (Loc 49 2 23) (Loc 54 2 28))
@@ -140,7 +141,6 @@
                                     "Number"
                                     [ TVar (TV 5 Star) ]
                                     (Just (Area (Loc 51 2 25) (Loc 52 2 26)))
-                                , IsIn "Number" [ TVar (TV 5 Star) ] Nothing
                                 ] :=>
                                   TVar (TV 5 Star))
                                (Area (Loc 53 2 27) (Loc 54 2 28))

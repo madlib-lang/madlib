@@ -9,7 +9,10 @@
         ]
     , aexps =
         [ Typed
-            ([ IsIn "Number" [ TVar (TV 15 Star) ] Nothing
+            ([ IsIn
+                 "Number"
+                 [ TVar (TV 15 Star) ]
+                 (Just (Area (Loc 0 1 1) (Loc 62 1 63)))
              , IsIn
                  "Comparable"
                  [ TVar (TV 15 Star) ]
@@ -29,20 +32,6 @@
                        [ TVar (TV 15 Star) ]
                        (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                    , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
-                   , IsIn
-                       "Number"
-                       [ TVar (TV 15 Star) ]
-                       (Just (Area (Loc 48 1 49) (Loc 49 1 50)))
-                   , IsIn
-                       "Number"
-                       [ TVar (TV 15 Star) ]
-                       (Just (Area (Loc 43 1 44) (Loc 44 1 45)))
-                   , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
-                   , IsIn
-                       "Number"
-                       [ TVar (TV 15 Star) ]
-                       (Just (Area (Loc 56 1 57) (Loc 57 1 58)))
-                   , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                    ] :=>
                      TApp
                        (TApp
@@ -57,20 +46,6 @@
                              [ TVar (TV 15 Star) ]
                              (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
                          , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
-                         , IsIn
-                             "Number"
-                             [ TVar (TV 15 Star) ]
-                             (Just (Area (Loc 48 1 49) (Loc 49 1 50)))
-                         , IsIn
-                             "Number"
-                             [ TVar (TV 15 Star) ]
-                             (Just (Area (Loc 43 1 44) (Loc 44 1 45)))
-                         , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
-                         , IsIn
-                             "Number"
-                             [ TVar (TV 15 Star) ]
-                             (Just (Area (Loc 56 1 57) (Loc 57 1 58)))
-                         , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                          ] :=>
                            TVar (TV 15 Star))
                         (Area (Loc 7 1 8) (Loc 8 1 9))
@@ -80,20 +55,6 @@
                               "Comparable"
                               [ TVar (TV 15 Star) ]
                               (Just (Area (Loc 19 1 20) (Loc 20 1 21)))
-                          , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
-                          , IsIn
-                              "Number"
-                              [ TVar (TV 15 Star) ]
-                              (Just (Area (Loc 48 1 49) (Loc 49 1 50)))
-                          , IsIn
-                              "Number"
-                              [ TVar (TV 15 Star) ]
-                              (Just (Area (Loc 43 1 44) (Loc 44 1 45)))
-                          , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
-                          , IsIn
-                              "Number"
-                              [ TVar (TV 15 Star) ]
-                              (Just (Area (Loc 56 1 57) (Loc 57 1 58)))
                           , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                           ] :=>
                             TVar (TV 15 Star))
@@ -178,12 +139,6 @@
                                     "Number"
                                     [ TVar (TV 15 Star) ]
                                     (Just (Area (Loc 43 1 44) (Loc 44 1 45)))
-                                , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
-                                , IsIn
-                                    "Number"
-                                    [ TVar (TV 15 Star) ]
-                                    (Just (Area (Loc 56 1 57) (Loc 57 1 58)))
-                                , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                                 ] :=>
                                   TVar (TV 15 Star))
                                (Area (Loc 37 1 38) (Loc 60 1 61))
@@ -197,7 +152,6 @@
                                           "Number"
                                           [ TVar (TV 15 Star) ]
                                           (Just (Area (Loc 43 1 44) (Loc 44 1 45)))
-                                      , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                                       ] :=>
                                         TApp
                                           (TApp
@@ -237,7 +191,6 @@
                                                 "Number"
                                                 [ TVar (TV 15 Star) ]
                                                 (Just (Area (Loc 43 1 44) (Loc 44 1 45)))
-                                            , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                                             ] :=>
                                               TVar (TV 15 Star))
                                            (Area (Loc 37 1 38) (Loc 47 1 48))
@@ -258,7 +211,6 @@
                                                       "Number"
                                                       [ TVar (TV 15 Star) ]
                                                       (Just (Area (Loc 43 1 44) (Loc 44 1 45)))
-                                                  , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                                                   ] :=>
                                                     TVar (TV 15 Star))
                                                  (Area (Loc 41 1 42) (Loc 46 1 47))
@@ -332,8 +284,6 @@
                                                             [ TVar (TV 15 Star) ]
                                                             (Just
                                                                (Area (Loc 43 1 44) (Loc 44 1 45)))
-                                                        , IsIn
-                                                            "Number" [ TVar (TV 15 Star) ] Nothing
                                                         ] :=>
                                                           TVar (TV 15 Star))
                                                        (Area (Loc 45 1 46) (Loc 46 1 47))
@@ -350,12 +300,6 @@
                                           "Number"
                                           [ TVar (TV 15 Star) ]
                                           (Just (Area (Loc 43 1 44) (Loc 44 1 45)))
-                                      , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
-                                      , IsIn
-                                          "Number"
-                                          [ TVar (TV 15 Star) ]
-                                          (Just (Area (Loc 56 1 57) (Loc 57 1 58)))
-                                      , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                                       ] :=>
                                         TVar (TV 15 Star))
                                      (Area (Loc 50 1 51) (Loc 60 1 61))
@@ -376,7 +320,6 @@
                                                 "Number"
                                                 [ TVar (TV 15 Star) ]
                                                 (Just (Area (Loc 56 1 57) (Loc 57 1 58)))
-                                            , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                                             ] :=>
                                               TVar (TV 15 Star))
                                            (Area (Loc 54 1 55) (Loc 59 1 60))
@@ -439,7 +382,6 @@
                                                       "Number"
                                                       [ TVar (TV 15 Star) ]
                                                       (Just (Area (Loc 56 1 57) (Loc 57 1 58)))
-                                                  , IsIn "Number" [ TVar (TV 15 Star) ] Nothing
                                                   ] :=>
                                                     TVar (TV 15 Star))
                                                  (Area (Loc 58 1 59) (Loc 59 1 60))
