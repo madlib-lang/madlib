@@ -177,6 +177,36 @@ unifyElems' t (t' : xs) = do
   return $ compose s2 s1
 
 
+-- * Stateful unification helpers
+--
+-- These mirror "Typing Haskell in Haskell": the substitution lives in the
+-- 'Infer' monad (via 'getSubst' / 'extendSubst') rather than being threaded
+-- explicitly through every call site. Each of these:
+--
+--   1. Applies the current substitution to its inputs so they reflect every
+--      unification that has happened so far.
+--   2. Unifies.
+--   3. Extends the state with the fresh substitution.
+
+-- | Stateful unification. Apply the current substitution to both operands,
+-- unify, then extend the state with the result.
+unifyS :: Type -> Type -> Infer ()
+unifyS t1 t2 = do
+  t1' <- applyCurrentSubst t1
+  t2' <- applyCurrentSubst t2
+  s   <- unify t1' t2'
+  extendSubst s
+
+
+-- | Stateful version of 'contextualUnify'.
+contextualUnifyS :: UnifyStrategy -> Env -> Can.Canonical a -> Type -> Type -> Infer ()
+contextualUnifyS strat env cx t1 t2 = do
+  t1' <- applyCurrentSubst t1
+  t2' <- applyCurrentSubst t2
+  s   <- contextualUnify strat env cx t1' t2'
+  extendSubst s
+
+
 
 class Match t where
   match :: t -> t -> Infer Substitution

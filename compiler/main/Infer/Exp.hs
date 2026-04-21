@@ -284,108 +284,148 @@ inferBody discardError options env (e : es) = do
 
 
 -- | Second pass over a body's expressions, run after 'inferBody' has produced
--- a final substitution for the whole body.
+-- a substitution for the whole body.
 --
 -- Each expression was typed against the substitution known *at its point in
 -- the body*, so its stored qual-type still refers to type variables that
 -- later expressions constrained. This pass:
 --
---   1. Applies the accumulated substitution (and any predicate-defaulting
---      substitution) to every expression's qual-type via 'updateExpTypes'.
+--   1. Applies the accumulated substitution to every expression's qual-type
+--      (via 'updateExpTypes'), so the solved tree reflects what the whole
+--      body learned.
 --   2. Checks each expression's residual predicates. Anything still
---      unresolvable here is an ambiguity local to this body — we try
---      defaulting and, if the predicate is still unreducible, raise an
---      'AmbiguousType' error pointing at the *specific* expression's area.
---      (Without this, the error would bubble up to the enclosing abstraction
---      and lose its precise source location.)
+--      unresolvable is an ambiguity local to this body — we try defaulting
+--      (which extends the substitution) and, if a predicate is still
+--      unreducible, raise 'AmbiguousType' pointing at the *specific*
+--      expression's area. Without this per-expression check, the error
+--      would bubble up to the enclosing abstraction and lose its precise
+--      source location.
 --
 -- The enclosing 'split' / 'generalize' at the let-binding level still runs
--- afterwards; this pass only handles ambiguities that are scoped strictly
+-- afterwards. This pass only handles ambiguities that are scoped strictly
 -- within the body.
-postProcessBody :: Bool -> Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
+--
+-- Internally the substitution is threaded through the 'Infer' monad's state
+-- (Typing-Haskell-in-Haskell style). The body substitution @s@ comes in from
+-- the caller; any further defaulting is composed into it and the fully
+-- accumulated substitution is returned.
+postProcessBody
+  :: Bool -> Options -> Env
+  -> Substitution         -- ^ substitution from the enclosing 'inferBody'
+  -> Type                 -- ^ the expected body type (used for ftv fixing)
+  -> [Slv.Exp]
+  -> Infer (Substitution, [Slv.Exp])
 postProcessBody discardError options env s expType es = do
-  -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
-  (esRev, s', _) <- foldM
-    (\(resultsRev, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
-      let ps'' = apply accSubst ps'
-          -- Lazily compute fs only when needed (non-empty unsolvedPs)
-          fs = S.toList $ ftv (apply accSubst env'') `S.union` ftv (apply accSubst expType) `S.union` ftvForLetGenSet (apply accSubst t')
+  -- Install the body substitution in state so the residual-preds machinery
+  -- can thread defaulting through it implicitly instead of passing accSubst
+  -- around explicitly.
+  savedSubst <- getSubst
+  putSubst s
 
-      (ps''', substFromDefaulting) <- do
-        prep <- CM.forM ps'' $ \p -> do
-          isResolved <- entail env [] p
-          return (p, isResolved)
+  esRev <- foldM
+    (\resultsRev expr@(Slv.Typed (ps :=> t) area _) -> do
+      ps'          <- applyCurrentSubst ps
+      resolvedEnv  <- applyCurrentSubst env
+      resolvedExpT <- applyCurrentSubst expType
+      resolvedT    <- applyCurrentSubst t
 
-        let solvedPs = [p | (p, True) <- prep]
-        let unsolvedPs = [p | (p, False) <- prep]
+      let fs = S.toList $
+            ftv resolvedEnv
+            `S.union` ftv resolvedExpT
+            `S.union` ftvForLetGenSet resolvedT
 
-        -- Short-circuit: ambiguities is only non-empty if unsolvedPs is non-empty
-        if not (null unsolvedPs) && ambiguities fs unsolvedPs /= [] then do
-          (sDef, unsolvedPs')   <- tryDefaults env unsolvedPs
-          (sDef', unsolvedPs'') <- tryDefaults env (apply sDef unsolvedPs')
-          let subst = sDef' `compose` sDef
+      ps'' <- resolveResidualPreds discardError env area fs ps'
+      e'   <- updateExpTypesWithCurrent options env False
+                (updateQualType expr (ps'' :=> t))
 
-          if unsolvedPs'' /= [] then do
-            CM.forM_ unsolvedPs'' $ \p -> do
-              catchError
-                (byInst env (apply subst p))
-                (\case
-                  _ | discardError ->
-                    return []
-
-                  (CompilationError FatalError NoContext) ->
-                    if ambiguities fs unsolvedPs'' /= [] then
-                      case p of
-                        IsIn _ (TVar tv : _) _ ->
-                          throwError $ CompilationError
-                            (AmbiguousType (tv, apply subst unsolvedPs''))
-                            (Context (envCurrentPath env) area)
-
-                        _ ->
-                          throwError $ CompilationError
-                            (AmbiguousType (TV (-1) Star, apply subst unsolvedPs''))
-                            (Context (envCurrentPath env) area)
-                      else
-                        return []
-                  or ->
-                    throwError or
-                )
-            return (unsolvedPs'' ++ solvedPs, subst)
-          else
-            return (unsolvedPs'' ++ solvedPs, subst)
-        else
-          return (ps'', mempty)
-
-      let sFinal = substFromDefaulting `compose` accSubst
-      e' <- updateExpTypes options env False sFinal (Slv.Typed (apply sFinal $ ps''' :=> t') area e)
-
-      return (e' : resultsRev, sFinal, apply sFinal env'')
+      return (e' : resultsRev)
     )
-    (mempty, s, env)
+    []
     es
 
-  return (s', reverse esRev)
+  finalS <- getSubst
+  putSubst savedSubst
+  return (finalS, reverse esRev)
+
+
+-- | Resolve an expression's residual predicates. Entailable predicates are
+-- dropped. Ambiguous predicates trigger a second defaulting pass; anything
+-- still unsolvable produces an 'AmbiguousType' at @area@.
+resolveResidualPreds
+  :: Bool              -- ^ discard errors
+  -> Env
+  -> Area              -- ^ area of the expression (for error reporting)
+  -> [TVar]            -- ^ fixed variables (env + expected type)
+  -> [Pred]            -- ^ predicates already reflecting the current substitution
+  -> Infer [Pred]
+resolveResidualPreds discardError env area fs ps = do
+  prep <- CM.forM ps $ \p -> (p,) <$> entail env [] p
+  let (solved, unsolved) = partition snd prep
+      unsolvedPs         = map fst unsolved
+      solvedPs           = map fst solved
+
+  if null unsolvedPs || null (ambiguities fs unsolvedPs) then
+    return ps
+  else do
+    (sDef, unsolvedAfter1)  <- tryDefaults env unsolvedPs
+    extendSubst sDef
+    unsolvedApplied         <- applyCurrentSubst unsolvedAfter1
+    (sDef', unsolvedAfter2) <- tryDefaults env unsolvedApplied
+    extendSubst sDef'
+
+    when (not (null unsolvedAfter2) && not discardError) $
+      reportUnsolvedBodyPreds env area fs unsolvedAfter2
+
+    return (unsolvedAfter2 ++ solvedPs)
+
+
+reportUnsolvedBodyPreds :: Env -> Area -> [TVar] -> [Pred] -> Infer ()
+reportUnsolvedBodyPreds env area fs unsolved = do
+  unsolvedResolved <- applyCurrentSubst unsolved
+  CM.forM_ unsolved $ \p -> do
+    p' <- applyCurrentSubst p
+    catchError (byInst env p' >> return ()) $ \case
+      CompilationError FatalError NoContext ->
+        when (not (null (ambiguities fs unsolvedResolved))) $
+          let tv = case p' of
+                IsIn _ (TVar v : _) _ -> v
+                _                     -> TV (-1) Star
+          in  throwError $ CompilationError
+                (AmbiguousType (tv, unsolvedResolved))
+                (Context (envCurrentPath env) area)
+      err -> throwError err
+
+
+-- | 'updateExpTypes' using the current substitution from state.
+updateExpTypesWithCurrent :: Options -> Env -> Bool -> Slv.Exp -> Infer Slv.Exp
+updateExpTypesWithCurrent options env push e = do
+  s <- getSubst
+  updateExpTypes options env push s e
 
 
 -- INFER APP
 
 inferApp :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) arg@(Can.Canonical argArea argContent) final)) = do
-  tv                  <- newTVar Star
-  (s1, ps1, t1, eabs) <- infer discardError options env abs
-  (s2, ps2, t2, earg) <- infer discardError options (apply s1 env) arg
+  savedSubst <- getSubst
+  putSubst mempty
 
-  let expForContext = arg  -- Always point at the argument (the "wrong" value)
+  tv <- newTVar Star
+  (s1, ps1, t1, eabs) <- infer discardError options env abs
+  extendSubst s1
+
+  envApplied <- applyCurrentSubst env
+  (s2, ps2, t2, earg) <- infer discardError options envApplied arg
+  extendSubst s2
+
+  let expForContext = arg  -- always point at the argument (the "wrong" value)
 
   -- Enrich the origin with function context (expected type + full signature).
-  -- At each curried application level, funcType is the *remaining* function type,
-  -- so the expected param is always the 1st parameter of funcType (not the idx-th).
+  funcType <- applyCurrentSubst t1
   let baseOrigin = getAppOrigin abs
-      funcType   = apply s2 t1
       origin = case baseOrigin of
         FromFunctionArgument fn idx _ ->
           let params = getParamTypes funcType
-              -- Always take the 1st param of the remaining function type
               expectedParam = case params of { (p:_) -> Just p; _ -> Nothing }
               ctx = FunctionContext
                 { fcExpectedType  = maybe funcType id expectedParam
@@ -394,32 +434,33 @@ inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonica
                 }
           in  FromFunctionArgument fn idx (Just ctx)
         other -> other
-
-      -- Build secondary location: point at the function expression
       secondaryLoc = case baseOrigin of
         FromFunctionArgument fn _ _ ->
           Just $ SecondaryLocation (envCurrentPath env) absArea
             ("'" <> fn <> "' is applied here")
         _ -> Nothing
 
-  s3 <- contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) origin secondaryLoc env expForContext (apply s2 t1) (apply s1 t2 `fn` tv)
+  t2Applied <- applyCurrentSubst t2
+  s3 <- contextualUnifyWithOriginAndSecondary
+          (if discardError then Discard else Strict) origin secondaryLoc env
+          expForContext funcType (t2Applied `fn` tv)
+  extendSubst s3
 
-  let t = apply s3 tv
-  let s = s3 `compose` s2 `compose` s1
+  t <- applyCurrentSubst tv
+  s <- getSubst
 
   -- For JSX records: fill missing Maybe-typed fields with Nothing
   earg' <- case argContent of
     Can.JsxRecord jsxFields -> do
       let explicitNames = S.fromList [ n | Can.Canonical _ (Can.Field (n, _)) <- jsxFields ]
-      let resolvedArgType = apply s t2
+      resolvedArgType <- applyCurrentSubst t2
       case resolvedArgType of
         TRecord allFields _ _ -> do
           let missingFields = M.filterWithKey (\k _ -> k `S.notMember` explicitNames) allFields
-          let allMaybe = all isMaybeType (M.elems missingFields)
+              allMaybe = all isMaybeType (M.elems missingFields)
           if M.null missingFields || not allMaybe then
             return earg
           else do
-            -- Synthesize Nothing fields for missing Maybe-typed props
             let nothingFields = map (\(name, fieldType) ->
                   Slv.Typed ([] :=> fieldType) argArea
                     (Slv.Field (name, Slv.Typed ([] :=> fieldType) argArea (Slv.Var "Nothing" True)))
@@ -431,9 +472,11 @@ inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonica
         _ -> return earg
     _ -> return earg
 
-  let eabs' = updateQualType eabs (apply s $ ps1 :=> t1)
-  let solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs' (updateQualType earg' $ apply s (ps1 ++ ps2) :=> apply s t2) final
+  putSubst savedSubst
 
+  let eabs'  = updateQualType eabs (apply s $ ps1 :=> t1)
+      solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $
+                 Slv.App eabs' (updateQualType earg' $ apply s (ps1 ++ ps2) :=> apply s t2) final
   return (s, ps1 ++ ps2, t, solved)
 
 
@@ -442,28 +485,29 @@ inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonica
 
 inferTemplateString :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferTemplateString discardError options env (Can.Canonical area (Can.TemplateString exps)) = do
-  -- Thread the substitution through each element so that bindings learned
+  -- Thread the substitution implicitly through state so that bindings learned
   -- while inferring one element are visible to the next (e.g. field accesses
   -- on a shared parameter accumulate fields in its record type).
-  (inferred, threadedSubst) <-
-    foldM
-      (\(acc, accSubst) e -> do
-        (s, ps, t, e') <- infer discardError options (apply accSubst env) e
-        let accSubst' = s `compose` accSubst
-        return (acc ++ [(s, ps, t, e')], accSubst')
-      )
-      ([], mempty)
-      exps
+  savedSubst <- getSubst
+  putSubst mempty
 
-  let elemTypes = (\(_, _, t, _) -> t) <$> inferred
-  let elemExps  = (\(_, _, _, es) -> es) <$> inferred
-  let elemPS    = (\(_, ps, _, _) -> ps) <$> inferred
+  inferred <- forM exps $ \e -> do
+    envApplied <- applyCurrentSubst env
+    (s, ps, t, e') <- infer discardError options envApplied e
+    extendSubst s
+    return (ps, t, e')
 
-  ss <- mapM
-    (\(exp, t) -> contextualUnify' env discardError exp (apply threadedSubst t) tStr)
-    (zip exps elemTypes)
+  let elemPS    = (\(ps, _, _) -> ps) <$> inferred
+      elemTypes = (\(_, t, _) -> t) <$> inferred
+      elemExps  = (\(_, _, es) -> es) <$> inferred
 
-  let fullSubst = foldl' (flip compose) threadedSubst ss
+  forM_ (zip exps elemTypes) $ \(exp, t) -> do
+    tApplied <- applyCurrentSubst t
+    s <- contextualUnify' env discardError exp tApplied tStr
+    extendSubst s
+
+  fullSubst <- getSubst
+  putSubst savedSubst
 
   let qs = uncurry (:=>) <$> zip elemPS elemTypes
 
@@ -493,10 +537,22 @@ inferAssignment discardError options env e@(Can.Canonical area (Can.Assignment n
 
   (currentPreds :=> currentType) <- instantiate currentScheme
   let env' = extendVars env (name, currentScheme)
+
+  savedSubst <- getSubst
+  putSubst mempty
+
   (s1, ps1, t1, e1) <- infer discardError options env' exp
-  s2                <- catchError (contextualUnify Strict env' e currentType t1) (const $ return M.empty)
-  --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
-  let s  = s2 `compose` s1
+  extendSubst s1
+
+  t1Applied <- applyCurrentSubst t1
+  -- We can skip this error as we mainly need the substitution. It would
+  -- fail in inferExplicitlyTyped anyways.
+  s2 <- catchError (contextualUnify Strict env' e currentType t1Applied)
+                   (const $ return M.empty)
+  extendSubst s2
+
+  s <- getSubst
+  putSubst savedSubst
   let t2 = apply s t1
 
   mutationPs <-
@@ -514,18 +570,24 @@ inferAssignment discardError options env e@(Can.Canonical area (Can.Assignment n
 
 inferMutate :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferMutate discardError options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
-  (s1, ps1, t1, e1) <- infer discardError options env lhs
-  (s2, ps2, t2, e2) <- infer discardError options (apply s1 env) exp
-  s3 <- catchError
-    (contextualUnify Strict env e t1 t2)
-    (\err -> do
-      if discardError then do
-        return mempty
-      else
-        throwError err
-    )
+  savedSubst <- getSubst
+  putSubst mempty
 
-  let s  = s3 `compose` s2 `compose` s1
+  (s1, ps1, t1, e1) <- infer discardError options env lhs
+  extendSubst s1
+
+  envApplied <- applyCurrentSubst env
+  (s2, ps2, t2, e2) <- infer discardError options envApplied exp
+  extendSubst s2
+
+  t1' <- applyCurrentSubst t1
+  t2' <- applyCurrentSubst t2
+  s3  <- catchError (contextualUnify Strict env e t1' t2')
+           (\err -> if discardError then return mempty else throwError err)
+  extendSubst s3
+
+  s  <- getSubst
+  putSubst savedSubst
   let t3 = apply s t2
 
   case lhs of
@@ -573,37 +635,48 @@ inferListConstructor discardError options env listExp@(Can.Canonical area (Can.L
     return (M.empty, [], t, Slv.Typed ([] :=> t) area (Slv.ListConstructor []))
 
   elems -> do
-    tv               <- newTVar Star
+    tv <- newTVar Star
 
-    -- Accumulate list items and pred chunks reversed (cons O(1)) then reverse — avoids O(n²).
-    -- The index tracks which element we're at (1-based) for better error messages.
-    (s', psChunksRev, t', esRev, _) <- foldlM
-      (\(s, pssRev, t, lis, idx) elem -> do
-        (s', ps', t'', li) <- inferListItem discardError options (apply s env) (fromMaybe tv t) elem
-        (s'', tr) <- case t of
-          Nothing ->
-            return (mempty, t'')
+    -- Use state for cross-element substitution threading (THIH-style). We
+    -- save/restore the caller's substitution so this function's contract
+    -- (return the local substitution) is preserved.
+    savedSubst <- getSubst
+    putSubst mempty
 
-          Just t''' -> do
-            s'''' <- contextualUnifyWithOrigin (if discardError then Discard else Strict) (FromListElement idx) env elem (apply s' t''') t''
-            return (s'''', pickJSXChild t''' t'')
+    (psChunksRev, tLastM, esRev, _) <- foldlM
+      (\(pssRev, tLast, lis, idx) elem -> do
+        envApplied <- applyCurrentSubst env
+        (s1, ps', tE, li) <- inferListItem discardError options envApplied (fromMaybe tv tLast) elem
+        extendSubst s1
 
-        let s''' = s'' `compose` s' `compose` s
-        return (s''', ps' : pssRev, Just $ apply s''' tr, li : lis, idx + 1)
+        tr <- case tLast of
+          Nothing -> return tE
+          Just tPrev -> do
+            tPrevApplied <- applyCurrentSubst tPrev
+            s2 <- contextualUnifyWithOrigin
+                    (if discardError then Discard else Strict)
+                    (FromListElement idx) env elem tPrevApplied tE
+            extendSubst s2
+            return (pickJSXChild tPrev tE)
+
+        trApplied <- applyCurrentSubst tr
+        return (ps' : pssRev, Just trApplied, li : lis, idx + 1)
       )
-      (mempty, [], Nothing, [], 1)
+      ([], Nothing, [], 1)
       elems
 
-    let ps = concat (reverse psChunksRev)
-    let (Just t'') = t'
-    let es = reverse esRev
+    let ps  = concat (reverse psChunksRev)
+        (Just tElem) = tLastM
+        es  = reverse esRev
 
-    s'' <- contextualUnify' env discardError listExp tv t''
-    let s''' = s'' `compose` s'
+    contextualUnifyS
+      (if discardError then Discard else Strict) env listExp tv tElem
+    resolvedTv <- applyCurrentSubst tv
 
-    let t = tListOf (apply s''' tv)
-
-    return (s''', ps, t, Slv.Typed (ps :=> t) area (Slv.ListConstructor es))
+    localSubst <- getSubst
+    putSubst savedSubst
+    let t = tListOf resolvedTv
+    return (localSubst, ps, t, Slv.Typed (ps :=> t) area (Slv.ListConstructor es))
 
 
 inferListItem :: Bool -> Options -> Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
@@ -613,12 +686,19 @@ inferListItem discardError options env _ (Can.Canonical area li) = case li of
     return (s1, ps, t, Slv.Typed (ps :=> t) area $ Slv.ListItem e)
 
   Can.ListSpread exp -> do
+    savedSubst <- getSubst
+    putSubst mempty
+
     (s1, ps, t, e) <- infer discardError options env exp
+    extendSubst s1
+
     tv <- newTVar Star
-    s2 <- contextualUnify' env discardError exp (tListOf tv) t
+    tApplied <- applyCurrentSubst t
+    s2 <- contextualUnify' env discardError exp (tListOf tv) tApplied
+    extendSubst s2
 
-    let s = s2 `compose` s1
-
+    s <- getSubst
+    putSubst savedSubst
     return (s, ps, apply s tv, Slv.Typed (apply s ps :=> apply s t) area $ Slv.ListSpread e)
 
 
@@ -636,20 +716,27 @@ pickJSXChild t1 t2 = case (t1, t2) of
 
 inferTupleConstructor :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferTupleConstructor discardError options env (Can.Canonical area (Can.TupleConstructor elems)) = do
-  -- Accumulate types/exps/pred chunks reversed (cons O(1)) then reverse — avoids O(n²).
-  (s, psChunksRev, tsRev, esRev) <-
-    foldM
-      (\(s, psRev, ts, es) e -> do
-          (s', ps', t', e') <- infer discardError options (apply s env) e
-          return (s' `compose` s, ps' : psRev, t' : ts, e' : es)
-      ) (M.empty, [], [], []) elems
-  let ps = concat (reverse psChunksRev)
+  savedSubst <- getSubst
+  putSubst mempty
 
-  let elemTypes = reverse tsRev
-  let elemEXPS  = reverse esRev
-  let tupleT    = getTupleCtor (length elems)
-  let t         = foldl' TApp tupleT elemTypes
+  (psChunksRev, tsRev, esRev) <- foldM
+    (\(psRev, ts, es) e -> do
+      envApplied <- applyCurrentSubst env
+      (s', ps', t', e') <- infer discardError options envApplied e
+      extendSubst s'
+      return (ps' : psRev, t' : ts, e' : es)
+    )
+    ([], [], [])
+    elems
 
+  s <- getSubst
+  putSubst savedSubst
+
+  let ps        = concat (reverse psChunksRev)
+      elemTypes = reverse tsRev
+      elemEXPS  = reverse esRev
+      tupleT    = getTupleCtor (length elems)
+      t         = foldl' TApp tupleT elemTypes
   return (s, ps, apply s t, Slv.Typed (ps :=> apply s t) area (Slv.TupleConstructor elemEXPS))
 
 
@@ -660,57 +747,75 @@ inferRecord :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred],
 inferRecord discardError options env exp = do
   let Can.Canonical area (Can.Record fields) = exp
 
-  -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
-  (subst, inferredFieldsRev) <- foldM (
-        \(fieldSubst, result) field -> do
-          (s, ps, ts, e) <- inferRecordField discardError options (apply fieldSubst env) field
-          let nextSubst = s `compose` fieldSubst
-          return (nextSubst, (ps, (\(n, t) -> (n, apply nextSubst t)) <$> ts, e) : result)
-      ) (mempty, []) fields
-  let inferredFields = reverse inferredFieldsRev
-  let fieldPS     = (\(ps, _, _) -> ps) <$> inferredFields
-  let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
-  let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
+  -- Infer each field with a fresh local substitution in state, so we can
+  -- thread it implicitly across field inferences (THIH-style) rather than
+  -- carrying an explicit accumulator through foldM.
+  savedSubst <- getSubst
+  putSubst mempty
 
-  let allFieldTypes = concat fieldTypes
-  let fieldTypes' = filter (\(k, _) -> k /= "...") allFieldTypes
-  let spreads     = snd <$> filter (\(k, _) -> k == "...") allFieldTypes
-  let base = case spreads of
+  inferredFieldsRev <- foldM
+    (\result field -> do
+      envApplied <- applyCurrentSubst env
+      (s, ps, ts, e) <- inferRecordField discardError options envApplied field
+      extendSubst s
+      tsApplied <- CM.forM ts (\(n, t) -> (n,) <$> applyCurrentSubst t)
+      return ((ps, tsApplied, e) : result)
+    )
+    []
+    fields
+
+  let inferredFields = reverse inferredFieldsRev
+      fieldPS   = (\(ps, _, _) -> ps) <$> inferredFields
+      fieldTypes = (\(_, t, _) -> t) <$> inferredFields
+      fieldEXPS = (\(_, _, es) -> es) <$> inferredFields
+
+      allFieldTypes = concat fieldTypes
+      fieldTypes' = filter (\(k, _) -> k /= "...") allFieldTypes
+      spreads     = snd <$> filter (\(k, _) -> k == "...") allFieldTypes
+      base = case spreads of
         (x : _) -> Just x
         _       -> Nothing
 
-  (recordType, extraSubst) <- case apply subst <$> base of
+  resolvedBase <- case base of
+    Just b  -> Just <$> applyCurrentSubst b
+    Nothing -> return Nothing
+
+  recordType <- case resolvedBase of
     Just (TRecord spreadFields baseBase optionalFields) -> do
-      -- Merge the spread record's fields with our explicit fields
-      -- The spread fields take precedence if there are conflicts
+      -- Merge the spread record's fields with our explicit fields.
+      -- Spread fields take precedence if there are conflicts.
+      resolvedBaseBase <- case baseBase of
+        Just b  -> Just <$> applyCurrentSubst b
+        Nothing -> return Nothing
       let mergedFields = M.fromList fieldTypes' `M.union` spreadFields
-      return (TRecord mergedFields (apply subst <$> baseBase) optionalFields, mempty)
+      return (TRecord mergedFields resolvedBaseBase optionalFields)
 
     Just tBase -> do
-      -- The spread is a type variable or other type - unify it with a record type
-      -- that has our fields and a row variable for extension
+      -- Spread is a type variable: unify it with a record-with-row-var of our fields.
       baseVar <- newTVar Star
       let recordWithBase = TRecord (M.fromList fieldTypes') (Just baseVar) mempty
-      s <- contextualUnify' env discardError exp (apply subst tBase) recordWithBase
-      -- After unification, tBase should be resolved to a record type
-      -- Return the unified type with the row variable preserved
-      let unifiedBase = apply s tBase
+      contextualUnifyS (if discardError then Discard else Strict) env exp tBase recordWithBase
+      unifiedBase <- applyCurrentSubst tBase
       case unifiedBase of
         TRecord unifiedFields unifiedBase' unifiedOptionalFields ->
-          return (TRecord unifiedFields unifiedBase' unifiedOptionalFields, s)
+          return (TRecord unifiedFields unifiedBase' unifiedOptionalFields)
         _ ->
-          -- Fallback: use the record we created with the row variable
-          return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
+          return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty)
 
     Nothing ->
-      -- No spread - create a closed record (no row variable)
-      -- This allows the record to be used in contexts that don't require extensibility
-      return (TRecord (M.fromList fieldTypes') Nothing mempty, mempty)
+      -- No spread: closed record.
+      return (TRecord (M.fromList fieldTypes') Nothing mempty)
 
-  let allPS = concat fieldPS
-  let finalSubst = extraSubst `compose` subst
+  localSubst <- getSubst
+  putSubst savedSubst
 
-  return (finalSubst, allPS, apply finalSubst recordType, Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS))
+  let allPS       = concat fieldPS
+      resolvedRec = apply localSubst recordType
+  return ( localSubst
+         , allPS
+         , resolvedRec
+         , Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS)
+         )
 
 
 -- | Like inferRecord but creates an extensible record (with a base type variable)
@@ -719,52 +824,71 @@ inferJsxRecord :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pre
 inferJsxRecord discardError options env exp = do
   let Can.Canonical area (Can.JsxRecord fields) = exp
 
-  -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
-  (subst, inferredFieldsRev) <- foldM (
-        \(fieldSubst, result) field -> do
-          (s, ps, ts, e) <- inferRecordField discardError options (apply fieldSubst env) field
-          let nextSubst = s `compose` fieldSubst
-          return (nextSubst, (ps, (\(n, t) -> (n, apply nextSubst t)) <$> ts, e) : result)
-      ) (mempty, []) fields
-  let inferredFields = reverse inferredFieldsRev
-  let fieldPS     = (\(ps, _, _) -> ps) <$> inferredFields
-  let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
-  let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
+  savedSubst <- getSubst
+  putSubst mempty
 
-  let allFieldTypes = concat fieldTypes
-  let fieldTypes' = filter (\(k, _) -> k /= "...") allFieldTypes
-  let spreads     = snd <$> filter (\(k, _) -> k == "...") allFieldTypes
-  let base = case spreads of
+  inferredFieldsRev <- foldM
+    (\result field -> do
+      envApplied <- applyCurrentSubst env
+      (s, ps, ts, e) <- inferRecordField discardError options envApplied field
+      extendSubst s
+      tsApplied <- CM.forM ts (\(n, t) -> (n,) <$> applyCurrentSubst t)
+      return ((ps, tsApplied, e) : result)
+    )
+    []
+    fields
+
+  let inferredFields = reverse inferredFieldsRev
+      fieldPS    = (\(ps, _, _) -> ps) <$> inferredFields
+      fieldTypes = (\(_, t, _) -> t) <$> inferredFields
+      fieldEXPS  = (\(_, _, es) -> es) <$> inferredFields
+
+      allFieldTypes = concat fieldTypes
+      fieldTypes'   = filter (\(k, _) -> k /= "...") allFieldTypes
+      spreads       = snd <$> filter (\(k, _) -> k == "...") allFieldTypes
+      base = case spreads of
         (x : _) -> Just x
         _       -> Nothing
 
-  (recordType, extraSubst) <- case apply subst <$> base of
+  resolvedBase <- case base of
+    Just b  -> Just <$> applyCurrentSubst b
+    Nothing -> return Nothing
+
+  recordType <- case resolvedBase of
     Just (TRecord spreadFields baseBase optionalFields) -> do
+      resolvedBaseBase <- case baseBase of
+        Just b  -> Just <$> applyCurrentSubst b
+        Nothing -> return Nothing
       let mergedFields = M.fromList fieldTypes' `M.union` spreadFields
-      return (TRecord mergedFields (apply subst <$> baseBase) optionalFields, mempty)
+      return (TRecord mergedFields resolvedBaseBase optionalFields)
 
     Just tBase -> do
       baseVar <- newTVar Star
       let recordWithBase = TRecord (M.fromList fieldTypes') (Just baseVar) mempty
-      s <- contextualUnify' env discardError exp (apply subst tBase) recordWithBase
-      let unifiedBase = apply s tBase
+      contextualUnifyS (if discardError then Discard else Strict) env exp tBase recordWithBase
+      unifiedBase <- applyCurrentSubst tBase
       case unifiedBase of
         TRecord unifiedFields unifiedBase' unifiedOptionalFields ->
-          return (TRecord unifiedFields unifiedBase' unifiedOptionalFields, s)
+          return (TRecord unifiedFields unifiedBase' unifiedOptionalFields)
         _ ->
-          return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, s)
+          return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty)
 
     Nothing -> do
-      -- JSX record without spread: create an EXTENSIBLE record with a base type variable.
-      -- This allows unification to absorb missing fields into the base, which we later
-      -- check are all Maybe-typed and fill with Nothing.
+      -- JSX record without spread: create an EXTENSIBLE record so unification
+      -- can absorb missing Maybe-typed fields (filled with Nothing later).
       baseVar <- newTVar Star
-      return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty, mempty)
+      return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty)
 
-  let allPS = concat fieldPS
-  let finalSubst = extraSubst `compose` subst
+  localSubst <- getSubst
+  putSubst savedSubst
 
-  return (finalSubst, allPS, apply finalSubst recordType, Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS))
+  let allPS       = concat fieldPS
+      resolvedRec = apply localSubst recordType
+  return ( localSubst
+         , allPS
+         , resolvedRec
+         , Slv.Typed (allPS :=> recordType) area (Slv.Record fieldEXPS)
+         )
 
 
 inferRecordField :: Bool -> Options -> Env -> Can.Field -> Infer (Substitution, [Pred], [(Slv.Name, Type)], Slv.Field)
@@ -812,16 +936,29 @@ inferAccess discardError options env e@(Can.Canonical _ (Can.Access ns _)) =
 
 inferArrayAccess :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferArrayAccess discardError options env (Can.Canonical area (Can.ArrayAccess arr index)) = do
+  savedSubst <- getSubst
+  putSubst mempty
+
   tv <- newTVar Star
   (s1, ps1, t1, earr) <- infer discardError options env arr
-  (s2, ps2, t2, eindex) <- infer discardError options env index
-  s3 <- contextualUnify' env discardError arr t1 (tArrayOf tv)
-  s4 <- contextualUnify' env discardError index t2 tInteger
+  extendSubst s1
 
-  let s = s4 `compose` s3 `compose` s2 `compose` s1
-  let t = apply s tv
-  let ps = ps1 ++ ps2
+  envApplied <- applyCurrentSubst env
+  (s2, ps2, t2, eindex) <- infer discardError options envApplied index
+  extendSubst s2
 
+  t1Applied <- applyCurrentSubst t1
+  s3 <- contextualUnify' env discardError arr t1Applied (tArrayOf tv)
+  extendSubst s3
+
+  t2Applied <- applyCurrentSubst t2
+  s4 <- contextualUnify' env discardError index t2Applied tInteger
+  extendSubst s4
+
+  s <- getSubst
+  putSubst savedSubst
+  let t  = apply s tv
+      ps = ps1 ++ ps2
   return (s, ps, t, Slv.Typed (ps :=> t) area (Slv.ArrayAccess earr eindex))
 
 
@@ -850,23 +987,29 @@ inferNamespaceAccess _ _ _ _ = throwError $ CompilationError FatalError NoContex
 inferFieldAccess :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferFieldAccess discardError options env fa@(Can.Canonical area (Can.Access rec@(Can.Canonical _ _) abs))
   = do
-    tv                  <- newTVar Star
+    savedSubst <- getSubst
+    putSubst mempty
+
+    tv <- newTVar Star
     (s1, _  , t1, eabs) <- infer discardError options env abs
+    extendSubst s1
+
     (s2, ps2, t2, earg) <- infer discardError options env rec
+    extendSubst s2
 
+    t1A <- applyCurrentSubst t1
+    t2A <- applyCurrentSubst t2
     s3 <- catchError
-      (contextualUnifyAccess env fa t1 (t2 `fn` tv))
-      (\err -> do
-        if discardError then do
-          return $ gentleUnify t1 (t2 `fn` tv)
-        else
-          throwError err
-      )
+            (contextualUnifyAccess env fa t1A (t2A `fn` tv))
+            (\err -> if discardError
+                     then return $ gentleUnify t1A (t2A `fn` tv)
+                     else throwError err)
+    extendSubst s3
 
-    let s = s3 `compose` s2 `compose` s1
-    let t = apply s tv
-    let solved = Slv.Typed (ps2 :=> t) area (Slv.Access earg eabs)
-
+    s <- getSubst
+    putSubst savedSubst
+    let t      = apply s tv
+        solved = Slv.Typed (ps2 :=> t) area (Slv.Access earg eabs)
     return (s, ps2, t, solved)
 
 
@@ -875,19 +1018,37 @@ inferFieldAccess discardError options env fa@(Can.Canonical area (Can.Access rec
 
 inferIf :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferIf discardError options env (Can.Canonical area (Can.If cond truthy falsy)) = do
+  savedSubst <- getSubst
+  putSubst mempty
+
   (s1, ps1, tcond, econd) <- infer discardError options env cond
-  (s2, ps2, ttruthy, etruthy) <- infer discardError options (apply s1 env) truthy
-  (s3, ps3, tfalsy, efalsy) <- infer discardError options (apply (s2 `compose` s1) env) falsy
+  extendSubst s1
 
-  let tfalsy' = apply (s3 `compose` s2 `compose` s1) tfalsy
-  let ttruthy' = apply (s3 `compose` s2 `compose` s1) ttruthy
-  let unifyBranches = contextualUnifyWithOrigin (if discardError then Discard else Strict) (FromIfBranches ElseBranch) env falsy tfalsy' ttruthy'
+  envApplied1 <- applyCurrentSubst env
+  (s2, ps2, ttruthy, etruthy) <- infer discardError options envApplied1 truthy
+  extendSubst s2
+
+  envApplied2 <- applyCurrentSubst env
+  (s3, ps3, tfalsy, efalsy) <- infer discardError options envApplied2 falsy
+  extendSubst s3
+
+  tfalsy'  <- applyCurrentSubst tfalsy
+  ttruthy' <- applyCurrentSubst ttruthy
+  let unifyBranches = contextualUnifyWithOrigin
+        (if discardError then Discard else Strict)
+        (FromIfBranches ElseBranch) env falsy tfalsy' ttruthy'
   s4 <- catchError unifyBranches (flipUnificationErrorWithBranch ThenBranch)
-  s5 <- contextualUnifyWithOrigin (if discardError then Discard else Strict) FromIfCondition env cond tBool (apply s4 tcond)
+  extendSubst s4
 
-  let s = s5 `compose` s4 `compose` s3 `compose` s2 `compose` s1
+  tcond' <- applyCurrentSubst tcond
+  s5 <- contextualUnifyWithOrigin
+          (if discardError then Discard else Strict)
+          FromIfCondition env cond tBool tcond'
+  extendSubst s5
+
+  s <- getSubst
+  putSubst savedSubst
   let t = apply s ttruthy
-
   return (s, ps1 ++ ps2 ++ ps3, t, Slv.Typed ((ps1 ++ ps2 ++ ps3) :=> t) area (Slv.If econd etruthy efalsy))
 
 
@@ -896,17 +1057,29 @@ inferIf discardError options env (Can.Canonical area (Can.If cond truthy falsy))
 
 inferWhile :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferWhile discardError options env (Can.Canonical area (Can.While cond body)) = do
+  savedSubst <- getSubst
+  putSubst mempty
+
   (s1, ps1, tcond, econd) <- infer discardError options env cond
-  (s2, ps2, tbody, ebody) <- infer discardError options (apply s1 env) body
+  extendSubst s1
 
-  let s3 = s2 `compose` s1
+  envApplied <- applyCurrentSubst env
+  (s2, ps2, tbody, ebody) <- infer discardError options envApplied body
+  extendSubst s2
 
-  s4 <- contextualUnifyWithOrigin (if discardError then Discard else Strict) FromWhileCondition env cond tBool (apply s3 tcond)
-  s5 <- contextualUnify' env discardError body tUnit (apply s3 tbody)
+  tcond' <- applyCurrentSubst tcond
+  s4 <- contextualUnifyWithOrigin
+          (if discardError then Discard else Strict)
+          FromWhileCondition env cond tBool tcond'
+  extendSubst s4
 
-  let s = s5 `compose` s4 `compose` s3
+  tbody' <- applyCurrentSubst tbody
+  s5 <- contextualUnify' env discardError body tUnit tbody'
+  extendSubst s5
+
+  s <- getSubst
+  putSubst savedSubst
   let t = apply s tbody
-
   return (s, ps1 ++ ps2, t, Slv.Typed ((ps1 ++ ps2) :=> t) area (Slv.While econd ebody))
 
 
@@ -915,10 +1088,17 @@ inferWhile discardError options env (Can.Canonical area (Can.While cond body)) =
 
 inferDo :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferDo discardError options env (Can.Canonical area (Can.Do exps)) = do
-  (s, ps, t, exps') <- inferBody discardError options env exps
-  (s', exps'')      <- postProcessBody discardError options env s t exps'
+  savedSubst <- getSubst
+  putSubst mempty
 
-  return (s', apply s' ps, apply s' t, Slv.Typed (apply s' $ ps :=> t) area (Slv.Do exps''))
+  (s, ps, t, exps') <- inferBody discardError options env exps
+  extendSubst s
+  (s', exps'')      <- postProcessBody discardError options env s t exps'
+  extendSubst s'
+
+  sFinal <- getSubst
+  putSubst savedSubst
+  return (sFinal, apply sFinal ps, apply sFinal t, Slv.Typed (apply sFinal $ ps :=> t) area (Slv.Do exps''))
 
 
 
@@ -926,25 +1106,40 @@ inferDo discardError options env (Can.Canonical area (Can.Do exps)) = do
 
 inferWhere :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferWhere discardError options env (Can.Canonical area (Can.Where exp iss)) = do
-  (s, ps, t, e)          <- infer discardError options env exp
-  tv                     <- newTVar Star
-  (pssRev, issSubstitution, _) <- foldM
-    (\(res, currSubst, idx) is -> do
-      r@(subst, _, _) <- inferBranch discardError options (apply currSubst env) (apply currSubst tv) (apply currSubst t) idx is
-      return (r : res, subst `compose` currSubst, idx + 1)
+  savedSubst <- getSubst
+  putSubst mempty
+
+  (s, ps, t, e) <- infer discardError options env exp
+  extendSubst s
+
+  tv <- newTVar Star
+  pssRev <- foldM
+    (\res (idx, is) -> do
+      envNow <- applyCurrentSubst env
+      tvNow  <- applyCurrentSubst tv
+      tNow   <- applyCurrentSubst t
+      r@(subst, _, _) <- inferBranch discardError options envNow tvNow tNow idx is
+      extendSubst subst
+      return (r : res)
     )
-    ([], s, 1)
-    iss
+    []
+    (zip [1..] iss)
   let pss = reverse pssRev
+      ps' = concat $ T.mid <$> pss
 
-  let ps' = concat $ T.mid <$> pss
-  -- move this within the foldM
-  s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . T.lst <$> pss)
+  issSubstitution <- getSubst
+  s' <- contextualUnifyElems env $
+          zip iss (apply issSubstitution . Slv.getType . T.lst <$> pss)
+  extendSubst s'
 
-  let s''  = s' `compose` issSubstitution
+  s'' <- getSubst
+  putSubst savedSubst
 
-  let iss = (\(Slv.Typed t a (Slv.Is pat exp)) -> Slv.Typed (apply s'' t) a (Slv.Is (updatePatternTypes s'' mempty pat) exp)) . T.lst <$> pss
-  let wher = Slv.Typed (apply s'' $ (ps ++ ps') :=> tv) area $ Slv.Where (updateQualType e (apply s'' $ ps :=> t)) iss
+  let isResolved = (\(Slv.Typed t' a (Slv.Is pat expB)) ->
+                      Slv.Typed (apply s'' t') a (Slv.Is (updatePatternTypes s'' mempty pat) expB))
+                   . T.lst <$> pss
+      wher = Slv.Typed (apply s'' $ (ps ++ ps') :=> tv) area $
+               Slv.Where (updateQualType e (apply s'' $ ps :=> t)) isResolved
   return (s'', ps ++ ps', apply s'' tv, wher)
 
 
@@ -981,12 +1176,19 @@ inferBranch discardError options env tv t branchIdx (Can.Canonical area (Can.Is 
 
 inferTypedExp :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferTypedExp discardError options env e@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
+  savedSubst <- getSubst
+  putSubst mempty
+
   (_ :=> t) <- instantiate sc
   (s1, ps1, t1, e1) <- infer discardError options env exp
-  s2 <- contextualUnify' env discardError e t t1
+  extendSubst s1
 
-  let s = s2 `compose` s1
+  t1Applied <- applyCurrentSubst t1
+  s2 <- contextualUnify' env discardError e t t1Applied
+  extendSubst s2
 
+  s <- getSubst
+  putSubst savedSubst
   return
     ( s
     , apply s ps1

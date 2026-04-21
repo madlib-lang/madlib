@@ -163,6 +163,42 @@ compose !s1 s2
   | M.null s2 = s1
   | otherwise = M.map (apply s1) s2 `M.union` s1
 
+
+-- * Substitution-state helpers
+--
+-- These wrap 'getSubst' / 'putSubst' (from "Infer.Infer") with 'compose' and
+-- 'apply' so callers can work in the implicit-substitution style that mirrors
+-- "Typing Haskell in Haskell":
+--
+--   * 'unify' the two types (still returns its fresh 'Substitution').
+--   * 'extendSubst' the result into the state.
+--   * Subsequent 'applyCurrentSubst' sees the combined substitution.
+
+-- | Extend the current substitution with @new@ (composed on the left, so
+-- @new@ is applied \"after\" everything already in the state).
+extendSubst :: Substitution -> Infer ()
+extendSubst new = do
+  s <- getSubst
+  putSubst (new `compose` s)
+
+
+-- | Apply the current substitution to any 'Substitutable' value.
+applyCurrentSubst :: Substitutable a => a -> Infer a
+applyCurrentSubst x = do
+  s <- getSubst
+  return (apply s x)
+
+
+-- | Run @action@ and restore the substitution afterwards. Used for
+-- speculative inference (pattern branches, error recovery) where we want to
+-- examine the unification result without committing.
+withSubstRestore :: Infer a -> Infer a
+withSubstRestore action = do
+  saved <- getSubst
+  result <- action
+  putSubst saved
+  return result
+
 merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext
   where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (S.toList (M.keysSet s1 `S.intersection` M.keysSet s2))
