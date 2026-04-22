@@ -53,6 +53,71 @@ spec = do
       second <- formatCode first
       first `shouldBe` second
 
+    it "preserves raw regex escapes in string literals" $ do
+      let expectedLines =
+            [ "REGEX = {"
+            , "  NON_WORD_AND_SPACES: \"[\\\\W\\\\s]\","
+            , "  CAPTURING: {"
+            , "    HEADING: \"^(#*)\\\\s*(.*)\","
+            , "    MADLIB_FILE: \"\\\\b([\\\\w\\\\/\\\\.]*)\\\\.mad\","
+            , "    LIST_ITEM: \" - (\\\\w*)\","
+            , "  },"
+            , "}"
+            ]
+          input = unlines
+            [ "REGEX = {"
+            , "  NON_WORD_AND_SPACES: \"[\\\\W\\\\s]\","
+            , "  CAPTURING: {"
+            , "    HEADING: \"^(#*)\\\\s*(.*)\","
+            , "    MADLIB_FILE: \"\\\\b([\\\\w\\\\/\\\\.]*)\\\\.mad\","
+            , "    LIST_ITEM: \" - (\\\\w*)\","
+            , "  },"
+            , "}"
+            ]
+      result <- formatCode input
+      lines result `shouldBe` expectedLines
+
+    it "does not add a blank line before the closing pipe paren" $ do
+      let input = unlines
+            [ "f = pipe("
+            , "  // comment"
+            , ""
+            , "  (x) => x + 1,"
+            , "  // comment"
+            , ")"
+            ]
+      result <- formatCode input
+      lines result `shouldBe`
+        [ "f = pipe("
+        , "  // comment"
+        , ""
+        , "  (x) => x + 1,"
+        , "  // comment"
+        , ")"
+        ]
+
+    it "preserves trailing blank lines in pipe comments without growing them" $ do
+      let input = unlines
+            [ "f = pipe("
+            , "  // comment"
+            , "  (x) => x + 1,"
+            , ""
+            , "  // comment"
+            , ""
+            , ")"
+            ]
+          expected = unlines
+            [ "f = pipe("
+            , "  // comment"
+            , "  (x) => x + 1,"
+            , ""
+            , "  // comment"
+            , ""
+            , ")"
+            ]
+      result <- formatTwice input
+      result `shouldBe` expected
+
     it "multiline JS block with leading newline preserves structure" $ do
       let input = "x = #-\n  const a = 1\n  return a\n-#\n"
       result <- formatCode input

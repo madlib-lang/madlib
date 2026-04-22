@@ -68,6 +68,17 @@ spec = describe "Megaparsec parser" $ do
       , "}"
       ]) `shouldSatisfy` isRight
 
+  it "parses pipe with blank lines and comments inside" $
+    parse (unlines
+      [ "f = pipe("
+      , ""
+      , "  // Comment"
+      , ""
+      , "  (x) => x + 1"
+      , ""
+      , ")"
+      ]) `shouldSatisfy` isRight
+
   -- Regression: type annotation after derive declaration failed
   it "parses type annotation after derive declaration" $
     parse (unlines

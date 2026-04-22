@@ -823,15 +823,13 @@ reEscapeTemplatePart s = s >>= \case
 
 
 -- | Re-escape a string whose escape sequences have already been processed.
--- pStringLiteral calls processEscapes, so LStr/PStr store actual characters
--- (e.g. real newline for \n). The formatter must reverse this before
--- re-wrapping the string in double quotes.
+-- Formatter mode preserves the raw source escapes that were lexed into the
+-- token stream, so we only normalize actual control characters here.
 reEscapeString :: String -> String
 reEscapeString s = s >>= \case
   '\n' -> "\\n"
   '\t' -> "\\t"
   '\r' -> "\\r"
-  '\\' -> "\\\\"
   '"'  -> "\\\""
   c    -> [c]
 
@@ -1160,14 +1158,16 @@ expToDoc comments exp =
 
         Source area _ (Pipe exps) ->
           let (exps', comments'') = argsToDoc comments' exps
-              (commentsDoc, comments''') = insertComments False (Area (getEndLoc area) (getEndLoc area)) comments''
-              commentsDoc' =
-                if length comments'' == length comments''' || null comments'' then
-                  mempty
+              (commentsAfterBody, comments''') = insertCommentsAsDocList False (Area (getEndLoc area) (getEndLoc area)) comments''
+              commentsAfterBody' =
+                if length comments''' == length comments'' then
+                  Pretty.emptyDoc
                 else
-                  hcat (replicate (computeLineDiff [] (getArea $ last exps) (getCommentArea $ head comments'')) Pretty.line') <> commentsDoc
+                  hcat (replicate (computeLineDiff [] (getArea $ last exps) (getCommentArea $ head comments'')) Pretty.line')
+                  <> hcat (intersperse Pretty.hardline commentsAfterBody)
+                  <> Pretty.hardline
           in  ( Pretty.pretty "pipe("
-                  <> Pretty.nest indentSize (Pretty.hardline <> exps' <> Pretty.comma <> commentsDoc')
+                  <> Pretty.nest indentSize (Pretty.hardline <> exps' <> Pretty.comma <> commentsAfterBody')
                   <> Pretty.hardline
                   <> Pretty.rparen
               , comments'''

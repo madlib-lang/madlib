@@ -697,7 +697,7 @@ pPipe' = do
   (startArea, _) <- withArea pPipe
   target <- pSourceTarget
   pLeftParen
-  maybeRet
+  rets
   exprs <- pArgs
   rets
   (endArea, _) <- withArea (void pRightParen)
