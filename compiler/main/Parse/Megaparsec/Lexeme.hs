@@ -25,6 +25,7 @@ module Parse.Megaparsec.Lexeme
     -- Identifiers
   , pName
   , pNameStr
+  , pFieldName
   , pUpperName
   , pLowerName
     -- Literals
@@ -220,6 +221,37 @@ pNameStr = tokWith $ \t -> case t of
   TkIs     -> Just "is"
   TkNot    -> Just "not"
   _        -> Nothing
+
+-- | Parse a record field name.
+-- Records intentionally allow every keyword as a field name, so this is
+-- broader than pName/pNameStr.
+{-# INLINE pFieldName #-}
+pFieldName :: Parser String
+pFieldName = tokWith $ \t -> case t of
+  TkName s     -> Just s
+  TkTypeName s -> Just s
+  TkTrue       -> Just "true"
+  TkFalse      -> Just "false"
+  TkIf         -> Just "if"
+  TkElse       -> Just "else"
+  TkWhile      -> Just "while"
+  TkWhere      -> Just "where"
+  TkDo         -> Just "do"
+  TkReturn     -> Just "return"
+  TkPipe       -> Just "pipe"
+  TkImport     -> Just "import"
+  TkExport     -> Just "export"
+  TkFrom       -> Just "from"
+  TkType       -> Just "type"
+  TkAlias      -> Just "alias"
+  TkExtern     -> Just "extern"
+  TkInterface  -> Just "interface"
+  TkInstance   -> Just "instance"
+  TkDerive     -> Just "derive"
+  TkWhen       -> Just "when"
+  TkIs         -> Just "is"
+  TkNot        -> Just "not"
+  _            -> Nothing
 
 -- | Parse an upper-case identifier (type/constructor name)
 {-# INLINE pUpperName #-}

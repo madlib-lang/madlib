@@ -322,7 +322,7 @@ pRecordTypingArgs = do
   return $ M.fromList (first : rest)
   where
     pRecordTypingField = do
-      (nameArea, name) <- withArea pNameStr
+      (nameArea, name) <- withArea pFieldName
       pDoubleColon
       t <- pTypings
       return (name, (nameArea, t))

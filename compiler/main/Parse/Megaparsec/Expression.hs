@@ -324,7 +324,7 @@ pTermWithPostfix = do
         Just TkQuestionDot -> do
           mf <- optional $ try $ do
             pQuestionDot
-            (nameArea, name) <- withArea pName
+            (nameArea, name) <- withArea pFieldName
             target <- pSourceTarget
             return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) target
               (Src.OptionalAccess e (Src.Source nameArea target (Src.Var $ '.' : name)))
@@ -334,7 +334,7 @@ pTermWithPostfix = do
         Just TkDot -> do
           f <- try $ do
             pDot
-            (nameArea, name) <- withArea pName
+            (nameArea, name) <- withArea pFieldName
             target <- pSourceTarget
             return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) (Src.getSourceTarget e) (Src.Access e (Src.Source nameArea target (Src.Var $ '.' : name)))
           applyPostfix (f expr)
@@ -352,7 +352,7 @@ pTermWithPostfix = do
           f <- optional $ try $ do
             maybeRet
             pDot
-            (nameArea, name) <- withArea pName
+            (nameArea, name) <- withArea pFieldName
             target <- pSourceTarget
             return $ \e -> Src.Source (mergeAreas (Src.getArea e) nameArea) (Src.getSourceTarget e) (Src.Access e (Src.Source nameArea target (Src.Var $ '.' : name)))
           case f of
@@ -497,7 +497,7 @@ pHashName = do
 pDotName :: Parser Src.Exp
 pDotName = do
   (startArea, _) <- withArea (void pDot)
-  (endArea, name) <- withArea pName
+  (endArea, name) <- withArea pFieldName
   target <- pSourceTarget
   return $ Src.Source (mergeAreas startArea endArea) target (Src.Var $ '.' : name)
 
@@ -870,7 +870,7 @@ pRecordFields = option [] $ do
   where
     -- Parse name once, then peek at next token to decide field:value vs shorthand.
     pRecordField = do
-      (nameArea, name) <- withArea pName
+      (nameArea, name) <- withArea pFieldName
       target <- pSourceTarget
       mt <- peekTok
       case mt of

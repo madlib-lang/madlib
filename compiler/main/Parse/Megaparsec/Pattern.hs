@@ -230,14 +230,14 @@ pRecordFieldPattern = choice
       return $ Src.PatternFieldRest (Src.Source nameArea target name)
   , -- name: pattern
     try $ do
-      (nameArea, name) <- withArea pNameStr
+      (nameArea, name) <- withArea pFieldName
       target <- pSourceTarget
       pColon
       pat <- pPattern
       return $ Src.PatternField (Src.Source nameArea target name) pat
   , -- shorthand: just name
     do
-      (nameArea, name) <- withArea pNameStr
+      (nameArea, name) <- withArea pFieldName
       target <- pSourceTarget
       return $ Src.PatternFieldShorthand (Src.Source nameArea target name)
   ]

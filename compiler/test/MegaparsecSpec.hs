@@ -2,6 +2,7 @@ module MegaparsecSpec where
 
 import Test.Hspec
 import Parse.Megaparsec.Madlib (parse)
+import qualified AST.Source as Src
 import System.IO (readFile)
 import Prelude hiding (readFile)
 
@@ -17,6 +18,42 @@ spec :: Spec
 spec = describe "Megaparsec parser" $ do
   it "parses the Brekk fixture" $
     parse brekk `shouldSatisfy` isRight
+
+  it "parses record fields that reuse every keyword token" $
+    case parse keywordRecord of
+      Right ast ->
+        case Src.aexps ast of
+          [Src.Source _ _ (Src.Assignment "kwRecord" (Src.Source _ _ (Src.Record fields)))] ->
+            map fieldName fields `shouldBe`
+              [ "if"
+              , "else"
+              , "while"
+              , "where"
+              , "do"
+              , "return"
+              , "pipe"
+              , "import"
+              , "export"
+              , "from"
+              , "type"
+              , "alias"
+              , "extern"
+              , "interface"
+              , "instance"
+              , "derive"
+              , "when"
+              , "is"
+              , "not"
+              , "true"
+              , "false"
+              ]
+          other ->
+            expectationFailure $ "unexpected AST: " ++ show other
+      Left err ->
+        expectationFailure err
+
+  it "parses keyword fields in record access, patterns, and typing" $
+    parse keywordRecordSuite `shouldSatisfy` isRight
 
   it "parses inline a+!b" $
     parse "x = a + !b" `shouldSatisfy` isRight
@@ -529,3 +566,45 @@ brekk = unlines
 isRight :: Either a b -> Bool
 isRight (Right _) = True
 isRight _         = False
+
+fieldName :: Src.Field -> String
+fieldName (Src.Source _ _ (Src.Field (name, _))) = name
+fieldName (Src.Source _ _ (Src.FieldShorthand name)) = name
+fieldName (Src.Source _ _ (Src.FieldSpread _)) = "<spread>"
+
+keywordRecord :: String
+keywordRecord = unlines
+  [ "kwRecord = {"
+  , "  if: 1,"
+  , "  else: 2,"
+  , "  while: 3,"
+  , "  where: 4,"
+  , "  do: 5,"
+  , "  return: 6,"
+  , "  pipe: 7,"
+  , "  import: 8,"
+  , "  export: 9,"
+  , "  from: 10,"
+  , "  type: 11,"
+  , "  alias: 12,"
+  , "  extern: 13,"
+  , "  interface: 14,"
+  , "  instance: 15,"
+  , "  derive: 16,"
+  , "  when: 17,"
+  , "  is: 18,"
+  , "  not: 19,"
+  , "  true: 20,"
+  , "  false: 21,"
+  , "}"
+  ]
+
+keywordRecordSuite :: String
+keywordRecordSuite = unlines
+  [ "keywordAccess = (record) => record.interface + record.alias + record.instance + record.true + record.false"
+  , "keywordPattern = (record) => where(record) {"
+  , "  { interface, alias, instance, true, false } => record.interface"
+  , "}"
+  , "keywordTyping :: { interface :: Integer, alias :: Integer, instance :: Integer, true :: Integer, false :: Integer } -> Integer"
+  , "keywordTyping = (record) => record.interface"
+  ]
