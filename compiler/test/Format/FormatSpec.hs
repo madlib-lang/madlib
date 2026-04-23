@@ -7,7 +7,6 @@ import           Test.Hspec                     ( describe
                                                 )
 import           Run.Format (parseCodeToFormat)
 import           Format.Format (astToSource)
-import           System.IO                      ( readFile )
 
 
 -- | Parse and format code, returning the formatted string
@@ -120,7 +119,23 @@ spec = do
       result `shouldBe` expected
 
     it "keeps Brekk2 pipe comments tight before the closing paren" $ do
-      input <- readFile "fixtures/Brekk2.mad"
+      let input = unlines
+            [ "REGEX = {"
+            , "  NON_WORD_AND_SPACES: \"[\\\\W\\\\s]\","
+            , "  CAPTURING: {"
+            , "    HEADING: \"^(#*)\\\\s*(.*)\","
+            , "    MADLIB_FILE: \"\\\\b([\\\\w\\\\/\\\\.]*)\\\\.mad\","
+            , "    LIST_ITEM: \" - (\\\\w*)\","
+            , "  },"
+            , "}"
+            , ""
+            , "x = pipe("
+            , "  // COM"
+            , "  () => {},"
+            , ""
+            , "  // COM"
+            , ")"
+            ]
       result <- formatTwice input
       result `shouldBe` unlines
         [ "REGEX = {"
