@@ -1159,13 +1159,21 @@ expToDoc comments exp =
         Source area _ (Pipe exps) ->
           let (exps', comments'') = argsToDoc comments' exps
               (commentsAfterBody, comments''') = insertCommentsAsDocList False (Area (getEndLoc area) (getEndLoc area)) comments''
+              consumedComments = take (length comments'' - length comments''') comments''
               commentsAfterBody' =
-                if length comments''' == length comments'' then
+                if null consumedComments then
                   Pretty.emptyDoc
                 else
                   hcat (replicate (computeLineDiff [] (getArea $ last exps) (getCommentArea $ head comments'')) Pretty.line')
                   <> hcat (intersperse Pretty.hardline commentsAfterBody)
-                  <> Pretty.hardline
+                  <> case consumedComments of
+                      [] -> Pretty.emptyDoc
+                      _ ->
+                        let trailingDiff = computeLineDiff [] (getCommentArea (last consumedComments)) (Area (getEndLoc area) (getEndLoc area))
+                        in if trailingDiff > 1 then
+                          hcat (replicate (trailingDiff - 1) Pretty.hardline)
+                        else
+                          Pretty.emptyDoc
           in  ( Pretty.pretty "pipe("
                   <> Pretty.nest indentSize (Pretty.hardline <> exps' <> Pretty.comma <> commentsAfterBody')
                   <> Pretty.hardline

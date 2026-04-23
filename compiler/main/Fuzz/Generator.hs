@@ -9,7 +9,7 @@ import Fuzz.Types
 generateProgramModel :: Int -> StressProfile -> Int -> ProgramModel
 generateProgramModel seed profile maxSize =
   let (consts, g1) = randomInts 6 (-30, 40) (mkStdGen seed)
-      listLen = clamp 3 12 (max 3 (maxSize `div` 2))
+      listLen = max 3 (min 12 (max 3 (maxSize `div` 2)))
       (listVals, g2) = randomInts listLen (-20, 50) g1
       (useClosure, g3) = weightedBool (weights profile "closure") g2
       (usePap3, g4) = weightedBool (weights profile "pap3") g3
@@ -37,7 +37,7 @@ renderProgram m =
     [ "import IO from \"IO\""
     , "import List from \"List\""
     , ""
-    , "assertEqInt = (label, expected, actual) => {"
+    , "assertEqInt = (_label, expected, actual) => {"
     , "  if (expected == actual) {"
     , "    IO.putLine(\"OK\")"
     , "  } else {"
@@ -45,15 +45,9 @@ renderProgram m =
     , "  }"
     , "}"
     , ""
-    , "assertTrue = (label, ok) => {"
-    , "  if (ok) {"
-    , "    IO.putLine(\"OK\")"
-    , "  } else {"
-    , "    IO.putLine(\"ASSERT_FAIL\")"
-    , "  }"
-    , "}"
-    , ""
-    , "main = () => {"
+    ]
+    ++
+    [ "main = () => {"
     ]
     ++ baseSection
     ++ optionalSections
@@ -66,7 +60,6 @@ renderProgram m =
   listValues = pmListVals m
   listLiteral = "[" <> intercalate ", " (show <$> listValues) <> "]"
   listSum = sum listValues
-  nRec = abs c5 `mod` 15 + 1
   mapShift = c3
   mapExpectedSum = sum ((+ mapShift) <$> listValues)
 
@@ -111,21 +104,6 @@ renderProgram m =
     , "  // FUZZ_BLOCK_END:pap4"
     ]
 
-  recursionSection =
-    [ "  // FUZZ_BLOCK_BEGIN:recursion"
-    , "  sumTo = (n, acc) => {"
-    , "    if (n <= 0) {"
-    , "      acc"
-    , "    } else {"
-    , "      sumTo(n - 1, acc + n)"
-    , "    }"
-    , "  }"
-    , "  recN = " <> show nRec
-    , "  recResult = sumTo(recN, 0)"
-    , "  assertEqInt(\"rec-sum\", recN * (recN + 1) / 2, recResult)"
-    , "  // FUZZ_BLOCK_END:recursion"
-    ]
-
   mapSection =
     [ "  // FUZZ_BLOCK_BEGIN:map"
     , "  mapped = map((x) => x + " <> show mapShift <> ", nums)"
@@ -136,6 +114,13 @@ renderProgram m =
 
   filterSection =
     [ "  // FUZZ_BLOCK_BEGIN:filter"
+    , "  assertTrue = (_label, ok) => {"
+    , "    if (ok) {"
+    , "      IO.putLine(\"OK\")"
+    , "    } else {"
+    , "      IO.putLine(\"ASSERT_FAIL\")"
+    , "    }"
+    , "  }"
     , "  filtered = List.filter((x) => x % 2 == 0, nums)"
     , "  assertTrue(\"filter-bound\", List.length(filtered) <= List.length(nums))"
     , "  // FUZZ_BLOCK_END:filter"
@@ -146,7 +131,6 @@ renderProgram m =
       [ if pmUseClosure m then closureSection else []
       , if pmUsePap3 m then pap3Section else []
       , if pmUsePap4 m then pap4Section else []
-      , if pmUseRecursion m then recursionSection else []
       , if pmUseMap m then mapSection else []
       , if pmUseFilter m then filterSection else []
       ]
@@ -244,7 +228,7 @@ randomInts n range0 = go n []
 weightedBool :: Int -> StdGen -> (Bool, StdGen)
 weightedBool weight gen =
   let (v, g1) = randomR (1 :: Int, 100) gen
-  in (v <= clamp 0 100 weight, g1)
+  in (v <= max 0 (min 100 weight), g1)
 
 
 replaceAt :: Int -> a -> [a] -> [a]
@@ -257,7 +241,3 @@ replaceAt idx val xs =
 
 dedupe :: Eq a => [a] -> [a]
 dedupe = foldr (\x acc -> if x `elem` acc then acc else x : acc) []
-
-
-clamp :: Ord a => a -> a -> a -> a
-clamp lo hi v = max lo (min hi v)

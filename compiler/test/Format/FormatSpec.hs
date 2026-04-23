@@ -7,6 +7,7 @@ import           Test.Hspec                     ( describe
                                                 )
 import           Run.Format (parseCodeToFormat)
 import           Format.Format (astToSource)
+import           System.IO                      ( readFile )
 
 
 -- | Parse and format code, returning the formatted string
@@ -117,6 +118,27 @@ spec = do
             ]
       result <- formatTwice input
       result `shouldBe` expected
+
+    it "keeps Brekk2 pipe comments tight before the closing paren" $ do
+      input <- readFile "fixtures/Brekk2.mad"
+      result <- formatTwice input
+      result `shouldBe` unlines
+        [ "REGEX = {"
+        , "  NON_WORD_AND_SPACES: \"[\\\\W\\\\s]\","
+        , "  CAPTURING: {"
+        , "    HEADING: \"^(#*)\\\\s*(.*)\","
+        , "    MADLIB_FILE: \"\\\\b([\\\\w\\\\/\\\\.]*)\\\\.mad\","
+        , "    LIST_ITEM: \" - (\\\\w*)\","
+        , "  },"
+        , "}"
+        , ""
+        , "x = pipe("
+        , "  // COM"
+        , "  () => {},"
+        , ""
+        , "  // COM"
+        , ")"
+        ]
 
     it "multiline JS block with leading newline preserves structure" $ do
       let input = "x = #-\n  const a = 1\n  return a\n-#\n"
