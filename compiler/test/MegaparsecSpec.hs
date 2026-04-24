@@ -177,6 +177,25 @@ spec = describe "Megaparsec parser" $ do
       , "}"
       ]) `shouldSatisfy` isRight
 
+  -- Regression: explicit where with tuple input rejected comments between
+  -- branches, while implicit where accepted the same layout.
+  it "parses explicit where tuple branches with comments" $
+    parse (unlines
+      [ "type Alpha = A | B | C"
+      , ""
+      , "noTuple = (a, b) => where (#[a, b]) {"
+      , "  // comment before first tuple branch"
+      , "  #[A, x] =>"
+      , "    x"
+      , "  // comment between tuple branches"
+      , "  #[B, x] =>"
+      , "    x"
+      , ""
+      , "  #[C, x] =>"
+      , "    x"
+      , "}"
+      ]) `shouldSatisfy` isRight
+
   -- Regression: multiline array index access (e.g. arr[\n  expr\n]) inside a
   -- named typed export caused the body to fail, backtracking the typed annotation
   it "parses multiline array index access" $

@@ -608,9 +608,9 @@ pWhere' = do
       maybeRet
       pRightParen
       pLeftCurly
-      maybeRet
+      rets
       branches <- pIss
-      maybeRet
+      rets
       (endArea, _) <- withArea (void pRightCurly)
       return $ Src.Source (mergeAreas startArea endArea) target (Src.Where expr branches)
     _ -> do
