@@ -1872,10 +1872,11 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
         computedOutputPath = computeTargetPath outputPath rootPath path
         entrypointPath     = if path `elem` pathsToBuild then path else optEntrypoint options
         isEntrypoint       = path == optEntrypoint options
-        internalsPath      = computeInternalsRelativePath outputPath computedOutputPath
 
     -- TODO: move this to a Query as well?
     monomorphicMethodNames <- readIORef monomorphicMethods
+    absOutputPath <- makeAbsolute outputPath
+    absComputedOutputPath <- makeAbsolute computedOutputPath
 
     -- For the entrypoint, compute import entries for all dependency module init functions.
     -- pathsToBuild is in dependency order with the entrypoint last; exclude the entrypoint itself.
@@ -1905,7 +1906,7 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
                   , ccoutputPath        = outputPath
                   , ccoptimize          = optOptimized options
                   , cctarget            = optTarget options
-                  , ccinternalsPath     = internalsPath
+                  , ccinternalsPath     = computeInternalsRelativePath absOutputPath absComputedOutputPath
                   , ccisEntrypoint      = isEntrypoint
                   , ccmoduleInitImports = moduleInitImports
                   }

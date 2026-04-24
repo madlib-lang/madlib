@@ -31,7 +31,7 @@ import Explain.Location
 import qualified Format.Format as Format
 import qualified AST.Solved as Slv
 import           System.IO.Silently
-import           System.Exit (ExitCode)
+import           System.Exit (ExitCode(..))
 import           Control.Exception (try)
 import           System.Process
 import qualified System.Console.Haskeline         as Haskeline
@@ -248,8 +248,11 @@ evalMadlibCode isColorful options state code = case parse code of
         else
           liftIO $ try $ readProcessWithExitCode "node" [".repl/__REPL__.mjs"] ""
       let output = case (runResult :: Either IOError (ExitCode, String, String)) of
-            Right (_, result, _) | shouldRun parsedNewCode ->
+            Right (ExitSuccess, result, _) | shouldRun parsedNewCode ->
               result
+
+            Right (_, _, err) | shouldRun parsedNewCode ->
+              err
 
             _ ->
               ""
