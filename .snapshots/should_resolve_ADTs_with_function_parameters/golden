@@ -32,8 +32,7 @@
                   (Assignment
                      "main"
                      (Typed
-                        ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         ] :=>
+                        ([] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -44,8 +43,7 @@
                         (Area (Loc 66 2 8) (Loc 108 4 2))
                         (Abs
                            (Typed
-                              ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                               ] :=>
+                              ([] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude"))
@@ -384,38 +382,7 @@
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
                                    (Typed
-                                      ([ IsIn
-                                           "Eq"
-                                           [ TApp
-                                               (TApp
-                                                  (TCon
-                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                     "prelude")
-                                                  (TApp
-                                                     (TApp
-                                                        (TCon
-                                                           (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                           "prelude")
-                                                        (TVar (TV 19 Star)))
-                                                     (TCon (TC "{}" Star) "prelude")))
-                                               (TApp
-                                                  (TApp
-                                                     (TCon
-                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                        "prelude")
-                                                     (TApp
-                                                        (TApp
-                                                           (TCon
-                                                              (TC
-                                                                 "(->)"
-                                                                 (Kfun Star (Kfun Star Star)))
-                                                              "prelude")
-                                                           (TVar (TV 20 Star)))
-                                                        (TCon (TC "{}" Star) "prelude")))
-                                                  (TCon (TC "{}" Star) "prelude"))
-                                           ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       ] :=>
+                                      ([] :=>
                                          TApp
                                            (TApp
                                               (TCon
@@ -426,38 +393,7 @@
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
-                                       ([ IsIn
-                                            "Eq"
-                                            [ TApp
-                                                (TApp
-                                                   (TCon
-                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                      "prelude")
-                                                   (TApp
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                            "prelude")
-                                                         (TVar (TV 19 Star)))
-                                                      (TCon (TC "{}" Star) "prelude")))
-                                                (TApp
-                                                   (TApp
-                                                      (TCon
-                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                         "prelude")
-                                                      (TApp
-                                                         (TApp
-                                                            (TCon
-                                                               (TC
-                                                                  "(->)"
-                                                                  (Kfun Star (Kfun Star Star)))
-                                                               "prelude")
-                                                            (TVar (TV 20 Star)))
-                                                         (TCon (TC "{}" Star) "prelude")))
-                                                   (TCon (TC "{}" Star) "prelude"))
-                                            ]
-                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                        ] :=>
+                                       ([] :=>
                                           TApp
                                             (TApp
                                                (TCon
@@ -474,43 +410,7 @@
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
                                           (Typed
-                                             ([ IsIn
-                                                  "Eq"
-                                                  [ TApp
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                            "prelude")
-                                                         (TApp
-                                                            (TApp
-                                                               (TCon
-                                                                  (TC
-                                                                     "(->)"
-                                                                     (Kfun Star (Kfun Star Star)))
-                                                                  "prelude")
-                                                               (TVar (TV 19 Star)))
-                                                            (TCon (TC "{}" Star) "prelude")))
-                                                      (TApp
-                                                         (TApp
-                                                            (TCon
-                                                               (TC
-                                                                  "(->)"
-                                                                  (Kfun Star (Kfun Star Star)))
-                                                               "prelude")
-                                                            (TApp
-                                                               (TApp
-                                                                  (TCon
-                                                                     (TC
-                                                                        "(->)"
-                                                                        (Kfun
-                                                                           Star (Kfun Star Star)))
-                                                                     "prelude")
-                                                                  (TVar (TV 20 Star)))
-                                                               (TCon (TC "{}" Star) "prelude")))
-                                                         (TCon (TC "{}" Star) "prelude"))
-                                                  ]
-                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                              ] :=>
+                                             ([] :=>
                                                 TApp
                                                   (TApp
                                                      (TCon
@@ -521,45 +421,7 @@
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
-                                              ([ IsIn
-                                                   "Eq"
-                                                   [ TApp
-                                                       (TApp
-                                                          (TCon
-                                                             (TC
-                                                                "(->)" (Kfun Star (Kfun Star Star)))
-                                                             "prelude")
-                                                          (TApp
-                                                             (TApp
-                                                                (TCon
-                                                                   (TC
-                                                                      "(->)"
-                                                                      (Kfun Star (Kfun Star Star)))
-                                                                   "prelude")
-                                                                (TVar (TV 19 Star)))
-                                                             (TCon (TC "{}" Star) "prelude")))
-                                                       (TApp
-                                                          (TApp
-                                                             (TCon
-                                                                (TC
-                                                                   "(->)"
-                                                                   (Kfun Star (Kfun Star Star)))
-                                                                "prelude")
-                                                             (TApp
-                                                                (TApp
-                                                                   (TCon
-                                                                      (TC
-                                                                         "(->)"
-                                                                         (Kfun
-                                                                            Star (Kfun Star Star)))
-                                                                      "prelude")
-                                                                   (TVar (TV 20 Star)))
-                                                                (TCon (TC "{}" Star) "prelude")))
-                                                          (TCon (TC "{}" Star) "prelude"))
-                                                   ]
-                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                               ] :=>
-                                                 TCon (TC "Boolean" Star) "prelude")
+                                              ([] :=> TCon (TC "Boolean" Star) "prelude")
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Where
                                                  (Typed
@@ -2123,38 +1985,7 @@
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
                                    (Typed
-                                      ([ IsIn
-                                           "Show"
-                                           [ TApp
-                                               (TApp
-                                                  (TCon
-                                                     (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                     "prelude")
-                                                  (TApp
-                                                     (TApp
-                                                        (TCon
-                                                           (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                           "prelude")
-                                                        (TVar (TV 34 Star)))
-                                                     (TCon (TC "{}" Star) "prelude")))
-                                               (TApp
-                                                  (TApp
-                                                     (TCon
-                                                        (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                        "prelude")
-                                                     (TApp
-                                                        (TApp
-                                                           (TCon
-                                                              (TC
-                                                                 "(->)"
-                                                                 (Kfun Star (Kfun Star Star)))
-                                                              "prelude")
-                                                           (TVar (TV 35 Star)))
-                                                        (TCon (TC "{}" Star) "prelude")))
-                                                  (TCon (TC "{}" Star) "prelude"))
-                                           ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       ] :=>
+                                      ([] :=>
                                          TApp
                                            (TApp
                                               (TCon
@@ -2165,39 +1996,7 @@
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
-                                       ([ IsIn
-                                            "Show"
-                                            [ TApp
-                                                (TApp
-                                                   (TCon
-                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                      "prelude")
-                                                   (TApp
-                                                      (TApp
-                                                         (TCon
-                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                            "prelude")
-                                                         (TVar (TV 34 Star)))
-                                                      (TCon (TC "{}" Star) "prelude")))
-                                                (TApp
-                                                   (TApp
-                                                      (TCon
-                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
-                                                         "prelude")
-                                                      (TApp
-                                                         (TApp
-                                                            (TCon
-                                                               (TC
-                                                                  "(->)"
-                                                                  (Kfun Star (Kfun Star Star)))
-                                                               "prelude")
-                                                            (TVar (TV 35 Star)))
-                                                         (TCon (TC "{}" Star) "prelude")))
-                                                   (TCon (TC "{}" Star) "prelude"))
-                                            ]
-                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                        ] :=>
-                                          TCon (TC "String" Star) "prelude")
+                                       ([] :=> TCon (TC "String" Star) "prelude")
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Where
                                           (Typed

@@ -560,8 +560,7 @@
             (Assignment
                "drawShadows"
                (Typed
-                  ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                   ] :=>
+                  ([] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -580,14 +579,11 @@
                   (Area (Loc 353 16 15) (Loc 864 36 2))
                   (Abs
                      (Typed
-                        ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         ] :=>
-                           TVar (TV 86 Star))
+                        ([] :=> TVar (TV 86 Star))
                         (Area (Loc 354 16 16) (Loc 360 16 22))
                         "shader")
                      [ Typed
-                         ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                          ] :=>
+                         ([] :=>
                             TApp
                               (TApp
                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -602,8 +598,7 @@
                          (Area (Loc 353 16 15) (Loc 864 36 2))
                          (Abs
                             (Typed
-                               ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                                ] :=>
+                               ([] :=>
                                   TRecord
                                     (fromList
                                        [ ( "x" , TCon (TC "Float" Star) "prelude" )
@@ -614,9 +609,7 @@
                                (Area (Loc 362 16 24) (Loc 375 16 37))
                                "lightPosition")
                             [ Typed
-                                ([ IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                                 , IsIn "Number" [ TCon (TC "Float" Star) "prelude" ] Nothing
-                                 ] :=>
+                                ([] :=>
                                    TApp
                                      (TCon (TC "Array" (Kfun Star Star)) "prelude")
                                      (TRecord
@@ -6187,24 +6180,8 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 228 Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
@@ -6658,36 +6635,12 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 249 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 257 Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"

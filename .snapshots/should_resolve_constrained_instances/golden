@@ -32,17 +32,7 @@
                   (Assignment
                      "main"
                      (Typed
-                        ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         , IsIn
-                             "Inspect"
-                             [ TApp
-                                 (TApp
-                                    (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                    (TCon (TC "Integer" Star) "prelude"))
-                                 (TCon (TC "Boolean" Star) "prelude")
-                             ]
-                             (Just (Area (Loc 480 28 3) (Loc 487 28 10)))
-                         ] :=>
+                        ([] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -53,17 +43,7 @@
                         (Area (Loc 470 27 8) (Loc 502 29 2))
                         (Abs
                            (Typed
-                              ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                               , IsIn
-                                   "Inspect"
-                                   [ TApp
-                                       (TApp
-                                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                          (TCon (TC "Integer" Star) "prelude"))
-                                       (TCon (TC "Boolean" Star) "prelude")
-                                   ]
-                                   (Just (Area (Loc 480 28 3) (Loc 487 28 10)))
-                               ] :=>
+                              ([] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude"))
@@ -498,22 +478,6 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 451 24 73) (Loc 453 24 75)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 437 24 59) (Loc 439 24 61)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 429 24 51) (Loc 431 24 53)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 415 24 37) (Loc 417 24 39)))
-                                       , IsIn
                                            "Inspect"
                                            [ TVar (TV 20 Star) ]
                                            (Just (Area (Loc 418 24 40) (Loc 425 24 47)))
@@ -532,22 +496,6 @@
                                       "__W__1")
                                    [ Typed
                                        ([ IsIn
-                                            "Semigroup"
-                                            [ TCon (TC "String" Star) "prelude" ]
-                                            (Just (Area (Loc 451 24 73) (Loc 453 24 75)))
-                                        , IsIn
-                                            "Semigroup"
-                                            [ TCon (TC "String" Star) "prelude" ]
-                                            (Just (Area (Loc 437 24 59) (Loc 439 24 61)))
-                                        , IsIn
-                                            "Semigroup"
-                                            [ TCon (TC "String" Star) "prelude" ]
-                                            (Just (Area (Loc 429 24 51) (Loc 431 24 53)))
-                                        , IsIn
-                                            "Semigroup"
-                                            [ TCon (TC "String" Star) "prelude" ]
-                                            (Just (Area (Loc 415 24 37) (Loc 417 24 39)))
-                                        , IsIn
                                             "Inspect"
                                             [ TVar (TV 20 Star) ]
                                             (Just (Area (Loc 418 24 40) (Loc 425 24 47)))

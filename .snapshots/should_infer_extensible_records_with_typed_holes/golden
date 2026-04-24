@@ -308,10 +308,7 @@
                   (Assignment
                      "main"
                      (Typed
-                        ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                         ] :=>
+                        ([] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -322,10 +319,7 @@
                         (Area (Loc 399 25 8) (Loc 564 34 2))
                         (Abs
                            (Typed
-                              ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                               , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                               , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
-                               ] :=>
+                              ([] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude"))
@@ -3108,14 +3102,6 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 215 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -3378,36 +3364,12 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 226 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
                                            "Show"
                                            [ TVar (TV 234 Star) ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Monoid"
-                                           [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
-                                       , IsIn
-                                           "Semigroup"
-                                           [ TCon (TC "String" Star) "prelude" ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
