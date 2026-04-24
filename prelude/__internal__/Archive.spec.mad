@@ -1,0 +1,102 @@
+import type { AssertionError } from "Test"
+import type { Wish } from "Wish"
+
+import Archive from "./Archive"
+import Directory from "./Directory"
+import File from "./File"
+import Process from "./Process"
+import { always } from "Function"
+import { ErrorWithMessage, assertEquals, test } from "Test"
+import { mapRej } from "Wish"
+
+
+
+TEST_ROOT :: String
+TEST_ROOT = ".tests/prelude-archive-spec"
+
+testRootFor :: String -> String
+testRootFor = (name) => `${TEST_ROOT}/${name}`
+
+runShell :: String -> Wish Process.CommandResult {}
+runShell = (script) => map(
+  always({}),
+  Process.exec("sh", ["-c", script], Process.DEFAULT_COMMAND_OPTIONS),
+)
+
+expectSuccess :: String -> Wish e a -> Wish AssertionError a
+expectSuccess = (message, wish) => mapRej(always(ErrorWithMessage(message)), wish)
+
+
+test(
+  "zip + unzip - round trip preserves nested files",
+  () => do {
+    root = testRootFor("round-trip")
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+    _ <- expectSuccess(
+      "failed to create source directory",
+      Directory.create(`${root}/source/nested`, { recursive: true }),
+    )
+    _ <- expectSuccess(
+      "failed to write source root file",
+      File.write(`${root}/source/root.txt`, "root-value"),
+    )
+    _ <- expectSuccess(
+      "failed to write source nested file",
+      File.write(`${root}/source/nested/child.txt`, "child-value"),
+    )
+    _ <- expectSuccess(
+      "failed to zip source directory",
+      Archive.zip(`${root}/source`, `${root}/bundle.zip`),
+    )
+    _ <- expectSuccess(
+      "failed to unzip archive",
+      Archive.unzip(`${root}/bundle.zip`, `${root}/unzipped`),
+    )
+
+    rootContent <- expectSuccess(
+      "failed to read unzipped root file",
+      File.read(`${root}/unzipped/root.txt`),
+    )
+    childContent <- expectSuccess(
+      "failed to read unzipped nested file",
+      File.read(`${root}/unzipped/nested/child.txt`),
+    )
+
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+    _ <- assertEquals(rootContent, "root-value")
+    return assertEquals(childContent, "child-value")
+  },
+)
+
+
+test(
+  "unzip - creates destination directory when missing",
+  () => do {
+    root = testRootFor("creates-destination")
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+    _ <- expectSuccess(
+      "failed to create source directory",
+      Directory.create(`${root}/source-only`, { recursive: true }),
+    )
+    _ <- expectSuccess(
+      "failed to write source file",
+      File.write(`${root}/source-only/value.txt`, "created-destination"),
+    )
+    _ <- expectSuccess(
+      "failed to zip source directory",
+      Archive.zip(`${root}/source-only`, `${root}/single.zip`),
+    )
+    _ <- expectSuccess(
+      "failed to unzip archive",
+      Archive.unzip(`${root}/single.zip`, `${root}/new-output`),
+    )
+
+    content <- expectSuccess(
+      "failed to read file from created destination directory",
+      File.read(`${root}/new-output/value.txt`),
+    )
+
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+    return assertEquals(content, "created-destination")
+  },
+)

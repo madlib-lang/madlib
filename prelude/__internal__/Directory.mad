@@ -10,11 +10,18 @@ import {
   UnknownError,
 } from "__IOError__"
 
+
+
 export type Error
 export AddressAlreadyInUse
 export ArgumentListToLong
 export PermissionDenied
 export UnknownError
+
+export alias CreateOptions = { recursive :: Boolean }
+
+DEFAULT_CREATE_OPTIONS :: CreateOptions
+export DEFAULT_CREATE_OPTIONS = { recursive: false }
 
 
 #iftarget js
@@ -61,15 +68,66 @@ export read = (path) => Wish((bad, good) => #- {
   return () => {}
 } -#)
 
+/**
+ * Creates a directory at the provided path.
+ *
+ * @since 0.26.3
+ */
+create :: String -> CreateOptions -> Wish Error {}
+export create = (path, options) => Wish((bad, good) => #- {
+  let canceled = false;
+
+  prelude_directory_fs.mkdir(path, { recursive: options.recursive }, (mkdirErr) => {
+    if (canceled) {
+      return;
+    }
+
+    if (!mkdirErr) {
+      good(null);
+      return;
+    }
+
+    if (mkdirErr.code === "EEXIST" || mkdirErr.code === "EISDIR") {
+      prelude_directory_fs.stat(path, (statErr, stats) => {
+        if (canceled) {
+          return;
+        }
+
+        if (!statErr && stats.isDirectory()) {
+          good(null);
+          return;
+        }
+
+        bad({ __constructor: "UnknownError", __args: [] });
+      });
+      return;
+    }
+
+    bad({ __constructor: "UnknownError", __args: [] });
+  });
+
+  return () => {
+    canceled = true;
+  }
+} -#)
+
 #elseif llvm
 
 type Handle = Handle(Handle)
+
+type CreateHandle = CreateHandle(CreateHandle)
 
 cancelRead :: Handle -> {}
 cancelRead = extern "madlib__directory__cancelRead"
 
 readFFI :: String -> (Integer -> List String -> {}) -> Handle
 readFFI = extern "madlib__directory__read"
+
+cancelCreate :: CreateHandle -> {}
+cancelCreate = extern "madlib__directory__cancelCreate"
+
+createFFI :: String -> Boolean -> (Integer -> {} -> {}) -> CreateHandle
+createFFI = extern "madlib__directory__create"
 
 /**
  * Reads a directory and returns a Wish containing the file entries
@@ -99,6 +157,32 @@ export read = (path) => Wish((bad, good) => {
 
   return () => {
     if (!done) { cancelRead(id) }
+  }
+})
+
+/**
+ * Creates a directory at the provided path.
+ *
+ * @since 0.26.3
+ */
+create :: String -> CreateOptions -> Wish Error {}
+export create = (path, options) => Wish((bad, good) => {
+  done = false
+  id = createFFI(
+    path,
+    options.recursive,
+    (libuvError, _) => {
+      done := true
+      libuvError != 0
+        ? bad(Error.fromLibuvError(libuvError))
+        : good({})
+    },
+  )
+
+  return () => {
+    if (!done) {
+      cancelCreate(id)
+    }
   }
 })
 

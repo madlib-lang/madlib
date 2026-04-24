@@ -1,0 +1,174 @@
+import type { Wish } from "Wish"
+import type { Error } from "__IOError__"
+
+import String from "String"
+import { Wish } from "Wish"
+import Error from "__IOError__"
+import {
+  AddressAlreadyInUse,
+  ArgumentListToLong,
+  PermissionDenied,
+  UnknownError,
+} from "__IOError__"
+
+
+
+export type Error
+export AddressAlreadyInUse
+export ArgumentListToLong
+export PermissionDenied
+export UnknownError
+
+
+#iftarget js
+
+import { canonicalizePath, joinPath } from "FilePath"
+import Process from "Process"
+
+#-
+{Node}
+import { spawn as prelude_archive_spawn } from "child_process"
+{/Node}
+-#
+
+runCommand :: String -> List String -> { cwd :: String } -> Wish Error {}
+runCommand = (command, args, options) => Wish((bad, good) => #- {
+  {Node}
+    let done = false
+
+    const proc = prelude_archive_spawn(
+      command,
+      __listToJSArray__(args),
+      options.cwd === "" ? {} : { cwd: options.cwd }
+    )
+
+    proc.on("error", () => {
+      if (!done) {
+        done = true
+        bad({ __constructor: "UnknownError", __args: [] })
+      }
+    })
+
+    proc.on("close", (code) => {
+      if (done) {
+        return
+      }
+
+      done = true
+      code == 0
+        ? good(null)
+        : bad({ __constructor: "UnknownError", __args: [] })
+    })
+
+    return () => {
+      if (!done) {
+        done = true
+        proc.kill()
+      }
+    }
+  {/Node}
+  {Browser}
+    bad({ __constructor: "UnknownError", __args: [] })
+    return () => {}
+  {/Browser}
+} -#)
+
+/**
+ * Creates a zip archive from a source directory.
+ *
+ * @since 0.26.3
+ */
+zip :: String -> String -> Wish Error {}
+export zip = (sourceDirectoryPath, archivePath) => {
+  absoluteArchivePath = String.startsWith("/", archivePath)
+    ? archivePath
+    : canonicalizePath(joinPath([Process.getCurrentWorkingDirectory(), archivePath]))
+
+  return runCommand(
+    "zip",
+    ["-r", absoluteArchivePath, "."],
+    { cwd: sourceDirectoryPath },
+  )
+}
+
+/**
+ * Extracts a zip archive to the destination directory.
+ *
+ * @since 0.26.3
+ */
+unzip :: String -> String -> Wish Error {}
+export unzip = (archivePath, destinationDirectoryPath) => runCommand(
+  "unzip",
+  ["-o", archivePath, "-d", destinationDirectoryPath],
+  { cwd: "" },
+)
+
+#elseif llvm
+
+type Handle = Handle(Handle)
+
+cancelZip :: Handle -> {}
+cancelZip = extern "madlib__archive__cancelZip"
+
+zipFFI :: String -> String -> (Integer -> {} -> {}) -> Handle
+zipFFI = extern "madlib__archive__zip"
+
+cancelUnzip :: Handle -> {}
+cancelUnzip = extern "madlib__archive__cancelUnzip"
+
+unzipFFI :: String -> String -> (Integer -> {} -> {}) -> Handle
+unzipFFI = extern "madlib__archive__unzip"
+
+/**
+ * Creates a zip archive from a source directory.
+ *
+ * @since 0.26.3
+ */
+zip :: String -> String -> Wish Error {}
+export zip = (sourceDirectoryPath, archivePath) => Wish((bad, good) => {
+  done = false
+  id = zipFFI(
+    sourceDirectoryPath,
+    archivePath,
+    (libuvError, _) => {
+      done := true
+      libuvError != 0
+        ? bad(Error.fromLibuvError(libuvError))
+        : good({})
+    },
+  )
+
+  return () => {
+    if (!done) {
+      cancelZip(id)
+    }
+  }
+})
+
+/**
+ * Extracts a zip archive to the destination directory.
+ *
+ * @since 0.26.3
+ */
+unzip :: String -> String -> Wish Error {}
+export unzip = (archivePath, destinationDirectoryPath) => Wish((bad, good) => {
+  done = false
+  id = unzipFFI(
+    archivePath,
+    destinationDirectoryPath,
+    (libuvError, _) => {
+      done := true
+      libuvError != 0
+        ? bad(Error.fromLibuvError(libuvError))
+        : good({})
+    },
+  )
+
+  return () => {
+    if (!done) {
+      cancelUnzip(id)
+    }
+  }
+})
+
+#endif

@@ -12,6 +12,9 @@ extern "C" {
 uv_fs_t *madlib__directory__read(char *filepath, PAP_t *callback);
 void madlib__directory__cancelRead(uv_fs_t *req);
 
+uv_work_t *madlib__directory__create(char *path, bool recursive, PAP_t *callback);
+void madlib__directory__cancelCreate(uv_work_t *req);
+
 #ifdef __cplusplus
 }
 #endif

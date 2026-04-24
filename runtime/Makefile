@@ -1,5 +1,6 @@
 # Inputs
 CXX ?= clang++
+CC ?= clang
 TARGET ?= MACOS_ARM64
 AR ?= llvm-ar
 
@@ -26,6 +27,7 @@ OBJS :=\
   $(BUILDDIR)/process.o\
   $(BUILDDIR)/file.o\
   $(BUILDDIR)/directory.o\
+  $(BUILDDIR)/archive.o\
   $(BUILDDIR)/stdio.o\
   $(BUILDDIR)/http.o\
   $(BUILDDIR)/url.o\
@@ -34,7 +36,11 @@ OBJS :=\
   $(BUILDDIR)/gc.o\
   $(BUILDDIR)/crypto.o\
   $(BUILDDIR)/sha256.o\
-  $(BUILDDIR)/md5.o
+  $(BUILDDIR)/md5.o\
+  $(BUILDDIR)/miniz.o\
+  $(BUILDDIR)/miniz_tdef.o\
+  $(BUILDDIR)/miniz_tinfl.o\
+  $(BUILDDIR)/miniz_zip.o
 LIBTARGET := $(BUILDDIR)/libruntime.a
 
 build: prepare build/libruntime.a print_done
@@ -61,6 +67,9 @@ build/stack.o:
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
 	$(CXX) -DCURL_STATICLIB -DPCRE2_STATIC -I$(INCLUDEDIR) -std=c++14 -O3 -fPIC $(CXXFLAGS) -c $< -o $@
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) -I$(INCLUDEDIR) -O3 -fPIC $(CFLAGS) -c $< -o $@
 
 build/libruntime.a: $(OBJS)
 	$(AR) rc $@ $^

@@ -499,6 +499,7 @@ spec = describe "Megaparsec parser" $ do
 
   mapM_ (\name -> it ("parses " ++ name) $ parseFile (preludeDir ++ "/" ++ name))
     [ "Wish.mad"
+    , "Archive.mad"
     , "__BUILTINS__.mad"
     , "Alternative.mad"
     , "Applicative.mad"

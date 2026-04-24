@@ -1,0 +1,97 @@
+import type { AssertionError } from "Test"
+import type { Wish } from "Wish"
+
+import Directory from "./Directory"
+import File from "./File"
+import Process from "./Process"
+import { always } from "Function"
+import { ErrorWithMessage, assertEquals, test } from "Test"
+import { bichain, good, mapRej } from "Wish"
+
+
+
+TEST_ROOT :: String
+TEST_ROOT = ".tests/prelude-directory-spec"
+
+testRootFor :: String -> String
+testRootFor = (name) => `${TEST_ROOT}/${name}`
+
+runShell :: String -> Wish Process.CommandResult {}
+runShell = (script) => map(
+  always({}),
+  Process.exec("sh", ["-c", script], Process.DEFAULT_COMMAND_OPTIONS),
+)
+
+expectSuccess :: String -> Wish e a -> Wish AssertionError a
+expectSuccess = (message, wish) => mapRej(always(ErrorWithMessage(message)), wish)
+
+
+test(
+  "create - recursive creates missing parents",
+  () => do {
+    root = testRootFor("recursive")
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+    _ <- expectSuccess(
+      "failed to create recursive directory",
+      Directory.create(`${root}/nested/a/b`, { recursive: true }),
+    )
+    _ <- expectSuccess(
+      "failed to write file in recursive directory",
+      File.write(`${root}/nested/a/b/value.txt`, "ok"),
+    )
+    content <- expectSuccess(
+      "failed to read file in recursive directory",
+      File.read(`${root}/nested/a/b/value.txt`),
+    )
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+
+    return assertEquals(content, "ok")
+  },
+)
+
+
+test(
+  "create - non recursive fails when parent is missing",
+  () => do {
+    root = testRootFor("non-recursive-missing-parent")
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+
+    failed <- bichain(
+      always(good(true)),
+      always(good(false)),
+      Directory.create(`${root}/missing/leaf`, Directory.DEFAULT_CREATE_OPTIONS),
+    )
+
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+
+    return assertEquals(failed, true)
+  },
+)
+
+
+test(
+  "create - idempotent when directory exists",
+  () => do {
+    root = testRootFor("idempotent")
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+    _ <- expectSuccess(
+      "failed to create directory recursively",
+      Directory.create(`${root}/idempotent`, { recursive: true }),
+    )
+    _ <- expectSuccess(
+      "failed to create existing directory",
+      Directory.create(`${root}/idempotent`, Directory.DEFAULT_CREATE_OPTIONS),
+    )
+    _ <- expectSuccess(
+      "failed to write in idempotent directory",
+      File.write(`${root}/idempotent/check.txt`, "idempotent"),
+    )
+    content <- expectSuccess(
+      "failed to read from idempotent directory",
+      File.read(`${root}/idempotent/check.txt`),
+    )
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+
+    return assertEquals(content, "idempotent")
+  },
+)
