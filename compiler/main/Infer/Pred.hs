@@ -36,7 +36,7 @@ getParentPreds env p@(IsIn cls ts maybeArea) = do
   return $ [p] `union` ps' `union` concat nextPreds
 
 getParentPredsOnly :: Env -> Pred -> Infer [Pred]
-getParentPredsOnly env p@(IsIn cls ts maybeArea) = do
+getParentPredsOnly env (IsIn cls ts maybeArea) = do
   (Interface tvs ps _) <- lookupInterface env cls
 
   s <- unify (TVar <$> tvs) ts

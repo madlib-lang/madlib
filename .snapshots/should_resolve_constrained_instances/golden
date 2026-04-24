@@ -32,7 +32,17 @@
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=>
+                        ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                         , IsIn
+                             "Inspect"
+                             [ TApp
+                                 (TApp
+                                    (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                    (TCon (TC "Integer" Star) "prelude"))
+                                 (TCon (TC "Boolean" Star) "prelude")
+                             ]
+                             (Just (Area (Loc 480 28 3) (Loc 487 28 10)))
+                         ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -43,7 +53,17 @@
                         (Area (Loc 470 27 8) (Loc 502 29 2))
                         (Abs
                            (Typed
-                              ([] :=>
+                              ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                               , IsIn
+                                   "Inspect"
+                                   [ TApp
+                                       (TApp
+                                          (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
+                                          (TCon (TC "Integer" Star) "prelude"))
+                                       (TCon (TC "Boolean" Star) "prelude")
+                                   ]
+                                   (Just (Area (Loc 480 28 3) (Loc 487 28 10)))
+                               ] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude"))

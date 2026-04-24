@@ -40,7 +40,7 @@ instance Unify Type where
     s2 <- unify (apply s1 r) (apply s1 r')
     return $ compose s2 s1
 
-  unify l@(TRecord fields base optionalFields) r@(TRecord fields' base' optionalFields') = case (base, base') of
+  unify (TRecord fields base optionalFields) (TRecord fields' base' optionalFields') = case (base, base') of
     (Just tBase, Just tBase') -> do
       newBase <- newTVar Star
       -- Include optional fields in the field calculations
@@ -113,7 +113,6 @@ instance Unify Type where
       let extraFields  = M.keys $ M.difference (fields <> optionalFields) (fields' <> optionalFields')
           extraFields' = M.keys $ M.difference (fields' <> optionalFields') (fields <> optionalFields)
           availableFields  = M.keys (fields <> optionalFields)
-          availableFields' = M.keys (fields' <> optionalFields')
       if not (null extraFields') then
         throwError $ CompilationError (RecordExtraFields extraFields' availableFields) NoContext
       else if not (null extraFields) then
@@ -334,8 +333,8 @@ skipBase t = case t of
 
 gentleUnifyVars :: Substitution -> [Type] -> [Type] -> Substitution
 gentleUnifyVars s (tp : xs) (tp' : xs') =
-  let s1 = gentleUnify tp tp'
-  in  gentleUnifyVars (compose s s1) xs xs'
+  let s1 = gentleUnify (apply s tp) (apply s tp')
+  in  gentleUnifyVars (compose s1 s) xs xs'
 gentleUnifyVars s _ _  = s
 
 

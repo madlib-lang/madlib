@@ -158,17 +158,19 @@ inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (
 
   let sc          = quantify (ftvList qt') qt'
 
-  (s, ps, t, e) <- infer False options env m
+  (s, ps, t, e) <- infer False options env { envDeferBodyAmbiguity = True } m
   (qs :=> t')   <- instantiate sc
-  s'            <- (`compose` s) <$> unify t' t
+  su            <- unify t' t
+  let s' = su `compose` s
 
   let qs' = apply s' qs
       t'' = apply s' t'
+      methodGivens = apply s' (instancePreds ++ qs)
       fsSet = ftv (apply s' env)
       fs  = S.toList fsSet
       gs  = filter (not . (`S.member` fsSet)) (ftvList t'')
       sc' = quantify (ftvList t'') (qs' :=> t'')
-  ps' <- filterM ((not <$>) . entail env qs') (apply s' ps)
+  ps' <- filterM ((not <$>) . entail env methodGivens) (apply s' ps)
 
   (ds, rs, _) <- split True env fs gs ps'
 

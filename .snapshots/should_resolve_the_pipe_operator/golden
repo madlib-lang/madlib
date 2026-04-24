@@ -127,7 +127,8 @@
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=>
+                        ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                         ] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -138,7 +139,8 @@
                         (Area (Loc 28 2 8) (Loc 46 2 26))
                         (Abs
                            (Typed
-                              ([] :=>
+                              ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                               ] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude"))

@@ -36,6 +36,7 @@
                              "Number"
                              [ TCon (TC "Integer" Star) "prelude" ]
                              (Just (Area (Loc 77 5 9) (Loc 84 5 16)))
+                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                          ] :=>
                            TApp
                              (TApp
@@ -51,6 +52,7 @@
                                    "Number"
                                    [ TCon (TC "Integer" Star) "prelude" ]
                                    (Just (Area (Loc 77 5 9) (Loc 84 5 16)))
+                               , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                ] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")

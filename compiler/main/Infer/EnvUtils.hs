@@ -151,6 +151,7 @@ mergeEnv initial env = Env { envVars                 = envVars initial <> envVar
                            , envConstructors         = envConstructors initial <> envConstructors env
                            , envCurrentPath          = envCurrentPath env
                            , envInBody               = False
+                           , envDeferBodyAmbiguity   = False
                            , envNamesInScope         = mempty
                            , envNamespacesInScope    = envNamespacesInScope initial <> envNamespacesInScope env
                            , envImportInfo           = envImportInfo initial
@@ -289,6 +290,7 @@ initialEnv = do
         ]
     , envCurrentPath = ""
     , envInBody = False
+    , envDeferBodyAmbiguity = False
     , envNamesInScope = mempty
     , envNamespacesInScope = mempty
     , envImportInfo = mempty
