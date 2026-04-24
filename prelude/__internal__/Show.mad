@@ -171,6 +171,17 @@ alphaNumericalName = do {
   )([firstChar, ...rest])
 }
 
+alphaNumericalNameWithUnderscores :: Parser String
+alphaNumericalNameWithUnderscores = do {
+  firstChar <- Parse.letter
+  rest <- Parse.many(Parse.choice([Parse.letter, Parse.digit, Parse.char('_')]))
+
+  return pipe(
+    String.fromList,
+    of,
+  )([firstChar, ...rest])
+}
+
 
 // -------- Constructor -----------------------------------
 
@@ -211,7 +222,7 @@ byteArray = do {
 
 recordField :: Parser #[String, Value]
 recordField = do {
-  fieldName <- Parse.token(alphaNumericalName)
+  fieldName <- Parse.token(alphaNumericalNameWithUnderscores)
   _ <- Parse.symbol(":")
   fieldValue <- Parse.token(value)
 
@@ -475,7 +486,7 @@ printMadlibValue = (width, colored, madlibValue) => pipe(
   Parse.runParser(value),
   where {
     Left(r) =>
-      "Unknown" ++ show(r)
+      "Parsing error: " ++ show(r)
 
     Right(parsed) =>
       pipe(
