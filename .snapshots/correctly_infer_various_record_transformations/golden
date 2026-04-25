@@ -1511,8 +1511,8 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
                                      (fromList
-                                        [ ( "b" , TVar (TV 178 Star) )
-                                        , ( "c" , TVar (TV 190 Star) )
+                                        [ ( "b" , TVar (TV 180 Star) )
+                                        , ( "c" , TVar (TV 192 Star) )
                                         ])
                                      Nothing
                                      (fromList [])))
@@ -1521,8 +1521,8 @@
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
                                         (fromList
-                                           [ ( "b" , TVar (TV 178 Star) )
-                                           , ( "c" , TVar (TV 190 Star) )
+                                           [ ( "b" , TVar (TV 180 Star) )
+                                           , ( "c" , TVar (TV 192 Star) )
                                            ])
                                         Nothing
                                         (fromList [])))
@@ -1531,16 +1531,16 @@
                           (Assignment
                              "=="
                              (Typed
-                                ([ IsIn "Eq" [ TVar (TV 178 Star) ] Nothing
-                                 , IsIn "Eq" [ TVar (TV 190 Star) ] Nothing
+                                ([ IsIn "Eq" [ TVar (TV 180 Star) ] Nothing
+                                 , IsIn "Eq" [ TVar (TV 192 Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
                                            (fromList
-                                              [ ( "b" , TVar (TV 178 Star) )
-                                              , ( "c" , TVar (TV 190 Star) )
+                                              [ ( "b" , TVar (TV 180 Star) )
+                                              , ( "c" , TVar (TV 192 Star) )
                                               ])
                                            Nothing
                                            (fromList [])))
@@ -1549,8 +1549,8 @@
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
                                               (fromList
-                                                 [ ( "b" , TVar (TV 178 Star) )
-                                                 , ( "c" , TVar (TV 190 Star) )
+                                                 [ ( "b" , TVar (TV 180 Star) )
+                                                 , ( "c" , TVar (TV 192 Star) )
                                                  ])
                                               Nothing
                                               (fromList [])))
@@ -1560,17 +1560,17 @@
                                    (Typed
                                       ([ IsIn
                                            "Eq"
-                                           [ TVar (TV 178 Star) ]
+                                           [ TVar (TV 180 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Eq"
-                                           [ TVar (TV 190 Star) ]
+                                           [ TVar (TV 192 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TRecord
                                            (fromList
-                                              [ ( "b" , TVar (TV 178 Star) )
-                                              , ( "c" , TVar (TV 190 Star) )
+                                              [ ( "b" , TVar (TV 180 Star) )
+                                              , ( "c" , TVar (TV 192 Star) )
                                               ])
                                            Nothing
                                            (fromList []))
@@ -1579,11 +1579,11 @@
                                    [ Typed
                                        ([ IsIn
                                             "Eq"
-                                            [ TVar (TV 178 Star) ]
+                                            [ TVar (TV 180 Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         , IsIn
                                             "Eq"
-                                            [ TVar (TV 190 Star) ]
+                                            [ TVar (TV 192 Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
                                           TApp
@@ -1593,8 +1593,8 @@
                                                   "prelude")
                                                (TRecord
                                                   (fromList
-                                                     [ ( "b" , TVar (TV 178 Star) )
-                                                     , ( "c" , TVar (TV 190 Star) )
+                                                     [ ( "b" , TVar (TV 180 Star) )
+                                                     , ( "c" , TVar (TV 192 Star) )
                                                      ])
                                                   Nothing
                                                   (fromList [])))
@@ -1604,17 +1604,17 @@
                                           (Typed
                                              ([ IsIn
                                                   "Eq"
-                                                  [ TVar (TV 178 Star) ]
+                                                  [ TVar (TV 180 Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               , IsIn
                                                   "Eq"
-                                                  [ TVar (TV 190 Star) ]
+                                                  [ TVar (TV 192 Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
                                                 TRecord
                                                   (fromList
-                                                     [ ( "b" , TVar (TV 178 Star) )
-                                                     , ( "c" , TVar (TV 190 Star) )
+                                                     [ ( "b" , TVar (TV 180 Star) )
+                                                     , ( "c" , TVar (TV 192 Star) )
                                                      ])
                                                   Nothing
                                                   (fromList []))
@@ -1623,11 +1623,11 @@
                                           [ Typed
                                               ([ IsIn
                                                    "Eq"
-                                                   [ TVar (TV 178 Star) ]
+                                                   [ TVar (TV 180 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Eq"
-                                                   [ TVar (TV 190 Star) ]
+                                                   [ TVar (TV 192 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "Boolean" Star) "prelude")
@@ -1636,7 +1636,7 @@
                                                  (Typed
                                                     ([ IsIn
                                                          "Eq"
-                                                         [ TVar (TV 178 Star) ]
+                                                         [ TVar (TV 180 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TApp
@@ -1682,7 +1682,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV 178 Star) ]
+                                                               [ TVar (TV 180 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "Boolean" Star) "prelude")
@@ -1691,7 +1691,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 178 Star) ]
+                                                                     [ TVar (TV 180 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -1705,7 +1705,7 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV 178 Star)))
+                                                                        (TVar (TV 180 Star)))
                                                                      (TCon
                                                                         (TC "Boolean" Star)
                                                                         "prelude"))
@@ -1714,7 +1714,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 178 Star) ]
+                                                                           [ TVar (TV 180 Star) ]
                                                                            Nothing
                                                                        ] :=>
                                                                          TApp
@@ -1728,7 +1728,7 @@
                                                                                           Star
                                                                                           Star)))
                                                                                  "prelude")
-                                                                              (TVar (TV 178 Star)))
+                                                                              (TVar (TV 180 Star)))
                                                                            (TApp
                                                                               (TApp
                                                                                  (TCon
@@ -1741,7 +1741,7 @@
                                                                                              Star)))
                                                                                     "prelude")
                                                                                  (TVar
-                                                                                    (TV 178 Star)))
+                                                                                    (TV 180 Star)))
                                                                               (TCon
                                                                                  (TC "Boolean" Star)
                                                                                  "prelude")))
@@ -1750,13 +1750,13 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 178 Star) ]
+                                                                           [ TVar (TV 180 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
                                                                                  (Loc 0 0 0)))
                                                                        ] :=>
-                                                                         TVar (TV 178 Star))
+                                                                         TVar (TV 180 Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
                                                                          (Typed
@@ -1766,13 +1766,13 @@
                                                                                     [ ( "b"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             178
+                                                                                             180
                                                                                              Star)
                                                                                       )
                                                                                     , ( "c"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             190
+                                                                                             192
                                                                                              Star)
                                                                                       )
                                                                                     ])
@@ -1800,13 +1800,13 @@
                                                                                           [ ( "b"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   178
+                                                                                                   180
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "c"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   190
+                                                                                                   192
                                                                                                    Star)
                                                                                             )
                                                                                           ])
@@ -1814,7 +1814,7 @@
                                                                                        (fromList
                                                                                           [])))
                                                                                  (TVar
-                                                                                    (TV 178 Star)))
+                                                                                    (TV 180 Star)))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -1823,12 +1823,12 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 178 Star) ]
+                                                                     [ TVar (TV 180 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
                                                                  ] :=>
-                                                                   TVar (TV 178 Star))
+                                                                   TVar (TV 180 Star))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Access
                                                                    (Typed
@@ -1836,10 +1836,10 @@
                                                                          TRecord
                                                                            (fromList
                                                                               [ ( "b"
-                                                                                , TVar (TV 178 Star)
+                                                                                , TVar (TV 180 Star)
                                                                                 )
                                                                               , ( "c"
-                                                                                , TVar (TV 190 Star)
+                                                                                , TVar (TV 192 Star)
                                                                                 )
                                                                               ])
                                                                            Nothing
@@ -1864,19 +1864,19 @@
                                                                                     [ ( "b"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             178
+                                                                                             180
                                                                                              Star)
                                                                                       )
                                                                                     , ( "c"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             190
+                                                                                             192
                                                                                              Star)
                                                                                       )
                                                                                     ])
                                                                                  Nothing
                                                                                  (fromList [])))
-                                                                           (TVar (TV 178 Star)))
+                                                                           (TVar (TV 180 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".b" False))))
                                                              True))
@@ -1884,11 +1884,11 @@
                                                  (Typed
                                                     ([ IsIn
                                                          "Eq"
-                                                         [ TVar (TV 178 Star) ]
+                                                         [ TVar (TV 180 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Eq"
-                                                         [ TVar (TV 190 Star) ]
+                                                         [ TVar (TV 192 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "Boolean" Star) "prelude")
@@ -1897,7 +1897,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV 190 Star) ]
+                                                               [ TVar (TV 192 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TApp
@@ -1948,7 +1948,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 190 Star) ]
+                                                                     [ TVar (TV 192 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -1960,7 +1960,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 190 Star) ]
+                                                                           [ TVar (TV 192 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
@@ -1977,7 +1977,7 @@
                                                                                           Star
                                                                                           Star)))
                                                                                  "prelude")
-                                                                              (TVar (TV 190 Star)))
+                                                                              (TVar (TV 192 Star)))
                                                                            (TCon
                                                                               (TC "Boolean" Star)
                                                                               "prelude"))
@@ -1987,7 +1987,7 @@
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
-                                                                                     (TV 190 Star)
+                                                                                     (TV 192 Star)
                                                                                  ]
                                                                                  Nothing
                                                                              ] :=>
@@ -2004,7 +2004,7 @@
                                                                                        "prelude")
                                                                                     (TVar
                                                                                        (TV
-                                                                                          190
+                                                                                          192
                                                                                           Star)))
                                                                                  (TApp
                                                                                     (TApp
@@ -2019,7 +2019,7 @@
                                                                                           "prelude")
                                                                                        (TVar
                                                                                           (TV
-                                                                                             190
+                                                                                             192
                                                                                              Star)))
                                                                                     (TCon
                                                                                        (TC
@@ -2034,14 +2034,14 @@
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
-                                                                                     (TV 190 Star)
+                                                                                     (TV 192 Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc 0 0 0)
                                                                                        (Loc 0 0 0)))
                                                                              ] :=>
-                                                                               TVar (TV 190 Star))
+                                                                               TVar (TV 192 Star))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -2053,13 +2053,13 @@
                                                                                           [ ( "b"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   178
+                                                                                                   180
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "c"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   190
+                                                                                                   192
                                                                                                    Star)
                                                                                             )
                                                                                           ])
@@ -2090,13 +2090,13 @@
                                                                                                 [ ( "b"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         178
+                                                                                                         180
                                                                                                          Star)
                                                                                                   )
                                                                                                 , ( "c"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         190
+                                                                                                         192
                                                                                                          Star)
                                                                                                   )
                                                                                                 ])
@@ -2105,7 +2105,7 @@
                                                                                                 [])))
                                                                                        (TVar
                                                                                           (TV
-                                                                                             190
+                                                                                             192
                                                                                              Star)))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
@@ -2116,13 +2116,13 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 190 Star) ]
+                                                                           [ TVar (TV 192 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
                                                                                  (Loc 0 0 0)))
                                                                        ] :=>
-                                                                         TVar (TV 190 Star))
+                                                                         TVar (TV 192 Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
                                                                          (Typed
@@ -2132,13 +2132,13 @@
                                                                                     [ ( "b"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             178
+                                                                                             180
                                                                                              Star)
                                                                                       )
                                                                                     , ( "c"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             190
+                                                                                             192
                                                                                              Star)
                                                                                       )
                                                                                     ])
@@ -2166,13 +2166,13 @@
                                                                                           [ ( "b"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   178
+                                                                                                   180
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "c"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   190
+                                                                                                   192
                                                                                                    Star)
                                                                                             )
                                                                                           ])
@@ -2180,7 +2180,7 @@
                                                                                        (fromList
                                                                                           [])))
                                                                                  (TVar
-                                                                                    (TV 190 Star)))
+                                                                                    (TV 192 Star)))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -2190,7 +2190,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV 190 Star) ]
+                                                               [ TVar (TV 192 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "Boolean" Star) "prelude")
@@ -2244,14 +2244,14 @@
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
-                                     (fromList [ ( "p" , TVar (TV 207 Star) ) ])
+                                     (fromList [ ( "p" , TVar (TV 209 Star) ) ])
                                      Nothing
                                      (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
-                                        (fromList [ ( "p" , TVar (TV 207 Star) ) ])
+                                        (fromList [ ( "p" , TVar (TV 209 Star) ) ])
                                         Nothing
                                         (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
@@ -2259,19 +2259,19 @@
                           (Assignment
                              "=="
                              (Typed
-                                ([ IsIn "Eq" [ TVar (TV 207 Star) ] Nothing ] :=>
+                                ([ IsIn "Eq" [ TVar (TV 209 Star) ] Nothing ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
-                                           (fromList [ ( "p" , TVar (TV 207 Star) ) ])
+                                           (fromList [ ( "p" , TVar (TV 209 Star) ) ])
                                            Nothing
                                            (fromList [])))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
-                                              (fromList [ ( "p" , TVar (TV 207 Star) ) ])
+                                              (fromList [ ( "p" , TVar (TV 209 Star) ) ])
                                               Nothing
                                               (fromList [])))
                                         (TCon (TC "Boolean" Star) "prelude")))
@@ -2280,11 +2280,11 @@
                                    (Typed
                                       ([ IsIn
                                            "Eq"
-                                           [ TVar (TV 207 Star) ]
+                                           [ TVar (TV 209 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TRecord
-                                           (fromList [ ( "p" , TVar (TV 207 Star) ) ])
+                                           (fromList [ ( "p" , TVar (TV 209 Star) ) ])
                                            Nothing
                                            (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -2292,7 +2292,7 @@
                                    [ Typed
                                        ([ IsIn
                                             "Eq"
-                                            [ TVar (TV 207 Star) ]
+                                            [ TVar (TV 209 Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
                                           TApp
@@ -2301,7 +2301,7 @@
                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                   "prelude")
                                                (TRecord
-                                                  (fromList [ ( "p" , TVar (TV 207 Star) ) ])
+                                                  (fromList [ ( "p" , TVar (TV 209 Star) ) ])
                                                   Nothing
                                                   (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
@@ -2310,11 +2310,11 @@
                                           (Typed
                                              ([ IsIn
                                                   "Eq"
-                                                  [ TVar (TV 207 Star) ]
+                                                  [ TVar (TV 209 Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
                                                 TRecord
-                                                  (fromList [ ( "p" , TVar (TV 207 Star) ) ])
+                                                  (fromList [ ( "p" , TVar (TV 209 Star) ) ])
                                                   Nothing
                                                   (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -2322,7 +2322,7 @@
                                           [ Typed
                                               ([ IsIn
                                                    "Eq"
-                                                   [ TVar (TV 207 Star) ]
+                                                   [ TVar (TV 209 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "Boolean" Star) "prelude")
@@ -2331,7 +2331,7 @@
                                                  (Typed
                                                     ([ IsIn
                                                          "Eq"
-                                                         [ TVar (TV 207 Star) ]
+                                                         [ TVar (TV 209 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TApp
@@ -2377,7 +2377,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV 207 Star) ]
+                                                               [ TVar (TV 209 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "Boolean" Star) "prelude")
@@ -2386,7 +2386,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 207 Star) ]
+                                                                     [ TVar (TV 209 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -2400,7 +2400,7 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV 207 Star)))
+                                                                        (TVar (TV 209 Star)))
                                                                      (TCon
                                                                         (TC "Boolean" Star)
                                                                         "prelude"))
@@ -2409,7 +2409,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 207 Star) ]
+                                                                           [ TVar (TV 209 Star) ]
                                                                            Nothing
                                                                        ] :=>
                                                                          TApp
@@ -2423,7 +2423,7 @@
                                                                                           Star
                                                                                           Star)))
                                                                                  "prelude")
-                                                                              (TVar (TV 207 Star)))
+                                                                              (TVar (TV 209 Star)))
                                                                            (TApp
                                                                               (TApp
                                                                                  (TCon
@@ -2436,7 +2436,7 @@
                                                                                              Star)))
                                                                                     "prelude")
                                                                                  (TVar
-                                                                                    (TV 207 Star)))
+                                                                                    (TV 209 Star)))
                                                                               (TCon
                                                                                  (TC "Boolean" Star)
                                                                                  "prelude")))
@@ -2445,13 +2445,13 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 207 Star) ]
+                                                                           [ TVar (TV 209 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
                                                                                  (Loc 0 0 0)))
                                                                        ] :=>
-                                                                         TVar (TV 207 Star))
+                                                                         TVar (TV 209 Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
                                                                          (Typed
@@ -2461,7 +2461,7 @@
                                                                                     [ ( "p"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             207
+                                                                                             209
                                                                                              Star)
                                                                                       )
                                                                                     ])
@@ -2489,7 +2489,7 @@
                                                                                           [ ( "p"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   207
+                                                                                                   209
                                                                                                    Star)
                                                                                             )
                                                                                           ])
@@ -2497,7 +2497,7 @@
                                                                                        (fromList
                                                                                           [])))
                                                                                  (TVar
-                                                                                    (TV 207 Star)))
+                                                                                    (TV 209 Star)))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -2506,12 +2506,12 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 207 Star) ]
+                                                                     [ TVar (TV 209 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
                                                                  ] :=>
-                                                                   TVar (TV 207 Star))
+                                                                   TVar (TV 209 Star))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Access
                                                                    (Typed
@@ -2519,7 +2519,7 @@
                                                                          TRecord
                                                                            (fromList
                                                                               [ ( "p"
-                                                                                , TVar (TV 207 Star)
+                                                                                , TVar (TV 209 Star)
                                                                                 )
                                                                               ])
                                                                            Nothing
@@ -2544,13 +2544,13 @@
                                                                                     [ ( "p"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             207
+                                                                                             209
                                                                                              Star)
                                                                                       )
                                                                                     ])
                                                                                  Nothing
                                                                                  (fromList [])))
-                                                                           (TVar (TV 207 Star)))
+                                                                           (TVar (TV 209 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".p" False))))
                                                              True))
@@ -2558,7 +2558,7 @@
                                                  (Typed
                                                     ([ IsIn
                                                          "Eq"
-                                                         [ TVar (TV 207 Star) ]
+                                                         [ TVar (TV 209 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "Boolean" Star) "prelude")
@@ -2612,9 +2612,9 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
                                      (fromList
-                                        [ ( "p" , TVar (TV 222 Star) )
-                                        , ( "y" , TVar (TV 234 Star) )
-                                        , ( "z" , TVar (TV 247 Star) )
+                                        [ ( "p" , TVar (TV 224 Star) )
+                                        , ( "y" , TVar (TV 236 Star) )
+                                        , ( "z" , TVar (TV 249 Star) )
                                         ])
                                      Nothing
                                      (fromList [])))
@@ -2623,9 +2623,9 @@
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TRecord
                                         (fromList
-                                           [ ( "p" , TVar (TV 222 Star) )
-                                           , ( "y" , TVar (TV 234 Star) )
-                                           , ( "z" , TVar (TV 247 Star) )
+                                           [ ( "p" , TVar (TV 224 Star) )
+                                           , ( "y" , TVar (TV 236 Star) )
+                                           , ( "z" , TVar (TV 249 Star) )
                                            ])
                                         Nothing
                                         (fromList [])))
@@ -2634,18 +2634,18 @@
                           (Assignment
                              "=="
                              (Typed
-                                ([ IsIn "Eq" [ TVar (TV 222 Star) ] Nothing
-                                 , IsIn "Eq" [ TVar (TV 234 Star) ] Nothing
-                                 , IsIn "Eq" [ TVar (TV 247 Star) ] Nothing
+                                ([ IsIn "Eq" [ TVar (TV 224 Star) ] Nothing
+                                 , IsIn "Eq" [ TVar (TV 236 Star) ] Nothing
+                                 , IsIn "Eq" [ TVar (TV 249 Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
                                            (fromList
-                                              [ ( "p" , TVar (TV 222 Star) )
-                                              , ( "y" , TVar (TV 234 Star) )
-                                              , ( "z" , TVar (TV 247 Star) )
+                                              [ ( "p" , TVar (TV 224 Star) )
+                                              , ( "y" , TVar (TV 236 Star) )
+                                              , ( "z" , TVar (TV 249 Star) )
                                               ])
                                            Nothing
                                            (fromList [])))
@@ -2654,9 +2654,9 @@
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TRecord
                                               (fromList
-                                                 [ ( "p" , TVar (TV 222 Star) )
-                                                 , ( "y" , TVar (TV 234 Star) )
-                                                 , ( "z" , TVar (TV 247 Star) )
+                                                 [ ( "p" , TVar (TV 224 Star) )
+                                                 , ( "y" , TVar (TV 236 Star) )
+                                                 , ( "z" , TVar (TV 249 Star) )
                                                  ])
                                               Nothing
                                               (fromList [])))
@@ -2666,22 +2666,22 @@
                                    (Typed
                                       ([ IsIn
                                            "Eq"
-                                           [ TVar (TV 222 Star) ]
+                                           [ TVar (TV 224 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Eq"
-                                           [ TVar (TV 234 Star) ]
+                                           [ TVar (TV 236 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Eq"
-                                           [ TVar (TV 247 Star) ]
+                                           [ TVar (TV 249 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TRecord
                                            (fromList
-                                              [ ( "p" , TVar (TV 222 Star) )
-                                              , ( "y" , TVar (TV 234 Star) )
-                                              , ( "z" , TVar (TV 247 Star) )
+                                              [ ( "p" , TVar (TV 224 Star) )
+                                              , ( "y" , TVar (TV 236 Star) )
+                                              , ( "z" , TVar (TV 249 Star) )
                                               ])
                                            Nothing
                                            (fromList []))
@@ -2690,15 +2690,15 @@
                                    [ Typed
                                        ([ IsIn
                                             "Eq"
-                                            [ TVar (TV 222 Star) ]
+                                            [ TVar (TV 224 Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         , IsIn
                                             "Eq"
-                                            [ TVar (TV 234 Star) ]
+                                            [ TVar (TV 236 Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         , IsIn
                                             "Eq"
-                                            [ TVar (TV 247 Star) ]
+                                            [ TVar (TV 249 Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
                                           TApp
@@ -2708,9 +2708,9 @@
                                                   "prelude")
                                                (TRecord
                                                   (fromList
-                                                     [ ( "p" , TVar (TV 222 Star) )
-                                                     , ( "y" , TVar (TV 234 Star) )
-                                                     , ( "z" , TVar (TV 247 Star) )
+                                                     [ ( "p" , TVar (TV 224 Star) )
+                                                     , ( "y" , TVar (TV 236 Star) )
+                                                     , ( "z" , TVar (TV 249 Star) )
                                                      ])
                                                   Nothing
                                                   (fromList [])))
@@ -2720,22 +2720,22 @@
                                           (Typed
                                              ([ IsIn
                                                   "Eq"
-                                                  [ TVar (TV 222 Star) ]
+                                                  [ TVar (TV 224 Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               , IsIn
                                                   "Eq"
-                                                  [ TVar (TV 234 Star) ]
+                                                  [ TVar (TV 236 Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               , IsIn
                                                   "Eq"
-                                                  [ TVar (TV 247 Star) ]
+                                                  [ TVar (TV 249 Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
                                                 TRecord
                                                   (fromList
-                                                     [ ( "p" , TVar (TV 222 Star) )
-                                                     , ( "y" , TVar (TV 234 Star) )
-                                                     , ( "z" , TVar (TV 247 Star) )
+                                                     [ ( "p" , TVar (TV 224 Star) )
+                                                     , ( "y" , TVar (TV 236 Star) )
+                                                     , ( "z" , TVar (TV 249 Star) )
                                                      ])
                                                   Nothing
                                                   (fromList []))
@@ -2744,15 +2744,15 @@
                                           [ Typed
                                               ([ IsIn
                                                    "Eq"
-                                                   [ TVar (TV 222 Star) ]
+                                                   [ TVar (TV 224 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Eq"
-                                                   [ TVar (TV 234 Star) ]
+                                                   [ TVar (TV 236 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Eq"
-                                                   [ TVar (TV 247 Star) ]
+                                                   [ TVar (TV 249 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "Boolean" Star) "prelude")
@@ -2761,7 +2761,7 @@
                                                  (Typed
                                                     ([ IsIn
                                                          "Eq"
-                                                         [ TVar (TV 222 Star) ]
+                                                         [ TVar (TV 224 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TApp
@@ -2807,7 +2807,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV 222 Star) ]
+                                                               [ TVar (TV 224 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "Boolean" Star) "prelude")
@@ -2816,7 +2816,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 222 Star) ]
+                                                                     [ TVar (TV 224 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -2830,7 +2830,7 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV 222 Star)))
+                                                                        (TVar (TV 224 Star)))
                                                                      (TCon
                                                                         (TC "Boolean" Star)
                                                                         "prelude"))
@@ -2839,7 +2839,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 222 Star) ]
+                                                                           [ TVar (TV 224 Star) ]
                                                                            Nothing
                                                                        ] :=>
                                                                          TApp
@@ -2853,7 +2853,7 @@
                                                                                           Star
                                                                                           Star)))
                                                                                  "prelude")
-                                                                              (TVar (TV 222 Star)))
+                                                                              (TVar (TV 224 Star)))
                                                                            (TApp
                                                                               (TApp
                                                                                  (TCon
@@ -2866,7 +2866,7 @@
                                                                                              Star)))
                                                                                     "prelude")
                                                                                  (TVar
-                                                                                    (TV 222 Star)))
+                                                                                    (TV 224 Star)))
                                                                               (TCon
                                                                                  (TC "Boolean" Star)
                                                                                  "prelude")))
@@ -2875,13 +2875,13 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 222 Star) ]
+                                                                           [ TVar (TV 224 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
                                                                                  (Loc 0 0 0)))
                                                                        ] :=>
-                                                                         TVar (TV 222 Star))
+                                                                         TVar (TV 224 Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
                                                                          (Typed
@@ -2891,19 +2891,19 @@
                                                                                     [ ( "p"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             222
+                                                                                             224
                                                                                              Star)
                                                                                       )
                                                                                     , ( "y"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             234
+                                                                                             236
                                                                                              Star)
                                                                                       )
                                                                                     , ( "z"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             247
+                                                                                             249
                                                                                              Star)
                                                                                       )
                                                                                     ])
@@ -2931,19 +2931,19 @@
                                                                                           [ ( "p"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   222
+                                                                                                   224
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "y"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   234
+                                                                                                   236
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "z"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   247
+                                                                                                   249
                                                                                                    Star)
                                                                                             )
                                                                                           ])
@@ -2951,7 +2951,7 @@
                                                                                        (fromList
                                                                                           [])))
                                                                                  (TVar
-                                                                                    (TV 222 Star)))
+                                                                                    (TV 224 Star)))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -2960,12 +2960,12 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 222 Star) ]
+                                                                     [ TVar (TV 224 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
                                                                  ] :=>
-                                                                   TVar (TV 222 Star))
+                                                                   TVar (TV 224 Star))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Access
                                                                    (Typed
@@ -2973,13 +2973,13 @@
                                                                          TRecord
                                                                            (fromList
                                                                               [ ( "p"
-                                                                                , TVar (TV 222 Star)
+                                                                                , TVar (TV 224 Star)
                                                                                 )
                                                                               , ( "y"
-                                                                                , TVar (TV 234 Star)
+                                                                                , TVar (TV 236 Star)
                                                                                 )
                                                                               , ( "z"
-                                                                                , TVar (TV 247 Star)
+                                                                                , TVar (TV 249 Star)
                                                                                 )
                                                                               ])
                                                                            Nothing
@@ -3004,25 +3004,25 @@
                                                                                     [ ( "p"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             222
+                                                                                             224
                                                                                              Star)
                                                                                       )
                                                                                     , ( "y"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             234
+                                                                                             236
                                                                                              Star)
                                                                                       )
                                                                                     , ( "z"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             247
+                                                                                             249
                                                                                              Star)
                                                                                       )
                                                                                     ])
                                                                                  Nothing
                                                                                  (fromList [])))
-                                                                           (TVar (TV 222 Star)))
+                                                                           (TVar (TV 224 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".p" False))))
                                                              True))
@@ -3030,15 +3030,15 @@
                                                  (Typed
                                                     ([ IsIn
                                                          "Eq"
-                                                         [ TVar (TV 222 Star) ]
+                                                         [ TVar (TV 224 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Eq"
-                                                         [ TVar (TV 234 Star) ]
+                                                         [ TVar (TV 236 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Eq"
-                                                         [ TVar (TV 247 Star) ]
+                                                         [ TVar (TV 249 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "Boolean" Star) "prelude")
@@ -3047,7 +3047,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV 234 Star) ]
+                                                               [ TVar (TV 236 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TApp
@@ -3098,7 +3098,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 234 Star) ]
+                                                                     [ TVar (TV 236 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -3110,7 +3110,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 234 Star) ]
+                                                                           [ TVar (TV 236 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
@@ -3127,7 +3127,7 @@
                                                                                           Star
                                                                                           Star)))
                                                                                  "prelude")
-                                                                              (TVar (TV 234 Star)))
+                                                                              (TVar (TV 236 Star)))
                                                                            (TCon
                                                                               (TC "Boolean" Star)
                                                                               "prelude"))
@@ -3137,7 +3137,7 @@
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
-                                                                                     (TV 234 Star)
+                                                                                     (TV 236 Star)
                                                                                  ]
                                                                                  Nothing
                                                                              ] :=>
@@ -3154,7 +3154,7 @@
                                                                                        "prelude")
                                                                                     (TVar
                                                                                        (TV
-                                                                                          234
+                                                                                          236
                                                                                           Star)))
                                                                                  (TApp
                                                                                     (TApp
@@ -3169,7 +3169,7 @@
                                                                                           "prelude")
                                                                                        (TVar
                                                                                           (TV
-                                                                                             234
+                                                                                             236
                                                                                              Star)))
                                                                                     (TCon
                                                                                        (TC
@@ -3184,14 +3184,14 @@
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
-                                                                                     (TV 234 Star)
+                                                                                     (TV 236 Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc 0 0 0)
                                                                                        (Loc 0 0 0)))
                                                                              ] :=>
-                                                                               TVar (TV 234 Star))
+                                                                               TVar (TV 236 Star))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -3203,19 +3203,19 @@
                                                                                           [ ( "p"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   222
+                                                                                                   224
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "y"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   234
+                                                                                                   236
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "z"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   247
+                                                                                                   249
                                                                                                    Star)
                                                                                             )
                                                                                           ])
@@ -3246,19 +3246,19 @@
                                                                                                 [ ( "p"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         222
+                                                                                                         224
                                                                                                          Star)
                                                                                                   )
                                                                                                 , ( "y"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         234
+                                                                                                         236
                                                                                                          Star)
                                                                                                   )
                                                                                                 , ( "z"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         247
+                                                                                                         249
                                                                                                          Star)
                                                                                                   )
                                                                                                 ])
@@ -3267,7 +3267,7 @@
                                                                                                 [])))
                                                                                        (TVar
                                                                                           (TV
-                                                                                             234
+                                                                                             236
                                                                                              Star)))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
@@ -3278,13 +3278,13 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 234 Star) ]
+                                                                           [ TVar (TV 236 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
                                                                                  (Loc 0 0 0)))
                                                                        ] :=>
-                                                                         TVar (TV 234 Star))
+                                                                         TVar (TV 236 Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
                                                                          (Typed
@@ -3294,19 +3294,19 @@
                                                                                     [ ( "p"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             222
+                                                                                             224
                                                                                              Star)
                                                                                       )
                                                                                     , ( "y"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             234
+                                                                                             236
                                                                                              Star)
                                                                                       )
                                                                                     , ( "z"
                                                                                       , TVar
                                                                                           (TV
-                                                                                             247
+                                                                                             249
                                                                                              Star)
                                                                                       )
                                                                                     ])
@@ -3334,19 +3334,19 @@
                                                                                           [ ( "p"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   222
+                                                                                                   224
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "y"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   234
+                                                                                                   236
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "z"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   247
+                                                                                                   249
                                                                                                    Star)
                                                                                             )
                                                                                           ])
@@ -3354,7 +3354,7 @@
                                                                                        (fromList
                                                                                           [])))
                                                                                  (TVar
-                                                                                    (TV 234 Star)))
+                                                                                    (TV 236 Star)))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -3364,11 +3364,11 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV 234 Star) ]
+                                                               [ TVar (TV 236 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            , IsIn
                                                                "Eq"
-                                                               [ TVar (TV 247 Star) ]
+                                                               [ TVar (TV 249 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "Boolean" Star) "prelude")
@@ -3377,7 +3377,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 247 Star) ]
+                                                                     [ TVar (TV 249 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -3439,7 +3439,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 247 Star) ]
+                                                                           [ TVar (TV 249 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
@@ -3454,7 +3454,7 @@
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
-                                                                                     (TV 247 Star)
+                                                                                     (TV 249 Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
@@ -3474,7 +3474,7 @@
                                                                                        "prelude")
                                                                                     (TVar
                                                                                        (TV
-                                                                                          247
+                                                                                          249
                                                                                           Star)))
                                                                                  (TCon
                                                                                     (TC
@@ -3490,7 +3490,7 @@
                                                                                        "Eq"
                                                                                        [ TVar
                                                                                            (TV
-                                                                                              247
+                                                                                              249
                                                                                               Star)
                                                                                        ]
                                                                                        Nothing
@@ -3508,7 +3508,7 @@
                                                                                              "prelude")
                                                                                           (TVar
                                                                                              (TV
-                                                                                                247
+                                                                                                249
                                                                                                 Star)))
                                                                                        (TApp
                                                                                           (TApp
@@ -3523,7 +3523,7 @@
                                                                                                 "prelude")
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   247
+                                                                                                   249
                                                                                                    Star)))
                                                                                           (TCon
                                                                                              (TC
@@ -3539,7 +3539,7 @@
                                                                                        "Eq"
                                                                                        [ TVar
                                                                                            (TV
-                                                                                              247
+                                                                                              249
                                                                                               Star)
                                                                                        ]
                                                                                        (Just
@@ -3555,7 +3555,7 @@
                                                                                    ] :=>
                                                                                      TVar
                                                                                        (TV
-                                                                                          247 Star))
+                                                                                          249 Star))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
                                                                                      (Loc 0 0 0))
@@ -3567,19 +3567,19 @@
                                                                                                 [ ( "p"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         222
+                                                                                                         224
                                                                                                          Star)
                                                                                                   )
                                                                                                 , ( "y"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         234
+                                                                                                         236
                                                                                                          Star)
                                                                                                   )
                                                                                                 , ( "z"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         247
+                                                                                                         249
                                                                                                          Star)
                                                                                                   )
                                                                                                 ])
@@ -3614,19 +3614,19 @@
                                                                                                       [ ( "p"
                                                                                                         , TVar
                                                                                                             (TV
-                                                                                                               222
+                                                                                                               224
                                                                                                                Star)
                                                                                                         )
                                                                                                       , ( "y"
                                                                                                         , TVar
                                                                                                             (TV
-                                                                                                               234
+                                                                                                               236
                                                                                                                Star)
                                                                                                         )
                                                                                                       , ( "z"
                                                                                                         , TVar
                                                                                                             (TV
-                                                                                                               247
+                                                                                                               249
                                                                                                                Star)
                                                                                                         )
                                                                                                       ])
@@ -3635,7 +3635,7 @@
                                                                                                       [])))
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   247
+                                                                                                   249
                                                                                                    Star)))
                                                                                         (Area
                                                                                            (Loc
@@ -3652,14 +3652,14 @@
                                                                             ([ IsIn
                                                                                  "Eq"
                                                                                  [ TVar
-                                                                                     (TV 247 Star)
+                                                                                     (TV 249 Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
                                                                                        (Loc 0 0 0)
                                                                                        (Loc 0 0 0)))
                                                                              ] :=>
-                                                                               TVar (TV 247 Star))
+                                                                               TVar (TV 249 Star))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -3671,19 +3671,19 @@
                                                                                           [ ( "p"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   222
+                                                                                                   224
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "y"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   234
+                                                                                                   236
                                                                                                    Star)
                                                                                             )
                                                                                           , ( "z"
                                                                                             , TVar
                                                                                                 (TV
-                                                                                                   247
+                                                                                                   249
                                                                                                    Star)
                                                                                             )
                                                                                           ])
@@ -3714,19 +3714,19 @@
                                                                                                 [ ( "p"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         222
+                                                                                                         224
                                                                                                          Star)
                                                                                                   )
                                                                                                 , ( "y"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         234
+                                                                                                         236
                                                                                                          Star)
                                                                                                   )
                                                                                                 , ( "z"
                                                                                                   , TVar
                                                                                                       (TV
-                                                                                                         247
+                                                                                                         249
                                                                                                          Star)
                                                                                                   )
                                                                                                 ])
@@ -3735,7 +3735,7 @@
                                                                                                 [])))
                                                                                        (TVar
                                                                                           (TV
-                                                                                             247
+                                                                                             249
                                                                                              Star)))
                                                                                   (Area
                                                                                      (Loc 0 0 0)
@@ -3747,7 +3747,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 247 Star) ]
+                                                                     [ TVar (TV 249 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -3817,8 +3817,8 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
                                      (fromList
-                                        [ ( "b" , TVar (TV 261 Star) )
-                                        , ( "c" , TVar (TV 269 Star) )
+                                        [ ( "b" , TVar (TV 263 Star) )
+                                        , ( "c" , TVar (TV 271 Star) )
                                         ])
                                      Nothing
                                      (fromList [])))
@@ -3827,16 +3827,16 @@
                           (Assignment
                              "show"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV 261 Star) ] Nothing
-                                 , IsIn "Show" [ TVar (TV 269 Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV 263 Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV 271 Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
                                            (fromList
-                                              [ ( "b" , TVar (TV 261 Star) )
-                                              , ( "c" , TVar (TV 269 Star) )
+                                              [ ( "b" , TVar (TV 263 Star) )
+                                              , ( "c" , TVar (TV 271 Star) )
                                               ])
                                            Nothing
                                            (fromList [])))
@@ -3854,7 +3854,7 @@
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
-                                           [ TVar (TV 261 Star) ]
+                                           [ TVar (TV 263 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Monoid"
@@ -3866,13 +3866,13 @@
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
-                                           [ TVar (TV 269 Star) ]
+                                           [ TVar (TV 271 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TRecord
                                            (fromList
-                                              [ ( "b" , TVar (TV 261 Star) )
-                                              , ( "c" , TVar (TV 269 Star) )
+                                              [ ( "b" , TVar (TV 263 Star) )
+                                              , ( "c" , TVar (TV 271 Star) )
                                               ])
                                            Nothing
                                            (fromList []))
@@ -3897,7 +3897,7 @@
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Show"
-                                                   [ TVar (TV 261 Star) ]
+                                                   [ TVar (TV 263 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "String" Star) "prelude")
@@ -3985,7 +3985,7 @@
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Show"
-                                                         [ TVar (TV 261 Star) ]
+                                                         [ TVar (TV 263 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -3993,7 +3993,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 261 Star) ] Nothing
+                                                               "Show" [ TVar (TV 263 Star) ] Nothing
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -4003,17 +4003,17 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV 261 Star)))
+                                                                  (TVar (TV 263 Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV 261 Star) ]
+                                                               [ TVar (TV 263 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
-                                                             TVar (TV 261 Star))
+                                                             TVar (TV 263 Star))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Access
                                                              (Typed
@@ -4021,10 +4021,10 @@
                                                                    TRecord
                                                                      (fromList
                                                                         [ ( "b"
-                                                                          , TVar (TV 261 Star)
+                                                                          , TVar (TV 263 Star)
                                                                           )
                                                                         , ( "c"
-                                                                          , TVar (TV 269 Star)
+                                                                          , TVar (TV 271 Star)
                                                                           )
                                                                         ])
                                                                      Nothing
@@ -4045,13 +4045,15 @@
                                                                         (TRecord
                                                                            (fromList
                                                                               [ ( "b"
-                                                                                , TVar (TV 261 Star)
+                                                                                , TVar (TV 263 Star)
+                                                                                )
+                                                                              , ( "c"
+                                                                                , TVar (TV 271 Star)
                                                                                 )
                                                                               ])
-                                                                           (Just
-                                                                              (TVar (TV 263 Star)))
+                                                                           Nothing
                                                                            (fromList [])))
-                                                                     (TVar (TV 261 Star)))
+                                                                     (TVar (TV 263 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".b" False))))
                                                        True))
@@ -4071,7 +4073,7 @@
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Show"
-                                                   [ TVar (TV 269 Star) ]
+                                                   [ TVar (TV 271 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "String" Star) "prelude")
@@ -4159,7 +4161,7 @@
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Show"
-                                                         [ TVar (TV 269 Star) ]
+                                                         [ TVar (TV 271 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -4167,7 +4169,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 269 Star) ] Nothing
+                                                               "Show" [ TVar (TV 271 Star) ] Nothing
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -4177,17 +4179,17 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV 269 Star)))
+                                                                  (TVar (TV 271 Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV 269 Star) ]
+                                                               [ TVar (TV 271 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
-                                                             TVar (TV 269 Star))
+                                                             TVar (TV 271 Star))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Access
                                                              (Typed
@@ -4195,10 +4197,10 @@
                                                                    TRecord
                                                                      (fromList
                                                                         [ ( "b"
-                                                                          , TVar (TV 261 Star)
+                                                                          , TVar (TV 263 Star)
                                                                           )
                                                                         , ( "c"
-                                                                          , TVar (TV 269 Star)
+                                                                          , TVar (TV 271 Star)
                                                                           )
                                                                         ])
                                                                      Nothing
@@ -4218,13 +4220,16 @@
                                                                            "prelude")
                                                                         (TRecord
                                                                            (fromList
-                                                                              [ ( "c"
-                                                                                , TVar (TV 269 Star)
+                                                                              [ ( "b"
+                                                                                , TVar (TV 263 Star)
+                                                                                )
+                                                                              , ( "c"
+                                                                                , TVar (TV 271 Star)
                                                                                 )
                                                                               ])
                                                                            Nothing
                                                                            (fromList [])))
-                                                                     (TVar (TV 269 Star)))
+                                                                     (TVar (TV 271 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".c" False))))
                                                        True))
@@ -4272,7 +4277,7 @@
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
-                                     (fromList [ ( "p" , TVar (TV 281 Star) ) ])
+                                     (fromList [ ( "p" , TVar (TV 284 Star) ) ])
                                      Nothing
                                      (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
@@ -4280,12 +4285,12 @@
                           (Assignment
                              "show"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV 281 Star) ] Nothing ] :=>
+                                ([ IsIn "Show" [ TVar (TV 284 Star) ] Nothing ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
-                                           (fromList [ ( "p" , TVar (TV 281 Star) ) ])
+                                           (fromList [ ( "p" , TVar (TV 284 Star) ) ])
                                            Nothing
                                            (fromList [])))
                                      (TCon (TC "String" Star) "prelude"))
@@ -4302,11 +4307,11 @@
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
-                                           [ TVar (TV 281 Star) ]
+                                           [ TVar (TV 284 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TRecord
-                                           (fromList [ ( "p" , TVar (TV 281 Star) ) ])
+                                           (fromList [ ( "p" , TVar (TV 284 Star) ) ])
                                            Nothing
                                            (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -4330,7 +4335,7 @@
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Show"
-                                                   [ TVar (TV 281 Star) ]
+                                                   [ TVar (TV 284 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "String" Star) "prelude")
@@ -4418,7 +4423,7 @@
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Show"
-                                                         [ TVar (TV 281 Star) ]
+                                                         [ TVar (TV 284 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -4426,7 +4431,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 281 Star) ] Nothing
+                                                               "Show" [ TVar (TV 284 Star) ] Nothing
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -4436,17 +4441,17 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV 281 Star)))
+                                                                  (TVar (TV 284 Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV 281 Star) ]
+                                                               [ TVar (TV 284 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
-                                                             TVar (TV 281 Star))
+                                                             TVar (TV 284 Star))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Access
                                                              (Typed
@@ -4454,7 +4459,7 @@
                                                                    TRecord
                                                                      (fromList
                                                                         [ ( "p"
-                                                                          , TVar (TV 281 Star)
+                                                                          , TVar (TV 284 Star)
                                                                           )
                                                                         ])
                                                                      Nothing
@@ -4475,12 +4480,12 @@
                                                                         (TRecord
                                                                            (fromList
                                                                               [ ( "p"
-                                                                                , TVar (TV 281 Star)
+                                                                                , TVar (TV 284 Star)
                                                                                 )
                                                                               ])
                                                                            Nothing
                                                                            (fromList [])))
-                                                                     (TVar (TV 281 Star)))
+                                                                     (TVar (TV 284 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".p" False))))
                                                        True))
@@ -4531,9 +4536,9 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
                                      (fromList
-                                        [ ( "p" , TVar (TV 292 Star) )
-                                        , ( "y" , TVar (TV 300 Star) )
-                                        , ( "z" , TVar (TV 308 Star) )
+                                        [ ( "p" , TVar (TV 295 Star) )
+                                        , ( "y" , TVar (TV 303 Star) )
+                                        , ( "z" , TVar (TV 312 Star) )
                                         ])
                                      Nothing
                                      (fromList [])))
@@ -4542,18 +4547,18 @@
                           (Assignment
                              "show"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV 292 Star) ] Nothing
-                                 , IsIn "Show" [ TVar (TV 300 Star) ] Nothing
-                                 , IsIn "Show" [ TVar (TV 308 Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV 295 Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV 303 Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV 312 Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
                                            (fromList
-                                              [ ( "p" , TVar (TV 292 Star) )
-                                              , ( "y" , TVar (TV 300 Star) )
-                                              , ( "z" , TVar (TV 308 Star) )
+                                              [ ( "p" , TVar (TV 295 Star) )
+                                              , ( "y" , TVar (TV 303 Star) )
+                                              , ( "z" , TVar (TV 312 Star) )
                                               ])
                                            Nothing
                                            (fromList [])))
@@ -4571,7 +4576,7 @@
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
-                                           [ TVar (TV 292 Star) ]
+                                           [ TVar (TV 295 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Monoid"
@@ -4583,7 +4588,7 @@
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
-                                           [ TVar (TV 300 Star) ]
+                                           [ TVar (TV 303 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Monoid"
@@ -4595,14 +4600,14 @@
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
-                                           [ TVar (TV 308 Star) ]
+                                           [ TVar (TV 312 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TRecord
                                            (fromList
-                                              [ ( "p" , TVar (TV 292 Star) )
-                                              , ( "y" , TVar (TV 300 Star) )
-                                              , ( "z" , TVar (TV 308 Star) )
+                                              [ ( "p" , TVar (TV 295 Star) )
+                                              , ( "y" , TVar (TV 303 Star) )
+                                              , ( "z" , TVar (TV 312 Star) )
                                               ])
                                            Nothing
                                            (fromList []))
@@ -4627,7 +4632,7 @@
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Show"
-                                                   [ TVar (TV 292 Star) ]
+                                                   [ TVar (TV 295 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "String" Star) "prelude")
@@ -4715,7 +4720,7 @@
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Show"
-                                                         [ TVar (TV 292 Star) ]
+                                                         [ TVar (TV 295 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -4723,7 +4728,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 292 Star) ] Nothing
+                                                               "Show" [ TVar (TV 295 Star) ] Nothing
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -4733,17 +4738,17 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV 292 Star)))
+                                                                  (TVar (TV 295 Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV 292 Star) ]
+                                                               [ TVar (TV 295 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
-                                                             TVar (TV 292 Star))
+                                                             TVar (TV 295 Star))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Access
                                                              (Typed
@@ -4751,13 +4756,13 @@
                                                                    TRecord
                                                                      (fromList
                                                                         [ ( "p"
-                                                                          , TVar (TV 292 Star)
+                                                                          , TVar (TV 295 Star)
                                                                           )
                                                                         , ( "y"
-                                                                          , TVar (TV 300 Star)
+                                                                          , TVar (TV 303 Star)
                                                                           )
                                                                         , ( "z"
-                                                                          , TVar (TV 308 Star)
+                                                                          , TVar (TV 312 Star)
                                                                           )
                                                                         ])
                                                                      Nothing
@@ -4778,13 +4783,18 @@
                                                                         (TRecord
                                                                            (fromList
                                                                               [ ( "p"
-                                                                                , TVar (TV 292 Star)
+                                                                                , TVar (TV 295 Star)
+                                                                                )
+                                                                              , ( "y"
+                                                                                , TVar (TV 303 Star)
+                                                                                )
+                                                                              , ( "z"
+                                                                                , TVar (TV 312 Star)
                                                                                 )
                                                                               ])
-                                                                           (Just
-                                                                              (TVar (TV 294 Star)))
+                                                                           Nothing
                                                                            (fromList [])))
-                                                                     (TVar (TV 292 Star)))
+                                                                     (TVar (TV 295 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".p" False))))
                                                        True))
@@ -4804,7 +4814,7 @@
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Show"
-                                                   [ TVar (TV 300 Star) ]
+                                                   [ TVar (TV 303 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "String" Star) "prelude")
@@ -4892,7 +4902,7 @@
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Show"
-                                                         [ TVar (TV 300 Star) ]
+                                                         [ TVar (TV 303 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -4900,7 +4910,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 300 Star) ] Nothing
+                                                               "Show" [ TVar (TV 303 Star) ] Nothing
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -4910,17 +4920,17 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV 300 Star)))
+                                                                  (TVar (TV 303 Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV 300 Star) ]
+                                                               [ TVar (TV 303 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
-                                                             TVar (TV 300 Star))
+                                                             TVar (TV 303 Star))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Access
                                                              (Typed
@@ -4928,13 +4938,13 @@
                                                                    TRecord
                                                                      (fromList
                                                                         [ ( "p"
-                                                                          , TVar (TV 292 Star)
+                                                                          , TVar (TV 295 Star)
                                                                           )
                                                                         , ( "y"
-                                                                          , TVar (TV 300 Star)
+                                                                          , TVar (TV 303 Star)
                                                                           )
                                                                         , ( "z"
-                                                                          , TVar (TV 308 Star)
+                                                                          , TVar (TV 312 Star)
                                                                           )
                                                                         ])
                                                                      Nothing
@@ -4954,14 +4964,19 @@
                                                                            "prelude")
                                                                         (TRecord
                                                                            (fromList
-                                                                              [ ( "y"
-                                                                                , TVar (TV 300 Star)
+                                                                              [ ( "p"
+                                                                                , TVar (TV 295 Star)
+                                                                                )
+                                                                              , ( "y"
+                                                                                , TVar (TV 303 Star)
+                                                                                )
+                                                                              , ( "z"
+                                                                                , TVar (TV 312 Star)
                                                                                 )
                                                                               ])
-                                                                           (Just
-                                                                              (TVar (TV 302 Star)))
+                                                                           Nothing
                                                                            (fromList [])))
-                                                                     (TVar (TV 300 Star)))
+                                                                     (TVar (TV 303 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".y" False))))
                                                        True))
@@ -4981,7 +4996,7 @@
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Show"
-                                                   [ TVar (TV 308 Star) ]
+                                                   [ TVar (TV 312 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "String" Star) "prelude")
@@ -5069,7 +5084,7 @@
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Show"
-                                                         [ TVar (TV 308 Star) ]
+                                                         [ TVar (TV 312 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -5077,7 +5092,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 308 Star) ] Nothing
+                                                               "Show" [ TVar (TV 312 Star) ] Nothing
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -5087,17 +5102,17 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV 308 Star)))
+                                                                  (TVar (TV 312 Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV 308 Star) ]
+                                                               [ TVar (TV 312 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
-                                                             TVar (TV 308 Star))
+                                                             TVar (TV 312 Star))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Access
                                                              (Typed
@@ -5105,13 +5120,13 @@
                                                                    TRecord
                                                                      (fromList
                                                                         [ ( "p"
-                                                                          , TVar (TV 292 Star)
+                                                                          , TVar (TV 295 Star)
                                                                           )
                                                                         , ( "y"
-                                                                          , TVar (TV 300 Star)
+                                                                          , TVar (TV 303 Star)
                                                                           )
                                                                         , ( "z"
-                                                                          , TVar (TV 308 Star)
+                                                                          , TVar (TV 312 Star)
                                                                           )
                                                                         ])
                                                                      Nothing
@@ -5131,13 +5146,19 @@
                                                                            "prelude")
                                                                         (TRecord
                                                                            (fromList
-                                                                              [ ( "z"
-                                                                                , TVar (TV 308 Star)
+                                                                              [ ( "p"
+                                                                                , TVar (TV 295 Star)
+                                                                                )
+                                                                              , ( "y"
+                                                                                , TVar (TV 303 Star)
+                                                                                )
+                                                                              , ( "z"
+                                                                                , TVar (TV 312 Star)
                                                                                 )
                                                                               ])
                                                                            Nothing
                                                                            (fromList [])))
-                                                                     (TVar (TV 308 Star)))
+                                                                     (TVar (TV 312 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".z" False))))
                                                        True))
@@ -6898,9 +6919,11 @@
                                                                               [ ( "p"
                                                                                 , TVar (TV 127 Star)
                                                                                 )
+                                                                              , ( "z"
+                                                                                , TVar (TV 135 Star)
+                                                                                )
                                                                               ])
-                                                                           (Just
-                                                                              (TVar (TV 129 Star)))
+                                                                           Nothing
                                                                            (fromList [])))
                                                                      (TVar (TV 127 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -7069,7 +7092,10 @@
                                                                            "prelude")
                                                                         (TRecord
                                                                            (fromList
-                                                                              [ ( "z"
+                                                                              [ ( "p"
+                                                                                , TVar (TV 127 Star)
+                                                                                )
+                                                                              , ( "z"
                                                                                 , TVar (TV 135 Star)
                                                                                 )
                                                                               ])
@@ -7129,8 +7155,8 @@
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                   (TRecord
                                      (fromList
-                                        [ ( "g" , TVar (TV 147 Star) )
-                                        , ( "p" , TVar (TV 155 Star) )
+                                        [ ( "g" , TVar (TV 148 Star) )
+                                        , ( "p" , TVar (TV 156 Star) )
                                         ])
                                      Nothing
                                      (fromList [])))
@@ -7139,16 +7165,16 @@
                           (Assignment
                              "show"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV 147 Star) ] Nothing
-                                 , IsIn "Show" [ TVar (TV 155 Star) ] Nothing
+                                ([ IsIn "Show" [ TVar (TV 148 Star) ] Nothing
+                                 , IsIn "Show" [ TVar (TV 156 Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                         (TRecord
                                            (fromList
-                                              [ ( "g" , TVar (TV 147 Star) )
-                                              , ( "p" , TVar (TV 155 Star) )
+                                              [ ( "g" , TVar (TV 148 Star) )
+                                              , ( "p" , TVar (TV 156 Star) )
                                               ])
                                            Nothing
                                            (fromList [])))
@@ -7166,7 +7192,7 @@
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
-                                           [ TVar (TV 147 Star) ]
+                                           [ TVar (TV 148 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Monoid"
@@ -7178,13 +7204,13 @@
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
-                                           [ TVar (TV 155 Star) ]
+                                           [ TVar (TV 156 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TRecord
                                            (fromList
-                                              [ ( "g" , TVar (TV 147 Star) )
-                                              , ( "p" , TVar (TV 155 Star) )
+                                              [ ( "g" , TVar (TV 148 Star) )
+                                              , ( "p" , TVar (TV 156 Star) )
                                               ])
                                            Nothing
                                            (fromList []))
@@ -7209,7 +7235,7 @@
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Show"
-                                                   [ TVar (TV 147 Star) ]
+                                                   [ TVar (TV 148 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "String" Star) "prelude")
@@ -7297,7 +7323,7 @@
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Show"
-                                                         [ TVar (TV 147 Star) ]
+                                                         [ TVar (TV 148 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -7305,7 +7331,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 147 Star) ] Nothing
+                                                               "Show" [ TVar (TV 148 Star) ] Nothing
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -7315,17 +7341,17 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV 147 Star)))
+                                                                  (TVar (TV 148 Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV 147 Star) ]
+                                                               [ TVar (TV 148 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
-                                                             TVar (TV 147 Star))
+                                                             TVar (TV 148 Star))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Access
                                                              (Typed
@@ -7333,10 +7359,10 @@
                                                                    TRecord
                                                                      (fromList
                                                                         [ ( "g"
-                                                                          , TVar (TV 147 Star)
+                                                                          , TVar (TV 148 Star)
                                                                           )
                                                                         , ( "p"
-                                                                          , TVar (TV 155 Star)
+                                                                          , TVar (TV 156 Star)
                                                                           )
                                                                         ])
                                                                      Nothing
@@ -7357,13 +7383,15 @@
                                                                         (TRecord
                                                                            (fromList
                                                                               [ ( "g"
-                                                                                , TVar (TV 147 Star)
+                                                                                , TVar (TV 148 Star)
+                                                                                )
+                                                                              , ( "p"
+                                                                                , TVar (TV 156 Star)
                                                                                 )
                                                                               ])
-                                                                           (Just
-                                                                              (TVar (TV 149 Star)))
+                                                                           Nothing
                                                                            (fromList [])))
-                                                                     (TVar (TV 147 Star)))
+                                                                     (TVar (TV 148 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".g" False))))
                                                        True))
@@ -7383,7 +7411,7 @@
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Show"
-                                                   [ TVar (TV 155 Star) ]
+                                                   [ TVar (TV 156 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "String" Star) "prelude")
@@ -7471,7 +7499,7 @@
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Show"
-                                                         [ TVar (TV 155 Star) ]
+                                                         [ TVar (TV 156 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -7479,7 +7507,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 155 Star) ] Nothing
+                                                               "Show" [ TVar (TV 156 Star) ] Nothing
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -7489,17 +7517,17 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV 155 Star)))
+                                                                  (TVar (TV 156 Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV 155 Star) ]
+                                                               [ TVar (TV 156 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
-                                                             TVar (TV 155 Star))
+                                                             TVar (TV 156 Star))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Access
                                                              (Typed
@@ -7507,10 +7535,10 @@
                                                                    TRecord
                                                                      (fromList
                                                                         [ ( "g"
-                                                                          , TVar (TV 147 Star)
+                                                                          , TVar (TV 148 Star)
                                                                           )
                                                                         , ( "p"
-                                                                          , TVar (TV 155 Star)
+                                                                          , TVar (TV 156 Star)
                                                                           )
                                                                         ])
                                                                      Nothing
@@ -7530,13 +7558,16 @@
                                                                            "prelude")
                                                                         (TRecord
                                                                            (fromList
-                                                                              [ ( "p"
-                                                                                , TVar (TV 155 Star)
+                                                                              [ ( "g"
+                                                                                , TVar (TV 148 Star)
+                                                                                )
+                                                                              , ( "p"
+                                                                                , TVar (TV 156 Star)
                                                                                 )
                                                                               ])
                                                                            Nothing
                                                                            (fromList [])))
-                                                                     (TVar (TV 155 Star)))
+                                                                     (TVar (TV 156 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".p" False))))
                                                        True))

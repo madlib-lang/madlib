@@ -1878,9 +1878,11 @@
                                                                               [ ( "x"
                                                                                 , TVar (TV 69 Star)
                                                                                 )
+                                                                              , ( "y"
+                                                                                , TVar (TV 77 Star)
+                                                                                )
                                                                               ])
-                                                                           (Just
-                                                                              (TVar (TV 71 Star)))
+                                                                           Nothing
                                                                            (fromList [])))
                                                                      (TVar (TV 69 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -2049,7 +2051,10 @@
                                                                            "prelude")
                                                                         (TRecord
                                                                            (fromList
-                                                                              [ ( "y"
+                                                                              [ ( "x"
+                                                                                , TVar (TV 69 Star)
+                                                                                )
+                                                                              , ( "y"
                                                                                 , TVar (TV 77 Star)
                                                                                 )
                                                                               ])

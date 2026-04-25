@@ -1625,6 +1625,21 @@ spec = do
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail to solve template strings when interpolated expressions are not strings" actual
 
+    it "should propagate template string substitutions to later expressions in the same body" $ do
+      let code = unlines
+            [ "templateFn = (f, x) => {"
+            , "  `${f(x)}`"
+            , "  return f"
+            , "}"
+            ]
+          (ast, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+          templateFnType = case lookup "templateFn" (Slv.getAllExpsFromGlobalScope ast) of
+            Just exp -> renderType (Slv.getType exp)
+            Nothing -> error "templateFn was not inferred"
+
+      errors `shouldBe` []
+      templateFnType `shouldBe` "(a -> String) -> a -> a -> String"
+
     -- Scope
 
     it "should figure out illegal recursive accesses" $ do

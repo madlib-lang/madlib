@@ -423,25 +423,28 @@ inferApp discardError options env (Can.Canonical area (Can.App abs@(Can.Canonica
 
 inferTemplateString :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 inferTemplateString discardError options env (Can.Canonical area (Can.TemplateString exps)) = do
-  inferred <- mapM (infer discardError options env) exps
+  (fullSubst, elemQsRev, elemExpsRev, elemPSRev) <- foldM
+    (\(subst, qsRev, esRev, psRev) exp -> do
+      let env' = apply subst env
+      (s1, ps, t, e) <- infer discardError options env' exp
+      let inferredType = apply s1 t
+      s2 <- contextualUnify' (apply s1 env') discardError exp inferredType tStr
+      let subst' = s2 `compose` s1 `compose` subst
+      return (subst', (ps :=> t) : qsRev, e : esRev, ps : psRev)
+    )
+    (M.empty, [], [], [])
+    exps
 
-  let elemSubsts = (\(s, _, _, _) -> s) <$> inferred
-  let elemTypes  = (\(_, _, t, _) -> t) <$> inferred
-  let elemExps   = (\(_, _, _, es) -> es) <$> inferred
-  let elemPS     = (\(_, ps, _, _) -> ps) <$> inferred
-
-  ss <- mapM (\(exp, t) -> contextualUnify' env discardError exp t tStr) (zip exps elemTypes)
-
-  let fullSubst = foldl' compose M.empty (elemSubsts <> ss)
-
-  let qs = uncurry (:=>) <$> zip elemPS elemTypes
+  let qs       = reverse elemQsRev
+  let elemExps = reverse elemExpsRev
+  let elemPS   = concat (reverse elemPSRev)
 
   let updatedExp = Slv.Typed
         ([] :=> tStr)
         area
         (Slv.TemplateString ((\(t, e) -> updateQualType e (apply fullSubst t)) <$> zip qs elemExps))
 
-  return (fullSubst, concat elemPS, tStr, updatedExp)
+  return (fullSubst, apply fullSubst elemPS, tStr, updatedExp)
 
 
 
