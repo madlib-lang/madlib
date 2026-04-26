@@ -219,6 +219,10 @@
                                            "Eq"
                                            [ TVar (TV 8 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       , IsIn
+                                           "Eq"
+                                           [ TCon (TC "Integer" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TApp
                                            (TCon (TC "User" (Kfun Star Star)) "Module.mad")
@@ -229,6 +233,10 @@
                                        ([ IsIn
                                             "Eq"
                                             [ TVar (TV 8 Star) ]
+                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                        , IsIn
+                                            "Eq"
+                                            [ TCon (TC "Integer" Star) "prelude" ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
                                           TApp
@@ -247,6 +255,10 @@
                                                   "Eq"
                                                   [ TVar (TV 8 Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                              , IsIn
+                                                  "Eq"
+                                                  [ TCon (TC "Integer" Star) "prelude" ]
+                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
                                                 TApp
                                                   (TCon (TC "User" (Kfun Star Star)) "Module.mad")
@@ -257,6 +269,10 @@
                                               ([ IsIn
                                                    "Eq"
                                                    [ TVar (TV 8 Star) ]
+                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                               , IsIn
+                                                   "Eq"
+                                                   [ TCon (TC "Integer" Star) "prelude" ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "Boolean" Star) "prelude")
@@ -1077,6 +1093,10 @@
                                            "Show"
                                            [ TVar (TV 27 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       , IsIn
+                                           "Show"
+                                           [ TCon (TC "Integer" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
                                          TApp
                                            (TCon (TC "User" (Kfun Star Star)) "Module.mad")
@@ -1087,6 +1107,10 @@
                                        ([ IsIn
                                             "Show"
                                             [ TVar (TV 27 Star) ]
+                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                        , IsIn
+                                            "Show"
+                                            [ TCon (TC "Integer" Star) "prelude" ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
                                           TCon (TC "String" Star) "prelude")

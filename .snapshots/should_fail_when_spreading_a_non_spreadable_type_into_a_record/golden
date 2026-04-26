@@ -554,6 +554,14 @@
                                 (Abs
                                    (Typed
                                       ([ IsIn
+                                           "Monoid"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       , IsIn
+                                           "Semigroup"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       , IsIn
                                            "Show"
                                            [ TVar (TV 27 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -761,7 +769,7 @@
 , []
 , [ CompilationError
       (AmbiguousType
-         ( TV 4 Star
+         ( TV (-1) Star
          , [ IsIn
                "Number"
                [ TRecord
@@ -774,7 +782,7 @@
          ))
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 7 1 8) (Loc 31 1 32)
+        , ctxArea = Area (Loc 15 1 16) (Loc 29 1 30)
         }
   ]
 )

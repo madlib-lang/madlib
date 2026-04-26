@@ -1083,7 +1083,12 @@
                         (Area (Loc 26 2 1) (Loc 137 8 2))
                         (Export
                            (Typed
-                              ([] :=>
+                              ([ IsIn
+                                   "Number"
+                                   [ TCon (TC "Integer" Star) "prelude" ]
+                                   (Just (Area (Loc 129 6 18) (Loc 130 6 19)))
+                               , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                               ] :=>
                                  TApp
                                    (TApp
                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -1095,7 +1100,12 @@
                               (Assignment
                                  "fn"
                                  (Typed
-                                    ([] :=>
+                                    ([ IsIn
+                                         "Number"
+                                         [ TCon (TC "Integer" Star) "prelude" ]
+                                         (Just (Area (Loc 129 6 18) (Loc 130 6 19)))
+                                     , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                     ] :=>
                                        TApp
                                          (TApp
                                             (TCon
@@ -1107,7 +1117,15 @@
                                     (Area (Loc 71 3 13) (Loc 137 8 2))
                                     (Abs
                                        (Typed
-                                          ([] :=>
+                                          ([ IsIn
+                                               "Number"
+                                               [ TCon (TC "Integer" Star) "prelude" ]
+                                               (Just (Area (Loc 129 6 18) (Loc 130 6 19)))
+                                           , IsIn
+                                               "Number"
+                                               [ TCon (TC "Integer" Star) "prelude" ]
+                                               Nothing
+                                           ] :=>
                                              TApp
                                                (TCon (TC "Maybe" (Kfun Star Star)) "./ModuleA.mad")
                                                (TCon (TC "Integer" Star) "prelude"))

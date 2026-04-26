@@ -85,11 +85,34 @@
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Abs
                                          (Typed
-                                            ([] :=> TCon (TC "Point" Star) "./ModuleA.mad")
+                                            ([ IsIn
+                                                 "Eq"
+                                                 [ TApp
+                                                     (TApp
+                                                        (TCon
+                                                           (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                           "prelude")
+                                                        (TCon (TC "Integer" Star) "prelude"))
+                                                     (TCon (TC "Integer" Star) "prelude")
+                                                 ]
+                                                 (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                             ] :=>
+                                               TCon (TC "Point" Star) "./ModuleA.mad")
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             "__$a__")
                                          [ Typed
-                                             ([] :=>
+                                             ([ IsIn
+                                                  "Eq"
+                                                  [ TApp
+                                                      (TApp
+                                                         (TCon
+                                                            (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                            "prelude")
+                                                         (TCon (TC "Integer" Star) "prelude"))
+                                                      (TCon (TC "Integer" Star) "prelude")
+                                                  ]
+                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                              ] :=>
                                                 TApp
                                                   (TApp
                                                      (TCon
@@ -100,11 +123,40 @@
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Abs
                                                 (Typed
-                                                   ([] :=> TCon (TC "Point" Star) "./ModuleA.mad")
+                                                   ([ IsIn
+                                                        "Eq"
+                                                        [ TApp
+                                                            (TApp
+                                                               (TCon
+                                                                  (TC
+                                                                     "(,)"
+                                                                     (Kfun Star (Kfun Star Star)))
+                                                                  "prelude")
+                                                               (TCon (TC "Integer" Star) "prelude"))
+                                                            (TCon (TC "Integer" Star) "prelude")
+                                                        ]
+                                                        (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                    ] :=>
+                                                      TCon (TC "Point" Star) "./ModuleA.mad")
                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
                                                    "__$b__")
                                                 [ Typed
-                                                    ([] :=> TCon (TC "Boolean" Star) "prelude")
+                                                    ([ IsIn
+                                                         "Eq"
+                                                         [ TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(,)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TCon
+                                                                   (TC "Integer" Star) "prelude"))
+                                                             (TCon (TC "Integer" Star) "prelude")
+                                                         ]
+                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                     ] :=>
+                                                       TCon (TC "Boolean" Star) "prelude")
                                                     (Area (Loc 0 0 0) (Loc 0 0 0))
                                                     (Where
                                                        (Typed
@@ -902,11 +954,35 @@
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       (Abs
                                          (Typed
-                                            ([] :=> TCon (TC "Point" Star) "./ModuleA.mad")
+                                            ([ IsIn
+                                                 "Show"
+                                                 [ TApp
+                                                     (TApp
+                                                        (TCon
+                                                           (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                           "prelude")
+                                                        (TCon (TC "Integer" Star) "prelude"))
+                                                     (TCon (TC "Integer" Star) "prelude")
+                                                 ]
+                                                 (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                             ] :=>
+                                               TCon (TC "Point" Star) "./ModuleA.mad")
                                             (Area (Loc 0 0 0) (Loc 0 0 0))
                                             "__$a__")
                                          [ Typed
-                                             ([] :=> TCon (TC "String" Star) "prelude")
+                                             ([ IsIn
+                                                  "Show"
+                                                  [ TApp
+                                                      (TApp
+                                                         (TCon
+                                                            (TC "(,)" (Kfun Star (Kfun Star Star)))
+                                                            "prelude")
+                                                         (TCon (TC "Integer" Star) "prelude"))
+                                                      (TCon (TC "Integer" Star) "prelude")
+                                                  ]
+                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                              ] :=>
+                                                TCon (TC "String" Star) "prelude")
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Where
                                                 (Typed

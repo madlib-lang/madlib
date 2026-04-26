@@ -174,11 +174,28 @@
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
                                    (Typed
-                                      ([] :=> TCon (TC "User" Star) "Module.mad")
+                                      ([ IsIn
+                                           "Eq"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       , IsIn
+                                           "Eq"
+                                           [ TCon (TC "Integer" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       ] :=>
+                                         TCon (TC "User" Star) "Module.mad")
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
-                                       ([] :=>
+                                       ([ IsIn
+                                            "Eq"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                        , IsIn
+                                            "Eq"
+                                            [ TCon (TC "Integer" Star) "prelude" ]
+                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                        ] :=>
                                           TApp
                                             (TApp
                                                (TCon
@@ -189,11 +206,29 @@
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Abs
                                           (Typed
-                                             ([] :=> TCon (TC "User" Star) "Module.mad")
+                                             ([ IsIn
+                                                  "Eq"
+                                                  [ TCon (TC "String" Star) "prelude" ]
+                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                              , IsIn
+                                                  "Eq"
+                                                  [ TCon (TC "Integer" Star) "prelude" ]
+                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                              ] :=>
+                                                TCon (TC "User" Star) "Module.mad")
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
-                                              ([] :=> TCon (TC "Boolean" Star) "prelude")
+                                              ([ IsIn
+                                                   "Eq"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                               , IsIn
+                                                   "Eq"
+                                                   [ TCon (TC "Integer" Star) "prelude" ]
+                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                               ] :=>
+                                                 TCon (TC "Boolean" Star) "prelude")
                                               (Area (Loc 0 0 0) (Loc 0 0 0))
                                               (Where
                                                  (Typed
@@ -983,11 +1018,29 @@
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                 (Abs
                                    (Typed
-                                      ([] :=> TCon (TC "User" Star) "Module.mad")
+                                      ([ IsIn
+                                           "Show"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       , IsIn
+                                           "Show"
+                                           [ TCon (TC "Integer" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       ] :=>
+                                         TCon (TC "User" Star) "Module.mad")
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
-                                       ([] :=> TCon (TC "String" Star) "prelude")
+                                       ([ IsIn
+                                            "Show"
+                                            [ TCon (TC "String" Star) "prelude" ]
+                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                        , IsIn
+                                            "Show"
+                                            [ TCon (TC "Integer" Star) "prelude" ]
+                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                        ] :=>
+                                          TCon (TC "String" Star) "prelude")
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
                                        (Where
                                           (Typed

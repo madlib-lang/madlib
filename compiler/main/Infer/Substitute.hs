@@ -12,6 +12,7 @@ import           Error.Context
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
 import           Control.Monad.Except
+import           Control.Applicative
 
 
 class Substitutable a where
@@ -204,8 +205,31 @@ instance FtvOrdered t => FtvOrdered (Qual t) where
 compose :: Substitution -> Substitution -> Substitution
 compose !s1 s2
   | M.null s1 = s2
-  | M.null s2 = s1
-  | otherwise = M.map (apply s1) s2 `M.union` s1
+  | M.null s2 = M.map (apply s1) s1
+  | otherwise =
+      let s1' = M.map (apply s1) s1
+          s2' = M.map (apply s1) s2
+      in  M.unionWith mergeTypes s2' s1'
+ where
+  mergeTypes :: Type -> Type -> Type
+  mergeTypes t1 t2 = case (t1, t2) of
+    (TRecord fields1 base1 optionalFields1, TRecord fields2 base2 optionalFields2) ->
+      let base = base1 <|> base2
+      in  TRecord (M.unionWith mergeTypes fields1 fields2) base (optionalFields1 <> optionalFields2)
+
+    (TRecord fields base optionalFields, TVar _) ->
+      TRecord fields base optionalFields
+
+    (TVar _, TRecord fields base optionalFields) ->
+      TRecord fields base optionalFields
+
+    (TApp tl tr, TApp tl' tr') ->
+      let tl'' = mergeTypes tl tl'
+          tr'' = mergeTypes tr tr'
+      in  TApp tl'' tr''
+
+    (_, t) ->
+      t
 
 merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext

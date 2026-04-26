@@ -387,7 +387,11 @@
             (Assignment
                "FunctionLink"
                (Typed
-                  ([] :=>
+                  ([ IsIn
+                       "Semigroup"
+                       [ TCon (TC "String" Star) "prelude" ]
+                       (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                   ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -399,7 +403,11 @@
                   (Area (Loc 537 32 16) (Loc 574 32 53))
                   (Abs
                      (Typed
-                        ([] :=>
+                        ([ IsIn
+                             "Semigroup"
+                             [ TCon (TC "String" Star) "prelude" ]
+                             (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                         ] :=>
                            TRecord
                              (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
                              (Just (TVar (TV 28 Star)))
@@ -407,7 +415,12 @@
                         (Area (Loc 0 0 0) (Loc 0 0 0))
                         "__W__1")
                      [ Typed
-                         ([] :=> TCon (TC "String" Star) "prelude")
+                         ([ IsIn
+                              "Semigroup"
+                              [ TCon (TC "String" Star) "prelude" ]
+                              (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                          ] :=>
+                            TCon (TC "String" Star) "prelude")
                          (Area (Loc 537 32 16) (Loc 574 32 53))
                          (Where
                             (Typed
@@ -598,7 +611,11 @@
             (Assignment
                "generateFunctionLinks"
                (Typed
-                  ([] :=>
+                  ([ IsIn
+                       "Functor"
+                       [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
+                       (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
+                   ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -650,7 +667,11 @@
                   (Area (Loc 599 33 25) (Loc 1132 44 2))
                   (Abs
                      (Typed
-                        ([] :=>
+                        ([ IsIn
+                             "Functor"
+                             [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
+                             (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
+                         ] :=>
                            TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TRecord
@@ -696,7 +717,11 @@
                         (Area (Loc 599 33 25) (Loc 602 33 28))
                         "__P__2")
                      [ Typed
-                         ([] :=>
+                         ([ IsIn
+                              "Functor"
+                              [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
+                              (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
+                          ] :=>
                             TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
                               (TCon (TC "String" Star) "prelude"))
