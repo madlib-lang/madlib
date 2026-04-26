@@ -12,6 +12,7 @@ import qualified Data.Set                      as Set
 import qualified Data.ByteString.Lazy          as BL
 import qualified Data.ByteString.Lazy.Char8    as BLChar8
 import qualified Data.List                     as List
+import qualified Data.Maybe                    as Maybe
 import           Crypto.Hash.MD5               ( hashlazy )
 import           Data.ByteString.Builder
 import           Data.Version
@@ -93,8 +94,8 @@ addInstance (Slv.Untyped _ (Slv.Instance _ supers pred _)) api =
           decl
   in  api { apiInstances = apiInstances api <> [decl'] }
 
-addADT :: Slv.TypeDecl -> PublicAPI -> PublicAPI
-addADT (Slv.Untyped _ (Slv.ADT name params ctors _ _)) api =
+addADT :: String -> Slv.TypeDecl -> PublicAPI -> PublicAPI
+addADT prefix (Slv.Untyped _ (Slv.ADT name params ctors _ _)) api =
   let key  = name
       key' =
         if not (null params) then
@@ -102,10 +103,10 @@ addADT (Slv.Untyped _ (Slv.ADT name params ctors _ _)) api =
         else
           key
       ctors' = (\(Slv.Untyped _ (Slv.Constructor name ts _)) -> unwords $ name : (prettyPrintTyping <$> ts)) <$> ctors
-  in  api { apiTypes = Map.insert key' ctors' $ apiTypes api }
+  in  api { apiTypes = Map.insert (prefix <> key') ctors' $ apiTypes api }
 
-addAlias :: Slv.TypeDecl -> PublicAPI -> PublicAPI
-addAlias (Slv.Untyped _ (Slv.Alias name params typing _)) api =
+addAlias :: String -> Slv.TypeDecl -> PublicAPI -> PublicAPI
+addAlias prefix (Slv.Untyped _ (Slv.Alias name params typing _)) api =
   let key  = name
       key' =
         if not (null params) then
@@ -113,27 +114,81 @@ addAlias (Slv.Untyped _ (Slv.Alias name params typing _)) api =
         else
           key
       aliased = prettyPrintTyping typing
-  in  api { apiAliases = Map.insert key' aliased $ apiAliases api }
+  in  api { apiAliases = Map.insert (prefix <> key') aliased $ apiAliases api }
 
 
-buildAPI :: Slv.AST -> Slv.Table -> PublicAPI
-buildAPI ast table =
-  let exports           = Slv.extractExportedExps ast
-      packageTypes      = Slv.extractExportedADTs ast
-      packageAliases    = Slv.extractExportedAliases ast
-      packageASTs       = Map.filterWithKey (\path _ -> not ("madlib_modules" `List.isInfixOf` path) && not (("prelude" <> (pathSeparator : "__internal__")) `List.isInfixOf` path)) table
+-- | Compute the package-relative path of a module file inside the package,
+-- normalised to use forward slashes so it's portable across platforms.
+relativeModulePath :: FilePath -> FilePath -> FilePath
+relativeModulePath packageRoot modulePath =
+  let normaliseSeps = map (\c -> if c == '\\' then '/' else c)
+      normalisedRoot = normaliseSeps packageRoot
+      normalisedMod  = normaliseSeps modulePath
+      withTrailingSep = normalisedRoot <> "/"
+  in  if withTrailingSep `List.isPrefixOf` normalisedMod then
+        drop (length withTrailingSep) normalisedMod
+      else
+        normalisedMod
+
+
+-- | The key prefix used to namespace an export by the module it lives in.
+-- The main module is the one identified by `mainPath`; its exports are kept
+-- with un-prefixed keys to remain stable as the canonical entry-point API.
+moduleKeyPrefix :: FilePath -> FilePath -> FilePath -> String
+moduleKeyPrefix packageRoot mainPath modulePath
+  | modulePath == mainPath = ""
+  | otherwise              = relativeModulePath packageRoot modulePath <> "#"
+
+
+-- | Build the public API of the package by aggregating exports, types,
+-- aliases, interfaces and instances from every source module of the package
+-- (i.e. the main entry-point AND every reachable sub-module that lives inside
+-- the package source tree). Modules from `madlib_modules` (transitive deps)
+-- and the prelude are excluded, since they're not part of *this* package's
+-- public API surface.
+--
+-- The main module's exports keep flat keys (e.g. "eval"); sub-module exports
+-- are namespaced by the module's package-relative path, e.g.
+-- "src/Math/Basic.mad#eval", so that consumers using `from "pkg/Math/Basic"`
+-- have their direct dependency tracked for version-bump purposes.
+buildAPI :: FilePath -> Slv.AST -> Slv.Table -> PublicAPI
+buildAPI packageRoot mainAst table =
+  let mainPath          = Maybe.fromMaybe "" (Slv.apath mainAst)
+      -- The package's own transitive deps live under `<packageRoot>/madlib_modules/`.
+      -- Exclude *those* (and the prelude) but keep modules that just happen to be
+      -- in a `madlib_modules/` further up the tree (e.g. when a package is itself
+      -- being type-checked from inside another project's madlib_modules — the
+      -- canonical fixture layout for tests).
+      depsPrefix        = packageRoot <> [pathSeparator] <> "madlib_modules" <> [pathSeparator]
+      packageASTs       = Map.filterWithKey (\path _ -> not (depsPrefix `List.isPrefixOf` path) && not (("prelude" <> (pathSeparator : "__internal__")) `List.isInfixOf` path)) table
       packageInterfaces = Map.elems packageASTs >>= Slv.ainterfaces
       packageInstances  = filter ((\name -> name /= "Eq" && name /= "Show") . Slv.getInstanceName) $ Map.elems packageASTs >>= Slv.ainstances
 
-      apiWithNames      = PublicAPI
-        { apiNames      = prettyPrintQualType . Slv.getQualType <$> exports
+      perModuleEntries  = do
+        (modPath, ast) <- Map.toList packageASTs
+        let prefix     = moduleKeyPrefix packageRoot mainPath modPath
+        return (prefix, ast)
+
+      apiNamesMap       = Map.fromList $ do
+        (prefix, ast) <- perModuleEntries
+        (name, expr)  <- Map.toList (Slv.extractExportedExps ast)
+        return (prefix <> name, prettyPrintQualType (Slv.getQualType expr))
+
+      emptyAPI          = PublicAPI
+        { apiNames      = apiNamesMap
         , apiInterfaces = mempty
         , apiInstances  = mempty
         , apiTypes      = mempty
         , apiAliases    = mempty
         }
-      apiWithInterfaces = foldr addInterface apiWithNames packageInterfaces
+      apiWithInterfaces = foldr addInterface emptyAPI packageInterfaces
       apiWithInstances  = foldr addInstance apiWithInterfaces packageInstances
-      apiWithADTs       = foldr addADT apiWithInstances packageTypes
-      apiWithAliases    = foldr addAlias apiWithADTs packageAliases
+      apiWithADTs       = foldr (\(prefix, td) -> addADT prefix td) apiWithInstances $ do
+        (prefix, ast) <- perModuleEntries
+        td            <- Slv.extractExportedADTs ast
+        return (prefix, td)
+      apiWithAliases    = foldr (\(prefix, td) -> addAlias prefix td) apiWithADTs $ do
+        (prefix, ast) <- perModuleEntries
+        td            <- Slv.extractExportedAliases ast
+        return (prefix, td)
   in  apiWithAliases

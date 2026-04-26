@@ -1,0 +1,32 @@
+import IO from "IO"
+
+// Imports from the package's main module (re-exporting from sub-modules)
+import { eval, Add, Sub, double, hello } from "multi-pkg"
+import { greet, Hello, Hi } from "multi-pkg"
+import type { Operation } from "multi-pkg"
+
+// Imports going directly into a sub-module of the package
+import { triple } from "multi-pkg/Math/Basic"
+import { shout } from "multi-pkg/Strings/Util"
+import _DirectMath from "multi-pkg/Math/Basic"
+
+
+showOp :: Operation -> String
+showOp = where {
+  Add(a, b) => `Add(${show(a)},${show(b)})`
+  Sub(a, b) => `Sub(${show(a)},${show(b)})`
+  _         => "?"
+}
+
+
+main = () => {
+  IO.putLine(hello("World"))
+  IO.putLine(showOp(Add(2, 3)))
+  IO.log(eval(Sub(10, 4)))
+  IO.log(double(7))
+  IO.log(triple(7))
+  IO.putLine(greet(Hello("Alice")))
+  IO.putLine(greet(Hi("Bob")))
+  IO.putLine(shout("hey"))
+  IO.log(_DirectMath.eval(_DirectMath.Mul(6, 7)))
+}

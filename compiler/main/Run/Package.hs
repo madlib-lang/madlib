@@ -119,14 +119,14 @@ bumpVersion rebuild apiChange version = case (apiChange, version) of
     Version [major, minor, patch + 1] []
 
 
-performBuild :: Bool -> Either VersionLock.ReadError VersionLock.VersionLock -> Maybe Version -> String -> String -> (Slv.AST, Slv.Table) -> (Slv.AST, Slv.Table) -> IO (Either String (Version, VersionLock.VersionLock))
-performBuild rebuild eitherVersionLock parsedVersion hashedVersion projectHash (jsAst, jsTable) (llvmAst, llvmTable) =
+performBuild :: FilePath -> Bool -> Either VersionLock.ReadError VersionLock.VersionLock -> Maybe Version -> String -> String -> (Slv.AST, Slv.Table) -> (Slv.AST, Slv.Table) -> IO (Either String (Version, VersionLock.VersionLock))
+performBuild packageRoot rebuild eitherVersionLock parsedVersion hashedVersion projectHash (jsAst, jsTable) (llvmAst, llvmTable) =
   case (eitherVersionLock, parsedVersion) of
     -- if there is no version.lock file we generate the initial one with version 0.0.1
     (Left VersionLock.FileNotFound, _) -> do
       let initialVersionHash = hash $ BLChar8.pack "0.0.1"
-      let jsApi              = buildAPI jsAst jsTable
-      let llvmApi            = buildAPI llvmAst llvmTable
+      let jsApi              = buildAPI packageRoot jsAst jsTable
+      let llvmApi            = buildAPI packageRoot llvmAst llvmTable
       let  versionLock       = VersionLock.VersionLock
             { VersionLock.versionHash = initialVersionHash
             , VersionLock.buildHash   = projectHash
@@ -144,8 +144,8 @@ performBuild rebuild eitherVersionLock parsedVersion hashedVersion projectHash (
       else if hashedVersion /= versionHash then
         return $ Left "It seems that you modified the version in madlib.json manually"
       else do
-        let newJSApi        = buildAPI jsAst jsTable
-        let newLLVMApi      = buildAPI llvmAst llvmTable
+        let newJSApi        = buildAPI packageRoot jsAst jsTable
+        let newLLVMApi      = buildAPI packageRoot llvmAst llvmTable
         let nextVersion     = bumpVersion rebuild (computeAPIChange jsApi newJSApi) version
         let nextVersion'    = bumpVersion rebuild (computeAPIChange llvmApi newLLVMApi) version
         let nextVersion''   = max nextVersion nextVersion'
@@ -191,7 +191,7 @@ runBuildPackage rebuild = do
         (Right solvedJSTable, Right solvedLLVMTable) -> do
           let (Just mainJSAST) = Map.lookup canonicalMain solvedJSTable
           let (Just mainLLVMAST) = Map.lookup canonicalMain solvedLLVMTable
-          processed <- performBuild rebuild versionLock parsedVersion hashedVersion projectHash (mainJSAST, solvedJSTable) (mainLLVMAST, solvedLLVMTable)
+          processed <- performBuild currentDirectoryPath rebuild versionLock parsedVersion hashedVersion projectHash (mainJSAST, solvedJSTable) (mainLLVMAST, solvedLLVMTable)
           case processed of
             Left e -> putStrLn e
 

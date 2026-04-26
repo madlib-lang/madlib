@@ -320,6 +320,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/assign-destructuring"
         , "compiler/test/Blackbox/test-cases/unit-type-consistency"
         , "compiler/test/Blackbox/test-cases/reexported-constructor-pattern"
+        , "compiler/test/Blackbox/test-cases/package-submodule-imports"
         ]
 
   forM_ cases $ \casePath -> do
