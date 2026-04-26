@@ -175,6 +175,7 @@ extractImportedConstructors :: Env -> Slv.AST -> Can.Import -> Infer Vars
 extractImportedConstructors env ast imp = do
   let nameExports         = mapMaybe Slv.maybeNameExport (Slv.aexps ast)
       nameExportsSet      = S.fromList nameExports
+      ctorReExportNames   = mapMaybe ctorReExportName (Slv.aexps ast)
       exportedADTs        = Slv.getValue <$> filter Slv.isADTExported (Slv.atypedecls ast)
       exportedCtors       = concat $ Slv.adtconstructors <$> exportedADTs
       notExportedADTs     = Slv.getValue <$> filter (\td -> not (Slv.isADTExported td) && not (Slv.isAlias td)) (Slv.atypedecls ast)
@@ -193,9 +194,41 @@ extractImportedConstructors env ast imp = do
     (ast, env') <- Rock.fetch $ Query.SolvedASTWithEnv path
     extractImportedConstructors env' ast imp
 
-  let exportedCtorSet = S.fromList (exportedCtorNames ++ additionalCtorNames)
+  let exportedCtorSet = S.fromList (exportedCtorNames ++ additionalCtorNames ++ ctorReExportNames)
       exportedCtorSchemes = M.filterWithKey (\k _ -> S.member k exportedCtorSet) (envVars env)
   return $ filterExportsByImport imp exportedCtorSchemes <> mconcat chainedExports
+
+
+-- | Detect exports of the form `export n = <constructor>` where the
+-- exported name matches the underlying constructor's name (possibly
+-- through a namespace). Such name-preserving re-exports are intended
+-- to expose the constructor for use in patterns; aliases that rename
+-- the constructor (e.g. `export empty = DictRBEmpty`) are deliberately
+-- ignored so they keep their function-call semantics.
+ctorReExportName :: Slv.Exp -> Maybe String
+ctorReExportName exp = case exp of
+  Slv.Typed _ _ (Slv.Export inner) ->
+    assignedCtorName inner
+
+  Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export inner)) _ _) ->
+    assignedCtorName inner
+
+  _ ->
+    Nothing
+  where
+    assignedCtorName (Slv.Typed _ _ (Slv.Assignment n rhs)) | isMatchingCtorRhs n rhs =
+      Just n
+    assignedCtorName _ =
+      Nothing
+
+    isMatchingCtorRhs n (Slv.Typed _ _ (Slv.Var refName True)) =
+      refName == n || refName == ('.' : n) || endsWithDottedName n refName
+    isMatchingCtorRhs _ _ =
+      False
+
+    endsWithDottedName n refName = case break (== '.') refName of
+      (ns, '.' : rest) | not (null ns) -> rest == n
+      _                                -> False
 
 
 extractImportedVars :: Env -> Slv.AST -> Can.Import -> Infer Vars

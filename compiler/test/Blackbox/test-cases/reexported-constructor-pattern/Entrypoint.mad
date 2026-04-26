@@ -1,0 +1,30 @@
+import IO from "IO"
+import { ValidLine, EmptyLine } from "./Reexport"
+import _Reexport from "./Reexport"
+import type { Foo } from "./Reexport"
+
+
+showFoo :: Foo -> String
+showFoo = where {
+  ValidLine(_, s) =>
+    `valid:${s}`
+
+  EmptyLine(i) =>
+    `empty:${show(i)}`
+}
+
+showFooNS :: Foo -> String
+showFooNS = where {
+  _Reexport.ValidLine(_, s) =>
+    `nsvalid:${s}`
+
+  _Reexport.EmptyLine(i) =>
+    `nsempty:${show(i)}`
+}
+
+main = () => {
+  IO.putLine(showFoo(ValidLine(1, "hi")))
+  IO.putLine(showFoo(EmptyLine(2)))
+  IO.putLine(showFooNS(_Reexport.ValidLine(3, "ns")))
+  IO.putLine(showFooNS(_Reexport.EmptyLine(4)))
+}

@@ -80,7 +80,61 @@ findCtorForeignModulePath moduleWhereItsUsed ctorName = do
       findCtorForeignModulePath foreignModulePath ctorName
 
     _ ->
-      return moduleWhereItsUsed
+      -- The constructor may be re-exported via `export N = Namespace.N`,
+      -- in which case the import side only sees a default namespace import,
+      -- not a named import for `N`. Walk past such re-exports so the
+      -- monomorphizer can locate the underlying ADT.
+      case findReExportedCtorSource ast ctorName of
+        Just (sourceName, sourceModulePath) ->
+          findCtorForeignModulePath sourceModulePath sourceName
+
+        Nothing ->
+          return moduleWhereItsUsed
+
+
+-- | Locate a re-exported constructor's source module given the AST that
+-- re-exports it. Recognises the form
+-- @export Name = Namespace.Name@ which is desugared into
+-- @Export (Assignment "Name" (Var "Namespace.Name" True))@ during inference.
+-- Only handles re-exports that preserve the constructor's name; aliases
+-- like @export empty = DictRBEmpty@ are intentionally not followed.
+findReExportedCtorSource :: AST -> String -> Maybe (String, FilePath)
+findReExportedCtorSource ast ctorName = listFirst $ Maybe.mapMaybe go (aexps ast)
+  where
+    listFirst (x : _) = Just x
+    listFirst []      = Nothing
+
+    go exp = case exp of
+      Typed _ _ (Export inner) ->
+        unwrapAssignment inner
+
+      Typed _ _ (TypedExp (Typed _ _ (Export inner)) _ _) ->
+        unwrapAssignment inner
+
+      _ ->
+        Nothing
+
+    unwrapAssignment exp = case exp of
+      Typed _ _ (Assignment n rhs) | n == ctorName ->
+        ctorRefSource rhs
+
+      _ ->
+        Nothing
+
+    ctorRefSource rhs = case rhs of
+      Typed _ _ (Var refName True) ->
+        case break (== '.') refName of
+          (namespace, '.' : realName) | not (null namespace), realName == ctorName ->
+            (\path -> (realName, path)) <$> findForeignModuleForImportedName namespace ast
+
+          _ | refName == ctorName ->
+            (refName, ) <$> findForeignModuleForImportedName refName ast
+
+          _ ->
+            Nothing
+
+      _ ->
+        Nothing
 
 
 findNamespaceModulePath :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m String

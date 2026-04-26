@@ -748,7 +748,21 @@ findTypeDeclByConstructorName ast@Slv.AST { Slv.aimports } ctorName = do
                 in  (Slv.getImportAbsolutePath <$> foundImport, ctorName)
         case importPath of
           Nothing ->
-            return Nothing
+            -- The constructor may have been re-exported via
+            -- `export Name = Namespace.Name`. Walk past such re-exports so
+            -- the exhaustiveness checker sees the real ADT.
+            case findReExportedCtorSource ast ctorName of
+              Just (sourceName, sourceModulePath) -> do
+                (ast', _) <- Rock.fetch $ SolvedASTWithEnv sourceModulePath
+                case findTypeDeclInASTByConstructorName ast' sourceName of
+                  Just found ->
+                    return $ Just found
+
+                  Nothing ->
+                    findTypeDeclByConstructorName ast' sourceName
+
+              Nothing ->
+                return Nothing
 
           Just importPath' -> do
             (ast', _) <- Rock.fetch $ SolvedASTWithEnv importPath'
@@ -765,3 +779,47 @@ findTypeDeclByConstructorName ast@Slv.AST { Slv.aimports } ctorName = do
 
     Nothing ->
       searchInForeignModule ()
+
+
+-- | Locate a re-exported constructor's source module given the AST that
+-- re-exports it. Recognises the form
+-- @export Name = Namespace.Name@ which is desugared into
+-- @Export (Assignment "Name" (Var "Namespace.Name" True))@ during
+-- inference.
+findReExportedCtorSource :: Slv.AST -> String -> Maybe (String, FilePath)
+findReExportedCtorSource ast ctorName = listFirst $ Maybe.mapMaybe go (Slv.aexps ast)
+  where
+    listFirst (x : _) = Just x
+    listFirst []      = Nothing
+
+    go exp = case exp of
+      Slv.Typed _ _ (Slv.Export inner) ->
+        unwrapAssignment inner
+
+      Slv.Typed _ _ (Slv.TypedExp (Slv.Typed _ _ (Slv.Export inner)) _ _) ->
+        unwrapAssignment inner
+
+      _ ->
+        Nothing
+
+    unwrapAssignment exp = case exp of
+      Slv.Typed _ _ (Slv.Assignment n rhs) | n == ctorName ->
+        ctorRefSource rhs
+
+      _ ->
+        Nothing
+
+    ctorRefSource rhs = case rhs of
+      Slv.Typed _ _ (Slv.Var refName True) ->
+        case break (== '.') refName of
+          (namespace, '.' : realName) | not (null namespace), realName == ctorName ->
+            (\path -> (realName, path)) <$> Slv.findForeignModuleForImportedName namespace ast
+
+          _ | refName == ctorName ->
+            (refName, ) <$> Slv.findForeignModuleForImportedName refName ast
+
+          _ ->
+            Nothing
+
+      _ ->
+        Nothing
