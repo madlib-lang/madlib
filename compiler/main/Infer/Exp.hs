@@ -1313,8 +1313,8 @@ inferExp options env e = do
   -- inference (e.g. f's body's reference to forward-declared g) would leak
   -- into a later iteration (g's actual definition) and the compose-on-state
   -- left-bias would silently swallow the new binding.
-  (delta, (s, _, env', e')) <-
-    captureDelta $
+  (s, _, env', e') <-
+    withScopedSubst $
       upgradeContext env (Can.getArea e) $ case e of
         Can.Canonical _ Can.TypedExp{} -> do
           (ps, env'', e') <- inferExplicitlyTyped options False env e
@@ -1325,11 +1325,6 @@ inferExp options env e = do
           ((_, placeholderPreds), env'', e') <- inferImplicitlyTyped options False env e
           s <- getSubst
           return (s, placeholderPreds, env'', e')
-
-  -- Use the per-binding delta for the rest of the legacy AST update pass.
-  -- We deliberately do NOT re-extSubst delta into state (it's scoped to
-  -- this iteration only).
-  let _ = (delta, s)  -- 'delta' is the captured per-binding contribution; 's' carries it through legacy code
 
   e'' <- updateExpTypes options env' False s e'
 

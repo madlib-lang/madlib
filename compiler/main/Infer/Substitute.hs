@@ -292,3 +292,15 @@ captureDelta action = do
                    Just v' -> v /= v')
         newSubst
   return (delta, r)
+
+
+-- | Like `captureDelta` but discards the delta. Use when the caller only
+-- needs the transactional state restoration (current `currentSubst` at frame
+-- exit will be the same as at frame entry), not the contribution itself.
+-- Avoids the O(|currentSubst|) filter.
+withScopedSubst :: Infer a -> Infer a
+withScopedSubst action = do
+  oldSubst <- getSubst
+  r <- action
+  putSubst oldSubst
+  return r
