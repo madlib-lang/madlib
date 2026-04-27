@@ -34,6 +34,7 @@ import           Infer.Instantiate
 import           Infer.Scope
 import qualified Data.Set                                   as Set
 import           Infer.Pred
+import           Infer.Generalize
 import           Infer.Scheme
 import           Infer.Substitute
 import           AST.Canonical (getImportAbsolutePath)

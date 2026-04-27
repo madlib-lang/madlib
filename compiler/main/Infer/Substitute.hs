@@ -11,6 +11,7 @@ import           Error.Error
 import           Error.Context
 import qualified Data.Map                      as M
 import qualified Data.Set                      as S
+import           Control.Monad.State            ( modify )
 import           Control.Monad.Except
 import           Control.Applicative
 
@@ -58,8 +59,10 @@ instance Substitutable Type where
       TRecord (apply s <$> fields) (Just newBase) (apply s <$> optionalFields)
 
     Just (TRecord fields' Nothing optionalFields') ->
-      -- Row variable substituted with a closed record - merge fields and remove row variable
-      TRecord (apply s <$> (fields <> fields')) Nothing (apply s <$> (optionalFields <> optionalFields'))
+      -- Row variable substituted with a closed record - merge fields and remove
+      -- row variable. mkRecord folds the optional fields into required since
+      -- the result is closed.
+      mkRecord (apply s <$> (fields <> fields')) Nothing (apply s <$> (optionalFields <> optionalFields'))
 
     Just (TRecord fields' base' optionalFields') ->
       -- Row variable substituted with an open record - merge fields and preserve the base
@@ -249,3 +252,18 @@ buildVarSubsts t = case t of
 
   _ ->
     mempty
+
+
+-- | Compose a substitution into the monad state's `currentSubst`. The new
+-- substitution takes precedence on overlapping variables (left-biased compose).
+-- This is the state-based counterpart to the explicit `s2 \`compose\` s1`
+-- pattern used throughout the legacy infer* functions.
+extSubst :: Substitution -> Infer ()
+extSubst s = modify $ \st -> st { currentSubst = s `compose` currentSubst st }
+
+
+-- | Apply the current state substitution to a Substitutable value.
+applyCurrentSubst :: Substitutable a => a -> Infer a
+applyCurrentSubst x = do
+  s <- getSubst
+  return (apply s x)

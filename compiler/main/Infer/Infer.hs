@@ -27,11 +27,18 @@ data InferState
   -- generalization of these bindings (value-restriction-style). Replaces
   -- the previous __MUTATION__ pseudo-typeclass encoding.
   , currentSubst :: !Substitution
-  -- ^ Active substitution. Threaded implicitly via getSubst/extSubst/unifyM.
-  -- Currently coexists with the explicit-substitution-threading style — old
-  -- inference functions still return their own Substitution and compose by
-  -- hand. Phase 1 of the typechecker rewrite migrates them one by one to
-  -- read this field instead of accumulating substitutions explicitly.
+  -- ^ Active substitution. Read with `getSubst` (Infer.Infer), composed into
+  -- via `extSubst` (Infer.Substitute), and added to via `unifyM`
+  -- (Infer.Unify). Coexists with the explicit-substitution-threading style:
+  -- the legacy `infer*` functions still return their own Substitution and
+  -- compose by hand. Phase 1 of the typechecker rewrite (still pending) is
+  -- to migrate them all to read this field instead.
+  , discardErrors :: !Bool
+  -- ^ Best-effort inference flag. When True, errors are silently caught at
+  -- internal decision points so subsequent code can still produce a partial
+  -- AST for IDE/error-recovery scenarios. Replaces the discardError Bool
+  -- parameter that used to be threaded through every infer* function.
+  -- Toggled with `withDiscardErrors`.
   }
 
 
@@ -81,3 +88,31 @@ getSubst = gets currentSubst
 -- should compose via extSubst.
 putSubst :: Substitution -> Infer ()
 putSubst s = modify $ \st -> st { currentSubst = s }
+
+
+-- | Read the discard-errors flag. Used at decision points inside inference
+-- functions where we used to branch on the threaded `discardError` parameter.
+isDiscardingErrors :: Infer Bool
+isDiscardingErrors = gets discardErrors
+
+
+-- | Run an action with discardErrors set to True; restore prior value on
+-- success or exception. Used by inferExps to retry a failing definition in
+-- best-effort mode.
+withDiscardErrors :: Infer a -> Infer a
+withDiscardErrors action = do
+  prev <- gets discardErrors
+  modify $ \s -> s { discardErrors = True }
+  let restore = modify $ \s -> s { discardErrors = prev }
+  result <- action `catchError` (\err -> restore >> throwError err)
+  restore
+  return result
+
+
+-- | Catch errors thrown by the action: push them onto the error list and
+-- continue with the supplied fallback value. Used at definition boundaries so
+-- one bad binding doesn't abort the rest of a file.
+recover :: Infer a -> a -> Infer a
+recover action fallback = catchError action $ \err -> do
+  pushError err
+  return fallback

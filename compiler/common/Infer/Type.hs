@@ -354,6 +354,16 @@ predArea (IsIn _ _ area) = area
 
 type Id = String
 
+
+-- | Smart constructor for TRecord that maintains the invariant: when there is
+-- no row variable (closed record), optional fields are folded into required
+-- fields. Phase 4 of the typechecker rewrite uses this to keep TRecord values
+-- in a canonical shape so downstream Unify/Substitute don't have to handle
+-- the "closed record with separate optional fields" case.
+mkRecord :: M.Map Id Type -> Maybe Type -> M.Map Id Type -> Type
+mkRecord fields Nothing optFields = TRecord (fields <> optFields) Nothing M.empty
+mkRecord fields base@(Just _) optFields = TRecord fields base optFields
+
 data Kind
   = Star
   | Kfun Kind Kind

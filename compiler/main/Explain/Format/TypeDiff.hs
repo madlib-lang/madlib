@@ -14,7 +14,7 @@ import qualified Prettyprinter.Render.Terminal as Terminal
 import qualified Prettyprinter.Internal.Type   as Pretty
 import qualified Data.Text                     as Text
 import qualified Data.List                     as List
-import           Infer.Exp (dedupePreds)
+import           Infer.Generalize (dedupePreds)
 import           Utils.Tuple
 
 

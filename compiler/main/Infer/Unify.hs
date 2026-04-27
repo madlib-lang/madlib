@@ -243,6 +243,21 @@ contextualUnifyAccess = contextualUnify AccessStyle
 contextualUnify' :: Env -> Bool -> Can.Canonical a -> Type -> Type -> Infer Substitution
 contextualUnify' env discardError = contextualUnify (if discardError then Discard else Strict) env
 
+
+-- | State-based unify. Reads the current substitution from state, unifies the
+-- substitution-applied versions of t1 and t2, and composes the resulting
+-- substitution into state. Returns no substitution — callers read from state
+-- via getSubst when they need to reify a final type.
+--
+-- This is the THiH-style `unify` (see paper §7) and is the preferred entry
+-- point for new-style state-based inference. Old code that explicitly threads
+-- substitutions still uses the pure `unify` and composes by hand.
+unifyM :: Type -> Type -> Infer ()
+unifyM t1 t2 = do
+  s <- getSubst
+  s' <- unify (apply s t1) (apply s t2)
+  extSubst s'
+
 -- | Like contextualUnify but embeds an ErrorOrigin into any UnificationError thrown.
 -- Use this at call sites that have semantic context about what is being unified.
 contextualUnifyWithOrigin :: UnifyStrategy -> ErrorOrigin -> Env -> Can.Canonical a -> Type -> Type -> Infer Substitution
