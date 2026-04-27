@@ -20,10 +20,20 @@ import qualified Data.ByteString.UTF8 as BSU
 
 
 data TVar = TV Int Kind
-  deriving (Show, Eq, Ord, Generic, Hashable)
+  deriving (Show, Eq, Ord, Generic)
 
 data TCon = TC Id Kind
-  deriving (Show, Eq, Ord, Generic, Hashable)
+  deriving (Show, Eq, Ord, Generic)
+
+instance Hashable TVar where
+  hashWithSalt s (TV i k) =
+    s `hashWithSalt` i `hashWithSalt` k
+  {-# INLINE hashWithSalt #-}
+
+instance Hashable TCon where
+  hashWithSalt s (TC i k) =
+    s `hashWithSalt` i `hashWithSalt` k
+  {-# INLINE hashWithSalt #-}
 
 data Type
   = TVar TVar                      -- Variable type
@@ -367,22 +377,42 @@ mkRecord fields base@(Just _) optFields = TRecord fields base optFields
 data Kind
   = Star
   | Kfun Kind Kind
-  deriving (Eq, Show, Ord, Generic, Hashable)
+  deriving (Eq, Show, Ord, Generic)
+
+instance Hashable Kind where
+  hashWithSalt s Star         = s `hashWithSalt` (0 :: Int)
+  hashWithSalt s (Kfun k1 k2) = s `hashWithSalt` (1 :: Int) `hashWithSalt` k1 `hashWithSalt` k2
+  {-# INLINE hashWithSalt #-}
 
 data Pred
   = IsIn Id [Type] (Maybe Area)
-  deriving (Show, Ord, Generic, Hashable)
+  deriving (Show, Ord, Generic)
 
 instance Eq Pred where
   (==) (IsIn id ts _) (IsIn id' ts' _) = id == id' && ts == ts'
 
+instance Hashable Pred where
+  hashWithSalt s (IsIn i ts a) =
+    s `hashWithSalt` i `hashWithSalt` ts `hashWithSalt` a
+  {-# INLINE hashWithSalt #-}
+
 data Qual t
   = [Pred] :=> t
-  deriving (Eq, Show, Ord, Generic, Hashable)
+  deriving (Eq, Show, Ord, Generic)
+
+instance Hashable t => Hashable (Qual t) where
+  hashWithSalt s (ps :=> t) =
+    s `hashWithSalt` ps `hashWithSalt` t
+  {-# INLINE hashWithSalt #-}
 
 data Scheme
   = Forall [Kind] (Qual Type)
-  deriving (Eq, Show, Ord, Generic, Hashable)
+  deriving (Eq, Show, Ord, Generic)
+
+instance Hashable Scheme where
+  hashWithSalt s (Forall ks qt) =
+    s `hashWithSalt` ks `hashWithSalt` qt
+  {-# INLINE hashWithSalt #-}
 
 
 type Substitution = M.Map TVar Type

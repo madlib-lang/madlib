@@ -51,7 +51,9 @@ instance Substitutable Type where
       Just t' -> if occursCheck a t' then t else t'
 
   apply s (t1 `TApp` t2) =
-    apply s t1 `TApp` apply s t2
+    let !t1' = apply s t1
+        !t2' = apply s t2
+    in  TApp t1' t2'
 
   apply s (TRecord fields (Just (TVar tv)) optionalFields) = case M.lookup tv s of
     Just newBase@(TVar _) ->
