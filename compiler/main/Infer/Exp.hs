@@ -110,6 +110,11 @@ liftWithDelta action = do
   return (s, ps, t, e)
 
 
+-- | The dispatch remains 4-tuple. Each arm's per-arm contribution is captured
+-- via liftWithDelta so the legacy-style callers that use the returned
+-- substitution explicitly (like inferAssignment with its load-bearing
+-- reversed compose order) still work. Migrated callers can ignore the s
+-- and read state via getSubst / applyCurrentSubst.
 infer :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 infer options env lexp = do
   let (Can.Canonical area exp) = lexp
@@ -130,7 +135,7 @@ infer options env lexp = do
     Can.TemplateString _      -> liftWithDelta (inferTemplateString options env lexp)
 
     Can.Var            _      -> liftLeaf (inferVar options env lexp)
-    Can.Abs _ _               -> inferAbs options env lexp
+    Can.Abs _ _               -> liftWithDelta (inferAbs options env lexp)
     Can.App{}                 -> liftWithDelta (inferApp options env lexp)
     Can.Assignment _ _        -> liftWithDelta (inferAssignment options env lexp)
     Can.Mutate _ _            -> liftWithDelta (inferMutate options env lexp)
@@ -272,39 +277,49 @@ extendAbsEnv env tv (Can.Canonical area param) = if param `elem` allowedShadows
     (((const $ extendVars env (param, Forall [] ([] :=> tv))) <$>) . pushError . upgradeContext' env area)
 
 
--- | NOT migrated: the inferImplicitlyTyped/postProcessBody chain depends on
--- explicit substitution threading through inferBody, and extSubst-ing the
--- inner subst into state causes double-counting through captureDelta frames.
--- Kept in 4-tuple form. inferDo / inferAbs (which call this) handle the
--- bridge by extSubst-ing the returned s themselves.
-inferAbs :: Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
+-- | Phase 1 migrated: 3-tuple. With the transactional `captureDelta`,
+-- inner migrated arms no longer leak into state, so we use applyCurrentSubst
+-- (state-based) instead of explicit s threading.
+inferAbs :: Options -> Env -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
 inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
   tv             <- newTVar Star
   env'           <- extendAbsEnv env tv p
-  (s, ps, t, es) <- inferBody options env' { envInBody = True } body
-  (s', es')      <- postProcessBody options env' s (tv `fn` t) es
+  (ps, t, es)    <- inferBody options env' { envInBody = True } body
+  s              <- getSubst
+  es'            <- postProcessBody options env' s (tv `fn` t) es
+  s'             <- getSubst
 
   let t'        = apply s' (tv `fn` t)
       paramType = apply s' tv
 
-  return (s', apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' $ ps :=> paramType) area param) es' (apply s' $ ps :=> t'))
+  return (apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' $ ps :=> paramType) area param) es' (apply s' $ ps :=> t'))
 
 
-inferBody :: Options -> Env -> [Can.Exp] -> Infer (Substitution, [Pred], Type, [Slv.Exp])
+-- | Phase 1 migrated: 3-tuple. With transactional `captureDelta`, state's
+-- currentSubst correctly reflects only this frame's contributions while
+-- inside the action, so we can use applyCurrentSubst to get the cumulative
+-- subst at any point.
+inferBody :: Options -> Env -> [Can.Exp] -> Infer ([Pred], Type, [Slv.Exp])
 inferBody options env [e] = do
   (s, ps, t, e') <- infer options env e
-  return (s, ps, t, [e'])
+  extSubst s
+  return (ps, t, [e'])
 
 inferBody options env (e : es) = do
-  (s, (returnPreds, _), env', e') <- inferImplicitlyTyped options True env e
-  (sb, ps', tb, eb) <- inferBody options (apply s env') es
-  let finalS = s `compose` (sb `compose` s)
+  ((returnPreds, _), env', e') <- inferImplicitlyTyped options True env e
+  envApplied <- applyCurrentSubst env'
+  (ps', tb, eb) <- inferBody options envApplied es
 
-  return (finalS, apply finalS $ returnPreds ++ ps', tb, e' : eb)
+  finalS <- getSubst
+  return (apply finalS $ returnPreds ++ ps', tb, e' : eb)
 
 
--- TODO: find out and comment why we need this
-postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer (Substitution, [Slv.Exp])
+-- | Phase 1 migrated: 3-tuple. The explicit accSubst threading inside the
+-- fold is preserved (it's the body-level defaulting accumulator). At the end
+-- we extSubst the final s' so callers (inferAbs, inferDo) can read the
+-- contribution via state. The legacy explicit `s` parameter still bootstraps
+-- the accumulator from the caller's view.
+postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer [Slv.Exp]
 postProcessBody options env s expType es = do
   discardError <- isDiscardingErrors
   -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
@@ -367,7 +382,8 @@ postProcessBody options env s expType es = do
     (mempty, s, env)
     es
 
-  return (s', reverse esRev)
+  extSubst s'
+  return (reverse esRev)
 
 
 -- INFER APP
@@ -612,8 +628,7 @@ inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructo
       (psChunksRev, t', esRev, _) <- foldlM
         (\(pssRev, t, lis, idx) elem -> do
           envApplied <- applyCurrentSubst env
-          (s', ps', t'', li) <- inferListItem options envApplied (fromMaybe tv t) elem
-          extSubst s'
+          (ps', t'', li) <- inferListItem options envApplied (fromMaybe tv t) elem
           tr <- case t of
             Nothing ->
               return t''
@@ -643,16 +658,17 @@ inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructo
       return (ps, t, Slv.Typed (ps :=> t) area (Slv.ListConstructor es))
 
 
--- | Phase 1: NOT migrated. Same legacy-reversed compose pattern as
--- inferAssignment. Kept in 4-tuple form so the explicit `s1 `compose` s2`
--- order is preserved for inferListConstructor's fold.
-inferListItem :: Options -> Env -> Type -> Can.ListItem -> Infer (Substitution, [Pred], Type, Slv.ListItem)
+-- | Phase 1 migrated: 3-tuple. Same legacy reversed compose order pattern as
+-- inferAssignment (`s = s1 `compose` s2` — applies s2 first, s1 last). We
+-- compute the composition explicitly and extSubst the result.
+inferListItem :: Options -> Env -> Type -> Can.ListItem -> Infer ([Pred], Type, Slv.ListItem)
 inferListItem options env _ (Can.Canonical area li) = do
   discardError <- isDiscardingErrors
   case li of
     Can.ListItem exp -> do
       (s1, ps, t, e) <- infer options env exp
-      return (s1, ps, t, Slv.Typed (ps :=> t) area $ Slv.ListItem e)
+      extSubst s1
+      return (ps, t, Slv.Typed (ps :=> t) area $ Slv.ListItem e)
 
     Can.ListSpread exp -> do
       (s1, ps, t, e) <- infer options env exp
@@ -660,8 +676,9 @@ inferListItem options env _ (Can.Canonical area li) = do
       s2 <- contextualUnify' env discardError exp (tListOf tv) t
 
       let s = s1 `compose` s2
+      extSubst s
 
-      return (s, ps, apply s tv, Slv.Typed (apply s ps :=> apply s t) area $ Slv.ListSpread e)
+      return (ps, apply s tv, Slv.Typed (apply s ps :=> apply s t) area $ Slv.ListSpread e)
 
 
 pickJSXChild :: Type -> Type -> Type
@@ -1011,14 +1028,13 @@ inferWhile options env (Can.Canonical area (Can.While cond body)) = do
 
 -- INFER DO
 
--- | Phase 1 migrated: 3-tuple. Pass-through that bridges legacy inferBody
--- and postProcessBody by extSubst-ing their substitutions into state.
+-- | Phase 1 migrated: 3-tuple. inferBody is now also 3-tuple (state-based);
+-- postProcessBody is still legacy and is bridged via extSubst.
 inferDo :: Options -> Env -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
 inferDo options env (Can.Canonical area (Can.Do exps)) = do
-  (s, ps, t, exps') <- inferBody options env exps
-  extSubst s
-  (s', exps'')   <- postProcessBody options env s t exps'
-  extSubst s'
+  (ps, t, exps') <- inferBody options env exps
+  s <- getSubst
+  exps''         <- postProcessBody options env s t exps'
   ps'  <- applyCurrentSubst ps
   t'   <- applyCurrentSubst t
   qt'  <- applyCurrentSubst (ps :=> t)
@@ -1041,26 +1057,30 @@ inferWhere options env (Can.Canonical area (Can.Where exp iss)) = do
       env'  <- applyCurrentSubst env
       tv'   <- applyCurrentSubst tv
       t'    <- applyCurrentSubst t
-      r@(subst, _, _) <- inferBranch options env' tv' t' idx is
-      extSubst subst
+      r <- inferBranch options env' tv' t' idx is
+      -- inferBranch is now 2-tuple ([Pred], Slv.Is) and extSubsts state itself.
       return (r : res, idx + 1)
     )
     ([], 1)
     iss >>= \(rs, _) -> return rs
   let pss = reverse pssRev
 
-  let ps' = concat $ T.mid <$> pss
+  let ps' = concat $ fst <$> pss
   issSubstitution <- getSubst
-  s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . T.lst <$> pss)
+  s' <- contextualUnifyElems env $ zip iss (apply issSubstitution . Slv.getType . snd <$> pss)
   extSubst s'
 
   s''  <- getSubst
-  let iss' = (\(Slv.Typed t a (Slv.Is pat exp)) -> Slv.Typed (apply s'' t) a (Slv.Is (updatePatternTypes s'' mempty pat) exp)) . T.lst <$> pss
+  let iss' = (\(Slv.Typed t a (Slv.Is pat exp)) -> Slv.Typed (apply s'' t) a (Slv.Is (updatePatternTypes s'' mempty pat) exp)) . snd <$> pss
   let wher = Slv.Typed (apply s'' $ (ps ++ ps') :=> tv) area $ Slv.Where (updateQualType e (apply s'' $ ps :=> t)) iss'
   return (ps ++ ps', apply s'' tv, wher)
 
 
-inferBranch :: Options -> Env -> Type -> Type -> Int -> Can.Is -> Infer (Substitution, [Pred], Slv.Is)
+-- | Phase 1 migrated: 3-tuple. Same legacy reversed compose order pattern as
+-- inferAssignment (`s `compose` s' `compose` s''` — applies s'' first, s last).
+-- We compute the composition explicitly and extSubst the result so the
+-- migrated inferWhere caller picks up the contribution via state.
+inferBranch :: Options -> Env -> Type -> Type -> Int -> Can.Is -> Infer ([Pred], Slv.Is)
 inferBranch options env tv t branchIdx (Can.Canonical area (Can.Is pat exp)) = do
   discardError <- isDiscardingErrors
   (pat', ps, vars, t') <- inferPattern env pat
@@ -1080,10 +1100,10 @@ inferBranch options env tv t branchIdx (Can.Canonical area (Can.Is pat exp)) = d
 
   let subst = s `compose` s' `compose` s''
   let allPreds = ps ++ ps'
+  extSubst subst
 
   return
-    ( subst
-    , allPreds
+    ( allPreds
     , Slv.Typed (allPreds :=> apply subst (t' `fn` tv)) area
       $ Slv.Is (updatePatternTypes subst (apply s <$> vars') pat') (updateQualType e' (ps' :=> apply subst t''))
     )
@@ -1127,7 +1147,9 @@ inferExtern _ (Can.Canonical area (Can.Extern scheme name originalName)) = do
 
 
 
-inferImplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, ([Pred], [Pred]), Env, Slv.Exp)
+-- | Phase 1 migrated: 3-tuple. extSubst's the final substitution at the end
+-- so the value is visible to inferBody (which calls applyCurrentSubst).
+inferImplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (([Pred], [Pred]), Env, Slv.Exp)
 inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   discardError <- isDiscardingErrors
   (env', tv) <- case Can.getExpName exp of
@@ -1157,6 +1179,7 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
       t'  = apply s'' tv
 
   (ds, rs', sFinal) <- generalize isLet env area s'' envWithVarsExcluded t' ps' (apply s'' tv)
+  extSubst sFinal
 
   let bindingName = Can.getExpName exp
   bindingMutated <- case bindingName of
@@ -1184,13 +1207,17 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
 
   case bindingName of
     Just n  ->
-      return (sFinal, (ds, rs'), extendVars env (n, sc), updateQualType e (apply sFinal $ rs' :=> t'))
+      return ((ds, rs'), extendVars env (n, sc), updateQualType e (apply sFinal $ rs' :=> t'))
 
     Nothing ->
-      return (sFinal, (ds, rs'), env, updateQualType e (apply sFinal $ rs' :=> t'))
+      return ((ds, rs'), env, updateQualType e (apply sFinal $ rs' :=> t'))
 
 
-inferExplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
+-- | Phase 1 migrated: 3-tuple. extSubsts the cumulative substitution at
+-- the end so callers (inferBody / inferExp) see this binding's contribution.
+-- inferExp's captureDelta wrapper scopes the contribution to a single
+-- top-level iteration so nothing leaks across iterations of inferExps.
+inferExplicitlyTyped :: Options -> Bool -> Env -> Can.Exp -> Infer ([Pred], Env, Slv.Exp)
 inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp exp typing sc)) = do
   discardError <- isDiscardingErrors
   qt@(qs :=> t') <- instantiate sc
@@ -1275,7 +1302,8 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
           Nothing ->
             env'
 
-    return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
+    extSubst (substDefaultResolution `compose` s')
+    return (qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 inferExplicitlyTyped _ _ _ _ = error "inferExplicitlyTyped: unreachable case"
 
@@ -1288,11 +1316,23 @@ inferExps options env (e : es) = do
   -- (withDiscardErrors) so the rest of the file still types. If even that
   -- fails, fall back to a placeholder solved expression so subsequent
   -- definitions can still see this binding's name in the env.
+  --
+  -- State subst is rolled back on error so the failing pass doesn't pollute
+  -- the next attempt. Without this rollback, partial substitutions from a
+  -- failed strict pass leak into the best-effort retry and produce wrong
+  -- types in surrounding bindings.
+  let try strict = do
+        savedSubst <- getSubst
+        catchError
+          (if strict then inferExp options env e
+                     else withDiscardErrors (inferExp options env e))
+          (\err -> do
+            putSubst savedSubst
+            throwError err)
   (e' , env'   ) <-
-    catchError (inferExp options env e) $ \err -> do
+    catchError (try True) $ \err -> do
       pushError err
-      catchError
-        (withDiscardErrors (inferExp options env e))
+      catchError (try False)
         (\_ -> return (Just (toSolved e), env))
   (es', nextEnv) <- inferExps options env' es
 
@@ -1308,14 +1348,30 @@ inferExp :: Options -> Env -> Can.Exp -> Infer (Maybe Slv.Exp, Env)
 inferExp _ env (Can.Canonical _ (Can.TypeExport _)) =
   return (Nothing, env)
 inferExp options env e = do
-  (s, _, env', e') <- upgradeContext env (Can.getArea e) $ case e of
-    Can.Canonical _ Can.TypedExp{} ->
-      inferExplicitlyTyped options False env e
+  -- Wrap the per-binding inference in captureDelta so substitutions from
+  -- this top-level binding are scoped to it: state at the start of the next
+  -- inferExps iteration is the same as at the start of this one. Without
+  -- this scoping, placeholder tvars bound during one iteration's body
+  -- inference (e.g. f's body's reference to forward-declared g) would leak
+  -- into a later iteration (g's actual definition) and the compose-on-state
+  -- left-bias would silently swallow the new binding.
+  (delta, (s, _, env', e')) <-
+    captureDelta $
+      upgradeContext env (Can.getArea e) $ case e of
+        Can.Canonical _ Can.TypedExp{} -> do
+          (ps, env'', e') <- inferExplicitlyTyped options False env e
+          s <- getSubst
+          return (s, ps, env'', e')
 
-    _ -> do
-      (s, (_, placeholderPreds), env'', e') <- inferImplicitlyTyped options False env e
-      return (s, placeholderPreds, env'', e')
+        _ -> do
+          ((_, placeholderPreds), env'', e') <- inferImplicitlyTyped options False env e
+          s <- getSubst
+          return (s, placeholderPreds, env'', e')
 
+  -- Use the per-binding delta for the rest of the legacy AST update pass.
+  -- We deliberately do NOT re-extSubst delta into state (it's scoped to
+  -- this iteration only).
+  let _ = (delta, s)  -- 'delta' is the captured per-binding contribution; 's' carries it through legacy code
 
   e'' <- updateExpTypes options env' False s e'
 

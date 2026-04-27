@@ -276,13 +276,22 @@ applyCurrentSubst x = do
 
 
 -- | Run an action with a fresh delta accumulator and return what the action
--- contributed to the substitution. `currentSubst` is unaffected by the reset
--- so readers inside the frame continue to see the cumulative substitution.
+-- contributed to the substitution. The frame is transactional: at exit, both
+-- `currentSubst` and `deltaSubst` are restored to their pre-action values
+-- (with the action's delta absorbed into the parent's delta). This way the
+-- caller can compose the returned delta into state explicitly via `extSubst`
+-- without double-counting the inner contributions.
+--
+-- Inside the action, `currentSubst` continues to reflect the cumulative
+-- substitution from outside the frame plus contributions inside it, so
+-- `applyCurrentSubst` and `unifyM` see the right view.
 captureDelta :: Infer a -> Infer (Substitution, a)
 captureDelta action = do
   oldDelta <- getDeltaSubst
+  oldSubst <- getSubst
   putDeltaSubst mempty
   r <- action
   newDelta <- getDeltaSubst
   putDeltaSubst (newDelta `compose` oldDelta)
+  putSubst oldSubst
   return (newDelta, r)
