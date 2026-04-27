@@ -1,0 +1,82 @@
+( AST
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
+        ]
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV (-1) Star))
+            (Area (Loc 0 1 1) (Loc 36 3 2))
+            (TypedExp
+               (Typed
+                  ([] :=> TVar (TV (-1) Star))
+                  (Area (Loc 0 1 1) (Loc 36 3 2))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([] :=> TVar (TV (-1) Star))
+                        (Area (Loc 7 1 8) (Loc 36 3 2))
+                        (Abs
+                           (Typed
+                              ([] :=> TVar (TV (-1) Star)) (Area (Loc 35 3 1) (Loc 35 3 1)) "_")
+                           [ Typed
+                               ([] :=> TVar (TV (-1) Star))
+                               (Area (Loc 25 2 11) (Loc 33 2 19))
+                               (App
+                                  (Typed
+                                     ([] :=> TVar (TV (-1) Star))
+                                     (Area (Loc 25 2 11) (Loc 33 2 19))
+                                     (App
+                                        (Typed
+                                           ([] :=> TVar (TV (-1) Star))
+                                           (Area (Loc 27 2 13) (Loc 29 2 15))
+                                           (Var "==" False))
+                                        (Typed
+                                           ([] :=> TVar (TV 0 Star))
+                                           (Area (Loc 25 2 11) (Loc 26 2 12))
+                                           (LNum "1"))
+                                        False))
+                                  (Typed
+                                     ([] :=> TCon (TC "String" Star) "prelude")
+                                     (Area (Loc 30 2 16) (Loc 33 2 19))
+                                     (LStr "a"))
+                                  True)
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 36 3 2)
+        }
+  ]
+)

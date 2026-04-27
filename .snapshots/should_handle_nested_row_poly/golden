@@ -1,0 +1,207 @@
+( AST
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
+        ]
+    , aexps =
+        [ Typed
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TRecord
+                       (fromList
+                          [ ( "inner"
+                            , TRecord
+                                (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                (Just (TVar (TV 9 Star)))
+                                (fromList [])
+                            )
+                          ])
+                       (Just (TVar (TV 8 Star)))
+                       (fromList [])))
+                 (TVar (TV 2 Star)))
+            (Area (Loc 0 1 1) (Loc 28 1 29))
+            (Assignment
+               "getInnerX"
+               (Typed
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TRecord
+                             (fromList
+                                [ ( "inner"
+                                  , TRecord
+                                      (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                      (Just (TVar (TV 9 Star)))
+                                      (fromList [])
+                                  )
+                                ])
+                             (Just (TVar (TV 8 Star)))
+                             (fromList [])))
+                       (TVar (TV 2 Star)))
+                  (Area (Loc 12 1 13) (Loc 28 1 29))
+                  (Abs
+                     (Typed
+                        ([] :=>
+                           TRecord
+                             (fromList
+                                [ ( "inner"
+                                  , TRecord
+                                      (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                      (Just (TVar (TV 9 Star)))
+                                      (fromList [])
+                                  )
+                                ])
+                             (Just (TVar (TV 8 Star)))
+                             (fromList []))
+                        (Area (Loc 13 1 14) (Loc 14 1 15))
+                        "r")
+                     [ Typed
+                         ([] :=> TVar (TV 2 Star))
+                         (Area (Loc 19 1 20) (Loc 28 1 29))
+                         (Access
+                            (Typed
+                               ([] :=>
+                                  TRecord
+                                    (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                    (Just (TVar (TV 9 Star)))
+                                    (fromList []))
+                               (Area (Loc 19 1 20) (Loc 26 1 27))
+                               (Access
+                                  (Typed
+                                     ([] :=>
+                                        TRecord
+                                          (fromList
+                                             [ ( "inner"
+                                               , TRecord
+                                                   (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                                   (Just (TVar (TV 9 Star)))
+                                                   (fromList [])
+                                               )
+                                             ])
+                                          (Just (TVar (TV 8 Star)))
+                                          (fromList []))
+                                     (Area (Loc 19 1 20) (Loc 20 1 21))
+                                     (Var "r" False))
+                                  (Typed
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TRecord
+                                                (fromList
+                                                   [ ( "inner"
+                                                     , TRecord
+                                                         (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                                         (Just (TVar (TV 9 Star)))
+                                                         (fromList [])
+                                                     )
+                                                   ])
+                                                (Just (TVar (TV 8 Star)))
+                                                (fromList [])))
+                                          (TRecord
+                                             (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                             (Just (TVar (TV 9 Star)))
+                                             (fromList [])))
+                                     (Area (Loc 21 1 22) (Loc 26 1 27))
+                                     (Var ".inner" False))))
+                            (Typed
+                               ([] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TRecord
+                                          (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                          (Just (TVar (TV 9 Star)))
+                                          (fromList [])))
+                                    (TVar (TV 2 Star)))
+                               (Area (Loc 27 1 28) (Loc 28 1 29))
+                               (Var ".x" False)))
+                     ])))
+        , Typed
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "String" Star) "prelude")))
+                 (TCon (TC "{}" Star) "prelude"))
+            (Area (Loc 29 2 1) (Loc 44 2 16))
+            (TypedExp
+               (Typed
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))
+                  (Area (Loc 29 2 1) (Loc 44 2 16))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude")))
+                             (TCon (TC "{}" Star) "prelude"))
+                        (Area (Loc 36 2 8) (Loc 44 2 16))
+                        (Abs
+                           (Typed
+                              ([] :=>
+                                 TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                              (Area (Loc 43 2 15) (Loc 43 2 15))
+                              "_")
+                           [ Typed
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "getInnerX")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 9 1 10)
+        }
+  ]
+, []
+)

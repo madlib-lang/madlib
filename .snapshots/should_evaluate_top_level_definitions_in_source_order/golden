@@ -1,0 +1,245 @@
+( AST
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
+        ]
+    , aexps =
+        [ Typed
+            ([ IsIn "Number" [ TVar (TV 3 Star) ] Nothing ] :=>
+               TVar (TV 3 Star))
+            (Area (Loc 0 1 1) (Loc 5 1 6))
+            (Assignment
+               "a"
+               (Typed
+                  ([ IsIn "Number" [ TVar (TV 3 Star) ] Nothing ] :=>
+                     TVar (TV 3 Star))
+                  (Area (Loc 4 1 5) (Loc 5 1 6))
+                  (LNum "1")))
+        , Typed
+            ([ IsIn "Number" [ TVar (TV 4 Star) ] Nothing ] :=>
+               TVar (TV 4 Star))
+            (Area (Loc 6 2 1) (Loc 15 2 10))
+            (Assignment
+               "b"
+               (Typed
+                  ([ IsIn
+                       "Number"
+                       [ TVar (TV 4 Star) ]
+                       (Just (Area (Loc 12 2 7) (Loc 13 2 8)))
+                   , IsIn
+                       "Number"
+                       [ TVar (TV 4 Star) ]
+                       (Just (Area (Loc 10 2 5) (Loc 11 2 6)))
+                   , IsIn "Number" [ TVar (TV 4 Star) ] Nothing
+                   ] :=>
+                     TVar (TV 4 Star))
+                  (Area (Loc 10 2 5) (Loc 15 2 10))
+                  (App
+                     (Typed
+                        ([ IsIn
+                             "Number"
+                             [ TVar (TV 4 Star) ]
+                             (Just (Area (Loc 12 2 7) (Loc 13 2 8)))
+                         , IsIn
+                             "Number"
+                             [ TVar (TV 4 Star) ]
+                             (Just (Area (Loc 10 2 5) (Loc 11 2 6)))
+                         ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV 4 Star)))
+                             (TVar (TV 4 Star)))
+                        (Area (Loc 10 2 5) (Loc 15 2 10))
+                        (App
+                           (Typed
+                              ([ IsIn "Number" [ TVar (TV 4 Star) ] Nothing ] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV 4 Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV 4 Star)))
+                                      (TVar (TV 4 Star))))
+                              (Area (Loc 12 2 7) (Loc 13 2 8))
+                              (Var "+" False))
+                           (Typed
+                              ([ IsIn
+                                   "Number"
+                                   [ TVar (TV 4 Star) ]
+                                   (Just (Area (Loc 12 2 7) (Loc 13 2 8)))
+                               , IsIn
+                                   "Number"
+                                   [ TVar (TV 4 Star) ]
+                                   (Just (Area (Loc 10 2 5) (Loc 11 2 6)))
+                               ] :=>
+                                 TVar (TV 4 Star))
+                              (Area (Loc 10 2 5) (Loc 11 2 6))
+                              (Var "a" False))
+                           False))
+                     (Typed
+                        ([ IsIn
+                             "Number"
+                             [ TVar (TV 4 Star) ]
+                             (Just (Area (Loc 12 2 7) (Loc 13 2 8)))
+                         , IsIn
+                             "Number"
+                             [ TVar (TV 4 Star) ]
+                             (Just (Area (Loc 10 2 5) (Loc 11 2 6)))
+                         , IsIn "Number" [ TVar (TV 4 Star) ] Nothing
+                         ] :=>
+                           TVar (TV 4 Star))
+                        (Area (Loc 14 2 9) (Loc 15 2 10))
+                        (LNum "1"))
+                     True)))
+        , Typed
+            ([ IsIn
+                 "Number"
+                 [ TVar (TV 9 Star) ]
+                 (Just (Area (Loc 24 3 9) (Loc 25 3 10)))
+             ] :=>
+               TVar (TV 9 Star))
+            (Area (Loc 16 3 1) (Loc 25 3 10))
+            (Assignment
+               "c"
+               (Typed
+                  ([ IsIn
+                       "Number"
+                       [ TVar (TV 9 Star) ]
+                       (Just (Area (Loc 22 3 7) (Loc 23 3 8)))
+                   , IsIn
+                       "Number"
+                       [ TVar (TV 9 Star) ]
+                       (Just (Area (Loc 20 3 5) (Loc 21 3 6)))
+                   , IsIn
+                       "Number"
+                       [ TVar (TV 9 Star) ]
+                       (Just (Area (Loc 24 3 9) (Loc 25 3 10)))
+                   ] :=>
+                     TVar (TV 9 Star))
+                  (Area (Loc 20 3 5) (Loc 25 3 10))
+                  (App
+                     (Typed
+                        ([ IsIn
+                             "Number"
+                             [ TVar (TV 9 Star) ]
+                             (Just (Area (Loc 22 3 7) (Loc 23 3 8)))
+                         , IsIn
+                             "Number"
+                             [ TVar (TV 9 Star) ]
+                             (Just (Area (Loc 20 3 5) (Loc 21 3 6)))
+                         ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TVar (TV 9 Star)))
+                             (TVar (TV 9 Star)))
+                        (Area (Loc 20 3 5) (Loc 25 3 10))
+                        (App
+                           (Typed
+                              ([ IsIn "Number" [ TVar (TV 9 Star) ] Nothing ] :=>
+                                 TApp
+                                   (TApp
+                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                      (TVar (TV 9 Star)))
+                                   (TApp
+                                      (TApp
+                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                         (TVar (TV 9 Star)))
+                                      (TVar (TV 9 Star))))
+                              (Area (Loc 22 3 7) (Loc 23 3 8))
+                              (Var "+" False))
+                           (Typed
+                              ([ IsIn
+                                   "Number"
+                                   [ TVar (TV 9 Star) ]
+                                   (Just (Area (Loc 22 3 7) (Loc 23 3 8)))
+                               , IsIn
+                                   "Number"
+                                   [ TVar (TV 9 Star) ]
+                                   (Just (Area (Loc 20 3 5) (Loc 21 3 6)))
+                               ] :=>
+                                 TVar (TV 9 Star))
+                              (Area (Loc 20 3 5) (Loc 21 3 6))
+                              (Var "b" False))
+                           False))
+                     (Typed
+                        ([ IsIn
+                             "Number"
+                             [ TVar (TV 9 Star) ]
+                             (Just (Area (Loc 22 3 7) (Loc 23 3 8)))
+                         , IsIn
+                             "Number"
+                             [ TVar (TV 9 Star) ]
+                             (Just (Area (Loc 20 3 5) (Loc 21 3 6)))
+                         , IsIn
+                             "Number"
+                             [ TVar (TV 9 Star) ]
+                             (Just (Area (Loc 24 3 9) (Loc 25 3 10)))
+                         ] :=>
+                           TVar (TV 9 Star))
+                        (Area (Loc 24 3 9) (Loc 25 3 10))
+                        (Var "a" False))
+                     True)))
+        , Typed
+            ([] :=> TVar (TV (-1) Star))
+            (Area (Loc 26 4 1) (Loc 40 4 15))
+            (TypedExp
+               (Typed
+                  ([] :=> TVar (TV (-1) Star))
+                  (Area (Loc 26 4 1) (Loc 40 4 15))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([] :=> TVar (TV (-1) Star))
+                        (Area (Loc 33 4 8) (Loc 40 4 15))
+                        (Abs
+                           (Typed
+                              ([] :=> TVar (TV (-1) Star))
+                              (Area (Loc 39 4 14) (Loc 39 4 14))
+                              "_")
+                           [ Typed
+                               ([] :=> TVar (TV (-1) Star))
+                               (Area (Loc 39 4 14) (Loc 40 4 15))
+                               (Var "c" False)
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (NoInstanceFound "Number" [ TCon (TC "{}" Star) "prelude" ])
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 39 4 14) (Loc 40 4 15)
+        }
+  ]
+)

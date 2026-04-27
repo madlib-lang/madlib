@@ -1,0 +1,115 @@
+( AST
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
+        ]
+    , aexps =
+        [ Typed
+            ([] :=> TVar (TV (-1) Star))
+            (Area (Loc 0 1 1) (Loc 49 5 2))
+            (TypedExp
+               (Typed
+                  ([] :=> TVar (TV (-1) Star))
+                  (Area (Loc 0 1 1) (Loc 49 5 2))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([] :=> TVar (TV (-1) Star))
+                        (Area (Loc 7 1 8) (Loc 49 5 2))
+                        (Abs
+                           (Typed
+                              ([] :=> TVar (TV (-1) Star)) (Area (Loc 48 5 1) (Loc 48 5 1)) "_")
+                           [ Typed
+                               ([] :=> TVar (TV (-1) Star))
+                               (Area (Loc 17 2 3) (Loc 23 2 9))
+                               (Assignment
+                                  "x"
+                                  (Typed
+                                     ([] :=> TVar (TV (-1) Star))
+                                     (Area (Loc 21 2 7) (Loc 23 2 9))
+                                     (ListConstructor [])))
+                           , Typed
+                               ([] :=> TVar (TV (-1) Star))
+                               (Area (Loc 26 3 3) (Loc 34 3 11))
+                               (Mutate
+                                  (Typed
+                                     ([] :=> TVar (TV (-1) Star))
+                                     (Area (Loc 26 3 3) (Loc 27 3 4))
+                                     (Var "x" False))
+                                  (Typed
+                                     ([] :=> TVar (TV (-1) Star))
+                                     (Area (Loc 31 3 8) (Loc 34 3 11))
+                                     (ListConstructor
+                                        [ Typed
+                                            ([] :=> TVar (TV (-1) Star))
+                                            (Area (Loc 32 3 9) (Loc 33 3 10))
+                                            (ListItem
+                                               (Typed
+                                                  ([] :=> TVar (TV 0 Star))
+                                                  (Area (Loc 32 3 9) (Loc 33 3 10))
+                                                  (LNum "1")))
+                                        ])))
+                           , Typed
+                               ([] :=> TVar (TV (-1) Star))
+                               (Area (Loc 37 4 3) (Loc 47 4 13))
+                               (Mutate
+                                  (Typed
+                                     ([] :=> TVar (TV (-1) Star))
+                                     (Area (Loc 37 4 3) (Loc 38 4 4))
+                                     (Var "x" False))
+                                  (Typed
+                                     ([] :=> TVar (TV (-1) Star))
+                                     (Area (Loc 42 4 8) (Loc 47 4 13))
+                                     (ListConstructor
+                                        [ Typed
+                                            ([] :=> TVar (TV (-1) Star))
+                                            (Area (Loc 43 4 9) (Loc 46 4 12))
+                                            (ListItem
+                                               (Typed
+                                                  ([] :=> TCon (TC "String" Star) "prelude")
+                                                  (Area (Loc 43 4 9) (Loc 46 4 12))
+                                                  (LStr "a")))
+                                        ])))
+                           , Typed
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 49 5 2)
+        }
+  ]
+)

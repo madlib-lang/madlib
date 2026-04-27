@@ -179,7 +179,6 @@ isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _)
 
 
 byInst :: Env -> Pred -> Infer [Pred]
-byInst _ (IsIn "__MUTATION__" _ _) = return []
 byInst env p@(IsIn interface ts maybeArea) =
   catchError
     (tryInsts candidates)

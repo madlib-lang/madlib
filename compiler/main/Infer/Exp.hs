@@ -88,16 +88,6 @@ isCompoundBinding (TApp _ _) = True
 isCompoundBinding _ = False
 
 
-mutationInterface :: String
-mutationInterface = "__MUTATION__"
-
-mutationPred :: Pred
-mutationPred = IsIn mutationInterface [] Nothing
-
-makeMutationPred :: Type -> Area -> Pred
-makeMutationPred t area = IsIn mutationInterface [t] (Just area)
-
-
 infer :: Bool -> Options -> Env -> Can.Exp -> Infer (Substitution, [Pred], Type, Slv.Exp)
 infer discardError options env lexp = do
   let (Can.Canonical area exp) = lexp
@@ -506,22 +496,21 @@ inferMutate discardError options env e@(Can.Canonical area (Can.Mutate lhs exp))
     _ ->
       return ()
 
-  mutationPs <-
-    case Can.getExpName lhs of
-      Just name | not discardError ->
-        if M.member name (envNamesInScope env) && envInBody env then
-          return [makeMutationPred (apply s t3) area]
-        else
-          throwError $ CompilationError (MutatingNotInScope name) (Context (envCurrentPath env) area)
+  case Can.getExpName lhs of
+    Just name | not discardError ->
+      if M.member name (envNamesInScope env) && envInBody env then
+        markMutated name
+      else
+        throwError $ CompilationError (MutatingNotInScope name) (Context (envCurrentPath env) area)
 
-      _ ->
-        return []
+    _ ->
+      return ()
 
   return
     ( s
-    , ps1 ++ ps2 ++ mutationPs
+    , ps1 ++ ps2
     , apply s t3
-    , Slv.Typed (apply s $ (ps1 ++ ps2 ++ mutationPs) :=> t3) area (Slv.Mutate e1 e2)
+    , Slv.Typed (apply s $ (ps1 ++ ps2) :=> t3) area (Slv.Mutate e1 e2)
     )
 
 
@@ -1163,9 +1152,11 @@ ftvForLetGenSet t = case t of
 ftvForLetGen :: Type -> [TVar]
 ftvForLetGen = S.toList . ftvForLetGenSet
 
--- Shared generalization logic: compute free/generic vars, split predicates, handle mutations
-generalize :: Bool -> Bool -> Env -> Area -> Substitution -> Env -> Type -> [Pred] -> Type -> Infer ([Pred], [Pred], Substitution, [Pred])
-generalize isLet discardError env area sFinal envWithVarsExcluded t' ps' t = do
+-- Shared generalization logic: compute free/generic vars, split predicates.
+-- Mutation tracking lives in InferState.mutatedNames now; callers consult it
+-- separately via isMutated to decide whether to quantify or to error out.
+generalize :: Bool -> Bool -> Env -> Area -> Substitution -> Env -> Type -> [Pred] -> Type -> Infer ([Pred], [Pred], Substitution)
+generalize isLet discardError env area sFinal envWithVarsExcluded t' ps' _ = do
   let fs = S.toList (ftv (apply sFinal envWithVarsExcluded))
 
   (ds, rs, sSplit) <- catchError
@@ -1184,14 +1175,7 @@ generalize isLet discardError env area sFinal envWithVarsExcluded t' ps' t = do
   let rs' = dedupePreds rs
   let sFinal' = sSplit `compose` sFinal
 
-  let mutPS =
-        List.filter
-          (\(IsIn cls ts _) ->
-            cls == mutationInterface && not (S.null (ftv (apply sFinal ts) `S.intersection` ftv (apply sFinal t)))
-          )
-          ps'
-
-  return (ds, rs', sFinal', mutPS)
+  return (ds, rs', sFinal')
 
 
 
@@ -1223,30 +1207,38 @@ inferImplicitlyTyped discardError options isLet env exp@(Can.Canonical area _) =
       ps' = apply s'' ps
       t'  = apply s'' tv
 
-  (ds, rs', sFinal, mutPS) <- generalize isLet discardError env area s'' envWithVarsExcluded t' ps' (apply s'' tv)
+  (ds, rs', sFinal) <- generalize isLet discardError env area s'' envWithVarsExcluded t' ps' (apply s'' tv)
+
+  let bindingName = Can.getExpName exp
+  bindingMutated <- case bindingName of
+    Just n  -> isMutated n
+    Nothing -> return False
 
   let vs = if isLet then ftvForLetGen t' else ftvList t'
       fsSet = ftv (apply sFinal envWithVarsExcluded)
       fs = S.toList fsSet
       gs = filter (not . (`S.member` fsSet)) vs
       sc =
-        if isLet && not (Slv.isNamedAbs e) then
-          apply sFinal $ quantify [] ((rs' ++ mutPS) :=> t')
+        if bindingMutated then
+          -- Mutated bindings are monomorphic (value-restriction-style).
+          apply sFinal $ quantify [] (rs' :=> t')
+        else if isLet && not (Slv.isNamedAbs e) then
+          apply sFinal $ quantify [] (rs' :=> t')
         else
           -- TODO: consider if the apply sFinal should not happen before quantifying
           -- because right now we might miss the defaulted types in the generated
           -- scheme
-          apply sFinal $ quantify gs ((rs' ++ mutPS) :=> t')
+          apply sFinal $ quantify gs (rs' :=> t')
 
-  when (not isLet && not discardError && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
+  when (not isLet && not discardError && bindingMutated && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
-  case Can.getExpName exp of
+  case bindingName of
     Just n  ->
-      return (sFinal, (ds ++ mutPS, rs'), extendVars env (n, sc), updateQualType e (apply sFinal $ rs' :=> t'))
+      return (sFinal, (ds, rs'), extendVars env (n, sc), updateQualType e (apply sFinal $ rs' :=> t'))
 
     Nothing ->
-      return (sFinal, (ds ++ mutPS, rs'), env, updateQualType e (apply sFinal $ rs' :=> t'))
+      return (sFinal, (ds, rs'), env, updateQualType e (apply sFinal $ rs' :=> t'))
 
 
 inferExplicitlyTyped :: Bool -> Options -> Bool -> Env -> Can.Exp -> Infer (Substitution, [Pred], Env, Slv.Exp)
@@ -1280,9 +1272,14 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
       t''  = apply s' t
       t''' = mergeRecords (apply s' t') t''
   ps'      <- filterM ((not <$>) . entail env' qs') (apply s' psFull)
-  (ds, rs, substDefaultResolution, mutPS) <- generalize False discardError env area s' envWithVarsExcluded (apply s' t') ps' t
+  (ds, rs, substDefaultResolution) <- generalize False discardError env area s' envWithVarsExcluded (apply s' t') ps' t
 
-  when (not isLet && not discardError && not (null mutPS) && not (Slv.isNamedAbs e)) $ do
+  let bindingName = Can.getExpName exp
+  bindingMutated <- case bindingName of
+    Just n  -> isMutated n
+    Nothing -> return False
+
+  when (not isLet && not discardError && bindingMutated && not (Slv.isNamedAbs e)) $ do
     throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
 
   let qs'' = dedupePreds qs'
@@ -1320,7 +1317,7 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
   else do
     let e'   = updateQualType e (ds :=> t''')
 
-    let qt'  = (qs'' ++ mutPS) :=> t'''
+    let qt'  = qs'' :=> t'''
     let sc'' = quantify gs qt'
     let env'' = case Can.getExpName exp of
           Just n  ->
@@ -1328,7 +1325,7 @@ inferExplicitlyTyped discardError options isLet env canExp@(Can.Canonical area (
           Nothing ->
             env'
 
-    return (substDefaultResolution `compose` s', qs'' ++ mutPS, env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
+    return (substDefaultResolution `compose` s', qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 inferExplicitlyTyped _ _ _ _ _ = error "inferExplicitlyTyped: unreachable case"
 

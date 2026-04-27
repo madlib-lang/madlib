@@ -1,0 +1,148 @@
+( AST
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
+        ]
+    , aexps =
+        [ Typed
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TRecord
+                       (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                       (Just (TVar (TV 5 Star)))
+                       (fromList [])))
+                 (TVar (TV 2 Star)))
+            (Area (Loc 0 1 1) (Loc 17 1 18))
+            (Assignment
+               "getX"
+               (Typed
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TRecord
+                             (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                             (Just (TVar (TV 5 Star)))
+                             (fromList [])))
+                       (TVar (TV 2 Star)))
+                  (Area (Loc 7 1 8) (Loc 17 1 18))
+                  (Abs
+                     (Typed
+                        ([] :=>
+                           TRecord
+                             (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                             (Just (TVar (TV 5 Star)))
+                             (fromList []))
+                        (Area (Loc 8 1 9) (Loc 9 1 10))
+                        "r")
+                     [ Typed
+                         ([] :=> TVar (TV 2 Star))
+                         (Area (Loc 14 1 15) (Loc 17 1 18))
+                         (Access
+                            (Typed
+                               ([] :=>
+                                  TRecord
+                                    (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                    (Just (TVar (TV 5 Star)))
+                                    (fromList []))
+                               (Area (Loc 14 1 15) (Loc 15 1 16))
+                               (Var "r" False))
+                            (Typed
+                               ([] :=>
+                                  TApp
+                                    (TApp
+                                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                       (TRecord
+                                          (fromList [ ( "x" , TVar (TV 2 Star) ) ])
+                                          (Just (TVar (TV 5 Star)))
+                                          (fromList [])))
+                                    (TVar (TV 2 Star)))
+                               (Area (Loc 16 1 17) (Loc 17 1 18))
+                               (Var ".x" False)))
+                     ])))
+        , Typed
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "String" Star) "prelude")))
+                 (TCon (TC "{}" Star) "prelude"))
+            (Area (Loc 18 2 1) (Loc 33 2 16))
+            (TypedExp
+               (Typed
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))
+                  (Area (Loc 18 2 1) (Loc 33 2 16))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude")))
+                             (TCon (TC "{}" Star) "prelude"))
+                        (Area (Loc 25 2 8) (Loc 33 2 16))
+                        (Abs
+                           (Typed
+                              ([] :=>
+                                 TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                              (Area (Loc 32 2 15) (Loc 32 2 15))
+                              "_")
+                           [ Typed
+                               ([] :=> TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 0 0 0) (Loc 0 0 0))
+                               LUnit
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Just "Module.mad"
+    }
+, [ CompilationWarning
+      (UnusedTopLevelDeclaration "getX")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 1 1) (Loc 4 1 5)
+        }
+  ]
+, []
+)

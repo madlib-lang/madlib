@@ -1817,3 +1817,333 @@ spec = do
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should not alter initial record type when extending a record with new fields" actual
+
+    ---------------------------------------------------------------------------
+    -- Phase 0 test debt: mutation, row polymorphism, bind ordering, typeclasses
+
+    -- MUTATION
+
+    it "should fail when mutating a pattern bound variable" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  where([1, 2]) {"
+            , "    is [a, ...rest]: do {"
+            , "      a := 99"
+            , "      return a"
+            , "    }"
+            , "    is _: 0"
+            , "  }"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when mutating a pattern bound variable" actual
+
+    it "should fail when mutating an undefined variable" $ do
+      let code   = unlines ["main = () => {", "  z := 5", "}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when mutating an undefined variable" actual
+
+    it "should fail when mutation changes type" $ do
+      let code   = unlines ["main = () => {", "  x = 4", "  x := \"hello\"", "  return x", "}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when mutation changes type" actual
+
+    it "should allow multiple mutations of the same variable" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  x = 0"
+            , "  x := 1"
+            , "  x := 2"
+            , "  x := 3"
+            , "  return x"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow multiple mutations of the same variable" actual
+
+    it "should fail when mutating a function parameter" $ do
+      let code   = unlines ["f = (x) => {", "  x := x + 1", "  return x", "}", "main = () => f(1)"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when mutating a function parameter" actual
+
+    it "should fail to generalize a mutated value polymorphically" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  x = []"
+            , "  x := [1]"
+            , "  x := [\"a\"]"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail to generalize a mutated value polymorphically" actual
+
+    it "should allow mutation inside an if branch" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  x = 0"
+            , "  if true { x := 5 } else { x := 10 }"
+            , "  return x"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow mutation inside an if branch" actual
+
+    it "should allow mutation in a where branch" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  x = 0"
+            , "  where(1) {"
+            , "    is 1: x := 5"
+            , "    is _: x := 10"
+            , "  }"
+            , "  return x"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow mutation in a where branch" actual
+
+    it "should allow mutation via closure capture" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  x = 0"
+            , "  inc = () => { x := x + 1 }"
+            , "  inc()"
+            , "  return x"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow mutation via closure capture" actual
+
+    it "should allow mutation between two function calls" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  x = 1"
+            , "  set = (n) => { x := n }"
+            , "  set(7)"
+            , "  set(8)"
+            , "  return x"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow mutation between two function calls" actual
+
+    it "should fail when mutating at top level" $ do
+      let code   = unlines ["x = 4", "x := 5", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when mutating at top level" actual
+
+    -- ROW POLYMORPHISM
+
+    it "should infer row poly for field access function" $ do
+      let code   = unlines ["getX = (r) => r.x", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should infer row poly for field access function" actual
+
+    it "should infer row poly for record spread" $ do
+      let code   = unlines ["addX = (r) => ({ ...r, x: 1 })", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should infer row poly for record spread" actual
+
+    it "should match record pattern with rest" $ do
+      let code   = unlines
+            [ "f = (r) => where(r) {"
+            , "  is { x, ...rest }: x"
+            , "}"
+            , "main = () => {}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should match record pattern with rest" actual
+
+    it "should fail to unify records with conflicting field types" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  r1 = { x: 1 }"
+            , "  r2 = { x: \"a\" }"
+            , "  ((a, b) => (a == b))(r1, r2)"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail to unify records with conflicting field types" actual
+
+    it "should propagate row poly through record-returning function" $ do
+      let code   = unlines
+            [ "withTime = (r) => ({ ...r, time: 0 })"
+            , "main = () => {"
+            , "  result = withTime({ name: \"a\" })"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should propagate row poly through record returning function" actual
+
+    it "should handle nested row poly" $ do
+      let code   = unlines ["getInnerX = (r) => r.inner.x", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should handle nested row poly" actual
+
+    it "should match closed pattern against open record" $ do
+      let code   = unlines
+            [ "f = (r) => where(r) {"
+            , "  is { x: 1 }: \"one\""
+            , "  is _: \"other\""
+            , "}"
+            , "main = () => f({ x: 1 })"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should match closed pattern against open record" actual
+
+    it "should infer row poly in recursive function" $ do
+      let code   = unlines
+            [ "loop = (r) => loop({ ...r, count: 1 })"
+            , "main = () => {}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should infer row poly in recursive function" actual
+
+    it "should fail when accessing missing field on closed record" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  r = { x: 1 }"
+            , "  return r.y"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when accessing missing field on closed record" actual
+
+    it "should infer empty record" $ do
+      let code   = unlines ["empty = {}", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should infer empty record" actual
+
+    it "should access multiple fields of a row poly record" $ do
+      let code   = unlines ["sum = (r) => r.x + r.y", "main = () => {}"]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should access multiple fields of a row poly record" actual
+
+    it "should infer field access in pipe" $ do
+      let code   = unlines
+            [ "main = () => pipe("
+            , "  .x,"
+            , "  (n) => n + 1,"
+            , ")({ x: 1 })"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should infer field access in pipe" actual
+
+    -- BIND ORDERING
+
+    it "should evaluate top level definitions in source order" $ do
+      let code   = unlines
+            [ "a = 1"
+            , "b = a + 1"
+            , "c = b + a"
+            , "main = () => c"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should evaluate top level definitions in source order" actual
+
+    it "should fail referencing later top level binding without annotation" $ do
+      let code   = unlines
+            [ "f = (n) => g(n)"
+            , "g = (n) => n + 1"
+            , "main = () => f(1)"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail referencing later top level binding without annotation" actual
+
+    it "should allow forward reference with type annotation" $ do
+      let code   = unlines
+            [ "f :: Integer -> Integer"
+            , "f = (n) => g(n)"
+            , "g = (n) => n + 1"
+            , "main = () => f(1)"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow forward reference with type annotation" actual
+
+    it "should allow self recursive let binding" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  countDown = (n) => n <= 0 ? 0 : countDown(n - 1)"
+            , "  return countDown(10)"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow self recursive let binding" actual
+
+    it "should preserve order between assignment and mutation" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  x = 1"
+            , "  y = x"
+            , "  x := 2"
+            , "  return y"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should preserve order between assignment and mutation" actual
+
+    it "should allow let binding to reference earlier binding" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  a = 1"
+            , "  b = a + 1"
+            , "  c = b + a"
+            , "  return c"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should allow let binding to reference earlier binding" actual
+
+    -- TYPECLASSES + RECORDS
+
+    it "should resolve Eq for record with Eq fields" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  r1 = { x: 1, y: \"a\" }"
+            , "  r2 = { x: 2, y: \"b\" }"
+            , "  ((a, b) => (a == b))(r1, r2)"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should resolve Eq for record with Eq fields" actual
+
+    it "should propagate constraint through pipe" $ do
+      let code   = unlines
+            [ "double = (n) => n + n"
+            , "main = () => pipe(double, double)(1)"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should propagate constraint through pipe" actual
+
+    it "should handle class method in higher order function" $ do
+      let code   = unlines
+            [ "applyTwice = (f, x) => f(f(x))"
+            , "main = () => applyTwice((n) => n + 1, 0)"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should handle class method in higher order function" actual
+
+    it "should resolve number constraint at use site" $ do
+      let code   = unlines
+            [ "id = (x) => x"
+            , "main = () => id(1) + id(2)"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should resolve number constraint at use site" actual
+
+    it "should fail when constraint cannot be satisfied" $ do
+      let code   = unlines
+            [ "main = () => {"
+            , "  return (1 == \"a\")"
+            , "}"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should fail when constraint cannot be satisfied" actual
+
+    it "should infer constrained polymorphic function" $ do
+      let code   = unlines
+            [ "isEqual = (a, b) => a == b"
+            , "main = () => isEqual(1, 2)"
+            ]
+          actual = unsafePerformIO $ inferModule code
+      snapshotTest "should infer constrained polymorphic function" actual

@@ -1,0 +1,17 @@
+( AST
+    { aimports = []
+    , aexps = []
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances = []
+    , apath = Nothing
+    }
+, []
+, [ CompilationError
+      (GrammarError "Module.mad" "unexpected 1\n")
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 0 4 8) (Loc 0 4 9)
+        }
+  ]
+)

@@ -1,0 +1,779 @@
+( AST
+    { aimports =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (DefaultImport
+               (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) "__BUILTINS__")
+               "__BUILTINS__"
+               "__BUILTINS__")
+        ]
+    , aexps =
+        [ Typed
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "String" Star) "prelude")))
+                 (TCon (TC "{}" Star) "prelude"))
+            (Area (Loc 0 1 1) (Loc 44 4 2))
+            (TypedExp
+               (Typed
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))
+                  (Area (Loc 0 1 1) (Loc 44 4 2))
+                  (Assignment
+                     "main"
+                     (Typed
+                        ([ IsIn
+                             "Number"
+                             [ TCon (TC "Integer" Star) "prelude" ]
+                             (Just (Area (Loc 39 3 10) (Loc 40 3 11)))
+                         ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude")))
+                             (TCon (TC "{}" Star) "prelude"))
+                        (Area (Loc 7 1 8) (Loc 44 4 2))
+                        (Abs
+                           (Typed
+                              ([ IsIn
+                                   "Number"
+                                   [ TCon (TC "Integer" Star) "prelude" ]
+                                   (Just (Area (Loc 39 3 10) (Loc 40 3 11)))
+                               ] :=>
+                                 TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
+                              (Area (Loc 43 4 1) (Loc 43 4 1))
+                              "_")
+                           [ Typed
+                               ([] :=>
+                                  TRecord
+                                    (fromList [ ( "x" , TCon (TC "Integer" Star) "prelude" ) ])
+                                    Nothing
+                                    (fromList []))
+                               (Area (Loc 17 2 3) (Loc 29 2 15))
+                               (Assignment
+                                  "r"
+                                  (Typed
+                                     ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                      ] :=>
+                                        TRecord
+                                          (fromList
+                                             [ ( "x" , TCon (TC "Integer" Star) "prelude" ) ])
+                                          Nothing
+                                          (fromList []))
+                                     (Area (Loc 21 2 7) (Loc 29 2 15))
+                                     (Record
+                                        [ Typed
+                                            ([ IsIn
+                                                 "Number"
+                                                 [ TCon (TC "Integer" Star) "prelude" ]
+                                                 Nothing
+                                             ] :=>
+                                               TCon (TC "Integer" Star) "prelude")
+                                            (Area (Loc 23 2 9) (Loc 27 2 13))
+                                            (Field
+                                               ( "x"
+                                               , Typed
+                                                   ([ IsIn
+                                                        "Number"
+                                                        [ TCon (TC "Integer" Star) "prelude" ]
+                                                        Nothing
+                                                    ] :=>
+                                                      TCon (TC "Integer" Star) "prelude")
+                                                   (Area (Loc 26 2 12) (Loc 27 2 13))
+                                                   (LNum "1")
+                                               ))
+                                        ])))
+                           , Typed
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 39 3 10) (Loc 40 3 11)))
+                                ] :=>
+                                  TCon (TC "{}" Star) "prelude")
+                               (Area (Loc 39 3 10) (Loc 42 3 13))
+                               (Access
+                                  (Typed
+                                     ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                      ] :=>
+                                        TRecord
+                                          (fromList
+                                             [ ( "x" , TCon (TC "Integer" Star) "prelude" ) ])
+                                          Nothing
+                                          (fromList []))
+                                     (Area (Loc 39 3 10) (Loc 40 3 11))
+                                     (Var "r" False))
+                                  (Typed
+                                     ([] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TRecord
+                                                (fromList
+                                                   [ ( "y" , TCon (TC "{}" Star) "prelude" ) ])
+                                                (Just (TVar (TV 5 Star)))
+                                                (fromList [])))
+                                          (TCon (TC "{}" Star) "prelude"))
+                                     (Area (Loc 41 3 12) (Loc 42 3 13))
+                                     (Var ".y" False)))
+                           ]))))
+               (Untyped
+                  (Area (Loc 0 0 0) (Loc 0 0 0))
+                  (TRArr
+                     (Untyped
+                        (Area (Loc 0 0 0) (Loc 0 0 0))
+                        (TRComp
+                           "List"
+                           [ Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "String") ]))
+                     (Untyped (Area (Loc 0 0 0) (Loc 0 0 0)) (TRSingle "{}"))))
+               (Forall
+                  []
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "{}" Star) "prelude"))))
+        ]
+    , atypedecls = []
+    , ainterfaces = []
+    , ainstances =
+        [ Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (Instance
+               "Eq"
+               [ IsIn "Eq" [ TVar (TV 204274412242036023 Star) ] Nothing ]
+               (IsIn
+                  "Eq"
+                  [ TRecord
+                      (fromList [ ( "x" , TVar (TV 204274412242036023 Star) ) ])
+                      Nothing
+                      (fromList [])
+                  ]
+                  Nothing)
+               (fromList
+                  [ ( "=="
+                    , ( Typed
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TRecord
+                                     (fromList [ ( "x" , TVar (TV 17 Star) ) ])
+                                     Nothing
+                                     (fromList [])))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TRecord
+                                        (fromList [ ( "x" , TVar (TV 17 Star) ) ])
+                                        Nothing
+                                        (fromList [])))
+                                  (TCon (TC "Boolean" Star) "prelude")))
+                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                          (Assignment
+                             "=="
+                             (Typed
+                                ([ IsIn "Eq" [ TVar (TV 17 Star) ] Nothing ] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TRecord
+                                           (fromList [ ( "x" , TVar (TV 17 Star) ) ])
+                                           Nothing
+                                           (fromList [])))
+                                     (TApp
+                                        (TApp
+                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                           (TRecord
+                                              (fromList [ ( "x" , TVar (TV 17 Star) ) ])
+                                              Nothing
+                                              (fromList [])))
+                                        (TCon (TC "Boolean" Star) "prelude")))
+                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                (Abs
+                                   (Typed
+                                      ([ IsIn
+                                           "Eq"
+                                           [ TVar (TV 17 Star) ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       ] :=>
+                                         TRecord
+                                           (fromList [ ( "x" , TVar (TV 17 Star) ) ])
+                                           Nothing
+                                           (fromList []))
+                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                      "__$a__")
+                                   [ Typed
+                                       ([ IsIn
+                                            "Eq"
+                                            [ TVar (TV 17 Star) ]
+                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                        ] :=>
+                                          TApp
+                                            (TApp
+                                               (TCon
+                                                  (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                  "prelude")
+                                               (TRecord
+                                                  (fromList [ ( "x" , TVar (TV 17 Star) ) ])
+                                                  Nothing
+                                                  (fromList [])))
+                                            (TCon (TC "Boolean" Star) "prelude"))
+                                       (Area (Loc 0 0 0) (Loc 0 0 0))
+                                       (Abs
+                                          (Typed
+                                             ([ IsIn
+                                                  "Eq"
+                                                  [ TVar (TV 17 Star) ]
+                                                  (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                              ] :=>
+                                                TRecord
+                                                  (fromList [ ( "x" , TVar (TV 17 Star) ) ])
+                                                  Nothing
+                                                  (fromList []))
+                                             (Area (Loc 0 0 0) (Loc 0 0 0))
+                                             "__$b__")
+                                          [ Typed
+                                              ([ IsIn
+                                                   "Eq"
+                                                   [ TVar (TV 17 Star) ]
+                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                               ] :=>
+                                                 TCon (TC "Boolean" Star) "prelude")
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (App
+                                                 (Typed
+                                                    ([ IsIn
+                                                         "Eq"
+                                                         [ TVar (TV 17 Star) ]
+                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                     ] :=>
+                                                       TApp
+                                                         (TApp
+                                                            (TCon
+                                                               (TC
+                                                                  "(->)"
+                                                                  (Kfun Star (Kfun Star Star)))
+                                                               "prelude")
+                                                            (TCon (TC "Boolean" Star) "prelude"))
+                                                         (TCon (TC "Boolean" Star) "prelude"))
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (App
+                                                       (Typed
+                                                          ([] :=>
+                                                             TApp
+                                                               (TApp
+                                                                  (TCon
+                                                                     (TC
+                                                                        "(->)"
+                                                                        (Kfun
+                                                                           Star (Kfun Star Star)))
+                                                                     "prelude")
+                                                                  (TCon
+                                                                     (TC "Boolean" Star) "prelude"))
+                                                               (TApp
+                                                                  (TApp
+                                                                     (TCon
+                                                                        (TC
+                                                                           "(->)"
+                                                                           (Kfun
+                                                                              Star
+                                                                              (Kfun Star Star)))
+                                                                        "prelude")
+                                                                     (TCon
+                                                                        (TC "Boolean" Star)
+                                                                        "prelude"))
+                                                                  (TCon
+                                                                     (TC "Boolean" Star)
+                                                                     "prelude")))
+                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                          (Var "&&" False))
+                                                       (Typed
+                                                          ([ IsIn
+                                                               "Eq"
+                                                               [ TVar (TV 17 Star) ]
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                           ] :=>
+                                                             TCon (TC "Boolean" Star) "prelude")
+                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                          (App
+                                                             (Typed
+                                                                ([ IsIn
+                                                                     "Eq"
+                                                                     [ TVar (TV 17 Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 0 0 0) (Loc 0 0 0)))
+                                                                 ] :=>
+                                                                   TApp
+                                                                     (TApp
+                                                                        (TCon
+                                                                           (TC
+                                                                              "(->)"
+                                                                              (Kfun
+                                                                                 Star
+                                                                                 (Kfun Star Star)))
+                                                                           "prelude")
+                                                                        (TVar (TV 17 Star)))
+                                                                     (TCon
+                                                                        (TC "Boolean" Star)
+                                                                        "prelude"))
+                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                (App
+                                                                   (Typed
+                                                                      ([ IsIn
+                                                                           "Eq"
+                                                                           [ TVar (TV 17 Star) ]
+                                                                           Nothing
+                                                                       ] :=>
+                                                                         TApp
+                                                                           (TApp
+                                                                              (TCon
+                                                                                 (TC
+                                                                                    "(->)"
+                                                                                    (Kfun
+                                                                                       Star
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          Star)))
+                                                                                 "prelude")
+                                                                              (TVar (TV 17 Star)))
+                                                                           (TApp
+                                                                              (TApp
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "(->)"
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          (Kfun
+                                                                                             Star
+                                                                                             Star)))
+                                                                                    "prelude")
+                                                                                 (TVar
+                                                                                    (TV 17 Star)))
+                                                                              (TCon
+                                                                                 (TC "Boolean" Star)
+                                                                                 "prelude")))
+                                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                      (Var "==" False))
+                                                                   (Typed
+                                                                      ([ IsIn
+                                                                           "Eq"
+                                                                           [ TVar (TV 17 Star) ]
+                                                                           (Just
+                                                                              (Area
+                                                                                 (Loc 0 0 0)
+                                                                                 (Loc 0 0 0)))
+                                                                       ] :=>
+                                                                         TVar (TV 17 Star))
+                                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                      (Access
+                                                                         (Typed
+                                                                            ([] :=>
+                                                                               TRecord
+                                                                                 (fromList
+                                                                                    [ ( "x"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             17
+                                                                                             Star)
+                                                                                      )
+                                                                                    ])
+                                                                                 Nothing
+                                                                                 (fromList []))
+                                                                            (Area
+                                                                               (Loc 0 0 0)
+                                                                               (Loc 0 0 0))
+                                                                            (Var "__$a__" False))
+                                                                         (Typed
+                                                                            ([] :=>
+                                                                               TApp
+                                                                                 (TApp
+                                                                                    (TCon
+                                                                                       (TC
+                                                                                          "(->)"
+                                                                                          (Kfun
+                                                                                             Star
+                                                                                             (Kfun
+                                                                                                Star
+                                                                                                Star)))
+                                                                                       "prelude")
+                                                                                    (TRecord
+                                                                                       (fromList
+                                                                                          [ ( "x"
+                                                                                            , TVar
+                                                                                                (TV
+                                                                                                   17
+                                                                                                   Star)
+                                                                                            )
+                                                                                          ])
+                                                                                       Nothing
+                                                                                       (fromList
+                                                                                          [])))
+                                                                                 (TVar
+                                                                                    (TV 17 Star)))
+                                                                            (Area
+                                                                               (Loc 0 0 0)
+                                                                               (Loc 0 0 0))
+                                                                            (Var ".x" False))))
+                                                                   False))
+                                                             (Typed
+                                                                ([ IsIn
+                                                                     "Eq"
+                                                                     [ TVar (TV 17 Star) ]
+                                                                     (Just
+                                                                        (Area
+                                                                           (Loc 0 0 0) (Loc 0 0 0)))
+                                                                 ] :=>
+                                                                   TVar (TV 17 Star))
+                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                (Access
+                                                                   (Typed
+                                                                      ([] :=>
+                                                                         TRecord
+                                                                           (fromList
+                                                                              [ ( "x"
+                                                                                , TVar (TV 17 Star)
+                                                                                )
+                                                                              ])
+                                                                           Nothing
+                                                                           (fromList []))
+                                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                      (Var "__$b__" False))
+                                                                   (Typed
+                                                                      ([] :=>
+                                                                         TApp
+                                                                           (TApp
+                                                                              (TCon
+                                                                                 (TC
+                                                                                    "(->)"
+                                                                                    (Kfun
+                                                                                       Star
+                                                                                       (Kfun
+                                                                                          Star
+                                                                                          Star)))
+                                                                                 "prelude")
+                                                                              (TRecord
+                                                                                 (fromList
+                                                                                    [ ( "x"
+                                                                                      , TVar
+                                                                                          (TV
+                                                                                             17
+                                                                                             Star)
+                                                                                      )
+                                                                                    ])
+                                                                                 Nothing
+                                                                                 (fromList [])))
+                                                                           (TVar (TV 17 Star)))
+                                                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                      (Var ".x" False))))
+                                                             True))
+                                                       False))
+                                                 (Typed
+                                                    ([ IsIn
+                                                         "Eq"
+                                                         [ TVar (TV 17 Star) ]
+                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                     ] :=>
+                                                       TCon (TC "Boolean" Star) "prelude")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (LBool "true"))
+                                                 True)
+                                          ])
+                                   ])))
+                      , Forall
+                          [ Star ]
+                          ([ IsIn "Eq" [ TGen 0 ] Nothing ] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TRecord (fromList [ ( "x" , TGen 0 ) ]) Nothing (fromList [])))
+                               (TApp
+                                  (TApp
+                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                     (TRecord
+                                        (fromList [ ( "x" , TGen 0 ) ]) Nothing (fromList [])))
+                                  (TCon (TC "Boolean" Star) "prelude")))
+                      )
+                    )
+                  ]))
+        , Untyped
+            (Area (Loc 0 0 0) (Loc 0 0 0))
+            (Instance
+               "Show"
+               [ IsIn "Show" [ TVar (TV 204274412242036023 Star) ] Nothing ]
+               (IsIn
+                  "Show"
+                  [ TRecord
+                      (fromList [ ( "x" , TVar (TV 204274412242036023 Star) ) ])
+                      Nothing
+                      (fromList [])
+                  ]
+                  Nothing)
+               (fromList
+                  [ ( "show"
+                    , ( Typed
+                          ([] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TRecord
+                                     (fromList [ ( "x" , TVar (TV 28 Star) ) ])
+                                     Nothing
+                                     (fromList [])))
+                               (TCon (TC "String" Star) "prelude"))
+                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                          (Assignment
+                             "show"
+                             (Typed
+                                ([ IsIn "Show" [ TVar (TV 28 Star) ] Nothing ] :=>
+                                   TApp
+                                     (TApp
+                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                        (TRecord
+                                           (fromList [ ( "x" , TVar (TV 28 Star) ) ])
+                                           Nothing
+                                           (fromList [])))
+                                     (TCon (TC "String" Star) "prelude"))
+                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                (Abs
+                                   (Typed
+                                      ([ IsIn
+                                           "Monoid"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       , IsIn
+                                           "Semigroup"
+                                           [ TCon (TC "String" Star) "prelude" ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       , IsIn
+                                           "Show"
+                                           [ TVar (TV 28 Star) ]
+                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                       ] :=>
+                                         TRecord
+                                           (fromList [ ( "x" , TVar (TV 28 Star) ) ])
+                                           Nothing
+                                           (fromList []))
+                                      (Area (Loc 0 0 0) (Loc 0 0 0))
+                                      "__$a__")
+                                   [ Typed
+                                       ([] :=> TCon (TC "String" Star) "prelude")
+                                       (Area (Loc 0 0 0) (Loc 0 0 0))
+                                       (TemplateString
+                                          [ Typed
+                                              ([] :=> TCon (TC "String" Star) "prelude")
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (LStr "{ ")
+                                          , Typed
+                                              ([ IsIn
+                                                   "Monoid"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                               , IsIn
+                                                   "Semigroup"
+                                                   [ TCon (TC "String" Star) "prelude" ]
+                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                               , IsIn
+                                                   "Show"
+                                                   [ TVar (TV 28 Star) ]
+                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                               ] :=>
+                                                 TCon (TC "String" Star) "prelude")
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (App
+                                                 (Typed
+                                                    ([ IsIn
+                                                         "Monoid"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                     , IsIn
+                                                         "Semigroup"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                     ] :=>
+                                                       TApp
+                                                         (TApp
+                                                            (TCon
+                                                               (TC
+                                                                  "(->)"
+                                                                  (Kfun Star (Kfun Star Star)))
+                                                               "prelude")
+                                                            (TCon (TC "String" Star) "prelude"))
+                                                         (TCon (TC "String" Star) "prelude"))
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (App
+                                                       (Typed
+                                                          ([ IsIn
+                                                               "Monoid"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               Nothing
+                                                           , IsIn
+                                                               "Semigroup"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               Nothing
+                                                           ] :=>
+                                                             TApp
+                                                               (TApp
+                                                                  (TCon
+                                                                     (TC
+                                                                        "(->)"
+                                                                        (Kfun
+                                                                           Star (Kfun Star Star)))
+                                                                     "prelude")
+                                                                  (TCon
+                                                                     (TC "String" Star) "prelude"))
+                                                               (TApp
+                                                                  (TApp
+                                                                     (TCon
+                                                                        (TC
+                                                                           "(->)"
+                                                                           (Kfun
+                                                                              Star
+                                                                              (Kfun Star Star)))
+                                                                        "prelude")
+                                                                     (TCon
+                                                                        (TC "String" Star)
+                                                                        "prelude"))
+                                                                  (TCon
+                                                                     (TC "String" Star) "prelude")))
+                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                          (Var "mappend" False))
+                                                       (Typed
+                                                          ([ IsIn
+                                                               "Monoid"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                           , IsIn
+                                                               "Semigroup"
+                                                               [ TCon (TC "String" Star) "prelude" ]
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                           ] :=>
+                                                             TCon (TC "String" Star) "prelude")
+                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                          (LStr "x: "))
+                                                       False))
+                                                 (Typed
+                                                    ([ IsIn
+                                                         "Monoid"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                     , IsIn
+                                                         "Semigroup"
+                                                         [ TCon (TC "String" Star) "prelude" ]
+                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                     , IsIn
+                                                         "Show"
+                                                         [ TVar (TV 28 Star) ]
+                                                         (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                     ] :=>
+                                                       TCon (TC "String" Star) "prelude")
+                                                    (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                    (App
+                                                       (Typed
+                                                          ([ IsIn
+                                                               "Show" [ TVar (TV 28 Star) ] Nothing
+                                                           ] :=>
+                                                             TApp
+                                                               (TApp
+                                                                  (TCon
+                                                                     (TC
+                                                                        "(->)"
+                                                                        (Kfun
+                                                                           Star (Kfun Star Star)))
+                                                                     "prelude")
+                                                                  (TVar (TV 28 Star)))
+                                                               (TCon (TC "String" Star) "prelude"))
+                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                          (Var "show" False))
+                                                       (Typed
+                                                          ([ IsIn
+                                                               "Show"
+                                                               [ TVar (TV 28 Star) ]
+                                                               (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
+                                                           ] :=>
+                                                             TVar (TV 28 Star))
+                                                          (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                          (Access
+                                                             (Typed
+                                                                ([] :=>
+                                                                   TRecord
+                                                                     (fromList
+                                                                        [ ( "x"
+                                                                          , TVar (TV 28 Star)
+                                                                          )
+                                                                        ])
+                                                                     Nothing
+                                                                     (fromList []))
+                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                (Var "__$a__" False))
+                                                             (Typed
+                                                                ([] :=>
+                                                                   TApp
+                                                                     (TApp
+                                                                        (TCon
+                                                                           (TC
+                                                                              "(->)"
+                                                                              (Kfun
+                                                                                 Star
+                                                                                 (Kfun Star Star)))
+                                                                           "prelude")
+                                                                        (TRecord
+                                                                           (fromList
+                                                                              [ ( "x"
+                                                                                , TVar (TV 28 Star)
+                                                                                )
+                                                                              ])
+                                                                           Nothing
+                                                                           (fromList [])))
+                                                                     (TVar (TV 28 Star)))
+                                                                (Area (Loc 0 0 0) (Loc 0 0 0))
+                                                                (Var ".x" False))))
+                                                       True))
+                                                 True)
+                                          , Typed
+                                              ([] :=> TCon (TC "String" Star) "prelude")
+                                              (Area (Loc 0 0 0) (Loc 0 0 0))
+                                              (LStr " }")
+                                          ])
+                                   ])))
+                      , Forall
+                          [ Star ]
+                          ([ IsIn "Show" [ TGen 0 ] Nothing ] :=>
+                             TApp
+                               (TApp
+                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                  (TRecord (fromList [ ( "x" , TGen 0 ) ]) Nothing (fromList [])))
+                               (TCon (TC "String" Star) "prelude"))
+                      )
+                    )
+                  ]))
+        ]
+    , apath = Just "Module.mad"
+    }
+, []
+, [ CompilationError
+      (RecordMissingFields [ "y" ])
+      Context
+        { ctxAstPath = "Module.mad"
+        , ctxArea = Area (Loc 39 3 10) (Loc 42 3 13)
+        }
+  ]
+)
