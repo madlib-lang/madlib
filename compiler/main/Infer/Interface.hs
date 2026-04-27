@@ -159,7 +159,7 @@ inferMethod' options env instancePreds constraintPreds (mn, Can.Canonical area (
 
   let sc          = quantify (ftvList qt') qt'
 
-  (s, ps, t, e) <- infer options env { envDeferBodyAmbiguity = True } m
+  (s, (ps, t, e)) <- captureDelta (infer options env { envDeferBodyAmbiguity = True } m)
   (qs :=> t')   <- instantiate sc
   su            <- unify t' t
   let s' = su `compose` s

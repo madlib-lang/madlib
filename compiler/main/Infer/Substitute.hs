@@ -256,15 +256,9 @@ buildVarSubsts t = case t of
 
 -- | Compose a substitution into the monad state's `currentSubst`. The new
 -- substitution takes precedence on overlapping variables (left-biased compose).
--- This is the state-based counterpart to the explicit `s2 \`compose\` s1`
--- pattern used throughout the legacy infer* functions.
---
--- Also accumulates into `deltaSubst` so that an enclosing `captureDelta`
--- can return the action's contribution to non-migrated callers.
 extSubst :: Substitution -> Infer ()
 extSubst s = modify $ \st -> st
   { currentSubst = s `compose` currentSubst st
-  , deltaSubst   = s `compose` deltaSubst st
   }
 
 
@@ -275,23 +269,26 @@ applyCurrentSubst x = do
   return (apply s x)
 
 
--- | Run an action with a fresh delta accumulator and return what the action
--- contributed to the substitution. The frame is transactional: at exit, both
--- `currentSubst` and `deltaSubst` are restored to their pre-action values
--- (with the action's delta absorbed into the parent's delta). This way the
--- caller can compose the returned delta into state explicitly via `extSubst`
--- without double-counting the inner contributions.
+-- | Run an action with a transactional view of `currentSubst` and return the
+-- delta the action contributed (i.e. bindings that are new or whose value
+-- changed during the action). The frame restores `currentSubst` to its
+-- pre-action value on exit, so the action's contributions do NOT leak into
+-- the caller's state automatically — callers that want them propagated must
+-- `extSubst` the returned delta.
 --
--- Inside the action, `currentSubst` continues to reflect the cumulative
--- substitution from outside the frame plus contributions inside it, so
--- `applyCurrentSubst` and `unifyM` see the right view.
+-- The delta is computed by diffing pre-state and post-state: a binding is in
+-- the delta iff it's absent from oldSubst, or present with a different value.
+-- This preserves the legacy 4-tuple semantics where `s` was the contribution,
+-- not the cumulative state.
 captureDelta :: Infer a -> Infer (Substitution, a)
 captureDelta action = do
-  oldDelta <- getDeltaSubst
   oldSubst <- getSubst
-  putDeltaSubst mempty
   r <- action
-  newDelta <- getDeltaSubst
-  putDeltaSubst (newDelta `compose` oldDelta)
+  newSubst <- getSubst
   putSubst oldSubst
-  return (newDelta, r)
+  let delta = M.filterWithKey
+        (\k v -> case M.lookup k oldSubst of
+                   Nothing -> True
+                   Just v' -> v /= v')
+        newSubst
+  return (delta, r)
