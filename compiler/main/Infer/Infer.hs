@@ -33,6 +33,13 @@ data InferState
   -- the legacy `infer*` functions still return their own Substitution and
   -- compose by hand. Phase 1 of the typechecker rewrite (still pending) is
   -- to migrate them all to read this field instead.
+  , deltaSubst :: !Substitution
+  -- ^ Accumulator for substitution deltas within a `captureDelta` frame.
+  -- Together with `extSubst` (which updates both fields) this lets a
+  -- migrated 3-tuple inference function be wrapped with `liftWithDelta` to
+  -- look like the legacy 4-tuple form: the returned Substitution is exactly
+  -- the delta the action contributed, so non-migrated callers can keep
+  -- composing it as before.
   , discardErrors :: !Bool
   -- ^ Best-effort inference flag. When True, errors are silently caught at
   -- internal decision points so subsequent code can still produce a partial
@@ -88,6 +95,16 @@ getSubst = gets currentSubst
 -- should compose via extSubst.
 putSubst :: Substitution -> Infer ()
 putSubst s = modify $ \st -> st { currentSubst = s }
+
+
+-- | Read/reset/replace the deltaSubst field directly. `captureDelta`
+-- (defined in Infer.Substitute, which has access to `compose`) is the
+-- intended high-level interface.
+getDeltaSubst :: Infer Substitution
+getDeltaSubst = gets deltaSubst
+
+putDeltaSubst :: Substitution -> Infer ()
+putDeltaSubst s = modify $ \st -> st { deltaSubst = s }
 
 
 -- | Read the discard-errors flag. Used at decision points inside inference

@@ -210,7 +210,9 @@ fixRestVarTypes s pat vars =
                 -- Remove matched fields from the substituted type
                 fixedType = case substitutedType of
                   TRecord allFields base optFields ->
-                    TRecord (M.withoutKeys allFields fieldsToRemove) base optFields
+                    -- mkRecord normalizes when base becomes Nothing (after substitution),
+                    -- folding optFields into required.
+                    mkRecord (M.withoutKeys allFields fieldsToRemove) base optFields
                   _ -> substitutedType
             in Forall ks (ps :=> fixedType)
         Nothing -> scheme

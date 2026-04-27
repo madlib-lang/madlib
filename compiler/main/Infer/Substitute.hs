@@ -258,8 +258,14 @@ buildVarSubsts t = case t of
 -- substitution takes precedence on overlapping variables (left-biased compose).
 -- This is the state-based counterpart to the explicit `s2 \`compose\` s1`
 -- pattern used throughout the legacy infer* functions.
+--
+-- Also accumulates into `deltaSubst` so that an enclosing `captureDelta`
+-- can return the action's contribution to non-migrated callers.
 extSubst :: Substitution -> Infer ()
-extSubst s = modify $ \st -> st { currentSubst = s `compose` currentSubst st }
+extSubst s = modify $ \st -> st
+  { currentSubst = s `compose` currentSubst st
+  , deltaSubst   = s `compose` deltaSubst st
+  }
 
 
 -- | Apply the current state substitution to a Substitutable value.
@@ -267,3 +273,16 @@ applyCurrentSubst :: Substitutable a => a -> Infer a
 applyCurrentSubst x = do
   s <- getSubst
   return (apply s x)
+
+
+-- | Run an action with a fresh delta accumulator and return what the action
+-- contributed to the substitution. `currentSubst` is unaffected by the reset
+-- so readers inside the frame continue to see the cumulative substitution.
+captureDelta :: Infer a -> Infer (Substitution, a)
+captureDelta action = do
+  oldDelta <- getDeltaSubst
+  putDeltaSubst mempty
+  r <- action
+  newDelta <- getDeltaSubst
+  putDeltaSubst (newDelta `compose` oldDelta)
+  return (newDelta, r)
