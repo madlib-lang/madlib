@@ -1,0 +1,14 @@
+export type Greeting
+  = Hello(String)
+  | Hi(String)
+
+
+greet :: Greeting -> String
+export greet = where {
+  Hello(name) => `Hello, ${name}!`
+  Hi(name)    => `Hi ${name}`
+}
+
+
+shout :: String -> String
+export shout = (s) => `${s}!!!`

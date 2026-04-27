@@ -1,0 +1,20 @@
+export type Operation
+  = Add(Integer, Integer)
+  | Sub(Integer, Integer)
+  | Mul(Integer, Integer)
+
+
+eval :: Operation -> Integer
+export eval = where {
+  Add(a, b) => a + b
+  Sub(a, b) => a - b
+  Mul(a, b) => a * b
+}
+
+
+double :: Integer -> Integer
+export double = (n) => n * 2
+
+
+triple :: Integer -> Integer
+export triple = (n) => n * 3

@@ -1,0 +1,23 @@
+import type { Operation } from "./Math/Basic"
+import type { Greeting } from "./Strings/Util"
+import _Basic from "./Math/Basic"
+import _Util from "./Strings/Util"
+
+
+export type Operation
+export type Greeting
+
+export Add    = _Basic.Add
+export Sub    = _Basic.Sub
+export Mul    = _Basic.Mul
+export eval   = _Basic.eval
+export double = _Basic.double
+
+export Hello  = _Util.Hello
+export Hi     = _Util.Hi
+export greet  = _Util.greet
+export shout  = _Util.shout
+
+
+hello :: String -> String
+export hello = (name) => `Hello, ${name}!`
