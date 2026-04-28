@@ -20,6 +20,12 @@ import           Data.List                      ( isInfixOf
 import           Utils.PathUtils
 import qualified Data.Map                      as M
 import qualified Utils.URL                     as URL
+import           Data.IORef                     ( IORef
+                                                , newIORef
+                                                , readIORef
+                                                , writeIORef
+                                                )
+import           System.IO.Unsafe               ( unsafePerformIO )
 
 
 data ModulePath
@@ -228,16 +234,41 @@ findMadlibPackageMainPath pathUtils file pkgName = do
         return $ Just mainPath
 
 
+-- | Cache for the prelude internals directory once located. Avoids walking
+-- up the executable's directory tree for every imported prelude module.
+-- Top-level IORef populated lazily on first successful lookup; reset is
+-- impossible / unnecessary because the path stays valid for the life of the
+-- process (LSP or otherwise).
+{-# NOINLINE preludeRootCache #-}
+preludeRootCache :: IORef (Maybe FilePath)
+preludeRootCache = unsafePerformIO (newIORef Nothing)
+
+
 findPreludeModulePath :: PathUtils -> FilePath -> IO (Maybe FilePath)
 findPreludeModulePath pathUtils moduleName = do
-  exePath  <- getExecutablePath pathUtils
-  result   <- findPreludeModulePath' pathUtils moduleName (dropFileName exePath)
-  case result of
-    Just _  -> return result
+  cached <- readIORef preludeRootCache
+  case cached of
+    Just root -> do
+      -- Fast path: prelude root already known; just check this module.
+      let fullPath = replaceExtension (joinPath [root, moduleName]) ".mad"
+      found <- doesFileExist pathUtils fullPath
+      return $ if found then Just fullPath else Nothing
     Nothing -> do
-      -- If not found via invoking path, try the canonicalized (symlink-resolved) path
-      realPath <- canonicalizePath pathUtils exePath
-      findPreludeModulePath' pathUtils moduleName (dropFileName realPath)
+      -- Slow path: walk up from executable's directory until prelude/__internal__/
+      -- contains the module. On success, cache the containing directory so
+      -- subsequent lookups skip the walk.
+      exePath <- getExecutablePath pathUtils
+      result  <- findPreludeModulePath' pathUtils moduleName (dropFileName exePath)
+      finalResult <- case result of
+        Just _  -> return result
+        Nothing -> do
+          -- If not found via invoking path, try the canonicalized (symlink-resolved) path
+          realPath <- canonicalizePath pathUtils exePath
+          findPreludeModulePath' pathUtils moduleName (dropFileName realPath)
+      case finalResult of
+        Just path -> writeIORef preludeRootCache (Just (dropFileName path))
+        Nothing   -> return ()
+      return finalResult
 
 findPreludeModulePath' :: PathUtils -> FilePath -> FilePath -> IO (Maybe FilePath)
 findPreludeModulePath' _         _          ""      = return Nothing

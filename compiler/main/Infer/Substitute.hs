@@ -237,8 +237,15 @@ compose !s1 s2
       t
 
 merge :: Substitution -> Substitution -> Infer Substitution
-merge s1 s2 = if agree then return (s1 <> s2) else throwError $ CompilationError FatalError NoContext
-  where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (S.toList (M.keysSet s1 `S.intersection` M.keysSet s2))
+merge s1 s2
+  | M.null s1 = return s2
+  | M.null s2 = return s1
+  | S.null shared = return (s1 <> s2)  -- fast path: disjoint domains, no agreement check needed
+  | agree     = return (s1 <> s2)
+  | otherwise = throwError $ CompilationError FatalError NoContext
+ where
+  shared = M.keysSet s1 `S.intersection` M.keysSet s2
+  agree  = all (\v -> apply s1 (TVar v) == apply s2 (TVar v)) (S.toList shared)
 
 
 buildVarSubsts :: Type -> Substitution
