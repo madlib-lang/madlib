@@ -45,10 +45,14 @@ instance Substitutable Type where
   apply _ tc@(TCon _ _ _) =
     tc
 
+  -- Chain-follow on TVar lookup: when a TVar resolves to another TVar (or
+  -- a type containing TVars), recurse to fully resolve. This lets `compose`
+  -- skip the O(N) `M.map (apply s1) s2` pre-pass — chains are resolved
+  -- lazily here instead of eagerly at compose time.
   apply s t@(TVar a) =
     case M.lookup a s of
       Nothing -> t
-      Just t' -> if occursCheck a t' then t else t'
+      Just t' -> if occursCheck a t' then t else apply s t'
 
   apply s (t1 `TApp` t2) =
     let !t1' = apply s t1
@@ -207,14 +211,22 @@ instance FtvOrdered t => FtvOrdered (Qual t) where
   ftvList (ps :=> t) = orderedNub (ftvList ps ++ ftvList t)
 
 
+-- | Compose two substitutions with left-bias on conflict (s1 wins).
+--
+-- The legacy implementation eagerly applied s1 to s2's values (and to s1's
+-- own values for chain resolution within s1) before unioning. That made
+-- compose O(|s1| * |s2|) per call.
+--
+-- The new `apply` for TVar follows chains lazily, so compose just needs to
+-- pick the binding that wins on overlap. `M.unionWith mergeTypes s2 s1`
+-- gives s1-wins for non-record types (mergeTypes returns its right arg),
+-- and field-merging for records — same conflict resolution as before but
+-- without the per-call O(N) pre-pass.
 compose :: Substitution -> Substitution -> Substitution
 compose !s1 s2
   | M.null s1 = s2
-  | M.null s2 = M.map (apply s1) s1
-  | otherwise =
-      let s1' = M.map (apply s1) s1
-          s2' = M.map (apply s1) s2
-      in  M.unionWith mergeTypes s2' s1'
+  | M.null s2 = s1
+  | otherwise = M.unionWith mergeTypes s2 s1
  where
   mergeTypes :: Type -> Type -> Type
   mergeTypes t1 t2 = case (t1, t2) of
