@@ -155,16 +155,17 @@ instance Substitutable Env where
     -- Fast path: the Env's cached union of free TVars in `envVars` is
     -- maintained by extendVars / mergeVars / mergeEnv. If it doesn't
     -- intersect the substitution domain, no scheme needs rebuilding.
-    -- envFreeTVars over-approximates (stale entries from removed/refined
-    -- schemes can linger), but that only causes occasional unnecessary
-    -- work, never incorrectness.
     | S.null (envFreeTVars env `S.intersection` M.keysSet s) = env
+    -- Slow path: walk only the open schemes (those tracked in
+    -- envOpenVarNames). Closed schemes (TGen-only) can never be affected
+    -- by a substitution, so iterating them just to short-circuit is pure
+    -- waste. envOpenVarNames is typically <10 entries (function params +
+    -- pre-generalization let-bindings) vs envVars's hundreds of imports
+    -- + post-generalization names.
     | otherwise =
-        let ks = M.keysSet s
-            applyScheme sc@(Forall _ t)
-              | S.null (ftv t `S.intersection` ks) = sc
-              | otherwise = apply s sc
-        in  env { envVars = M.map applyScheme $ envVars env }
+        let openMap = M.restrictKeys (envVars env) (envOpenVarNames env)
+            applied = M.map (apply s) openMap
+        in  env { envVars = M.union applied (envVars env) }
   ftv env = ftv $ M.elems $ envVars env
 
 

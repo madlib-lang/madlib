@@ -63,5 +63,12 @@ data Env
     -- entries are added, their `ftv` is unioned in; entries that get
     -- removed or refined leave stale entries that are safe (just
     -- prevent the fast path from firing in some cases).
+    , envOpenVarNames :: !(Set.Set Id)
+    -- ^ Names of `envVars` entries whose schemes have non-empty free type
+    -- variables (i.e., parameters or pre-generalization let-bindings).
+    -- The Substitutable Env apply walks only these on the slow path,
+    -- skipping the typically-large set of closed (TGen) schemes from
+    -- imports and post-generalization bindings. Maintained by
+    -- `extendVars` / `mergeVars` / etc.
     }
     deriving(Eq, Show, Generic, Hashable)

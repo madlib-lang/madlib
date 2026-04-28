@@ -93,10 +93,17 @@ lookupVar env name = do
 
 
 extendVars :: Env -> (String, Scheme) -> Env
-extendVars env (x, s) = env
-  { envVars = M.insert x s $ envVars env
-  , envFreeTVars = ftv s `Set.union` envFreeTVars env
-  }
+extendVars env (x, s) =
+  let scFtv = ftv s
+      isOpen = not (Set.null scFtv)
+  in env
+      { envVars = M.insert x s $ envVars env
+      , envFreeTVars = scFtv `Set.union` envFreeTVars env
+      , envOpenVarNames =
+          if isOpen
+            then Set.insert x (envOpenVarNames env)
+            else Set.delete x (envOpenVarNames env)
+      }
 
 
 safeExtendVars :: Env -> (String, Scheme) -> Infer Env
@@ -137,10 +144,13 @@ lookupInterface env name = case M.lookup name (envInterfaces env) of
 
 
 mergeVars :: Env -> Vars -> Env
-mergeVars env vs = env
-  { envVars = vs <> envVars env
-  , envFreeTVars = foldMap ftv vs `Set.union` envFreeTVars env
-  }
+mergeVars env vs =
+  let openInVs = M.keysSet (M.filter (not . Set.null . ftv) vs)
+  in env
+      { envVars = vs <> envVars env
+      , envFreeTVars = foldMap ftv vs `Set.union` envFreeTVars env
+      , envOpenVarNames = openInVs `Set.union` envOpenVarNames env
+      }
 
 
 setNamespacesInScope :: Env -> Set.Set String -> Env
@@ -166,6 +176,7 @@ mergeEnv initial env = Env { envVars                 = envVars initial <> envVar
                            , envPlaceholdersInScope  = []
                            , envPatternBoundNames    = mempty
                            , envFreeTVars            = envFreeTVars initial <> envFreeTVars env
+                           , envOpenVarNames         = envOpenVarNames initial <> envOpenVarNames env
                            }
 
 mkTupleInstance :: String -> Int -> Instance
@@ -306,6 +317,7 @@ initialEnv = do
     , envPlaceholdersInScope = []
     , envPatternBoundNames = mempty
     -- Initial env's schemes are all closed (TGen / no free TVars), so
-    -- the cached union is empty.
+    -- the cached union is empty and there are no open names.
     , envFreeTVars = mempty
+    , envOpenVarNames = mempty
     }
