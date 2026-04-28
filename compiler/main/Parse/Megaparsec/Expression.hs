@@ -21,11 +21,20 @@ import           Parse.Megaparsec.Lexeme
 import           Parse.Megaparsec.Pattern
 import           Parse.Megaparsec.Typing
 import           Parse.Lexer.Token              ( Token(..), RangedToken(..) )
+import           Parse.Lexer.TokenStream        ( TokenStream(..) )
 
 
--- Helper: peek at the next token kind (Nothing at EOF)
+-- Helper: peek at the next token kind (Nothing at EOF).
+-- Reads the input directly via getInput; avoids the `optional (lookAhead
+-- anySingle)` backtracking overhead, which sets a checkpoint, runs the inner
+-- action, and restores state. peekTok is called from many parsing decision
+-- points, so this saves real time.
 peekTok :: Parser (Maybe Token)
-peekTok = fmap (fmap rtToken) (optional (lookAhead anySingle))
+peekTok = do
+  TokenStream ts <- getInput
+  return $ case ts of
+    []      -> Nothing
+    (t : _) -> Just (rtToken t)
 
 
 -- | Parse a body expression (assignment, mutation, typed expression, or plain expression)

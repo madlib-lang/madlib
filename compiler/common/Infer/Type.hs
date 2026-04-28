@@ -19,15 +19,40 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.UTF8 as BSU
 
 
-data TVar = TV Int Kind
-  deriving (Show, Eq, Ord, Generic)
+data TVar = TV {-# UNPACK #-} !Int Kind
+  deriving (Show, Generic)
 
 data TCon = TC Id Kind
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Generic)
+
+-- Manual Eq/Ord for TVar: short-circuits on Int (the unique id), only
+-- comparing Kind when ids match. Generic-derived Eq/Ord builds an
+-- intermediate representation and is consistently slower.
+instance Eq TVar where
+  TV a k1 == TV b k2 = a == b && k1 == k2
+  {-# INLINE (==) #-}
+
+instance Ord TVar where
+  compare (TV a k1) (TV b k2) = case compare a b of
+    EQ -> compare k1 k2
+    o  -> o
+  {-# INLINE compare #-}
+
+-- TCon equality is dominated by the Id (constructor name); kinds match by
+-- construction when ids match in well-typed programs.
+instance Eq TCon where
+  TC i1 k1 == TC i2 k2 = i1 == i2 && k1 == k2
+  {-# INLINE (==) #-}
+
+instance Ord TCon where
+  compare (TC i1 k1) (TC i2 k2) = compare i1 i2 <> compare k1 k2
+  {-# INLINE compare #-}
 
 instance Hashable TVar where
-  hashWithSalt s (TV i k) =
-    s `hashWithSalt` i `hashWithSalt` k
+  hashWithSalt s (TV i _) =
+    -- The Int id is unique per TVar in a single inference run; the Kind is
+    -- redundant for hashing distinctness and adds work to no benefit.
+    hashWithSalt s i
   {-# INLINE hashWithSalt #-}
 
 instance Hashable TCon where
