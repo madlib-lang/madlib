@@ -150,13 +150,21 @@ instance Substitutable a => Substitutable [a] where
   ftv   = foldMap ftv
 
 instance Substitutable Env where
-  apply s env | M.null s  = env
-              | otherwise =
-    let ks = M.keysSet s
-        applyScheme sc@(Forall _ t)
-          | S.null (ftv t `S.intersection` ks) = sc
-          | otherwise = apply s sc
-    in  env { envVars = M.map applyScheme $ envVars env }
+  apply s env
+    | M.null s = env
+    -- Fast path: the Env's cached union of free TVars in `envVars` is
+    -- maintained by extendVars / mergeVars / mergeEnv. If it doesn't
+    -- intersect the substitution domain, no scheme needs rebuilding.
+    -- envFreeTVars over-approximates (stale entries from removed/refined
+    -- schemes can linger), but that only causes occasional unnecessary
+    -- work, never incorrectness.
+    | S.null (envFreeTVars env `S.intersection` M.keysSet s) = env
+    | otherwise =
+        let ks = M.keysSet s
+            applyScheme sc@(Forall _ t)
+              | S.null (ftv t `S.intersection` ks) = sc
+              | otherwise = apply s sc
+        in  env { envVars = M.map applyScheme $ envVars env }
   ftv env = ftv $ M.elems $ envVars env
 
 

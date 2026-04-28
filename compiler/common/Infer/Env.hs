@@ -56,5 +56,12 @@ data Env
     -- ^ key is the name of the binding and the list of int is the placeholder indices to remove
     , envPatternBoundNames :: Set.Set String
     -- ^ names bound by pattern matching, cannot be mutated with ':='
+    , envFreeTVars :: !(Set.Set TVar)
+    -- ^ Cached union of free type variables across `envVars`. Maintained
+    -- as an over-approximation so the Substitutable Env apply can
+    -- short-circuit when the substitution's domain doesn't overlap. When
+    -- entries are added, their `ftv` is unioned in; entries that get
+    -- removed or refined leave stale entries that are safe (just
+    -- prevent the fast path from firing in some cases).
     }
     deriving(Eq, Show, Generic, Hashable)

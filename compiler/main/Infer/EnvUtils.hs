@@ -8,6 +8,7 @@ import qualified AST.Canonical                 as Can
 import           Infer.Type
 import           Infer.Infer
 import           Infer.Instantiate
+import           Infer.Substitute               ( ftv )
 import           Error.Error
 import           Error.Context
 import qualified Data.Map                      as M
@@ -92,7 +93,10 @@ lookupVar env name = do
 
 
 extendVars :: Env -> (String, Scheme) -> Env
-extendVars env (x, s) = env { envVars = M.insert x s $ envVars env }
+extendVars env (x, s) = env
+  { envVars = M.insert x s $ envVars env
+  , envFreeTVars = ftv s `Set.union` envFreeTVars env
+  }
 
 
 safeExtendVars :: Env -> (String, Scheme) -> Infer Env
@@ -133,7 +137,10 @@ lookupInterface env name = case M.lookup name (envInterfaces env) of
 
 
 mergeVars :: Env -> Vars -> Env
-mergeVars env vs = env { envVars = vs <> envVars env }
+mergeVars env vs = env
+  { envVars = vs <> envVars env
+  , envFreeTVars = foldMap ftv vs `Set.union` envFreeTVars env
+  }
 
 
 setNamespacesInScope :: Env -> Set.Set String -> Env
@@ -158,6 +165,7 @@ mergeEnv initial env = Env { envVars                 = envVars initial <> envVar
                            , envPlaceholdersToDelete = mempty
                            , envPlaceholdersInScope  = []
                            , envPatternBoundNames    = mempty
+                           , envFreeTVars            = envFreeTVars initial <> envFreeTVars env
                            }
 
 mkTupleInstance :: String -> Int -> Instance
@@ -297,4 +305,7 @@ initialEnv = do
     , envPlaceholdersToDelete = mempty
     , envPlaceholdersInScope = []
     , envPatternBoundNames = mempty
+    -- Initial env's schemes are all closed (TGen / no free TVars), so
+    -- the cached union is empty.
+    , envFreeTVars = mempty
     }
