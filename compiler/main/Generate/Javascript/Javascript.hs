@@ -1223,11 +1223,23 @@ emitExp env config (Typed qt area metadata exp) =
 
 
         Where exp (first : cs) ->
-          "((__x__) => "
-            <> docBlock [compileIfChain first cs]
-            <> ")("
-            <> emitExp env config exp
-            <> ")"
+          let allBranches = first : cs
+              bodyDoc
+                | canSwitch allBranches =
+                    docBlock [compileSwitch allBranches]
+                | Just len <- canHoistTuple allBranches =
+                    docBlock [compileTupleHoisted len first cs]
+                | Just fields <- canHoistRecord allBranches =
+                    compileRecordHoisted fields first cs
+                | canHoistTopLevelPCon allBranches =
+                    compileTopLevelPConHoisted first cs
+                | otherwise =
+                    docBlock [compileIfChain first cs]
+          in  "((__x__) => "
+                <> bodyDoc
+                <> ")("
+                <> emitExp env config exp
+                <> ")"
          where
           compileListPattern :: String -> [Pattern] -> String
           compileListPattern scope pats = case pats of
@@ -1236,6 +1248,11 @@ emitExp env config (Typed qt area metadata exp) =
 
             items ->
               buildListLengthCheck scope items
+
+          -- Filter out trivial subpattern checks (always-true placeholders for
+          -- PVar/PAny). Keeps generated JS free of `&& true && true && ...`.
+          nonTrivial :: String -> Bool
+          nonTrivial s = not (null s) && s /= "true"
 
           buildListLengthCheck :: String -> [Pattern] -> String
           buildListLengthCheck scope pats = case pats of
@@ -1246,21 +1263,23 @@ emitExp env config (Typed qt area metadata exp) =
               scope <> " === null"
 
             (pat : more) ->
-              scope <> " !== null && " <> compilePattern (scope <> ".v") pat <> " && " <> buildListLengthCheck (scope <> ".n") more
+              let headCheck = compilePattern (scope <> ".v") pat
+                  tailCheck = buildListLengthCheck (scope <> ".n") more
+                  rest = intercalate " && " $ filter nonTrivial [headCheck, tailCheck]
+              in  scope <> " !== null" <> if null rest then "" else " && " <> rest
 
 
           compileTuplePattern :: String -> [Pattern] -> String
           compileTuplePattern scope [] = scope <> ".length === 0"
           compileTuplePattern scope items =
-            scope
-              <> ".length "
-              <> lengthComparator items
-              <> " "
-              <> show (if containsSpread items then length items - 1 else length items)
-              <> " && "
-              <> intercalate
-                   " && "
-                   ((\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item) <$> zip items [0 ..])
+            let lengthCheck = scope
+                  <> ".length "
+                  <> lengthComparator items
+                  <> " "
+                  <> show (if containsSpread items then length items - 1 else length items)
+                itemChecks = intercalate " && " $ filter nonTrivial
+                  ((\(item, i) -> compilePattern (scope <> "[" <> show i <> "]") item) <$> zip items [0 ..])
+            in  lengthCheck <> if null itemChecks then "" else " && " <> itemChecks
 
           lengthComparator :: [Pattern] -> String
           lengthComparator pats = if containsSpread pats then ">=" else "==="
@@ -1298,13 +1317,13 @@ emitExp env config (Typed qt area metadata exp) =
               scope <> ".__constructor === " <> "\"" <> drop 7 (removeNamespace n) <> "\""
 
             PCon n ps ->
-              let args = intercalate " && " $ filter (not . null) $ compileCtorArg scope n <$> zip [0 ..] ps
-              in  scope <> ".__constructor === " <> "\"" <> drop 7 (removeNamespace n) <> "\"" <> if not (null args)
-                    then " && " <> args
-                    else ""
+              let args = intercalate " && " $ filter nonTrivial $ compileCtorArg scope n <$> zip [0 ..] ps
+              in  scope <> ".__constructor === " <> "\"" <> drop 7 (removeNamespace n) <> "\"" <> if null args
+                    then ""
+                    else " && " <> args
 
             PRecord m _restName ->
-              let fieldChecks = intercalate " && " $ filter (not . null) $ M.elems $ M.mapWithKey (compileRecord scope) m
+              let fieldChecks = intercalate " && " $ filter nonTrivial $ M.elems $ M.mapWithKey (compileRecord scope) m
               in if null fieldChecks then "true" else fieldChecks
 
             PSpread pat ->
@@ -1334,11 +1353,348 @@ emitExp env config (Typed qt area metadata exp) =
 
           compileIfChain :: Is -> [Is] -> JSDoc
           compileIfChain firstCase restCases =
-            "if "
-              <> compileIsBranch firstCase
-              <> mconcat ((" else if " <>) . compileIsBranch <$> restCases)
-              <> " else "
-              <> compileElse
+            -- If the final branch is a catch-all (PVar/PAny), use its body as
+            -- the `else` block directly instead of `else if (true) {…} else
+            -- {throw…}`. Saves one branch per dispatch and one statement per
+            -- where with a `_` arm.
+            let allBranches = firstCase : restCases
+                lastBranch  = last allBranches
+                hasCatchAll = isCatchAllIs lastBranch
+                testBranches = if hasCatchAll then init allBranches else allBranches
+                finalElse    = if hasCatchAll
+                                 then compileBranchBlock lastBranch
+                                 else compileElse
+            in case testBranches of
+                 []       -> "if (true) " <> finalElse
+                 (h : t)  -> "if " <> compileIsBranch h
+                               <> mconcat ((" else if " <>) . compileIsBranch <$> t)
+                               <> " else " <> finalElse
+
+          -- Phase 2.3 helpers: switch-statement lowering for constructor dispatch.
+          -- A pattern is switch-simple when it's a PCon whose sub-patterns are all
+          -- variables/wildcards (no literals, no nested constructors), or a top-level
+          -- variable/wildcard catch-all. Anything else falls back to the if-chain.
+          isSimpleSubPat :: Pattern -> Bool
+          isSimpleSubPat (Typed _ _ _ p) = case p of
+            PVar _ -> True
+            PAny   -> True
+            _      -> False
+          isSimpleSubPat _ = False
+
+          isSwitchSimplePat :: Pattern -> Bool
+          isSwitchSimplePat (Typed _ _ _ p) = case p of
+            PCon _ subs -> all isSimpleSubPat subs
+            PVar _      -> True
+            PAny        -> True
+            _           -> False
+          isSwitchSimplePat _ = False
+
+          isPConIs :: Is -> Bool
+          isPConIs (Typed _ _ _ (Is (Typed _ _ _ (PCon _ _)) _)) = True
+          isPConIs _ = False
+
+          isSwitchSimpleIs :: Is -> Bool
+          isSwitchSimpleIs (Typed _ _ _ (Is pat _)) = isSwitchSimplePat pat
+          isSwitchSimpleIs _ = False
+
+          -- A list of branches qualifies for switch lowering when there are at
+          -- least 2 branches, at least one is a PCon (something to switch on),
+          -- every branch is switch-simple, and any catch-all is the final branch.
+          canSwitch :: [Is] -> Bool
+          canSwitch iss
+            | length iss < 2 = False
+            | not (any isPConIs iss) = False
+            | not (all isSwitchSimpleIs iss) = False
+            | otherwise = case break (not . isPConIs) iss of
+                (_, [])  -> True
+                (_, [_]) -> True
+                _        -> False
+
+          -- Compile a branch's body block. `withBreak` appends an explicit
+          -- `break;` to terminate switch cases when the body doesn't already
+          -- exit via `return` (tail-call-eliminated branches).
+          compileBranchBlock' :: Bool -> Is -> JSDoc
+          compileBranchBlock' withBreak (Typed _ _ _ (Is pat exp)) =
+            let patVarNames = S.fromList (generateSafeName <$> getPatternVars pat)
+                branchEnv = env { varsRewritten = M.filterWithKey (\k _ -> k `S.notMember` patVarNames) (varsRewritten env) }
+                varDecls = filter (not . null) (dropWhile isSpace <$> lines (buildVars "__x__" pat))
+                varDocs = docText <$> varDecls
+                isRec = Maybe.isJust (recursionData env)
+                returnStmt =
+                  if isRec then
+                    emitExp branchEnv config exp <> ";"
+                  else
+                    "return " <> emitExp branchEnv config exp <> ";"
+                breakStmt = ["break;" | withBreak && isRec]
+            in  docBlock (varDocs <> [returnStmt] <> breakStmt)
+          compileBranchBlock' _ _ = codegenPanic "compileBranchBlock': untyped Is"
+
+          compileBranchBlock :: Is -> JSDoc
+          compileBranchBlock = compileBranchBlock' False
+
+          compileSwitchCase :: Is -> JSDoc
+          compileSwitchCase is@(Typed _ _ _ (Is (Typed _ _ _ (PCon n _)) _)) =
+            "case \""
+              <> docText (drop 7 (removeNamespace n))
+              <> "\": "
+              <> compileBranchBlock' True is
+          compileSwitchCase is =
+            "default: " <> compileBranchBlock' True is
+
+          compileSwitch :: [Is] -> JSDoc
+          compileSwitch iss =
+            let hasDefault = any (not . isPConIs) iss
+                cases      = compileSwitchCase <$> iss
+                allCases   = if hasDefault
+                               then cases
+                               else cases <> ["default: " <> compileElse]
+            in  "switch (__x__.__constructor) " <> docBlock allCases
+
+          -- Phase 2.4 helpers: shared-prefix factoring for tuple-of-PCon.
+          --
+          -- When every non-default branch is a top-level tuple pattern of the
+          -- same length, the cascading if-chain rechecks `__x__.length` and
+          -- per-element `__x__[i].__constructor` reads on each arm. V8 caches
+          -- the property reads but does not CSE the per-branch string equality
+          -- comparisons, so each duplicate constructor read costs one comparison.
+          --
+          -- This pass:
+          --   1. Hoists the length check into one outer `if`.
+          --   2. Caches `__x__[i].__constructor` once per index that any arm
+          --      tests, as `const __c<i>__ = ...`.
+          --   3. Rewrites the if-chain to reference the cached locals.
+          --
+          -- Anything not matching this exact shape falls through to the regular
+          -- if-chain (no behaviour change).
+
+          -- Pattern is a top-level PCon (used to detect hoist-worthy elements).
+          isPConPat :: Pattern -> Bool
+          isPConPat (Typed _ _ _ (PCon _ _)) = True
+          isPConPat _                        = False
+
+          -- Returns Just N when the pattern is a non-spread tuple of length N.
+          tupleArity :: Pattern -> Maybe Int
+          tupleArity (Typed _ _ _ (PTuple pats))
+            | not (any isSpread pats) = Just (length pats)
+            where
+              isSpread (Typed _ _ _ (PSpread _)) = True
+              isSpread _                         = False
+          tupleArity _ = Nothing
+
+          isCatchAllIs :: Is -> Bool
+          isCatchAllIs (Typed _ _ _ (Is (Typed _ _ _ p) _)) = case p of
+            PVar _ -> True
+            PAny   -> True
+            _      -> False
+          isCatchAllIs _ = False
+
+          tupleArityIs :: Is -> Maybe Int
+          tupleArityIs (Typed _ _ _ (Is pat _)) = tupleArity pat
+          tupleArityIs _                        = Nothing
+
+          -- Eligible when ≥2 branches, all non-default branches are tuples of
+          -- equal length, at least one PCon sub-pattern exists, any catch-all
+          -- is the final branch.
+          canHoistTuple :: [Is] -> Maybe Int
+          canHoistTuple iss
+            | length iss < 2 = Nothing
+            | otherwise =
+                let nonDefaults = filter (not . isCatchAllIs) iss
+                    arities     = Maybe.mapMaybe tupleArityIs nonDefaults
+                    catchAllOnlyLast = case break isCatchAllIs iss of
+                      (_, [])  -> True
+                      (_, [_]) -> True
+                      _        -> False
+                in  if length nonDefaults >= 2
+                      && length arities == length nonDefaults
+                      && all (== head arities) arities
+                      && hasAnyPConElement iss
+                      && catchAllOnlyLast
+                    then Just (head arities)
+                    else Nothing
+
+          hasAnyPConElement :: [Is] -> Bool
+          hasAnyPConElement = any branchHasPConElement
+            where
+              branchHasPConElement (Typed _ _ _ (Is (Typed _ _ _ (PTuple subs)) _)) =
+                any isPConPat subs
+              branchHasPConElement _ = False
+
+          -- Indices i where some branch's i-th tuple element is a PCon.
+          hoistIndices :: Int -> [Is] -> [Int]
+          hoistIndices len iss =
+            filter (\i -> any (branchPConAt i) iss) [0 .. len - 1]
+            where
+              branchPConAt i (Typed _ _ _ (Is (Typed _ _ _ (PTuple subs)) _))
+                | i < length subs = isPConPat (subs !! i)
+              branchPConAt _ _ = False
+
+          -- Replace every occurrence of `needle` in `haystack` with `rep`.
+          replaceStr :: String -> String -> String -> String
+          replaceStr _ _ "" = ""
+          replaceStr needle rep haystack
+            | needle `isPrefixOf` haystack =
+                rep ++ replaceStr needle rep (drop (length needle) haystack)
+            | (c : rest) <- haystack =
+                c : replaceStr needle rep rest
+            | otherwise = ""
+
+          -- Hoisted-aware version of compileIsBranch: applies textual
+          -- substitutions to the test conjunct so the if-chain references the
+          -- cached constructor locals instead of re-reading them.
+          compileHoistedIsBranch :: [(String, String)] -> Is -> JSDoc
+          compileHoistedIsBranch subs (Typed _ _ _ (Is pat exp)) =
+            let patVarNames = S.fromList (generateSafeName <$> getPatternVars pat)
+                branchEnv = env { varsRewritten = M.filterWithKey (\k _ -> k `S.notMember` patVarNames) (varsRewritten env) }
+                varDecls = filter (not . null) (dropWhile isSpace <$> lines (buildVars "__x__" pat))
+                varDocs = docText <$> varDecls
+                returnStmt =
+                  if Maybe.isJust (recursionData env) then
+                    emitExp branchEnv config exp <> ";"
+                  else
+                    "return " <> emitExp branchEnv config exp <> ";"
+                rawTest = compilePattern "__x__" pat
+                substTest = foldr (\(n, r) s -> replaceStr n r s) rawTest subs
+            in  "("
+                  <> docText substTest
+                  <> ") "
+                  <> docBlock (varDocs <> [returnStmt])
+          compileHoistedIsBranch _ is = compileIsBranch is  -- fallback; should not be reached
+
+          compileTupleHoisted :: Int -> Is -> [Is] -> JSDoc
+          compileTupleHoisted len first cs =
+            let allBranches = first : cs
+                idxs        = hoistIndices len allBranches
+                hoistDecls  =
+                  [ docText ("const __c" <> show i <> "__ = __x__[" <> show i <> "].__constructor;")
+                  | i <- idxs
+                  ]
+                subs =
+                  -- Drop the length check (the outer if already enforces it).
+                  ("__x__.length === " <> show len <> " && ", "") :
+                  -- Replace each hoisted constructor read with its cached local.
+                  [ ("__x__[" <> show i <> "].__constructor", "__c" <> show i <> "__")
+                  | i <- idxs
+                  ]
+                -- Apply the same catch-all fold as compileIfChain.
+                hasCatchAll  = isCatchAllIs (last allBranches)
+                testBranches = if hasCatchAll then init allBranches else allBranches
+                catchAllBody = case filter isCatchAllIs allBranches of
+                  (d : _) -> compileBranchBlock d
+                  []      -> compileElse
+                hoistedTests  = compileHoistedIsBranch subs <$> testBranches
+                ifChain       = case hoistedTests of
+                  []        -> catchAllBody
+                  (b : bs)  -> "if " <> b
+                                 <> mconcat ((" else if " <>) . id <$> bs)
+                                 <> " else " <> catchAllBody
+                guarded       = docBlock (hoistDecls <> [ifChain])
+            in  "if (__x__.length === " <> docText (show len) <> ") "
+                  <> guarded
+                  <> " else "
+                  <> catchAllBody
+
+          -- Generalisation of the tuple hoist: record patterns. Each branch's
+          -- top-level PRecord matches on a (possibly different) subset of
+          -- fields. We hoist `__x__.<field>.__constructor` for any field that
+          -- carries a PCon sub-pattern in any branch, then run the regular
+          -- if-chain with those reads substituted.
+          --
+          -- No outer length check is needed: record field access in Madlib is
+          -- type-safe by construction, so `__x__.foo` is always defined.
+
+          recordFields :: Is -> Maybe (M.Map String Pattern)
+          recordFields (Typed _ _ _ (Is (Typed _ _ _ (PRecord m _)) _)) = Just m
+          recordFields _                                                = Nothing
+
+          canHoistRecord :: [Is] -> Maybe [String]
+          canHoistRecord iss
+            | length iss < 2 = Nothing
+            | otherwise =
+                let nonDefaults      = filter (not . isCatchAllIs) iss
+                    recs             = Maybe.mapMaybe recordFields nonDefaults
+                    allRecs          = length recs == length nonDefaults
+                    catchAllOnlyLast = case break isCatchAllIs iss of
+                      (_, [])  -> True
+                      (_, [_]) -> True
+                      _        -> False
+                    pConFields = Maybe.mapMaybe pickPConField (concatMap M.toList recs)
+                    pickPConField (name, pat) =
+                      if isPConPat pat then Just name else Nothing
+                in  if length nonDefaults >= 2
+                      && allRecs
+                      && catchAllOnlyLast
+                      && not (null pConFields)
+                    then Just (S.toList (S.fromList pConFields))
+                    else Nothing
+
+          compileRecordHoisted :: [String] -> Is -> [Is] -> JSDoc
+          compileRecordHoisted fields first cs =
+            let allBranches  = first : cs
+                hoistDecls   =
+                  [ docText ("const __cf_" <> f <> "__ = __x__." <> f <> ".__constructor;")
+                  | f <- fields
+                  ]
+                subs         =
+                  [ ("__x__." <> f <> ".__constructor", "__cf_" <> f <> "__")
+                  | f <- fields
+                  ]
+                hasCatchAll  = isCatchAllIs (last allBranches)
+                testBranches = if hasCatchAll then init allBranches else allBranches
+                catchAllBody = case filter isCatchAllIs allBranches of
+                  (d : _) -> compileBranchBlock d
+                  []      -> compileElse
+                hoistedTests = compileHoistedIsBranch subs <$> testBranches
+                ifChain      = case hoistedTests of
+                  []        -> catchAllBody
+                  (b : bs)  -> "if " <> b
+                                 <> mconcat ((" else if " <>) . id <$> bs)
+                                 <> " else " <> catchAllBody
+            in  docBlock (hoistDecls <> [ifChain])
+
+          -- Generalisation: when canSwitch fails (e.g. a branch has a PCon
+          -- sub-pattern such as `Just(Just(x))`), the cascade still re-reads
+          -- `__x__.__constructor` on every arm. Hoist it once.
+          --
+          -- This kicks in when ≥2 branches are top-level PCon patterns and any
+          -- catch-all is at the end. Sub-pattern shape is unconstrained — we
+          -- only hoist the top-level read, the rest of the cascade is
+          -- unchanged.
+
+          canHoistTopLevelPCon :: [Is] -> Bool
+          canHoistTopLevelPCon iss
+            | length iss < 2 = False
+            | otherwise =
+                let nonDefaults = filter (not . isCatchAllIs) iss
+                    catchAllOnlyLast = case break isCatchAllIs iss of
+                      (_, [])  -> True
+                      (_, [_]) -> True
+                      _        -> False
+                in  length nonDefaults >= 2
+                      && all isTopLevelPConIs nonDefaults
+                      && catchAllOnlyLast
+
+          isTopLevelPConIs :: Is -> Bool
+          isTopLevelPConIs (Typed _ _ _ (Is (Typed _ _ _ (PCon _ _)) _)) = True
+          isTopLevelPConIs _                                              = False
+
+          compileTopLevelPConHoisted :: Is -> [Is] -> JSDoc
+          compileTopLevelPConHoisted first cs =
+            let allBranches  = first : cs
+                hoistDecl    = docText "const __c0__ = __x__.__constructor;"
+                subs         = [("__x__.__constructor", "__c0__")]
+                hasCatchAll  = isCatchAllIs (last allBranches)
+                testBranches = if hasCatchAll then init allBranches else allBranches
+                catchAllBody = case filter isCatchAllIs allBranches of
+                  (d : _) -> compileBranchBlock d
+                  []      -> compileElse
+                hoistedTests = compileHoistedIsBranch subs <$> testBranches
+                ifChain      = case hoistedTests of
+                  []        -> catchAllBody
+                  (b : bs)  -> "if " <> b
+                                 <> mconcat ((" else if " <>) . id <$> bs)
+                                 <> " else " <> catchAllBody
+            in  docBlock [hoistDecl, ifChain]
 
           compileElse :: JSDoc
           compileElse =

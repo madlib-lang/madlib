@@ -85,6 +85,24 @@ data PatternCtx m = PatternCtx
 
 generateBranches :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
                  => PatternCtx m -> Env -> SymbolTable -> AST.Name -> Operand -> [Core.Is] -> m [(Operand, AST.Name)]
+generateBranches ctx env symbolTable exitBlock whereExp iss
+  -- Switch lowering: tagged-struct or i64-enum scrutinee, ≥2 branches, every
+  -- branch is a PCon (with simple sub-patterns) or a catch-all, and at least
+  -- one PCon supplies a tag value to switch on. Falls through to the cascade
+  -- whenever any precondition fails (e.g. a literal sub-pattern, a PNum branch).
+  | isTaggedStructADT whereExp || isEnumADTOperand whereExp
+  , List.length iss >= 2
+  , List.all isSwitchableIs iss
+  , List.any isConIs iss
+  = generateSwitchBranches ctx env symbolTable exitBlock whereExp iss
+  -- Nested switch lowering: relaxes the "simple sub-patterns" requirement so
+  -- that branches like `Just(Just(x))` can share the outer Just-tag dispatch.
+  -- Groups branches by outer constructor; for groups with >1 branch, peels the
+  -- outer constructor (must be unary) and recursively dispatches on the inner
+  -- value. Eliminates the redundant outer-constructor test that the cascade
+  -- emits in every branch with a shared prefix.
+  | canNestedSwitch whereExp iss
+  = generateNestedSwitchBranches ctx env symbolTable exitBlock whereExp iss
 generateBranches ctx env symbolTable exitBlock whereExp iss = case iss of
       (is : next) -> do
         branch <- generateBranch ctx env symbolTable (not (List.null next)) exitBlock whereExp is
@@ -99,6 +117,12 @@ isTaggedStructADT :: Operand -> Bool
 isTaggedStructADT op = case typeOf op of
   Type.PointerType (Type.StructureType False (Type.IntegerType 64 : _)) _ -> True
   _ -> False
+
+-- | True when the operand is a plain i64 (all-nullary enum ADT representation).
+isEnumADTOperand :: Operand -> Bool
+isEnumADTOperand op = case typeOf op of
+  Type.IntegerType 64 -> True
+  _                   -> False
 
 -- | True when an Is branch can be compiled with a switch (PCon with simple sub-patterns, or catch-all).
 isSwitchableIs :: Core.Is -> Bool
@@ -149,14 +173,19 @@ generateSwitchCase _ _ _ _ _ _ = error "Unreachable: generateSwitchCase called w
 
 
 -- | Generate pattern matching via a switch instruction on the ADT tag.
--- Only called when isTaggedStructADT && all isSwitchableIs.
+-- Called from generateBranches when isTaggedStructADT or isEnumADTOperand
+-- holds and every branch is switchable.
 generateSwitchBranches :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
                        => PatternCtx m -> Env -> SymbolTable -> AST.Name -> Operand -> [Core.Is] -> m [(Operand, AST.Name)]
 generateSwitchBranches ctx env symbolTable exitBlock whereExp iss = mdo
-  -- Extract the i64 tag from the tagged struct
-  tagPtr' <- ctxSafeBitcast ctx whereExp (Type.ptr $ Type.StructureType False [Type.i64])
-  tagField <- gep tagPtr' [i32ConstOp 0, i32ConstOp 0]
-  tag <- load tagField 0
+  -- For all-nullary enum ADTs the scrutinee is already an i64 tag value; for
+  -- multi-constructor ADTs we still need to load the tag from struct field 0.
+  tag <- if isEnumADTOperand whereExp
+    then return whereExp
+    else do
+      tagPtr' <- ctxSafeBitcast ctx whereExp (Type.ptr $ Type.StructureType False [Type.i64])
+      tagField <- gep tagPtr' [i32ConstOp 0, i32ConstOp 0]
+      load tagField 0
 
   -- Emit switch with forward references (resolved by mdo)
   switch tag defaultBlock switchCases
@@ -184,6 +213,142 @@ generateSwitchBranches ctx env symbolTable exitBlock whereExp iss = mdo
       return []
 
   return $ casePhis ++ defaultPhis
+
+
+-- | True when the Is is a top-level catch-all (PVar / PAny).
+isCatchAllIs :: Core.Is -> Bool
+isCatchAllIs (Core.Typed _ _ _ (Core.Is (Core.Typed _ _ _ p) _)) = case p of
+  Core.PVar _ -> True
+  Core.PAny   -> True
+  _           -> False
+isCatchAllIs _ = False
+
+-- | Extracts (constructor name, sub-patterns, body) for a top-level PCon Is.
+isConIsInfo :: Core.Is -> Maybe (String, [Core.Pattern], Core.Exp)
+isConIsInfo (Core.Typed _ _ _ (Core.Is (Core.Typed _ _ _ (Core.PCon n subs)) body)) =
+  Just (n, subs, body)
+isConIsInfo _ = Nothing
+
+-- | Group branches by outer constructor name, preserving original branch order
+-- both across groups (by first appearance) and within each group.
+groupByOuterCon :: [Core.Is] -> [(String, [Core.Is])]
+groupByOuterCon iss =
+  let names = List.nub [ n | is <- iss, Just (n, _, _) <- [isConIsInfo is] ]
+      pickGroup n = (n, [ is | is <- iss
+                             , case isConIsInfo is of
+                                 Just (n', _, _) -> n' == n
+                                 Nothing         -> False
+                        ])
+  in  pickGroup <$> names
+
+isPConPat :: Core.Pattern -> Bool
+isPConPat (Core.Typed _ _ _ (Core.PCon _ _)) = True
+isPConPat _                                   = False
+
+-- | True when this Is's outer pattern has at least one PCon sub-pattern (the
+-- nested-dispatch case the relaxed switch is designed to factor).
+hasNestedPConSub :: Core.Is -> Bool
+hasNestedPConSub is = case isConIsInfo is of
+  Just (_, subs, _) -> any isPConPat subs
+  Nothing           -> False
+
+-- | Eligibility for the relaxed/nested switch:
+--   * scrutinee is a tagged-struct or i64-enum operand
+--   * ≥2 branches, ≥1 PCon branch, every non-PCon branch is a catch-all
+--   * any group of branches sharing an outer constructor with >1 entry has a
+--     unary outer constructor (so we can peel and recurse on its single arg)
+--   * at least one such multi-branch group has a nested PCon to dispatch on
+--     (otherwise the regular `canSwitch` path would already handle it)
+canNestedSwitch :: Operand -> [Core.Is] -> Bool
+canNestedSwitch whereExp iss =
+  (isTaggedStructADT whereExp || isEnumADTOperand whereExp)
+    && List.length iss >= 2
+    && List.any isConIs iss
+    && all (\is -> isConIs is || isCatchAllIs is) iss
+    && let groups        = groupByOuterCon iss
+           multiGroups   = filter ((> 1) . length . snd) groups
+           groupArityOne (_, b : _) = case isConIsInfo b of
+             Just (_, subs, _) -> length subs == 1
+             Nothing           -> False
+           groupArityOne _          = False
+       in  not (null multiGroups)
+             && all groupArityOne multiGroups
+             && any (any hasNestedPConSub . snd) multiGroups
+
+
+-- | Switch on the outer constructor tag, then for each group with multiple
+-- branches recursively dispatch on the (single) constructor argument. Groups
+-- with one branch use the regular `generateSwitchCase` path.
+generateNestedSwitchBranches :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
+                             => PatternCtx m -> Env -> SymbolTable -> AST.Name -> Operand -> [Core.Is] -> m [(Operand, AST.Name)]
+generateNestedSwitchBranches ctx env symbolTable exitBlock whereExp iss = mdo
+  tag <- if isEnumADTOperand whereExp
+    then return whereExp
+    else do
+      tagPtr' <- ctxSafeBitcast ctx whereExp (Type.ptr $ Type.StructureType False [Type.i64])
+      tagField <- gep tagPtr' [i32ConstOp 0, i32ConstOp 0]
+      load tagField 0
+
+  switch tag defaultBlock switchCases
+
+  let groups    = groupByOuterCon iss
+      catchAlls = filter isCatchAllIs iss
+
+  caseData <- Monad.forM groups $ \(_, branches) -> case branches of
+    [single] -> generateSwitchCase ctx env symbolTable exitBlock whereExp single
+    _        -> generateNestedSwitchGroupCase ctx env symbolTable exitBlock whereExp branches
+
+  let conIds      = (\(n, _) -> getConIdByName symbolTable n) <$> groups
+      switchCases = List.zipWith (\cid (blk, _) -> (Constant.Int 64 (fromIntegral cid), blk)) conIds caseData
+      casePhis    = concatMap snd caseData
+
+  defaultBlock <- block `named` "switchDefault"
+  defaultPhis <- case catchAlls of
+    (Core.Typed _ _ _ (Core.Is pat body) : _) -> do
+      symbolTable' <- generateSymbolTableForPattern ctx env symbolTable whereExp pat
+      (_, result, _) <- ctxGenerateExp ctx env symbolTable' body
+      retBlock <- currentBlock
+      br exitBlock
+      return [(result, retBlock)]
+    _ -> do
+      unreachable
+      return []
+
+  return $ casePhis ++ defaultPhis
+
+getConIdByName :: SymbolTable -> String -> Int
+getConIdByName st name = case Map.lookup name st of
+  Just (Symbol (ConstructorSymbol cid _) _) -> cid
+  _ -> error $ "NestedSwitch: constructor not found: " <> name
+
+-- | Emit a switch case where multiple branches share the outer (unary)
+-- constructor. Peels the constructor: extract arg0 from `whereExp`, build a
+-- new branch list whose patterns are the original branches' inner patterns,
+-- and recurse via `generateBranches` against the unboxed arg.
+generateNestedSwitchGroupCase :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
+                              => PatternCtx m -> Env -> SymbolTable -> AST.Name -> Operand -> [Core.Is] -> m (AST.Name, [(Operand, AST.Name)])
+generateNestedSwitchGroupCase ctx env symbolTable exitBlock whereExp branches = do
+  caseBlock <- block `named` "nestedSwitchCase"
+
+  case branches of
+    (firstBranch : _) -> case isConIsInfo firstBranch of
+      Just (_, [innerPatRef], _) -> do
+        let innerType = getQualType innerPatRef
+        let constructorType = Type.ptr $ Type.StructureType False [Type.i64, boxType]
+        constructor' <- ctxSafeBitcast ctx whereExp constructorType
+        argPtr <- gep constructor' [i32ConstOp 0, i32ConstOp 1]
+        argRaw <- load argPtr 0
+        argUnboxed <- unbox env symbolTable innerType argRaw
+
+        let innerBranches =
+              [ Core.Typed q a meta (Core.Is innerP body)
+              | Core.Typed q a meta (Core.Is (Core.Typed _ _ _ (Core.PCon _ [innerP])) body) <- branches
+              ]
+
+        results <- generateBranches ctx env symbolTable exitBlock argUnboxed innerBranches
+        return (caseBlock, results)
+      _ -> error "generateNestedSwitchGroupCase: expected unary outer PCon"
+    [] -> error "generateNestedSwitchGroupCase: empty group"
 
 
 generateBranch :: (MonadIO m, Writer.MonadWriter SymbolTable m, State.MonadState Int m, MonadFix.MonadFix m, MonadIRBuilder m, MonadModuleBuilder m)
