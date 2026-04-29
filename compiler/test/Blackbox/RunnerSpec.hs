@@ -73,6 +73,7 @@ llvmCompileAndRun casePath = do
           , optSourceMaps = NoSourceMap
           , optErrorFormat = TextFormat
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
           }
 
   state <- Driver.initialState
@@ -120,6 +121,7 @@ llvmCompileAndRunWithCoverage casePath = do
           , optSourceMaps = NoSourceMap
           , optErrorFormat = TextFormat
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
           }
 
   state <- Driver.initialState
@@ -169,6 +171,7 @@ jsCompileAndRun casePath = do
           , optSourceMaps = NoSourceMap
           , optErrorFormat = TextFormat
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
           }
 
   state <- Driver.initialState

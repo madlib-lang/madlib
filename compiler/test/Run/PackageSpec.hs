@@ -51,6 +51,7 @@ typeCheckFixture casePath = do
         , optSourceMaps = NoSourceMap
         , optErrorFormat = TextFormat
         , optPGOMode = NoPGO
+        , optInlineThreshold = Nothing
         }
   state <- Driver.initialState
   (table, _, _) <- Driver.runIncrementalTask state options [] mempty Don'tPrune $ do

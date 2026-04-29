@@ -95,22 +95,22 @@ _exec = (command, args, options) => Stream(
         proc.stdout.on("data", (chunk) => {
           sink(1)({
             __constructor: "Data",
-            __args: [{ stderr: "", stdout: Buffer.from(chunk, 'binary').toString() }],
+            __a: 1, _0: { stderr: "", stdout: Buffer.from(chunk, 'binary').toString() },
           })
         })
 
         proc.stderr.on("data", (chunk) => {
           sink(1)({
             __constructor: "Data",
-            __args: [{ stderr: Buffer.from(chunk, 'binary').toString(), stdout: "" }],
+            __a: 1, _0: { stderr: Buffer.from(chunk, 'binary').toString(), stdout: "" },
           });
         })
 
         proc.on('close', (code) => {
           if (code === 0) {
-            sink(2)({ __constructor: "NoMessage", __args: [] })
+            sink(2)({ __constructor: "NoMessage", __a: 0 })
           } else {
-            sink(2)({ __constructor: "Error", __args: [code] })
+            sink(2)({ __constructor: "Error", __a: 1, _0: code })
           }
         });
         -#

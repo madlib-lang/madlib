@@ -90,6 +90,7 @@ generateDocData rootFolder paths = do
           , optSourceMaps = NoSourceMap
           , optErrorFormat = TextFormat
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
           , optDebug = False
           }
   let llvmOptions =
@@ -112,6 +113,7 @@ generateDocData rootFolder paths = do
           , optSourceMaps = NoSourceMap
           , optErrorFormat = TextFormat
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
           , optDebug = False
           }
   jsMemoVar <- newIORef mempty

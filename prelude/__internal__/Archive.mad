@@ -45,7 +45,7 @@ runCommand = (command, args, options) => Wish((bad, good) => #- {
     proc.on("error", () => {
       if (!done) {
         done = true
-        bad({ __constructor: "UnknownError", __args: [] })
+        bad({ __constructor: "UnknownError", __a: 0 })
       }
     })
 
@@ -57,7 +57,7 @@ runCommand = (command, args, options) => Wish((bad, good) => #- {
       done = true
       code == 0
         ? good(null)
-        : bad({ __constructor: "UnknownError", __args: [] })
+        : bad({ __constructor: "UnknownError", __a: 0 })
     })
 
     return () => {
@@ -68,7 +68,7 @@ runCommand = (command, args, options) => Wish((bad, good) => #- {
     }
   {/Node}
   {Browser}
-    bad({ __constructor: "UnknownError", __args: [] })
+    bad({ __constructor: "UnknownError", __a: 0 })
     return () => {}
   {/Browser}
 } -#)

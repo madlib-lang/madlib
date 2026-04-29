@@ -125,6 +125,7 @@ buildOptions target = do
       , Options.optDebug = False
       , Options.optErrorFormat = TextFormat
       , Options.optPGOMode = NoPGO
+          , Options.optInlineThreshold = Nothing
       }
 
 

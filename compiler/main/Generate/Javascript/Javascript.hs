@@ -66,6 +66,14 @@ data RecursionData
   | ConstructorRecursionData { rdParams :: [String] }
   deriving(Eq, Show)
 
+-- Controls how the next Definition node is emitted.  Default is Curried for
+-- back-compat with all existing callers; UncurriedNext is set by the
+-- assignment site when emitting an n-ary `f$$` companion alongside a curried
+-- entry.  The flag only consumes the immediate Definition — nested lambdas
+-- inside the body stay curried.
+data ParamStyle = Curried | UncurriedNext
+  deriving(Eq, Show)
+
 data Env
   = Env
   { varsInScope :: S.Set String
@@ -75,6 +83,13 @@ data Env
   , topLevelNames :: S.Set String
   , methodNames :: S.Set String
   , inBody :: Bool
+  -- safeName -> arity for known top-level / let-bound function definitions
+  -- with arity >= 2.  Populated up-front for top-level defs and incrementally
+  -- for let-bound defs.  Used at Call sites to detect saturated multi-arg
+  -- applications and emit a direct n-ary call to the `safeName$$` companion
+  -- instead of a curried chain.
+  , knownArities :: M.Map String Int
+  , definitionStyle :: ParamStyle
   }
   deriving(Eq, Show)
 
@@ -88,6 +103,8 @@ initialEnv =
     , topLevelNames = S.empty
     , methodNames = S.empty
     , inBody = False
+    , knownArities = M.empty
+    , definitionStyle = Curried
     }
 
 collectConstructorsByName :: Core.AST -> M.Map String (String, Int)
@@ -110,26 +127,36 @@ collectConstructorsByName ast =
           []
   in M.fromList (atypedecls ast >>= collectTypeDecl)
 
+-- Builds an ADT object literal in the slim layout.  Old layout was
+--   {__constructor: "Tag", __args: [a, b]}
+-- which always allocated two heap objects (the wrapper + the array).
+-- The slim layout puts the args directly into the wrapper:
+--   {__constructor: "Tag", __a: 2, _0: a, _1: b}
+-- saving one allocation per construction, plus a smaller wrapper object.
+-- `__a` carries the arity so runtime helpers (`__eq__`) can iterate args
+-- without scanning Object.keys.
+emitConstructorObjectLiteral :: String -> Int -> [JSDoc] -> JSDoc
+emitConstructorObjectLiteral ctorName arity argDocs =
+  let argFields =
+        [ docText ("_" <> show i <> ": ") <> argDoc
+        | (i, argDoc) <- zip [0 :: Int ..] argDocs
+        ]
+      headerFields =
+        [ "__constructor: \"" <> docText ctorName <> "\""
+        , "__a: " <> docText (show arity)
+        ]
+  in  docGroup
+        $ "({"
+        <> docNest 2 (docLine' <> docCommaSeparatedLines (headerFields <> argFields))
+        <> docLine'
+        <> "})"
+
+
 emitConstructorValueDoc :: String -> Int -> JSDoc
 emitConstructorValueDoc ctorName arity =
   let args = (: []) <$> take arity ['a' ..]
       argDocs = docText <$> args
-      body =
-        docGroup
-          $ "({"
-          <> docNest 2
-               (docLine'
-               <> "__constructor: \""
-               <> docText ctorName
-               <> "\","
-               <> docLine'
-               <> "__args: ["
-               <> docNest 2 (docLine' <> docCommaSeparatedLines argDocs)
-               <> docLine'
-               <> "]"
-               )
-          <> docLine'
-          <> "})"
+      body = emitConstructorObjectLiteral ctorName arity argDocs
   in  if arity == 0 then body else "(" <> docCurriedLambda args body <> ")"
 
 allowedJSNames :: S.Set String
@@ -164,6 +191,42 @@ collectTopLevelNames ast =
         _ ->
           []
   in S.fromList names
+
+-- Pre-scan the module's top-level assignments and collect the arity of every
+-- definition whose RHS is a non-empty Definition.  We only record arity >= 2
+-- because the saturated-call optimization is a no-op for arity 0/1 (which
+-- already get the optimal shape today).  Definitions with duplicate parameter
+-- names (e.g. multiple `_` placeholders) are skipped because they can't be
+-- emitted as strict-mode n-ary arrow functions — see mkFunctionDecl.
+-- Aliases (`x = otherFunc`) are not recorded; they keep their dispatch
+-- wrapper.
+collectTopLevelArities :: Core.AST -> M.Map String Int
+collectTopLevelArities ast =
+  let paramsAreUnique params =
+        let safeParams = generateSafeName <$> (getValue <$> params)
+        in length (S.fromList safeParams) == length safeParams
+      entries = aexps ast >>= \case
+        Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) (Typed _ _ _ (Definition params _)))
+          | length params >= 2, paramsAreUnique params ->
+            [(generateSafeName n, length params)]
+        Typed _ _ _ (Export (Typed _ _ _ (Assignment (Typed _ _ _ (Var n _)) (Typed _ _ _ (Definition params _)))))
+          | length params >= 2, paramsAreUnique params ->
+            [(generateSafeName n, length params)]
+        _ ->
+          []
+  in M.fromList entries
+
+-- Internal name for the uncurried companion of a known multi-arg function.
+-- The companion is module-local: it's never exported, so its name only
+-- needs to be unique within the module.  Cross-module saturated calls are
+-- not safe in general because the importer's view of arity (from the
+-- var's type) doesn't always match the exporter's JS arity (param count)
+-- — typeclass methods whose body returns a function are the canonical
+-- example.  The "$$" suffix is illegal in user code (madlib identifiers
+-- don't allow consecutive dollars in this position) so there's no risk of
+-- name collision.
+uncurriedCompanionName :: String -> String
+uncurriedCompanionName safeName = safeName <> "$$"
 
 generateSafeName :: String -> String
 generateSafeName n =
@@ -417,7 +480,7 @@ emitExp env config (Typed qt area metadata exp) =
 
         _ | isConstructorRecursionEnd metadata ->
           let compiledExp = emitExp env config (Typed qt area [] exp)
-          in  "($args[$index] = "<>compiledExp<>", $_result_ = $_start_.__args[0])"
+          in  "($parent[$field] = "<>compiledExp<>", $_result_ = $_start_._0)"
 
         Call (Typed _ _ _ (Var constructorName True)) args | isConstructorRecursiveCall metadata ->
           case getConstructorRecursionInfo metadata of
@@ -429,17 +492,23 @@ emitExp env config (Typed qt area metadata exp) =
                     Nothing ->
                       codegenPanic
                         "constructor recursion call without recursion context"
+                  arity = length args
                   -- Based on the following input, we need to only use ConstructorName
                   -- __6bb57939a0e365f381d7e05ce50bfeb1__ConstructorName
                   -- therefore we need to drop the first 36 characters
-                  newValue = "$newValue = { __constructor: \""<> drop 7 constructorName <>"\", __args: [] }"
-                  compiledArgs =
-                    (\(index, arg) ->
-                      if index == position then
-                        "$newValue.__args.push(null)"
+                  ctorTag = drop 7 constructorName
+                  fieldDoc i argDoc = docText ("_" <> show i <> ": ") <> argDoc
+                  argFields =
+                    (\(i, arg) ->
+                      if i == position then
+                        fieldDoc i "null"
                       else
-                        "$newValue.__args.push(" <> emitExp env config arg <> ")"
-                    ) <$> zip [0..] args
+                        fieldDoc i (emitExp env config arg)
+                    ) <$> zip [0 :: Int ..] args
+                  newValueLiteral =
+                    "{ __constructor: \"" <> docText ctorTag <> "\", __a: " <> docText (show arity)
+                    <> (if null argFields then "" else ", " <> docJoinText ", " argFields)
+                    <> " }"
                   updateParams = case drop position args of
                     Core.Typed _ _ _ (Core.Call _ recArgs) : _ ->
                       let compiledRecArgs  = emitExp env config <$> recArgs
@@ -449,12 +518,10 @@ emitExp env config (Typed qt area metadata exp) =
                       codegenPanic
                         ("invalid constructor recursion argument layout at position " <> show position)
               in  "("
-                  <> docText newValue
-                  <> ", "
-                  <> docJoinText ", " compiledArgs
-                  <> ", $args[$index] = $newValue, $args = $newValue.__args, $index = "
+                  <> "$newValue = " <> newValueLiteral
+                  <> ", $parent[$field] = $newValue, $parent = $newValue, $field = \"_"
                   <> docText (show position)
-                  <> ", "
+                  <> "\", "
                   <> docJoinText ", " updateParams
                   <> ", $_continue_ = true)"
 
@@ -583,6 +650,46 @@ emitExp env config (Typed qt area metadata exp) =
         Call fn [Typed _ _ _ (Literal LUnit)] ->
           emitExp env config fn <> "()"
 
+        -- Saturated call to a known-arity local definition: skip the curried
+        -- chain and call the uncurried `name$$` companion directly.  Only
+        -- triggers when the callee is a plain Var (not a constructor, not a
+        -- TCE-rewritten name) and the number of args matches the arity in
+        -- knownArities.  Closures, FFI-supplied callbacks, and over- or
+        -- under-saturated calls fall through to the curried path below.
+        Call (Typed _ _ _ (Var calleeName False)) args
+          | let safeName = generateSafeName calleeName
+                rewritten = M.lookup safeName (varsRewritten env)
+            , Nothing <- rewritten
+            , Just arity <- M.lookup safeName (knownArities env)
+            , arity == length args
+            , arity >= 2 ->
+              let compiledArgs = emitExp env config <$> args
+              in  docText (uncurriedCompanionName safeName)
+                  <> "("
+                  <> docJoinText ", " compiledArgs
+                  <> ")"
+
+        -- Saturated ADT constructor call: skip the curried-lambda IIFE and
+        -- emit the object literal directly.  `Just(x)` becomes the slim
+        -- `({__constructor: "Just", __a: 1, _0: x})` instead of the older
+        -- `((a => ({__constructor: "Just", __args: [a]})))(x)` — that's
+        -- two allocations dropped per call (closure IIFE + __args array).
+        Call (Typed varQt _ _ (Var ctorName True)) args
+          | let safeName    = generateSafeName ctorName
+                inScope     = safeName `S.member` varsInScope env
+                looksLikeCtor = looksLikeGeneratedConstructorName safeName
+                varArity    = length $ getParamTypes (getQualified varQt)
+                lookedUp    = M.lookup safeName (constructorsByName env)
+            , not inScope
+            , Maybe.isJust lookedUp || looksLikeCtor
+            , let (resolvedName, declaredArity) = case lookedUp of
+                    Just (n, a) -> (n, a)
+                    Nothing     -> (drop 7 safeName, varArity)
+            , declaredArity == length args
+            , declaredArity >= 1 ->
+              let compiledArgs = emitExp env config <$> args
+              in emitConstructorObjectLiteral resolvedName declaredArity compiledArgs
+
         Call fn args ->
           let compiledFn = emitExp env config fn
               compiledArgs = emitExp env config <$> args
@@ -609,14 +716,25 @@ emitExp env config (Typed qt area metadata exp) =
           compileAbs _ params body =
             let safeParams = generateSafeName <$> params
                 safeParamNames = S.fromList safeParams
+                -- Nested lambdas inside this body must stay curried —
+                -- consume the UncurriedNext flag here.
                 innerEnv = env
                   { varsInScope = varsInScope env <> S.fromList params
                   , varsRewritten = M.filterWithKey (\k _ -> k `S.notMember` safeParamNames) (varsRewritten env)
                   , inBody = True
+                  , definitionStyle = Curried
                   }
-            in  "("
-                <> docGroup (docCurriedLambda safeParams (compileBody innerEnv body))
-                <> ")"
+                bodyDoc = compileBody innerEnv body
+                lambdaDoc = case definitionStyle env of
+                  UncurriedNext | length safeParams >= 2 ->
+                    "("
+                    <> docJoinText ", " (docText <$> safeParams)
+                    <> ") =>"
+                    <> docLine
+                    <> bodyDoc
+                  _ ->
+                    docCurriedLambda safeParams bodyDoc
+            in  "(" <> docGroup lambdaDoc <> ")"
 
           compileBody :: Env -> [Exp] -> JSDoc
           compileBody env body = case body of
@@ -668,11 +786,14 @@ emitExp env config (Typed qt area metadata exp) =
                   updateParams = (\p -> "let $" <> docText p <> " = $$" <> docText p <> ";") <$> safeParams
                   rewrite     = M.fromList ((\p -> (p, "$"<>p)) <$> safeParams)
               in  docBlock
+                    -- start is a dummy parent; the real result ends up in
+                    -- start._0.  parent and field track the slot to attach
+                    -- the next newValue to.
                     $ [ "let $_result_;"
                       , "let $_continue_ = true;"
-                      , "let $_start_ = { __args: [] };"
-                      , "let $args = $_start_.__args;"
-                      , "let $index = 0;"
+                      , "let $_start_ = {};"
+                      , "let $parent = $_start_;"
+                      , "let $field = \"_0\";"
                       , "let $newValue;"
                       ]
                    <> tcoParams
@@ -776,15 +897,60 @@ emitExp env config (Typed qt area metadata exp) =
               mkFunctionDecl params =
                 let safeParams = generateSafeName <$> (getValue <$> params)
                     firstParam = head safeParams
-                    fnExpr = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
-                    invoke = docApplyChain fnExpr [docText firstParam]
-                in "function "
-                  <> docText safeName
-                  <> "("
-                  <> docText firstParam
-                  <> ") "
-                  <> docBlock ["return " <> invoke <> ";"]
-                  <> methodGlobal
+                    arity      = length safeParams
+                    -- Strict-mode arrow functions can't have duplicate
+                    -- parameter names, but Madlib lets users repeat `_`
+                    -- across many positions to mean "ignored".  In that
+                    -- case the curried chain is fine (each `_` is its own
+                    -- nested arrow) but the n-ary `(a, _, _, ...) => ...`
+                    -- shape is a SyntaxError.  Fall back to the curried
+                    -- form whenever any safe-param name repeats.
+                    paramsAreUnique = length (S.fromList safeParams) == length safeParams
+                    innerEnv   = env { varsInScope = S.insert name (varsInScope env) }
+                in if arity >= 2 && paramsAreUnique then
+                     -- Emit two top-level declarations:
+                     --   let f$$ = (a, b, c) => body;
+                     --   function f(a) { return (b => c => f$$(a, b, c)); }
+                     --
+                     -- The arrow expression is allocated once at module
+                     -- init.  Saturated callers within the module dispatch
+                     -- straight to `f$$` (zero closure allocations per
+                     -- call).  Partial / opaque callers (FFI, exported
+                     -- uses, callbacks) keep using the curried `f` and pay
+                     -- the same N-1 closure allocations they paid before.
+                     let companionName = uncurriedCompanionName safeName
+                         uncurriedExpr =
+                           emitExp (innerEnv { definitionStyle = UncurriedNext }) config exp
+                         restParams = drop 1 safeParams
+                         curriedTail =
+                           docCurriedLambda restParams
+                             (docText companionName
+                              <> "("
+                              <> docJoinText ", " (docText <$> safeParams)
+                              <> ")")
+                     in "let "
+                          <> docText companionName
+                          <> " = "
+                          <> uncurriedExpr
+                          <> ";"
+                          <> docHardline
+                          <> "function "
+                          <> docText safeName
+                          <> "("
+                          <> docText firstParam
+                          <> ") "
+                          <> docBlock ["return (" <> curriedTail <> ");"]
+                          <> methodGlobal
+                   else
+                     let fnExpr = emitExp innerEnv config exp
+                         invoke = docApplyChain fnExpr [docText firstParam]
+                     in "function "
+                       <> docText safeName
+                       <> "("
+                       <> docText firstParam
+                       <> ") "
+                       <> docBlock ["return " <> invoke <> ";"]
+                       <> methodGlobal
           in case exp of
                Typed _ _ _ (Var rhsName _) | not (inBody env) && rhsArity > 0 ->
                  mkFunctionAlias rhsName
@@ -865,20 +1031,55 @@ emitExp env config (Typed qt area metadata exp) =
               let safeName = generateSafeName name
                   safeParams = generateSafeName <$> (getValue <$> params)
                   firstParam = head safeParams
-                  fnExpr = emitExp (env { varsInScope = S.insert name (varsInScope env) }) config exp
-                  invoke = docApplyChain fnExpr [docText firstParam]
+                  arity      = length safeParams
+                  -- See mkFunctionDecl in the non-exported path.
+                  paramsAreUnique = length (S.fromList safeParams) == length safeParams
+                  innerEnv   = env { varsInScope = S.insert name (varsInScope env) }
                   methodGlobal =
                     if name `S.member` methodNames env then
                       docHardline <> "global." <> docText name <> " = " <> docText name
                     else
                       ""
-              in  "export function "
-                    <> docText safeName
-                    <> "("
-                    <> docText firstParam
-                    <> ") "
-                    <> docBlock ["return " <> invoke <> ";"]
-                    <> methodGlobal
+              in if arity >= 2 && paramsAreUnique then
+                   -- Same shape as the non-exported path in mkFunctionDecl.
+                   -- The companion stays module-local: cross-module
+                   -- callers can't safely dispatch through it because the
+                   -- exporter's JS arity (param count) doesn't always match
+                   -- the var's type-arity at the importer (e.g. typeclass
+                   -- methods whose body returns a function).
+                   let companionName = uncurriedCompanionName safeName
+                       uncurriedExpr =
+                         emitExp (innerEnv { definitionStyle = UncurriedNext }) config exp
+                       restParams = drop 1 safeParams
+                       curriedTail =
+                         docCurriedLambda restParams
+                           (docText companionName
+                            <> "("
+                            <> docJoinText ", " (docText <$> safeParams)
+                            <> ")")
+                   in "let "
+                        <> docText companionName
+                        <> " = "
+                        <> uncurriedExpr
+                        <> ";"
+                        <> docHardline
+                        <> "export function "
+                        <> docText safeName
+                        <> "("
+                        <> docText firstParam
+                        <> ") "
+                        <> docBlock ["return (" <> curriedTail <> ");"]
+                        <> methodGlobal
+                 else
+                   let fnExpr = emitExp innerEnv config exp
+                       invoke = docApplyChain fnExpr [docText firstParam]
+                   in "export function "
+                        <> docText safeName
+                        <> "("
+                        <> docText firstParam
+                        <> ") "
+                        <> docBlock ["return " <> invoke <> ";"]
+                        <> methodGlobal
 
           _ ->
             "export " <> emitExp env config e
@@ -938,11 +1139,17 @@ emitExp env config (Typed qt area metadata exp) =
             Core.Typed _ _ _ (Core.ListItem li),
             Core.Typed _ _ _ (Core.ListSpread (Core.Typed _ _ _ (Core.Call _ args)))
           ] | Core.isRightListRecursiveCall metadata ->
+          -- Pre-fill `n: null` so each cell is allocated with the full
+          -- {v, n} hidden class from the start.  Without this, V8 sees a
+          -- shape transition on every cell when the next iteration sets
+          -- `.n` — pre-filling makes the shape stable across the entire
+          -- chain, which speeds up both the cell allocation and the later
+          -- traversal in map/reduce/etc.
           let compiledLi    = emitExp env config li
               Just params   = rdParams <$> recursionData env
               compiledArgs  = emitExp env config <$> args
               updateParams  = (\(param, arg) -> docText param <> " = " <> arg) <$> zip params compiledArgs
-          in  "($_end_ = $_end_.n = { v: "<> compiledLi <>" }, " <> docJoinText ", " updateParams <> ", $_continue_ = true)"
+          in  "($_end_ = $_end_.n = { v: "<> compiledLi <>", n: null }, " <> docJoinText ", " updateParams <> ", $_continue_ = true)"
 
         Core.ListConstructor [
             Core.Typed _ _ _ (Core.ListItem li1),
@@ -954,7 +1161,7 @@ emitExp env config (Typed qt area metadata exp) =
               Just params   = rdParams <$> recursionData env
               compiledArgs  = emitExp env config <$> args
               updateParams  = (\(param, arg) -> docText param <> " = " <> arg) <$> zip params compiledArgs
-          in  "($_end_.n = { v: "<> compiledLi1 <>", n: { v: "<> compiledLi2 <>" }}, $_end_ = $_end_.n.n, " <> docJoinText ", " updateParams <> ", $_continue_ = true)"
+          in  "($_end_.n = { v: "<> compiledLi1 <>", n: { v: "<> compiledLi2 <>", n: null }}, $_end_ = $_end_.n.n, " <> docJoinText ", " updateParams <> ", $_continue_ = true)"
 
         ListConstructor elems   -> "(" <> compileListElements elems <> ")"
           where
@@ -1161,7 +1368,7 @@ emitExp env config (Typed qt area metadata exp) =
               buildTupleVars v items
 
             PCon _ ps ->
-              concat $ (\(i, p) -> buildVars (v <> ".__args[" <> show i <> "]") p) <$> zip [0 ..] ps
+              concat $ (\(i, p) -> buildVars (v <> "._" <> show i) p) <$> zip [0 :: Int ..] ps
 
             PVar n ->
               "    let " <> generateSafeName n <> " = " <> v <> ";\n"
@@ -1189,14 +1396,20 @@ emitExp env config (Typed qt area metadata exp) =
                 <> intercalate ", " (fieldVars <> restVar)
                 <> " }"
 
-            PCon _ args -> if null name
-              then "{ __args: [" <> intercalate ", " (buildFieldVar "" <$> args) <> "] }"
-              else
-                name
-                <> ": "
-                <> "{ __args: ["
-                <> intercalate ", " ((\(_, arg) -> buildFieldVar "" arg) <$> zip [0 ..] args)
-                <> "] }"
+            PCon _ args ->
+              -- Slim ADT layout: numbered fields _0, _1, ... in place of the
+              -- old __args array.  Wildcard patterns produce empty strings;
+              -- skip those slots entirely (object destructuring tolerates
+              -- missing keys, unlike the old array form which used commas).
+              let fieldPats =
+                    intercalate ", "
+                      [ "_" <> show i <> ": " <> sub
+                      | (i, arg) <- zip [0 :: Int ..] args
+                      , let sub = buildFieldVar "" arg
+                      , not (null sub) ]
+              in if null name
+                   then "{ " <> fieldPats <> " }"
+                   else name <> ": { " <> fieldPats <> " }"
 
             PList  pats ->
               name <> ": " <> packListVars (buildListItemVar <$> pats)
@@ -1244,8 +1457,15 @@ emitExp env config (Typed qt area metadata exp) =
               generateSafeName n
 
             PCon _ args ->
-              let built = intercalate ", " $ buildListItemVar <$> args
-              in "{ __args: [" <> built <> "]}"
+              -- Slim ADT layout: numbered fields _0, _1, ... — skip
+              -- wildcard slots whose sub-pattern emits an empty binding.
+              let fieldPats =
+                    intercalate ", "
+                      [ "_" <> show i <> ": " <> sub
+                      | (i, arg) <- zip [0 :: Int ..] args
+                      , let sub = buildListItemVar arg
+                      , not (null sub) ]
+              in "{ " <> fieldPats <> " }"
 
             PList pats ->
               packListVars $ buildListItemVar <$> pats
@@ -1308,7 +1528,16 @@ emitExp env config (Typed qt area metadata exp) =
           buildTupleItemVar (Typed _ _ _ pat) = case pat of
             PSpread (Typed _ _ _ (PVar n)) -> "..." <> generateSafeName n
             PVar    n      -> generateSafeName n
-            PCon _ args   -> let built = intercalate ", " $ buildTupleItemVar <$> args in "{ __args: [" <> built <> "]}"
+            PCon _ args   ->
+              -- Slim ADT layout: numbered fields _0, _1, ... in destructure.
+              -- Skip wildcard slots that produce empty bindings.
+              let fieldPats =
+                    intercalate ", "
+                      [ "_" <> show i <> ": " <> sub
+                      | (i, arg) <- zip [0 :: Int ..] args
+                      , let sub = buildTupleItemVar arg
+                      , not (null sub) ]
+              in "{ " <> fieldPats <> " }"
             PList   pats   -> packListVars $ buildListItemVar <$> pats
             PTuple  pats   -> "[" <> intercalate ", " (buildTupleItemVar <$> pats) <> "]"
             PRecord fields restName -> 
@@ -1321,7 +1550,7 @@ emitExp env config (Typed qt area metadata exp) =
           compileRecord scope n p = compilePattern (scope <> "." <> n) p
 
           compileCtorArg :: String -> String -> (Int, Pattern) -> String
-          compileCtorArg scope _ (x, p) = compilePattern (scope <> ".__args[" <> show x <> "]") p
+          compileCtorArg scope _ (x, p) = compilePattern (scope <> "._" <> show x) p
 
         Extern (_ :=> t) name foreignName ->
           let paramTypes = getParamTypes t
@@ -1447,24 +1676,11 @@ emitConstructorDoc (Untyped _ _ (Constructor cname cparams _)) =
     compileBody n a =
       let args = argNames a
           argDocs = docText <$> args
+          arity = length a
       -- Based on the following input, we need to only use ConstructorName
       -- __6bb57939a0e365f381d7e05ce50bfeb1__ConstructorName
       -- therefore we need to drop the first 36 characters
-      in  docGroup
-            $ "({"
-            <> docNest 2
-                 (docLine'
-                 <> "__constructor: \""
-                 <> docText (drop 7 n)
-                 <> "\","
-                 <> docLine'
-                 <> "__args: ["
-                 <> docNest 2 (docLine' <> docCommaSeparatedLines argDocs)
-                 <> docLine'
-                 <> "]"
-                 )
-            <> docLine'
-            <> "})"
+      in  emitConstructorObjectLiteral (drop 7 n) arity argDocs
 
 
 compileImport :: CompilationConfig -> Import -> JSImport
@@ -1898,6 +2114,7 @@ generateJSModule options pathsToBuild ast@Core.AST { Core.apath = Just path }
                 { methodNames        = monomorphicMethodNames
                 , constructorsByName = collectConstructorsByName ast
                 , topLevelNames      = collectTopLevelNames ast
+                , knownArities       = collectTopLevelArities ast
                 }
         config = CompilationConfig
                   { ccrootPath          = rootPath

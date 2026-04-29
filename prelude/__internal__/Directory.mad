@@ -49,7 +49,7 @@ read :: String -> Wish Error (List String)
 export read = (path) => Wish((bad, good) => #- {
   prelude_directory_fs.readdir(path, (err, files) => {
     if (err) {
-      bad({ __constructor: "UnknownError", __args: [] })
+      bad({ __constructor: "UnknownError", __a: 0 })
     } else {
       if (files.length === 0) {
         good(null);
@@ -98,12 +98,12 @@ export create = (path, options) => Wish((bad, good) => #- {
           return;
         }
 
-        bad({ __constructor: "UnknownError", __args: [] });
+        bad({ __constructor: "UnknownError", __a: 0 });
       });
       return;
     }
 
-    bad({ __constructor: "UnknownError", __args: [] });
+    bad({ __constructor: "UnknownError", __a: 0 });
   });
 
   return () => {

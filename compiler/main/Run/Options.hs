@@ -29,4 +29,10 @@ data Options
     , optSourceMaps :: SourceMapMode
     , optErrorFormat :: ErrorFormat
     , optPGOMode :: PGOMode
+    -- Maximum body-size (in AST nodes) for a top-level definition to be
+    -- considered for cross-module inlining at O3.  Defaults to the value
+    -- baked into Optimize.Inline (10).  Higher values inline more
+    -- aggressively at the cost of code size; see GCC's `-finline-limit`
+    -- and GHC's `-funfolding-use-threshold` for prior art.
+    , optInlineThreshold :: Maybe Int
     }

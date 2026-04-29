@@ -189,8 +189,8 @@ export methodStr = where {
 const prelude_http_buildHeaderObj = (headerItems) => {
   let headerObj = {}
   while (headerItems !== null) {
-    const k = headerItems.v.__args[0]
-    const v = headerItems.v.__args[1]
+    const k = headerItems.v._0
+    const v = headerItems.v._1
 
     headerObj[k] = v
     headerItems = headerItems.n
@@ -207,38 +207,38 @@ const prelude_http_capitalizeHeaderName = (input) => input.replace(/(^|[\s-])\S/
 const prelude_http_nodeErrorToClientError = (err) => {
   switch (err.code) {
     case 'ENOTFOUND':
-      return { __constructor: "AddressNotFound", __args: [] }
+      return { __constructor: "AddressNotFound", __a: 0 }
     case 'ECONNREFUSED':
-      return { __constructor: "ConnectionFailed", __args: [] }
+      return { __constructor: "ConnectionFailed", __a: 0 }
     case 'ECONNRESET':
-      return { __constructor: "ConnectionFailed", __args: [] }
+      return { __constructor: "ConnectionFailed", __a: 0 }
     case 'ETIMEDOUT':
-      return { __constructor: "Timeout", __args: [] }
+      return { __constructor: "Timeout", __a: 0 }
     case 'ETIMEOUT':
-      return { __constructor: "Timeout", __args: [] }
+      return { __constructor: "Timeout", __a: 0 }
     case 'EACCES':
     case 'EPERM':
-      return { __constructor: "AccessDenied", __args: [] }
+      return { __constructor: "AccessDenied", __a: 0 }
     case 'ERR_TLS_CERT_ALTNAME_INVALID':
     case 'UNABLE_TO_VERIFY_LEAF_SIGNATURE':
     case 'CERT_HAS_EXPIRED':
     case 'DEPTH_ZERO_SELF_SIGNED_CERT':
     case 'ERR_TLS_CERT_REJECT':
-      return { __constructor: "InvalidSSLCertificate", __args: [] }
+      return { __constructor: "InvalidSSLCertificate", __a: 0 }
     case 'ERR_SSL_WRONG_VERSION_NUMBER':
     case 'ERR_SSL_PROTOCOL_ERROR':
-      return { __constructor: "SSLConnectionFailed", __args: [] }
+      return { __constructor: "SSLConnectionFailed", __a: 0 }
     case 'ERR_INVALID_URL':
-      return { __constructor: "BadUrl", __args: [err.message || "Invalid URL"] }
+      return { __constructor: "BadUrl", __a: 1, _0: err.message || "Invalid URL" }
     case 'HPE_INVALID_CONSTANT':
     case 'HPE_INVALID_HEADER_TOKEN':
     case 'HPE_UNEXPECTED_CONTENT_LENGTH':
-      return { __constructor: "MalformedResponse", __args: [] }
+      return { __constructor: "MalformedResponse", __a: 0 }
     case 'ERR_HTTP2_ERROR':
     case 'ERR_HTTP2_STREAM_ERROR':
-      return { __constructor: "Http2FramingError", __args: [] }
+      return { __constructor: "Http2FramingError", __a: 0 }
     default:
-      return { __constructor: "InternalError", __args: [] }
+      return { __constructor: "InternalError", __a: 0 }
   }
 }
 {/Node}
@@ -267,25 +267,25 @@ _request = (_isJust, config) => Wish(
       xhr.responseType = "arraybuffer"
 
       while (headers !== null) {
-        xhr.setRequestHeader(headers.v.__args[0], headers.v.__args[1])
+        xhr.setRequestHeader(headers.v._0, headers.v._1)
         headers = headers.n
       }
 
       if (_isJust(config.body)) {
-        xhr.send(config.body.__args[0])
+        xhr.send(config.body._0)
       } else {
         xhr.send()
       }
 
       xhr.onerror = (err) => {
         if (xhr.status === 0) {
-          return bad({ __constructor: "ClientError", __args: [{ __constructor: "ConnectionFailed", __args: [] }] })
+          return bad({ __constructor: "ClientError", __a: 1, _0: { __constructor: "ConnectionFailed", __a: 0 } })
         }
-        return bad({ __constructor: "ClientError", __args: [{ __constructor: "InternalError", __args: [] }]})
+        return bad({ __constructor: "ClientError", __a: 1, _0: { __constructor: "InternalError", __a: 0 }})
       }
 
       xhr.ontimeout = () => {
-        return bad({ __constructor: "ClientError", __args: [{ __constructor: "Timeout", __args: [] }] })
+        return bad({ __constructor: "ClientError", __a: 1, _0: { __constructor: "Timeout", __a: 0 } })
       }
 
       xhr.onload = () => {
@@ -300,7 +300,7 @@ _request = (_isJust, config) => Wish(
             .map((s) => s.trim())
           )
           .filter(s => s.length == 2)
-          .map(([key, value]) => ({ __constructor: "Header", __args: [key, value] }))
+          .map(([key, value]) => ({ __constructor: "Header", __a: 2, _0: key, _1: value }))
 
         const headersList = __jsArrayToList__(responseHeaders)
 
@@ -308,7 +308,7 @@ _request = (_isJust, config) => Wish(
         const ui8 = new Uint8Array(buffer)
 
         if (xhr.status >= 400) {
-          bad({ __constructor: "BadResponse", __args: [{ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList }] })
+          bad({ __constructor: "BadResponse", __a: 1, _0: { body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList } })
         } else {
           good({ body: new TextDecoder().decode(ui8), status: xhr.status, headers: headersList })
         }
@@ -329,15 +329,15 @@ _request = (_isJust, config) => Wish(
       } else if (protocol !== "http") {
         return bad({
           __constructor: "ClientError",
-          __args: [{
+          __a: 1, _0: {
             __constructor: "BadUrl",
-            __args: [`Invalid protocol '${protocol}'`],
-          }],
+            __a: 1, _0: `Invalid protocol '${protocol}'`,
+          },
         })
       }
 
       if (_isJust(config.body)) {
-        headers["Content-Length"] = config.body.__args[0].length
+        headers["Content-Length"] = config.body._0.length
       }
 
       const req = reqFn(config.url, { method: config.method.__constructor, headers }, (response) => {
@@ -349,9 +349,9 @@ _request = (_isJust, config) => Wish(
         let responseHeaders = Object.keys(response.headers).flatMap(key => {
             const value = response.headers[key]
             if (Array.isArray(value)) {
-              return value.map(v => ({ __constructor: "Header", __args: [prelude_http_capitalizeHeaderName(key), v] }))
+              return value.map(v => ({ __constructor: "Header", __a: 2, _0: prelude_http_capitalizeHeaderName(key), _1: v }))
             } else {
-              return ({ __constructor: "Header", __args: [prelude_http_capitalizeHeaderName(key), value] })
+              return ({ __constructor: "Header", __a: 2, _0: prelude_http_capitalizeHeaderName(key), _1: value })
             }
           })
 
@@ -368,7 +368,7 @@ _request = (_isJust, config) => Wish(
             ? prelude_http_zlib.gunzipSync(buffer)
             : buffer
           if (response.statusCode >= 400) {
-            bad({ __constructor: "BadResponse", __args: [{ body: responseBody.toString(), status: response.statusCode, headers: headersList }] })
+            bad({ __constructor: "BadResponse", __a: 1, _0: { body: responseBody.toString(), status: response.statusCode, headers: headersList } })
           } else {
             good({ body: responseBody.toString(), status: response.statusCode, headers: headersList })
           }
@@ -376,13 +376,13 @@ _request = (_isJust, config) => Wish(
       });
 
       if (_isJust(config.body)) {
-        req.write(config.body.__args[0])
+        req.write(config.body._0)
       }
 
       req.on('error', (err) => {
         if (!isDone && err.name !== "AbortError") {
           const clientError = prelude_http_nodeErrorToClientError(err)
-          bad({ __constructor: "ClientError", __args: [clientError] })
+          bad({ __constructor: "ClientError", __a: 1, _0: clientError })
         }
       })
       req.end();
@@ -436,25 +436,25 @@ export _requestBytes = (_isJust, config) => Wish(
       xhr.responseType = "arraybuffer"
 
       while (headers !== null) {
-        xhr.setRequestHeader(headers.v.__args[0], headers.v.__args[1])
+        xhr.setRequestHeader(headers.v._0, headers.v._1)
         headers = headers.n
       }
 
       if (isJust(config.body)) {
-        xhr.send(config.body.__args[0])
+        xhr.send(config.body._0)
       } else {
         xhr.send()
       }
 
       xhr.onerror = (err) => {
         if (xhr.status === 0) {
-          return bad({ __constructor: "ClientError", __args: [{ __constructor: "ConnectionFailed", __args: [] }] })
+          return bad({ __constructor: "ClientError", __a: 1, _0: { __constructor: "ConnectionFailed", __a: 0 } })
         }
-        return bad({ __constructor: "ClientError", __args: [{ __constructor: "InternalError", __args: [] }] })
+        return bad({ __constructor: "ClientError", __a: 1, _0: { __constructor: "InternalError", __a: 0 } })
       }
 
       xhr.ontimeout = () => {
-        return bad({ __constructor: "ClientError", __args: [{ __constructor: "Timeout", __args: [] }] })
+        return bad({ __constructor: "ClientError", __a: 1, _0: { __constructor: "Timeout", __a: 0 } })
       }
 
       xhr.onload = () => {
@@ -469,7 +469,7 @@ export _requestBytes = (_isJust, config) => Wish(
             .map((s) => s.trim())
           )
           .filter(s => s.length == 2)
-          .map(([key, value]) => ({ __constructor: "Header", __args: [key, value] }))
+          .map(([key, value]) => ({ __constructor: "Header", __a: 2, _0: key, _1: value }))
 
         let current = {}
         let headersList = current
@@ -486,7 +486,7 @@ export _requestBytes = (_isJust, config) => Wish(
         const ui8 = new Uint8Array(buffer)
 
         if (xhr.status >= 400) {
-          bad({ __constructor: "BadResponse", __args: [{ body: ui8, status: xhr.status, headers: headersList }] })
+          bad({ __constructor: "BadResponse", __a: 1, _0: { body: ui8, status: xhr.status, headers: headersList } })
         } else {
           good({ body: ui8, status: xhr.status, headers: headersList })
         }
@@ -507,15 +507,15 @@ export _requestBytes = (_isJust, config) => Wish(
       } else if (protocol !== "http") {
         return bad({
           __constructor: "ClientError",
-          __args: [{
+          __a: 1, _0: {
             __constructor: "BadUrl",
-            __args: [`Invalid protocol '${protocol}'`],
-          }],
+            __a: 1, _0: `Invalid protocol '${protocol}'`,
+          },
         })
       }
 
       if (_isJust(config.body)) {
-        headers["Content-Length"] = config.body.__args[0].length
+        headers["Content-Length"] = config.body._0.length
       }
 
       const req = reqFn(config.url, { method: config.method.__constructor, headers }, (response) => {
@@ -527,9 +527,9 @@ export _requestBytes = (_isJust, config) => Wish(
         let headers = Object.keys(response.headers).flatMap(key => {
             const value = response.headers[key]
             if (Array.isArray(value)) {
-              return value.map(v => ({ __constructor: "Header", __args: [prelude_http_capitalizeHeaderName(key), v] }))
+              return value.map(v => ({ __constructor: "Header", __a: 2, _0: prelude_http_capitalizeHeaderName(key), _1: v }))
             } else {
-              return ({ __constructor: "Header", __args: [prelude_http_capitalizeHeaderName(key), value] })
+              return ({ __constructor: "Header", __a: 2, _0: prelude_http_capitalizeHeaderName(key), _1: value })
             }
           })
 
@@ -548,7 +548,7 @@ export _requestBytes = (_isJust, config) => Wish(
             : ui8
 
           if (response.statusCode >= 400) {
-            bad({ __constructor: "BadResponse", __args: [{ body: responseBody, status: response.statusCode, headers: headersList }] })
+            bad({ __constructor: "BadResponse", __a: 1, _0: { body: responseBody, status: response.statusCode, headers: headersList } })
           } else {
             good({ body: responseBody, status: response.statusCode, headers: headersList })
           }
@@ -556,13 +556,13 @@ export _requestBytes = (_isJust, config) => Wish(
       });
 
       if (_isJust(config.body)) {
-        req.write(config.body.__args[0])
+        req.write(config.body._0)
       }
 
       req.on('error', (err) => {
         if (!isDone && err.name !== "AbortError") {
           const clientError = prelude_http_nodeErrorToClientError(err)
-          bad({ __constructor: "ClientError", __args: [clientError] })
+          bad({ __constructor: "ClientError", __a: 1, _0: clientError })
         }
       })
       req.end();

@@ -1,8 +1,12 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Optimize.Inline
   ( inlineAST
+  , inlineASTWithThreshold
   , findInlineCandidates
+  , findInlineCandidatesWithThreshold
   , findCrossModuleInlineCandidates
+  , findCrossModuleInlineCandidatesWithThreshold
+  , defaultInlineThreshold
   ) where
 
 import qualified Data.Map as M
@@ -11,18 +15,30 @@ import qualified Data.List as L
 import           AST.Core
 
 
--- | Maximum expression size for a function to be considered for inlining
-inlineThreshold :: Int
-inlineThreshold = 10
+-- | Default maximum expression size for a function to be considered for
+-- inlining.  Overridable via the `--inline-threshold` CLI flag — see
+-- Options.optInlineThreshold and Run.Compile.  Inlining beyond a few
+-- dozen nodes typically requires import-tracking on inlined bodies,
+-- which `inlineAST` does not yet do (unlike
+-- `Optimize.HigherOrderCopyPropagation.updateImports`), so callers using
+-- larger thresholds should be aware that some inlined bodies may
+-- reference names that aren't imported in the consumer module.
+defaultInlineThreshold :: Int
+defaultInlineThreshold = 10
 
 
--- | Run inlining on the entire AST with cross-module candidates.
-inlineAST :: InlineCandidates -> AST -> AST
-inlineAST externalCandidates ast =
-  let localCandidates = findInlineCandidates (aexps ast)
+-- | Run inlining on the entire AST with cross-module candidates and a
+-- caller-specified body-size threshold.
+inlineASTWithThreshold :: Int -> InlineCandidates -> AST -> AST
+inlineASTWithThreshold threshold externalCandidates ast =
+  let localCandidates = findInlineCandidatesWithThreshold threshold (aexps ast)
       candidates = M.union localCandidates externalCandidates
   in  if M.null candidates then ast
       else ast { aexps = inlineInTopLevel candidates <$> aexps ast }
+
+-- | Run inlining with the default threshold.
+inlineAST :: InlineCandidates -> AST -> AST
+inlineAST = inlineASTWithThreshold defaultInlineThreshold
 
 
 -- | Find all top-level functions eligible for inlining.
@@ -31,7 +47,12 @@ inlineAST externalCandidates ast =
 --   2. It is not recursive (does not reference itself)
 --   3. It has no mutation metadata (no ReferenceAllocation/ReferenceStore)
 findInlineCandidates :: [Exp] -> InlineCandidates
-findInlineCandidates exps = M.fromList $ concatMap extractCandidate exps
+findInlineCandidates = findInlineCandidatesWithThreshold defaultInlineThreshold
+
+
+findInlineCandidatesWithThreshold :: Int -> [Exp] -> InlineCandidates
+findInlineCandidatesWithThreshold threshold exps =
+  M.fromList $ concatMap extractCandidate exps
   where
     extractCandidate exp = case exp of
       Typed _ _ _ (Export e) ->
@@ -42,11 +63,61 @@ findInlineCandidates exps = M.fromList $ concatMap extractCandidate exps
             bodySize = sum (exprSize <$> body)
             isSelfRecursive = name `S.member` collectVarNames body
             hasMutations = any containsMutations body
-        in  if bodySize <= inlineThreshold && not isSelfRecursive && not hasMutations
+            -- Bodies that contain a JSExp (raw `#- ... -#` FFI fence) or an
+            -- Extern reference are NOT safe to inline — the inliner only
+            -- substitutes Madlib `Var` nodes for parameters, but those
+            -- raw bodies reference parameter names as JS-level identifiers
+            -- that the substitution doesn't see.  Inlining would produce
+            -- code that references undefined names.
+            hasRawForeign = any containsRawForeign body
+        in  if bodySize <= threshold && not isSelfRecursive && not hasMutations && not hasRawForeign
             then [(name, InlineCandidate { icParams = paramNames, icBody = body })]
             else []
 
       _ -> []
+
+
+-- | Returns True if the expression (or any sub-expression) is a raw FFI
+-- fence (JSExp) or external reference (Extern) — bodies containing those
+-- can't be inlined because parameter substitution doesn't reach into
+-- the raw text/symbol.
+containsRawForeign :: Exp -> Bool
+containsRawForeign exp = case exp of
+  Typed _ _ _ e -> containsRawForeign_ e
+  Untyped _ _ e -> containsRawForeign_ e
+
+containsRawForeign_ :: Exp_ -> Bool
+containsRawForeign_ e = case e of
+  JSExp _               -> True
+  Extern{}              -> True
+  Call fn args          -> containsRawForeign fn || any containsRawForeign args
+  Definition _ body     -> any containsRawForeign body
+  Assignment lhs rhs    -> containsRawForeign lhs || containsRawForeign rhs
+  If c t f              -> any containsRawForeign [c, t, f]
+  Where exp' iss        -> containsRawForeign exp' || any containsRawForeignIs iss
+  Do exps               -> any containsRawForeign exps
+  Access a b            -> containsRawForeign a || containsRawForeign b
+  ArrayAccess a b       -> containsRawForeign a || containsRawForeign b
+  ListConstructor items -> any containsRawForeignListItem items
+  TupleConstructor exps -> any containsRawForeign exps
+  Record fields         -> any containsRawForeignField fields
+  While c b             -> containsRawForeign c || containsRawForeign b
+  Export e'             -> containsRawForeign e'
+  _                     -> False
+
+containsRawForeignIs :: Is -> Bool
+containsRawForeignIs (Typed _ _ _ (Is _ body)) = containsRawForeign body
+containsRawForeignIs _                         = False
+
+containsRawForeignListItem :: ListItem -> Bool
+containsRawForeignListItem (Typed _ _ _ (ListItem e))   = containsRawForeign e
+containsRawForeignListItem (Typed _ _ _ (ListSpread e)) = containsRawForeign e
+containsRawForeignListItem _                            = False
+
+containsRawForeignField :: Field -> Bool
+containsRawForeignField (Typed _ _ _ (Field (_, e)))  = containsRawForeign e
+containsRawForeignField (Typed _ _ _ (FieldSpread e)) = containsRawForeign e
+containsRawForeignField _                             = False
 
 
 -- | Deeply check whether an expression contains any mutation metadata.
@@ -103,8 +174,13 @@ containsMutationsField _                             = False
 -- Iterates to a fixed point: if candidate A references candidate B,
 -- and B is unsafe, then A must also be excluded.
 findCrossModuleInlineCandidates :: [Exp] -> InlineCandidates
-findCrossModuleInlineCandidates exps =
-  let allCandidates = findInlineCandidates exps
+findCrossModuleInlineCandidates =
+  findCrossModuleInlineCandidatesWithThreshold defaultInlineThreshold
+
+
+findCrossModuleInlineCandidatesWithThreshold :: Int -> [Exp] -> InlineCandidates
+findCrossModuleInlineCandidatesWithThreshold threshold exps =
+  let allCandidates = findInlineCandidatesWithThreshold threshold exps
   in  iterateUntilStable allCandidates
   where
     iterateUntilStable candidates =

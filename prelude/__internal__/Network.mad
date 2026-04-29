@@ -49,10 +49,10 @@ readNetworkInterfacesFFI :: {} -> List RawNetworkInterfaceFragment
 readNetworkInterfacesFFI = () => #- {
   const interfaces = madlib__prelude__os.networkInterfaces()
   const mapped = Object.keys(interfaces).flatMap((name) => interfaces[name].map((i) => ({
-    ipv4: i.family === "IPv4" ? { __constructor: "Just", __args: [i.address] } : { __constructor: "Nothing", __args: [] },
-    ipv4Mask: i.family === "IPv4" ? { __constructor: "Just", __args: [i.netmask] } : { __constructor: "Nothing", __args: [] },
-    ipv6: i.family === "IPv6" ? { __constructor: "Just", __args: [i.address] } : { __constructor: "Nothing", __args: [] },
-    ipv6Mask: i.family === "IPv6" ? { __constructor: "Just", __args: [i.netmask] } : { __constructor: "Nothing", __args: [] },
+    ipv4: i.family === "IPv4" ? { __constructor: "Just", __a: 1, _0: i.address } : { __constructor: "Nothing", __a: 0 },
+    ipv4Mask: i.family === "IPv4" ? { __constructor: "Just", __a: 1, _0: i.netmask } : { __constructor: "Nothing", __a: 0 },
+    ipv6: i.family === "IPv6" ? { __constructor: "Just", __a: 1, _0: i.address } : { __constructor: "Nothing", __a: 0 },
+    ipv6Mask: i.family === "IPv6" ? { __constructor: "Just", __a: 1, _0: i.netmask } : { __constructor: "Nothing", __a: 0 },
     name,
     isInternal: i.internal,
   })))

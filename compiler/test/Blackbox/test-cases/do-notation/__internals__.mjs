@@ -6,9 +6,9 @@ const __setToArray__ = (s) => {
     const elem = nextNodes.shift();
 
     if (elem.__constructor === `SetRBNode`) {
-      result = result.concat(__setToArray__(elem._2))
-      result.push(elem._1)
-      nextNodes.push(elem._3)
+      result = result.concat(__setToArray__(elem.__args[2]))
+      result.push(elem.__args[1])
+      nextNodes.push(elem.__args[3])
     }
   }
 
@@ -23,10 +23,10 @@ const __dictToArray__ = (s) => {
     const elem = nextNodes.shift();
 
     if (elem.__constructor === `DictRBNode`) {
-      result = result.concat(__dictToArray__(elem._3))
-      result.push(elem._1)
-      result.push(elem._2)
-      nextNodes.push(elem._4)
+      result = result.concat(__dictToArray__(elem.__args[3]))
+      result.push(elem.__args[1])
+      result.push(elem.__args[2])
+      nextNodes.push(elem.__args[4])
     }
   }
 
@@ -104,20 +104,6 @@ if (l.n && l.v) {
     return __eq__Dict(l, r)
   }
 
-    if (l.__constructor !== undefined) {
-      // ADT fast path: slim layout puts arity in __a and args
-      // in numbered fields _0.._n.  Skip the generic Object.keys
-      // + reduce route once tags match.
-      if (l.__constructor !== r.__constructor) return false;
-      const n = l.__a;
-      if (n !== r.__a) return false;
-      for (let i = 0; i < n; i++) {
-        const k = '_' + i;
-        if (!__eq__(l[k], r[k])) return false;
-      }
-      return true;
-    }
-
     const keysL = Object.keys(l);
     const keysR = Object.keys(r);
     return keysL.length === keysR.length && keysL.reduce((res, k) => res && __eq__(l[k], r[k]), true);
@@ -126,13 +112,8 @@ if (l.n && l.v) {
 }
 
 const __applyMany__ = (f, params) => params.reduce((_f, param) => _f(param), f);
-global.__apMtdDicts__ = (dict, dicts) => {
-  const o = {};
-  for (const k of Object.keys(dict)) {
-    o[k] = () => __applyMany__(dict[k](), dicts);
-  }
-  return o;
-};
+global.__apMtdDicts__ = (dict, dicts) =>
+  Object.keys(dict).reduce((o, k) => ({ ...o, [k]: () => __applyMany__(dict[k](), dicts) }), {});
 
 global.__once__ = (fn, context) => {
 

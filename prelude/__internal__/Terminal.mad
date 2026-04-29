@@ -230,9 +230,9 @@ export getWindowSize = () => #[
 getTTYMode :: {} -> TTYMode
 export getTTYMode = () => #- {
   if (process.stdin.isRaw) {
-    return { __constructor: "RawMode", __args: [] }
+    return { __constructor: "RawMode", __a: 0 }
   }
-  return { __constructor: "NormalMode", __args: [] }
+  return { __constructor: "NormalMode", __a: 0 }
 } -#
 
 

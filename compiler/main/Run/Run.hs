@@ -104,6 +104,7 @@ runModule target input args watchMode exePath = do
           , optSourceMaps = NoSourceMap
           , optErrorFormat = TextFormat
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
           , optParseOnly = False
           }
 

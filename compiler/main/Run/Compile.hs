@@ -30,7 +30,7 @@ import           System.IO (hPutStr, stderr)
 
 
 runCompilation :: Command -> IO ()
-runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized target watchMode coverage optLevel emitLLVM sourceMaps errorFmt pgoMode)
+runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized target watchMode coverage optLevel emitLLVM sourceMaps errorFmt pgoMode inlineThreshold)
   = do
     canonicalEntrypoint <- canonicalizePath entrypoint
     canonicalOutputPath <- canonicalizePath outputPath
@@ -69,6 +69,7 @@ runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized t
             , optSourceMaps = sourceMaps
             , optErrorFormat = errorFmt
             , optPGOMode = pgoMode
+            , optInlineThreshold = inlineThreshold
             }
 
     when verbose $ do

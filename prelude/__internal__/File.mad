@@ -43,7 +43,7 @@ export write = (path, content) => Wish(
     prelude_file_fs.writeFile(path, content, { signal: abortController.signal }, (err) => {
       if (err) {
         if (err.name !== "AbortError") {
-          bad({ __constructor: "UnknownError", __args: [] })
+          bad({ __constructor: "UnknownError", __a: 0 })
         }
       }
       else {
@@ -74,7 +74,7 @@ export writeBytes = (path, bytes) => Wish(
     prelude_file_fs.writeFile(path, bytes, { signal: abortController.signal }, (err) => {
       if (err) {
         if (err.name !== "AbortError") {
-          bad({ __constructor: "UnknownError", __args: [] });
+          bad({ __constructor: "UnknownError", __a: 0 });
         }
       }
       else {
@@ -103,7 +103,7 @@ export read = (path) => Wish(
     prelude_file_fs.readFile(path, { signal: abortController.signal, encoding: "utf8" }, (err, d) => {
       if (err) {
         if (err.name !== "AbortError") {
-          bad({ __constructor: "UnknownError", __args: [] })
+          bad({ __constructor: "UnknownError", __a: 0 })
         }
       }
       else {
@@ -132,7 +132,7 @@ export readBytes = (path) => Wish(
     prelude_file_fs.readFile(path, { signal: abortController.signal }, (err, d) => {
       if (err) {
         if (err.name !== "AbortError") {
-          bad({ __constructor: "UnknownError", __args: [] })
+          bad({ __constructor: "UnknownError", __a: 0 })
         }
       }
       else {

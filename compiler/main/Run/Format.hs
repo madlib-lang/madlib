@@ -66,6 +66,7 @@ parseASTsToFormat  (fp : fps)   = do
                               , optSourceMaps = NoSourceMap
                               , optErrorFormat = TextFormat
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
                               }
         ast <- case parseForFormatter code of
           Right a ->

@@ -96,6 +96,7 @@ runTests entrypoint target debug watchMode coverage optLevel suiteFilter testInd
           , optSourceMaps = NoSourceMap
           , optErrorFormat = errorFmt
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
           }
 
   runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint []

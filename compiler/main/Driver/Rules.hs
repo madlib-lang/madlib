@@ -474,7 +474,40 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         let coreAst'         = SortExpressions.keepLastMainExpAndDeps coreAst
             sortedAst        = SortExpressions.sortASTExpressions coreAst'
             renamedAst       = Rename.renameAST sortedAst
-            reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST renamedAst else renamedAst
+
+        -- Cross-module + intra-module inlining at O3.  Same pass as the
+        -- LLVM backend; eligible callees are non-recursive, mutation-free
+        -- definitions whose body fits within the inline threshold.  The
+        -- threshold defaults to Inline.defaultInlineThreshold but can be
+        -- raised via the `--inline-threshold` CLI flag for hot-loop heavy
+        -- programs (akin to gcc's `-finline-limit`).  Larger thresholds
+        -- can fuse `reduce(f, init, map(g, range(...)))` into a single
+        -- loop once `range`/`map`/`reduce` are inlined into the call site
+        -- — at the cost of bigger emitted JS.
+        let threshold = Maybe.fromMaybe Inline.defaultInlineThreshold (optInlineThreshold options)
+        inlinedAst <- if optLevel > O2 then do
+          -- Track per-module candidate sets so we can re-derive imports
+          -- for names that ended up in inlined bodies but weren't
+          -- previously imported here.  Without this, raising the
+          -- threshold beyond the default produces JS that references
+          -- foreign symbols never imported in the consumer module.
+          let importPaths = Core.getImportAbsolutePath <$> Core.aimports renamedAst
+          perModuleCandidates <- forM importPaths $ \p -> do
+            cs <- Rock.fetch (InlineCandidates p)
+            return (p, cs)
+          let externalCandidates = Map.unions (snd <$> perModuleCandidates)
+              candidateOrigin =
+                Map.fromList
+                  [ (name, modulePath)
+                  | (modulePath, cs) <- perModuleCandidates
+                  , name <- Map.keys cs
+                  ]
+              inlined = Inline.inlineASTWithThreshold threshold externalCandidates renamedAst
+          ensureForeignImports candidateOrigin inlined
+        else
+          return renamedAst
+
+        let reducedAst       = if optLevel > O1 then SimplifyCalls.reduceAST inlinedAst else inlinedAst
             tceResolved      = if optLevel > O0 then TCE.resolveAST reducedAst else reducedAst
         return (tceResolved, (mempty, mempty))
 
@@ -520,10 +553,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     -- We re-derive from MonomorphizedAST to avoid cyclic dependency with FoldedCoreAST.
     monomorphicAST <- Rock.fetch $ MonomorphizedAST modulePath
     coreAst <- astToCore False monomorphicAST
-    let coreAst'  = SortExpressions.keepLastMainExpAndDeps coreAst
+    let threshold = Maybe.fromMaybe Inline.defaultInlineThreshold (optInlineThreshold options)
+        coreAst'  = SortExpressions.keepLastMainExpAndDeps coreAst
         sortedAST = SortExpressions.sortASTExpressions coreAst'
         renamedAst = Rename.renameAST sortedAST
-        candidates = Inline.findCrossModuleInlineCandidates (Core.aexps renamedAst)
+        candidates = Inline.findCrossModuleInlineCandidatesWithThreshold threshold (Core.aexps renamedAst)
     return (candidates, (mempty, mempty))
 
   BuiltObjectFile path -> nonInput $ do
@@ -540,7 +574,12 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
 
   GeneratedJSModule path -> nonInput $ do
     paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
-    coreAst  <- Rock.fetch $ CoreAST path
+    -- PropagatedAST runs HigherOrderCopyPropagation when optLevel > O2 —
+    -- this specializes generic higher-order callees (map / reduce / etc.)
+    -- against their concrete callbacks.  Combined with the inlining we now
+    -- run at O3, it's how `reduce(f, init, map(g, range(...)))` gets fused
+    -- into a single loop on the JS target.
+    coreAst  <- Rock.fetch $ PropagatedAST path
     let coreAstWithPath = coreAst { Core.apath = Just path }
     (jsModule, _mappings) <- liftIO $ Javascript.generateJSModule options paths coreAstWithPath
     return (jsModule, (mempty, mempty))
@@ -1006,3 +1045,120 @@ updateTestExports wishPath testModulePath listPath ast@Slv.AST{ Slv.apath = Just
     ast
 updateTestExports _ _ _ ast =
   ast
+
+
+-- After Inline.inlineASTWithThreshold pulls in foreign function bodies,
+-- those bodies may reference foreign names (`_<hash>_*`) that the consumer
+-- module never imported.  We walk the inlined AST, compute which foreign
+-- names are now referenced but not yet imported, and append the missing
+-- imports so the emitted JS resolves cleanly.
+ensureForeignImports
+  :: Rock.MonadFetch Query m
+  => Map.Map Core.Name FilePath
+  -> Core.AST
+  -> m Core.AST
+ensureForeignImports candidateOrigin ast =
+  if Map.null candidateOrigin then return ast
+  else do
+    let alreadyImported =
+          Set.fromList
+            [ Core.getImportName n
+            | imp <- Core.aimports ast
+            , n <- importNames imp
+            ]
+        localDefined = Set.fromList (Maybe.mapMaybe Core.getExpName (Core.aexps ast))
+        referenced = Set.fromList (concatMap collectFreeVarNames (Core.aexps ast))
+        candidateNames = Map.keysSet candidateOrigin
+        needed =
+          (referenced `Set.intersection` candidateNames)
+            `Set.difference` alreadyImported
+            `Set.difference` localDefined
+        groupedByModule =
+          Map.fromListWith (<>)
+            [ (modulePath, [name])
+            | name <- Set.toList needed
+            , Just modulePath <- [Map.lookup name candidateOrigin]
+            ]
+    extraImports <- Map.foldrWithKey
+      (\modulePath names acc -> do
+         imp <- buildExtraImport modulePath names
+         rest <- acc
+         return (imp : rest))
+      (return [])
+      groupedByModule
+    return ast { Core.aimports = Core.aimports ast <> extraImports }
+
+
+importNames :: Core.Import -> [Core.Core Core.ImportInfo]
+importNames imp = case imp of
+  Core.Untyped _ _ (Core.NamedImport names _ _) -> names
+  Core.Typed   _ _ _ (Core.NamedImport names _ _) -> names
+
+
+-- Find the typed export for `name` in the foreign module's CoreAST and
+-- build a NamedImport bringing only the requested names into scope.
+buildExtraImport
+  :: Rock.MonadFetch Query m
+  => FilePath
+  -> [Core.Name]
+  -> m Core.Import
+buildExtraImport modulePath names = do
+  foreignAst <- Rock.fetch (CoreAST modulePath)
+  let infos = Maybe.mapMaybe (importInfoForName foreignAst) names
+  return $ Core.Untyped emptyArea [] (Core.NamedImport infos modulePath modulePath)
+
+
+importInfoForName :: Core.AST -> Core.Name -> Maybe (Core.Core Core.ImportInfo)
+importInfoForName ast name = case List.find ((== Just name) . Core.getExpName) (Core.aexps ast) of
+  Just found ->
+    let importType =
+          case found of
+            Core.Typed _ _ _ (Core.Export e)        -> classify e
+            Core.Typed _ _ _ (Core.Assignment _ rhs) -> classify rhs
+            _                                        -> Core.ExpressionImport
+    in  Just (Core.Typed (Core.getQualType found) emptyArea [] (Core.ImportInfo name importType))
+  Nothing -> Nothing
+  where
+    classify (Core.Typed _ _ _ (Core.Export e))        = classify e
+    classify (Core.Typed _ _ _ (Core.Assignment _ rhs)) = classify rhs
+    classify (Core.Typed _ _ _ (Core.Definition params _)) = Core.DefinitionImport (length params)
+    classify (Core.Typed _ _ _ (Core.Extern (_ :=> t) _ _)) = Core.DefinitionImport (length (getParamTypes t))
+    classify _                                          = Core.ExpressionImport
+
+
+collectFreeVarNames :: Core.Exp -> [Core.Name]
+collectFreeVarNames exp = case exp of
+  Core.Untyped _ _ e -> collectFreeVarNames_ e
+  Core.Typed _ _ _ e -> collectFreeVarNames_ e
+
+collectFreeVarNames_ :: Core.Exp_ -> [Core.Name]
+collectFreeVarNames_ e = case e of
+  Core.Var name False     -> [name]
+  Core.Call fn args       -> collectFreeVarNames fn <> concatMap collectFreeVarNames args
+  Core.Definition _ body  -> concatMap collectFreeVarNames body
+  Core.Assignment lhs rhs -> collectFreeVarNames lhs <> collectFreeVarNames rhs
+  Core.Export e'          -> collectFreeVarNames e'
+  Core.If c t f           -> concatMap collectFreeVarNames [c, t, f]
+  Core.While c b          -> collectFreeVarNames c <> collectFreeVarNames b
+  Core.Do exps            -> concatMap collectFreeVarNames exps
+  Core.Where e' iss       -> collectFreeVarNames e' <> concatMap collectFreeVarNamesIs iss
+  Core.Access r f         -> collectFreeVarNames r <> collectFreeVarNames f
+  Core.ArrayAccess r i    -> collectFreeVarNames r <> collectFreeVarNames i
+  Core.Record fields      -> concatMap collectFreeVarNamesField fields
+  Core.ListConstructor xs -> concatMap collectFreeVarNamesListItem xs
+  Core.TupleConstructor xs -> concatMap collectFreeVarNames xs
+  _                       -> []
+
+collectFreeVarNamesIs :: Core.Is -> [Core.Name]
+collectFreeVarNamesIs (Core.Typed _ _ _ (Core.Is _ body)) = collectFreeVarNames body
+collectFreeVarNamesIs _ = []
+
+collectFreeVarNamesField :: Core.Field -> [Core.Name]
+collectFreeVarNamesField (Core.Typed _ _ _ (Core.Field (_, e))) = collectFreeVarNames e
+collectFreeVarNamesField (Core.Typed _ _ _ (Core.FieldSpread e)) = collectFreeVarNames e
+collectFreeVarNamesField _ = []
+
+collectFreeVarNamesListItem :: Core.ListItem -> [Core.Name]
+collectFreeVarNamesListItem (Core.Typed _ _ _ (Core.ListItem e))   = collectFreeVarNames e
+collectFreeVarNamesListItem (Core.Typed _ _ _ (Core.ListSpread e)) = collectFreeVarNames e
+collectFreeVarNamesListItem _ = []

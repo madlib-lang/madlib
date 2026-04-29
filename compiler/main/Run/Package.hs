@@ -89,6 +89,7 @@ typeCheckMain target main = do
           , optSourceMaps = NoSourceMap
           , optErrorFormat = TextFormat
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
           , optDebug = False
           }
   (table, warnings, errors) <- Driver.runIncrementalTask state options [] mempty Driver.Don'tPrune (typeCheckTask main)

@@ -274,7 +274,7 @@ _readBytes = (errorCtor, dataCtor, noMessage, path) => Stream(
         readableStream.pause()
 
         readableStream.on("error", (e) => {
-          sink(2)(errorCtor({ __constructor: "UnknownError", __args: [] }))
+          sink(2)(errorCtor({ __constructor: "UnknownError", __a: 0 }))
         })
 
         readableStream.on("data", (chunk) => {
@@ -338,7 +338,7 @@ _writeBytes = (_schedule, errorCtor, noMessage, path, source) => Stream(
             writableStream.destroy()
             sink(2)(noMessage)
           } else {
-            talkback.__args[0](1)
+            talkback._0(1)
             writing = false
             if (chunksToWrite !== null) {
               _schedule(writeChunks)
@@ -360,7 +360,7 @@ _writeBytes = (_schedule, errorCtor, noMessage, path, source) => Stream(
                 #-
                 writableStream = prelude_stream_file_fs.createWriteStream(path)
                 writableStream.on('error', () => {
-                  sink(2)(errorCtor({ __constructor: "UnknownError", __args: [] }))
+                  sink(2)(errorCtor({ __constructor: "UnknownError", __a: 0 }))
                 })
                 writableStream.on('ready', () => {
                   open = true

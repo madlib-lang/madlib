@@ -79,6 +79,7 @@ buildOptions entrypoint pathUtils =
     , optSourceMaps = NoSourceMap
     , optErrorFormat = TextFormat
           , optPGOMode = NoPGO
+          , optInlineThreshold = Nothing
     }
 
 

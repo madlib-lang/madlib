@@ -38,6 +38,7 @@ data Command
       , compileSourceMaps :: SourceMapMode
       , compileErrorFormat :: ErrorFormat
       , compilePGOMode :: PGOMode
+      , compileInlineThreshold :: Maybe Int
       }
   | Test
       { testInput :: FilePath
@@ -137,6 +138,14 @@ parsePGO =
       flag' PGOInstrument (long "pgo-instrument" <> help "Instrument binary for PGO profiling")
   <|> (PGOOptimize <$> strOption (long "pgo-optimize" <> metavar "FILE" <> help "Use PGO profile data from FILE"))
   <|> pure NoPGO
+
+parseInlineThreshold :: Parser (Maybe Int)
+parseInlineThreshold =
+  optional $ option auto
+    (  long "inline-threshold"
+    <> metavar "N"
+    <> help "Maximum body size (in AST nodes) for a top-level definition to be considered for cross-module inlining at O3 (default: 10). Comparable to gcc's -finline-limit / ghc's -funfolding-use-threshold."
+    )
 
 parseErrorFormat :: Parser ErrorFormat
 parseErrorFormat = option
@@ -291,6 +300,7 @@ parseCompile =
     <*> parseSourceMaps
     <*> parseErrorFormat
     <*> parsePGO
+    <*> parseInlineThreshold
 
 parseTestInput :: Parser FilePath
 parseTestInput =

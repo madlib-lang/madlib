@@ -370,14 +370,14 @@ export charAt = extern "madlib__string__charAt"
 
 byteCharAt :: Integer -> String -> Maybe Char
 export byteCharAt = (offset, s) => #- (() => {
-  if (offset >= s.length) return {__constructor: "Nothing", __args: []}
+  if (offset >= s.length) return {__constructor: "Nothing", __a: 0}
   const code = s.charCodeAt(offset)
   // High surrogate: decode the full codepoint from the pair
   if (code >= 0xD800 && code <= 0xDBFF) {
     const low = s.charCodeAt(offset + 1)
-    return {__constructor: "Just", __args: [String.fromCodePoint(((code - 0xD800) << 10) + (low - 0xDC00) + 0x10000)]}
+    return {__constructor: "Just", __a: 1, _0: String.fromCodePoint(((code - 0xD800) << 10) + (low - 0xDC00) + 0x10000)}
   }
-  return {__constructor: "Just", __args: [s[offset]]}
+  return {__constructor: "Just", __a: 1, _0: s[offset]}
 })() -#
 
 byteCharWidth :: Integer -> String -> Integer
