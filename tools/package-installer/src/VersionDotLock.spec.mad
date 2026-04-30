@@ -62,6 +62,7 @@ DEFAULT_CONFIG = {
   exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
   exists: always(good(true)),
   getBytes: always(good({ headers: [], status: 200, body: ByteArray.empty() })),
+  getBytesWithProgress: (_, _) => good({ headers: [], status: 200, body: ByteArray.empty() }),
   isTTY: (_) => false,
   now: (_) => 0,
 }

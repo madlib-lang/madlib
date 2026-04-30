@@ -9,7 +9,7 @@ import Directory from "Directory"
 import File from "File"
 import Terminal from "Terminal"
 import { exec } from "Process"
-import { getBytes } from "Http"
+import { getBytes, getBytesWithProgress } from "Http"
 
 
 export alias Config = {
@@ -25,6 +25,7 @@ export alias Config = {
   exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult,
   exists :: String -> Wish {} Boolean,
   getBytes :: String -> Wish (Error ByteArray) (Response ByteArray),
+  getBytesWithProgress :: String -> (Integer -> Integer -> {}) -> Wish (Error ByteArray) (Response ByteArray),
   isTTY :: {} -> Boolean,
   now :: {} -> Integer,
 }
@@ -43,6 +44,7 @@ export defaultConfig = {
   exec,
   exists: File.exists,
   getBytes,
+  getBytesWithProgress,
   isTTY: Terminal.isTTY,
   now: pipe(Date.now, Date.getTimestamp),
 }

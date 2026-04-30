@@ -154,27 +154,26 @@ populateGlobalCache = (config, dependency) =>
     |> discardError(always({}))
 
 
-getPackageData :: Config -> String -> Wish DownloadFailure ByteArray
-getPackageData = (config, url) => pipe(
-  config.getBytes,
-  mapRej(formatHttpError),
-  chain(
-    (response) => response.status == OK
-      ? of(response.body)
-      : response.status == 301 || response.status == 302 || response.status == 303 || response.status == 307 || response.status == 308
-        ? pipe(
-          getHeader("Location"),
-          where {
-            [Header(_, redirectUrl), ..._] =>
-              getPackageData(config, redirectUrl)
+getPackageData :: Config -> (Integer -> Integer -> {}) -> String -> Wish DownloadFailure ByteArray
+getPackageData = (config, onProgress, url) =>
+  config.getBytesWithProgress(url, onProgress)
+    |> mapRej(formatHttpError)
+    |> chain(
+        (response) => response.status == OK
+          ? of(response.body)
+          : response.status == 301 || response.status == 302 || response.status == 303 || response.status == 307 || response.status == 308
+            ? pipe(
+              getHeader("Location"),
+              where {
+                [Header(_, redirectUrl), ..._] =>
+                  getPackageData(config, onProgress, redirectUrl)
 
-            _ =>
-              bad(RedirectMissingLocation(url))
-          },
-        )(response)
-        : bad(HttpStatusFailure(response.status))
-  )
-)(url)
+                _ =>
+                  bad(RedirectMissingLocation(url))
+              },
+            )(response)
+            : bad(HttpStatusFailure(response.status))
+      )
 
 
 saveArchive :: Config -> Dependency -> ByteArray -> Wish DownloadFailure {}
@@ -235,12 +234,12 @@ extractArchive = (config, dependency) =>
     |> chain((_) => removeIfExists(config, extractPath(dependency)) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
 
 
-downloadPackageWithHttp :: Config -> Dependency -> String -> Wish {} DownloadResult
-downloadPackageWithHttp = (config, dependency, url) =>
+downloadPackageWithHttp :: Config -> (Integer -> Integer -> {}) -> Dependency -> String -> Wish {} DownloadResult
+downloadPackageWithHttp = (config, onProgress, dependency, url) =>
   removeIfExists(config, archivePath(dependency))
     |> mapRej(always(ArchiveWriteFailure(archivePath(dependency))))
     |> chain((_) => removeIfExists(config, extractPath(dependency)) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
-    |> chain((_) => getPackageData(config, url))
+    |> chain((_) => getPackageData(config, onProgress, url))
     |> chain(saveArchive(config, dependency))
     |> andDo(extractArchive(config, dependency))
     |> andDo(of(Downloaded(dependency, FromRemote)))
@@ -275,25 +274,25 @@ copyLocalPackage = (config, dependency, uri) => pipe(
 )(uri)
 
 
-downloadPackage :: Config -> Dependency -> Wish {} DownloadResult
-downloadPackage = (config, dependency) => pipe(
+downloadPackage :: Config -> (Integer -> Integer -> {}) -> Dependency -> Wish {} DownloadResult
+downloadPackage = (config, onProgress, dependency) => pipe(
   .url,
   ifElse(
     String.startsWith("file://"),
     copyLocalPackage(config, dependency),
-    downloadPackageWithHttp(config, dependency),
+    downloadPackageWithHttp(config, onProgress, dependency),
   ),
 )(dependency)
 
 
-downloadIfNotCached :: Config -> Dependency -> Wish {} DownloadResult
-export downloadIfNotCached = (config, dependency) =>
+downloadIfNotCached :: Config -> (Integer -> Integer -> {}) -> Dependency -> Wish {} DownloadResult
+export downloadIfNotCached = (config, onProgress, dependency) =>
   validateCacheEntry(config, dependency)
     |> bichain(
       (_) => validateGlobalCacheEntry(config, dependency)
         |> bichain(
           (_) => removeIfExists(config, cachePath(dependency))
-            |> andDo(downloadPackage(config, dependency))
+            |> andDo(downloadPackage(config, onProgress, dependency))
             |> chain(
               (result) => where(result) {
                 Downloaded(d, _) =>

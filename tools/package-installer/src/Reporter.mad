@@ -1,5 +1,8 @@
+import Dictionary from "Dictionary"
+import Float from "Float"
 import IO from "IO"
 import List from "List"
+import { fromMaybe } from "Maybe"
 import String from "String"
 import Terminal from "Terminal"
 import Color from "./Color"
@@ -10,12 +13,14 @@ export alias Reporter = {
   downloading :: String -> {},
   cached :: String -> {},
   downloaded :: String -> {},
+  downloadFinished :: String -> {},
   validating :: String -> {},
   installing :: String -> {},
   installed :: String -> {},
   skipped :: String -> {},
   reportedWarning :: String -> {},
   failed :: String -> {},
+  progress :: String -> Integer -> Integer -> {},
   complete :: {} -> {},
 }
 
@@ -30,23 +35,25 @@ statusLine :: Integer -> Integer -> Integer -> Integer -> Integer -> Integer -> 
 statusLine = (total, cached, downloaded, validating, installing, installed, warnings, failed) =>
   `madlib packages  total ${show(total)}  cached ${show(cached)}  downloaded ${show(downloaded)}  validating ${show(validating)}  installing ${show(installing)}  installed ${colorCount(Color.green, installed)}  warnings ${colorCount(Color.yellow, warnings)}  failed ${colorCount(Color.red, failed)}`
 
-renderLive :: Boolean -> Integer -> String -> {}
-renderLive = (tty, renderedLines, message) => if (tty) do {
-  if (renderedLines > 0) {
-    IO.put(Terminal.moveCursorUp(renderedLines))
-  }
-  IO.put(Terminal.clearLine({}))
-  IO.putLine(message)
-} else {
-  {}
-}
-
 formatMessages :: (String -> String) -> List String -> String
 formatMessages = (colorFn, messages) => pipe(
   List.reverse,
   map((msg) => `  - ${colorFn(msg)}`),
   String.unlines
 )(messages)
+
+renderProgressBar :: String -> Integer -> Integer -> String
+renderProgressBar = (url, bytesNow, bytesTotal) => {
+  barWidth = 20
+  raw = bytesTotal > 0 ? Float.toInteger(bytesNow * barWidth / bytesTotal) : 0
+  filled = raw > barWidth - 1 ? barWidth - 1 : raw
+  bar = String.repeat('=', filled) ++ ">" ++ String.repeat(' ', barWidth - 1 - filled)
+  pct = bytesTotal > 0 ? Float.toInteger(bytesNow * 100 / bytesTotal) : 0
+  label = String.length(url) > 50
+    ? "..." ++ String.takeLast(47, url)
+    : url
+  return `  ${label}  [${bar}] ${show(pct)}%`
+}
 
 
 make :: Boolean -> Integer -> Reporter
@@ -65,14 +72,30 @@ export make = (tty, startedAt) => {
   failures = []
   warningMessages :: List String
   warningMessages = []
+  activeDownloads :: List String
+  activeDownloads = []
+  progressBytes :: Dictionary String Integer
+  progressBytes = Dictionary.empty
+  progressTotal :: Dictionary String Integer
+  progressTotal = Dictionary.empty
 
-  render = () => {
-    renderLive(
-      tty,
-      renderedLines,
-      statusLine(total, cached, downloaded, validating, installing, installed, warnings, failuresCount)
+  render = () => if (tty) do {
+    if (renderedLines > 0) {
+      IO.put(Terminal.moveCursorUp(renderedLines))
+    }
+    IO.put(Terminal.clearToEndOfScreen({}))
+    IO.putLine(statusLine(total, cached, downloaded, validating, installing, installed, warnings, failuresCount))
+    List.forEach(
+      (url) => {
+        bytes = fromMaybe(0, Dictionary.get(url, progressBytes))
+        totl = fromMaybe(0, Dictionary.get(url, progressTotal))
+        IO.putLine(renderProgressBar(url, bytes, totl))
+      },
+      activeDownloads
     )
-    renderedLines := tty ? 1 : 0
+    renderedLines := 1 + List.length(activeDownloads)
+  } else {
+    {}
   }
 
   log = (message) => if (!tty) {
@@ -95,20 +118,34 @@ export make = (tty, startedAt) => {
     render({})
   }
 
-  downloading = (name) => {
-    log(`downloading ${name}`)
+  finishDownload = (url) => {
+    activeDownloads := List.filter((u) => u != url, activeDownloads)
+    progressBytes := Dictionary.remove(url, progressBytes)
+    progressTotal := Dictionary.remove(url, progressTotal)
+  }
+
+  downloading = (url) => {
+    activeDownloads := [url, ...activeDownloads]
+    log(`downloading ${url}`)
     render({})
   }
 
-  markCached = (name) => {
+  markCached = (url) => {
+    finishDownload(url)
     cached := cached + 1
-    log(`cached ${name}`)
+    log(`cached ${url}`)
     render({})
   }
 
-  markDownloaded = (name) => {
+  markDownloaded = (url) => {
+    finishDownload(url)
     downloaded := downloaded + 1
-    log(`downloaded ${name}`)
+    log(`downloaded ${url}`)
+    render({})
+  }
+
+  markDownloadFinished = (url) => {
+    finishDownload(url)
     render({})
   }
 
@@ -180,18 +217,26 @@ export make = (tty, startedAt) => {
       render({})
   }
 
+  trackProgress = (url, bytesNow, bytesTotal) => {
+    progressBytes := Dictionary.insert(url, bytesNow, progressBytes)
+    progressTotal := Dictionary.insert(url, bytesTotal, progressTotal)
+    render({})
+  }
+
   return {
     start: start,
     scheduled: scheduled,
     downloading: downloading,
     cached: markCached,
     downloaded: markDownloaded,
+    downloadFinished: markDownloadFinished,
     validating: markValidating,
     installing: markInstalling,
     installed: markInstalled,
     skipped: markSkipped,
     reportedWarning: reportedWarning,
     failed: failed,
+    progress: trackProgress,
     complete: complete,
   }
 }

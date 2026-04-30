@@ -173,6 +173,10 @@ typedef struct RequestData {
   long status;
   // List Header
   madlib__list__Node_t *headers;
+
+  // Optional streaming progress callback: (Integer -> Integer -> {})
+  // NULL when no progress reporting is needed.
+  PAP_t *progressCallback;
 } RequestData_t;
 
 /**
@@ -184,6 +188,12 @@ RequestData_t *madlib__http__request(madlib__http__Request_t *request, PAP_t *ba
  * madlib__http__requestBytes :: Request -> (Response ByteArray -> ()) -> ()
  */
 RequestData_t *madlib__http__requestBytes(madlib__http__Request_t *request, PAP_t *badCallback, PAP_t *goodCallback);
+
+/**
+ * madlib__http__requestBytesWithProgress ::
+ *   Request -> (Integer -> Integer -> {}) -> (Error ByteArray -> {}) -> (Response ByteArray -> {}) -> ()
+ */
+RequestData_t *madlib__http__requestBytesWithProgress(madlib__http__Request_t *request, PAP_t *progressCallback, PAP_t *badCallback, PAP_t *goodCallback);
 
 void madlib__http__cancel(RequestData_t *requestData);
 

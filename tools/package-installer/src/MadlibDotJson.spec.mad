@@ -68,6 +68,7 @@ test("load     - success", (_) => {
         status: OK
       })
     ),
+    getBytesWithProgress: (_, _) => good({ body: ByteArray.empty(), headers: [], status: OK }),
     isTTY: (_) => false,
     now: (_) => 0,
   }

@@ -20,6 +20,15 @@ moveCursorUp :: Integer -> String
 export moveCursorUp = (lines) => `\x1b[${show(lines)}A`
 
 /**
+ * Clears from the cursor position to the end of the screen.
+ *
+ * @since 0.26.3
+ */
+clearToEndOfScreen :: {} -> String
+export clearToEndOfScreen = () => "\x1b[J"
+
+
+/**
  * Hides the terminal cursor.
  *
  * @since 0.26.3

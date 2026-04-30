@@ -346,6 +346,15 @@ static size_t onDataWrite(void *data, size_t size, size_t nmemb, void *userp) {
 }
 
 
+static int onCurlProgress(void *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
+  RequestData_t *requestData = (RequestData_t *)clientp;
+  if (requestData->progressCallback && dlnow > 0) {
+    __applyPAP__(requestData->progressCallback, 2, (void *)(int64_t)dlnow, (void *)(int64_t)dltotal);
+  }
+  return 0;
+}
+
+
 static size_t onHeaderWrite(void *data, size_t size, size_t nmemb, void *userp) {
   RequestData_t *requestData = (RequestData_t *)userp;
   char *strData = (char *)data;
@@ -416,7 +425,7 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
 
 
 
-RequestData_t *makeRequest(madlib__http__Request_t *request, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
+RequestData_t *makeRequest(madlib__http__Request_t *request, PAP_t *progressCallback, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
   char *url = (char *)request->url;
 
   madlib__http__Method_t *boxedMethod =
@@ -444,6 +453,7 @@ RequestData_t *makeRequest(madlib__http__Request_t *request, PAP_t *badCallback,
   requestData->headers = madlib__list__empty();
   requestData->badCallback = badCallback;
   requestData->goodCallback = goodCallback;
+  requestData->progressCallback = progressCallback;
   requestData->requestHeaders = lcurlHeaders;
   requestData->body = (char *)GC_MALLOC_ATOMIC(requestData->bodyCapacity);
   requestData->body[0] = '\0';
@@ -462,6 +472,11 @@ RequestData_t *makeRequest(madlib__http__Request_t *request, PAP_t *badCallback,
   curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, methodString);
   curl_easy_setopt(handle, CURLOPT_ACCEPT_ENCODING, "gzip,deflate,zstd");
   curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0);
+  if (progressCallback != NULL) {
+    curl_easy_setopt(handle, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(handle, CURLOPT_XFERINFOFUNCTION, onCurlProgress);
+    curl_easy_setopt(handle, CURLOPT_XFERINFODATA, requestData);
+  }
   if (boxedBody->index == madlib__maybe__Maybe_JUST_INDEX) {
     if (asBytes) {
       curl_easy_setopt(handle, CURLOPT_POSTFIELDS, ((madlib__bytearray__ByteArray_t*)boxedBody->data)->bytes);
@@ -508,12 +523,18 @@ RequestData_t *makeRequest(madlib__http__Request_t *request, PAP_t *badCallback,
 
 // madlib__http__request :: Request String -> (Error String) -> (Response String -> ()) -> ()
 RequestData_t *madlib__http__request(madlib__http__Request_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
-  return makeRequest(request, badCallback, goodCallback, false);
+  return makeRequest(request, NULL, badCallback, goodCallback, false);
 }
 
 // madlib__http__requestBytes :: Request ByteArray -> (Error ByteArray) -> (Response ByteArray -> ()) -> ()
 RequestData_t *madlib__http__requestBytes(madlib__http__Request_t *request, PAP_t *badCallback, PAP_t *goodCallback) {
-  return makeRequest(request, badCallback, goodCallback, true);
+  return makeRequest(request, NULL, badCallback, goodCallback, true);
+}
+
+// madlib__http__requestBytesWithProgress ::
+//   Request ByteArray -> (Integer -> Integer -> {}) -> (Error ByteArray -> {}) -> (Response ByteArray -> {}) -> ()
+RequestData_t *madlib__http__requestBytesWithProgress(madlib__http__Request_t *request, PAP_t *progressCallback, PAP_t *badCallback, PAP_t *goodCallback) {
+  return makeRequest(request, progressCallback, badCallback, goodCallback, true);
 }
 
 void madlib__http__cancel(RequestData_t *requestData) {

@@ -593,6 +593,25 @@ export requestBytes = (req) => pipe(
   )
 )(req)
 
+
+requestBytesWithProgress :: Request ByteArray -> (Integer -> Integer -> {}) -> Wish (Error ByteArray) (Response ByteArray)
+export requestBytesWithProgress = (req, _onProgress) => pipe(
+  _requestBytes(isJust),
+  chain((response) =>
+    if (response.status == 302) {
+      where (getHeader("location", response)) {
+        [Header(_, nextUrl)] =>
+          requestBytesWithProgress({ ...req, url: nextUrl }, _onProgress)
+
+        _ =>
+          of(response)
+      }
+    } else {
+      of(response)
+    }
+  )
+)(req)
+
 #elseif llvm
 
 type RequestId = RequestId(RequestId)
@@ -653,6 +672,19 @@ export requestBytes = (config) => Wish((bad, good) => {
   }
 })
 
+
+requestBytesWithProgressFFI :: Request ByteArray -> (Integer -> Integer -> {}) -> (Error ByteArray -> {}) -> (Response ByteArray -> {}) -> RequestId
+requestBytesWithProgressFFI = extern "madlib__http__requestBytesWithProgress"
+
+requestBytesWithProgress :: Request ByteArray -> (Integer -> Integer -> {}) -> Wish (Error ByteArray) (Response ByteArray)
+export requestBytesWithProgress = (config, onProgress) => Wish((bad, good) => {
+  id = requestBytesWithProgressFFI(config, onProgress, bad, good)
+
+  return () => {
+    cancelFFI(id)
+  }
+})
+
 #endif
 
 /**
@@ -675,6 +707,10 @@ export get = (url) => request({ method: GET, url, headers: [], body: Nothing, })
  */
 getBytes :: String -> Wish (Error ByteArray) (Response ByteArray)
 export getBytes = (url) => requestBytes({ method: GET, url, headers: [], body: Nothing, })
+
+
+getBytesWithProgress :: String -> (Integer -> Integer -> {}) -> Wish (Error ByteArray) (Response ByteArray)
+export getBytesWithProgress = (url, onProgress) => requestBytesWithProgress({ method: GET, url, headers: [], body: Nothing }, onProgress)
 
 
 /**

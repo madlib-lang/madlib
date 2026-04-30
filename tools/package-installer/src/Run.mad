@@ -325,7 +325,7 @@ processDependencies = (config, reporter, context, dependencies) => pipe(
     map((dependency) => {
       reporter.downloading(dependency.url)
       return pipe(
-        downloadIfNotCached(config),
+        downloadIfNotCached(config, reporter.progress(dependency.url)),
         map((result) => where(result) {
           Downloaded(d, FromCache) =>
             do {
@@ -341,6 +341,7 @@ processDependencies = (config, reporter, context, dependencies) => pipe(
 
           DownloadError(d, failure) =>
             do {
+              reporter.downloadFinished(d.url)
               reporter.failed(downloadErrorMessage(d, failure))
               return result
             }
@@ -499,7 +500,7 @@ makePrefetchDep = (url) => ({
 prefetchFromLock :: Config -> MadlibLock.MadlibLock -> Wish {} {}
 prefetchFromLock = (config, lock) => pipe(
   Dictionary.keys,
-  map((url) => downloadIfNotCached(config, makePrefetchDep(url)) |> andDo(of({}))),
+  map((url) => downloadIfNotCached(config, (_, _) => {}, makePrefetchDep(url)) |> andDo(of({}))),
   parallelN(16),
   map(always({}))
 )(lock.packages)

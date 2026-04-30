@@ -50,6 +50,7 @@ baseConfig = {
   exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
   exists: localExists,
   getBytes: (_) => good({ headers: [], status: OK, body: ByteArray.empty() }),
+  getBytesWithProgress: (_, _) => good({ headers: [], status: OK, body: ByteArray.empty() }),
   isTTY: (_) => false,
   now: (_) => 0,
 }
@@ -58,7 +59,7 @@ baseConfig = {
 test("downloadIfNotCached - valid cache is reused", (_) => {
   dep = dependency("http://repo.com/test-package.zip")
 
-  return downloadIfNotCached(baseConfig, dep)
+  return downloadIfNotCached(baseConfig, (_, _) => {}, dep)
     |> map(resultLabel)
     |> mapRej(always(ErrorWithMessage("download failed")))
     |> chain(assertEquals($, "cache"))
@@ -87,7 +88,7 @@ test("downloadIfNotCached - zip with package at archive root is normalized", (_)
     },
   }
 
-  return downloadIfNotCached(config, dep)
+  return downloadIfNotCached(config, (_, _) => {}, dep)
     |> map(resultLabel)
     |> mapRej(always(ErrorWithMessage("download failed")))
     |> chain(assertEquals($, "remote"))
@@ -120,7 +121,7 @@ test("downloadIfNotCached - zip with one top-level package directory is normaliz
     },
   }
 
-  return downloadIfNotCached(config, dep)
+  return downloadIfNotCached(config, (_, _) => {}, dep)
     |> map(resultLabel)
     |> mapRej(always(ErrorWithMessage("download failed")))
     |> chain(assertEquals($, "remote"))
@@ -143,7 +144,7 @@ test("downloadIfNotCached - malformed zip shape returns diagnostic", (_) => {
     },
   }
 
-  return downloadIfNotCached(config, dep)
+  return downloadIfNotCached(config, (_, _) => {}, dep)
     |> map(resultLabel)
     |> mapRej(always(ErrorWithMessage("download failed")))
     |> chain(assertEquals($, "invalid archive shape: expected madlib.json at archive root or in a single top-level directory — try deleting .module_cache/ and retrying"))
