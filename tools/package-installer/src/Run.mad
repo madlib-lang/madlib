@@ -41,7 +41,7 @@ import { DownloadError, Downloaded, downloadIfNotCached } from "./Download"
 import { FromCache, FromRemote, downloadErrorMessage } from "./Download"
 import { hashVersion } from "./Hash"
 import Reporter from "./Reporter"
-import ConflictAnalysis from "./ConflictAnalysis"
+import ConflictResolver from "./ConflictResolver"
 import { AnyVersion } from "./Version"
 import { sanitizeUrl } from "./URL"
 
@@ -412,13 +412,11 @@ installPackages = (config, reporter, context, madlibDotJsonPath) => pipe(
                       )
                     )
                   |> chain(runPostInstallHook(true, madlibDotJson))
-                  |> chain((_) => {
-                      ConflictAnalysis.analyze(
-                        madlibDotJson,
-                        { lockfileVersion: 1, packages: finalContext.lockEntries }
-                      )
-                      return of(finalContext)
-                    })
+                  |> chain((_) => ConflictResolver.run(
+                      config,
+                      madlibDotJson,
+                      { lockfileVersion: 1, packages: finalContext.lockEntries }
+                    ) |> andDo(of(finalContext)))
             }
           )
         )(madlibDotJson)

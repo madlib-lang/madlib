@@ -30,7 +30,7 @@ addVersionOccurrence = (entry, acc) =>
 
 
 buildVersionMap :: Dictionary String LockEntry -> Dictionary String (List String)
-buildVersionMap = (packages) => Dictionary.reduce(
+export buildVersionMap = (packages) => Dictionary.reduce(
   (_, entry, acc) => addVersionOccurrence(entry, acc),
   Dictionary.empty,
   packages
@@ -38,7 +38,7 @@ buildVersionMap = (packages) => Dictionary.reduce(
 
 
 findConflictedNames :: Dictionary String LockEntry -> List String
-findConflictedNames = (packages) => pipe(
+export findConflictedNames = (packages) => pipe(
   buildVersionMap,
   Dictionary.toList,
   List.filter(where { #[_, versions] => List.length(versions) > 1 }),
@@ -48,7 +48,7 @@ findConflictedNames = (packages) => pipe(
 
 // Find all URL-paths from rootUrls to any package matching both name and version.
 findPathsToVersion :: String -> String -> Dictionary String LockEntry -> List String -> List String -> List (List String)
-findPathsToVersion = (targetName, targetVersion, packages, currentPath, urlsToSearch) => pipe(
+export findPathsToVersion = (targetName, targetVersion, packages, currentPath, urlsToSearch) => pipe(
   map(
     (url) => where(Dictionary.get(url, packages)) {
       Nothing =>
@@ -79,7 +79,7 @@ urlToLabel = (packages, url) => where(Dictionary.get(url, packages)) {
 
 
 pathToChainString :: Dictionary String LockEntry -> String -> List String -> String
-pathToChainString = (packages, rootLabel, urlPath) => pipe(
+export pathToChainString = (packages, rootLabel, urlPath) => pipe(
   map(urlToLabel(packages)),
   (segments) => [rootLabel, ...segments],
   String.join(" → ")

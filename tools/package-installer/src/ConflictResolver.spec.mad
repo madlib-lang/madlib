@@ -1,0 +1,58 @@
+import { assertEquals, test } from "Test"
+import Dictionary from "Dictionary"
+import List from "List"
+
+import { versionChoices } from "./ConflictResolver"
+
+
+// Two distinct versions of "foo", one version of "bar"
+PACKAGES = Dictionary.fromList([
+  #["https://example.com/foo-v1.zip", {
+    name: "foo",
+    version: "1.0.0",
+    buildHash: "aaa",
+    versionHash: "bbb",
+    dependencies: []
+  }],
+  #["https://example.com/foo-v2.zip", {
+    name: "foo",
+    version: "2.0.0",
+    buildHash: "ccc",
+    versionHash: "ddd",
+    dependencies: []
+  }],
+  #["https://example.com/bar.zip", {
+    name: "bar",
+    version: "3.0.0",
+    buildHash: "eee",
+    versionHash: "fff",
+    dependencies: []
+  }],
+])
+
+
+test("versionChoices - returns one choice per distinct version", (_) => {
+  choices = versionChoices("foo", PACKAGES)
+  return assertEquals(List.length(choices), 2)
+})
+
+test("versionChoices - deduplicates same version from multiple URLs", (_) => {
+  // Two different URLs but same version for "baz"
+  duped = Dictionary.fromList([
+    #["https://example.com/baz-a.zip", { name: "baz", version: "1.0.0", buildHash: "", versionHash: "", dependencies: [] }],
+    #["https://example.com/baz-b.zip", { name: "baz", version: "1.0.0", buildHash: "", versionHash: "", dependencies: [] }],
+  ])
+  choices = versionChoices("baz", duped)
+  return assertEquals(List.length(choices), 1)
+})
+
+test("versionChoices - empty result for unknown package name", (_) => {
+  choices = versionChoices("nonexistent", PACKAGES)
+  return assertEquals(choices, [])
+})
+
+test("versionChoices - only includes choices for the requested name", (_) => {
+  barChoices = versionChoices("bar", PACKAGES)
+  fooChoices = versionChoices("foo", PACKAGES)
+  return assertEquals(List.length(barChoices) == 1 && List.length(fooChoices) == 2, true)
+})

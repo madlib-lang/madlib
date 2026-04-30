@@ -1,0 +1,195 @@
+import type { Wish } from "Wish"
+import type { Config } from "./Config"
+import type { LockEntry } from "./MadlibLock"
+import type { MadlibDotJson } from "./MadlibDotJson"
+import type { MadlibLock } from "./MadlibLock"
+
+import Dictionary from "Dictionary"
+import IO from "IO"
+import List from "List"
+import String from "String"
+import Terminal from "Terminal"
+import type { Maybe } from "Maybe"
+import { Just, Nothing, fromMaybe } from "Maybe"
+import { always } from "Function"
+import { Wish } from "Wish"
+import { discardError } from "Wish"
+
+import Color from "./Color"
+import ConflictAnalysis from "./ConflictAnalysis"
+import Constants from "./Constants"
+import Version from "./Version"
+import { sanitizeUrl } from "./URL"
+
+
+// (version, url) — one candidate per distinct version of a conflicted package
+type VersionChoice = VersionChoice(String, String)
+
+// Build one VersionChoice per distinct version of `name` found in lock packages.
+versionChoices :: String -> Dictionary String LockEntry -> List VersionChoice
+export versionChoices = (name, packages) =>
+  Dictionary.reduce(
+    (url, entry, acc) =>
+      entry.name == name && !List.any(
+        (vc) => where(vc) { VersionChoice(v, _) => v == entry.version },
+        acc
+      )
+        ? [...acc, VersionChoice(entry.version, url)]
+        : acc,
+    [],
+    packages
+  )
+
+
+pickForConflict :: String -> Dictionary String LockEntry -> List String -> String -> Wish {} VersionChoice
+pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
+  choices = versionChoices(conflictedName, packages)
+  options = map(
+    (vc) => where(vc) {
+      VersionChoice(version, _) =>
+        #[vc, ConflictAnalysis.findPathsToVersion(conflictedName, version, packages, [], rootDeps)]
+    },
+    choices
+  )
+
+  totalMenuLines = 4 + List.reduce(
+    (sum, opt) => where(opt) { #[_, chains] => sum + 1 + List.length(chains) },
+    0,
+    options
+  ) + 2
+
+  selectedIndex = 0
+  renderedLines = 0
+  handlerId :: Maybe Terminal.HandlerId
+  handlerId = Nothing
+
+  render = () => {
+    if (renderedLines > 0) {
+      IO.put(Terminal.moveCursorUp(renderedLines))
+    }
+    IO.put(Terminal.clearToEndOfScreen({}))
+    IO.putLine("")
+    IO.putLine(`  ${Color.yellow("!")} Conflict: ${Color.bold(conflictedName)} — ${show(List.length(choices))} versions installed`)
+    IO.putLine("  Select version to keep in madlib_modules/:")
+    IO.putLine("")
+    List.reduce(
+      (idx, opt) => {
+        #[VersionChoice(version, _), chains] = opt
+        isSelected = idx == selectedIndex
+        marker = isSelected ? Color.bold(Color.green(">")) : " "
+        versionStr = isSelected ? Color.bold(Color.green(version)) : version
+        IO.putLine(`    ${marker} ${versionStr}`)
+        List.forEach(
+          (path) => IO.putLine(`        ${ConflictAnalysis.pathToChainString(packages, rootLabel, path)}`),
+          chains
+        )
+        return idx + 1
+      },
+      0,
+      options
+    )
+    IO.putLine("")
+    IO.putLine("  ↑/↓ navigate · Enter confirm · Ctrl-C skip")
+    renderedLines := totalMenuLines
+  }
+
+  return Wish((bad, good) => {
+    Terminal.enableTTYRawMode({})
+    render({})
+
+    n = List.length(options)
+
+    cleanup = () => {
+      where(handlerId) {
+        Just(hid) =>
+          Terminal.clearKeyPressedHandler(hid)
+
+        Nothing =>
+          {}
+      }
+      Terminal.disableTTYRawMode({})
+    }
+
+    cb = (key) => if (key == "\x1b[A" || key == "k") do {
+      selectedIndex := selectedIndex > 0 ? selectedIndex - 1 : n - 1
+      render({})
+    } else if (key == "\x1b[B" || key == "j") do {
+      selectedIndex := selectedIndex < n - 1 ? selectedIndex + 1 : 0
+      render({})
+    } else if (key == "\r") do {
+      cleanup({})
+      where(List.nth(selectedIndex, choices)) {
+        Just(choice) =>
+          good(choice)
+
+        Nothing =>
+          bad({})
+      }
+    } else if (key == "\x03") do {
+      cleanup({})
+      bad({})
+    } else {
+      {}
+    }
+
+    handlerId := Just(Terminal.onKeyPressed(cb))
+
+    return cleanup
+  })
+}
+
+
+copyChosenVersion :: Config -> String -> VersionChoice -> Wish {} {}
+copyChosenVersion = (config, conflictedName, vc) => where(vc) {
+  VersionChoice(_, url) =>
+    config.remove(
+      `${Constants.MADLIB_MODULES_PATH}${conflictedName}/`,
+      { recursive: true }
+    )
+      |> chain((_) => config.copy(
+        `${Constants.TEMPORARY_MODULES_PATH}${sanitizeUrl(url)}/`,
+        `${Constants.MADLIB_MODULES_PATH}${conflictedName}/`,
+        { recursive: true, overwrite: true, exclude: [] }
+      ))
+      |> discardError(always({}))
+}
+
+
+resolveConflict :: Config -> String -> Dictionary String LockEntry -> List String -> String -> Wish {} {}
+resolveConflict = (config, rootLabel, packages, rootDeps, conflictedName) =>
+  pickForConflict(rootLabel, packages, rootDeps, conflictedName)
+    |> chain(copyChosenVersion(config, conflictedName))
+    |> discardError(always({}))
+
+
+runInteractive :: Config -> String -> Dictionary String LockEntry -> List String -> List String -> Wish {} {}
+runInteractive = (config, rootLabel, packages, rootDeps, conflictedNames) => {
+  IO.putLine("")
+  IO.putLine(Color.bold(Color.yellow("Dependency conflicts detected — interactive resolution:")))
+  return List.reduceM(
+    (_, name) => resolveConflict(config, rootLabel, packages, rootDeps, name),
+    {},
+    conflictedNames
+  )
+}
+
+
+staticReport :: MadlibDotJson -> MadlibLock -> Wish {} {}
+staticReport = (madlibDotJson, lock) => {
+  ConflictAnalysis.analyze(madlibDotJson, lock)
+  return of({})
+}
+
+
+run :: Config -> MadlibDotJson -> MadlibLock -> Wish {} {}
+export run = (config, madlibDotJson, lock) => {
+  isTTY = config.isTTY({})
+  rootLabel = `${Color.bold(madlibDotJson.name)}@${Version.showVersion(madlibDotJson.version)}`
+  rootDeps = madlibDotJson.dependencies |> fromMaybe([]) |> map(.url)
+  packages = lock.packages
+  conflictedNames = ConflictAnalysis.findConflictedNames(packages)
+
+  return isTTY && List.length(conflictedNames) > 0
+    ? runInteractive(config, rootLabel, packages, rootDeps, conflictedNames)
+    : staticReport(madlibDotJson, lock)
+}

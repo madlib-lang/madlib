@@ -1,0 +1,119 @@
+import { assertEquals, test } from "Test"
+import Dictionary from "Dictionary"
+import String from "String"
+import { Just } from "Maybe"
+
+import {
+  buildVersionMap,
+  findConflictedNames,
+  findPathsToVersion,
+  pathToChainString
+} from "./ConflictAnalysis"
+
+
+// Shared fixture: root has bar and baz as direct deps.
+// bar depends on foo@1.0.0; baz depends on foo@2.0.0 → conflict on "foo".
+PACKAGES = Dictionary.fromList([
+  #["https://example.com/foo-v1.zip", {
+    name: "foo",
+    version: "1.0.0",
+    buildHash: "aaa",
+    versionHash: "bbb",
+    dependencies: []
+  }],
+  #["https://example.com/foo-v2.zip", {
+    name: "foo",
+    version: "2.0.0",
+    buildHash: "ccc",
+    versionHash: "ddd",
+    dependencies: []
+  }],
+  #["https://example.com/bar.zip", {
+    name: "bar",
+    version: "1.0.0",
+    buildHash: "eee",
+    versionHash: "fff",
+    dependencies: ["https://example.com/foo-v1.zip"]
+  }],
+  #["https://example.com/baz.zip", {
+    name: "baz",
+    version: "1.0.0",
+    buildHash: "ggg",
+    versionHash: "hhh",
+    dependencies: ["https://example.com/foo-v2.zip"]
+  }],
+])
+
+ROOT_DEPS = [
+  "https://example.com/bar.zip",
+  "https://example.com/baz.zip",
+]
+
+
+test("buildVersionMap - single version per name has length-1 lists", (_) => {
+  result = buildVersionMap(PACKAGES)
+  barVersions = Dictionary.get("bar", result)
+  return assertEquals(barVersions, Just(["1.0.0"]))
+})
+
+test("buildVersionMap - conflicted name has both versions", (_) => {
+  result = buildVersionMap(PACKAGES)
+  fooVersions = Dictionary.get("foo", result)
+  return assertEquals(fooVersions, Just(["1.0.0", "2.0.0"]))
+})
+
+test("findConflictedNames - detects the conflicted package", (_) => {
+  result = findConflictedNames(PACKAGES)
+  return assertEquals(result, ["foo"])
+})
+
+test("findConflictedNames - no conflict when all versions unique", (_) => {
+  clean = Dictionary.fromList([
+    #["https://example.com/a.zip", { name: "a", version: "1.0.0", buildHash: "", versionHash: "", dependencies: [] }],
+    #["https://example.com/b.zip", { name: "b", version: "2.0.0", buildHash: "", versionHash: "", dependencies: [] }],
+  ])
+  result = findConflictedNames(clean)
+  return assertEquals(result, [])
+})
+
+test("findPathsToVersion - finds path to foo@1.0.0 via bar", (_) => {
+  paths = findPathsToVersion("foo", "1.0.0", PACKAGES, [], ROOT_DEPS)
+  expected = [["https://example.com/bar.zip", "https://example.com/foo-v1.zip"]]
+  return assertEquals(paths, expected)
+})
+
+test("findPathsToVersion - finds path to foo@2.0.0 via baz", (_) => {
+  paths = findPathsToVersion("foo", "2.0.0", PACKAGES, [], ROOT_DEPS)
+  expected = [["https://example.com/baz.zip", "https://example.com/foo-v2.zip"]]
+  return assertEquals(paths, expected)
+})
+
+test("findPathsToVersion - returns empty list when version not reachable", (_) => {
+  paths = findPathsToVersion("foo", "3.0.0", PACKAGES, [], ROOT_DEPS)
+  return assertEquals(paths, [])
+})
+
+test("findPathsToVersion - handles direct root dep", (_) => {
+  // foo is a direct dep with no intermediary
+  directPkgs = Dictionary.fromList([
+    #["https://example.com/foo.zip", { name: "foo", version: "1.0.0", buildHash: "", versionHash: "", dependencies: [] }],
+  ])
+  paths = findPathsToVersion("foo", "1.0.0", directPkgs, [], ["https://example.com/foo.zip"])
+  expected = [["https://example.com/foo.zip"]]
+  return assertEquals(paths, expected)
+})
+
+test("pathToChainString - contains all package versions in chain", (_) => {
+  path = ["https://example.com/bar.zip", "https://example.com/foo-v1.zip"]
+  chain = pathToChainString(PACKAGES, "root@1.0.0", path)
+  // The chain includes color codes so we test for version substrings
+  return assertEquals(
+    String.contains("1.0.0", chain) && String.contains("root@1.0.0", chain),
+    true
+  )
+})
+
+test("pathToChainString - empty path returns just root label", (_) => {
+  chain = pathToChainString(PACKAGES, "root@1.0.0", [])
+  return assertEquals(chain, "root@1.0.0")
+})
