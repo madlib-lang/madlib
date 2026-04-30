@@ -5,126 +5,246 @@ import type { Dependency } from "./Dependency"
 
 import FilePath from "FilePath"
 import { always, ifElse } from "Function"
-import { Header, getHeader } from "Http"
+import { BadResponse, ClientError, Header, OK, getHeader } from "Http"
+import { fromMaybe } from "Maybe"
 import { andDo } from "Monad"
 import Process from "Process"
 import String from "String"
-import { bad, discardError, mapRej } from "Wish"
+import { bad, bichain, chainRej, discardError, mapRej } from "Wish"
 
 import Constants from "./Constants"
 
 
 
-export type DownloadFailure = DownloadFailure
+export type DownloadSource = FromCache | FromRemote
 
-export type DownloadResult = Downloaded(Dependency) | DownloadError(String)
+export type DownloadFailure
+  = NetworkFailure(String)
+  | RedirectMissingLocation(String)
+  | HttpStatusFailure(Integer)
+  | ArchiveWriteFailure(String)
+  | ArchiveExtractFailure(String)
+  | InvalidArchiveShape(String)
+  | CacheValidationFailure(String)
+  | LocalCopyFailure(String)
 
-
-
-cleanUp :: Config -> String -> Wish DownloadFailure String
-cleanUp = (config, sanitizedUrl) => pipe(
-  (url) => [
-    "-r",
-    `${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
-    `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`,
-  ],
-  config.exec("rm", $, Process.DEFAULT_COMMAND_OPTIONS),
-  map(.stdout),
-  mapRej(always(DownloadFailure)),
-)(sanitizedUrl)
+export type DownloadResult = Downloaded(Dependency, DownloadSource) | DownloadError(Dependency, DownloadFailure)
 
 
-copyPackageToTmpRoot :: Config -> String -> Wish DownloadFailure String
-copyPackageToTmpRoot = (config, sanitizedUrl) => pipe(
-  (url) => [
-    "-R",
-    `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/${url}`,
-    Constants.TEMPORARY_MODULES_PATH,
-  ],
-  config.exec("cp", $, Process.DEFAULT_COMMAND_OPTIONS),
-  map(.stdout),
-  mapRej(always(DownloadFailure)),
-)(sanitizedUrl)
+archivePath :: Dependency -> String
+archivePath = (dependency) => `${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`
+
+extractPath :: Dependency -> String
+extractPath = (dependency) => `${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}-tmp`
+
+cachePath :: Dependency -> String
+export cachePath = (dependency) => `${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}`
+
+globalCacheBase :: {} -> String
+globalCacheBase = () => pipe(
+  Process.getEnv,
+  fromMaybe("./no-home"),
+  (home) => `${home}/.madlib/cache/`
+)("HOME")
+
+globalCachePath :: Dependency -> String
+globalCachePath = (dependency) => `${globalCacheBase({})}${dependency.sanitizedUrl}`
+
+madlibJsonPath :: String -> String
+madlibJsonPath = (path) => FilePath.joinPath([path, "madlib.json"])
 
 
-unzipPkg :: Config -> String -> Wish DownloadFailure String
-unzipPkg = (config, sanitizedUrl) => pipe(
-  (url) => [
-    "-o",
-    "-d",
-    `${Constants.TEMPORARY_MODULES_PATH}${url}-tmp`,
-    `${Constants.TEMPORARY_MODULES_PATH}${url}.zip`,
-  ],
-  config.exec("unzip", $, Process.DEFAULT_COMMAND_OPTIONS),
-  map(.stdout),
-  mapRej(always(DownloadFailure)),
-)(sanitizedUrl)
+formatHttpError = where {
+  BadResponse(response) =>
+    HttpStatusFailure(response.status)
+
+  ClientError(_) =>
+    NetworkFailure("request could not be completed")
+}
 
 
-renameInnerFolder :: Config -> String -> Wish DownloadFailure String
-renameInnerFolder = (config, sanitizedUrl) => pipe(
-  (url) => [
-    "-c",
-    `mv ${Constants.TEMPORARY_MODULES_PATH}${url}-tmp/* ${Constants.TEMPORARY_MODULES_PATH}${
-      url
-    }-tmp/${url}`,
-  ],
-  config.exec("sh", $, Process.DEFAULT_COMMAND_OPTIONS),
-  map(.stdout),
-  mapRej(always(DownloadFailure)),
-)(sanitizedUrl)
+formatDownloadFailure :: DownloadFailure -> String
+export formatDownloadFailure = where {
+  NetworkFailure(msg) =>
+    `network error: ${msg} — check your internet connection`
+
+  RedirectMissingLocation(url) =>
+    `redirect from '${url}' did not include a Location header`
+
+  HttpStatusFailure(404) =>
+    `package not found (HTTP 404) — verify the URL in your madlib.json`
+
+  HttpStatusFailure(status) =>
+    `server responded with HTTP ${show(status)}${status >= 500 ? " — the package server may be temporarily unavailable, try again later" : ""}`
+
+  ArchiveWriteFailure(path) =>
+    `could not write archive to '${path}'`
+
+  ArchiveExtractFailure(path) =>
+    `could not extract archive into '${path}' — try deleting .module_cache/ and retrying`
+
+  InvalidArchiveShape(msg) =>
+    `invalid archive shape: ${msg} — try deleting .module_cache/ and retrying`
+
+  CacheValidationFailure(path) =>
+    `invalid cache entry at '${path}' — try deleting .module_cache/ and retrying`
+
+  LocalCopyFailure(path) =>
+    `could not copy local package from '${path}' — verify the path exists and contains a madlib.json`
+}
 
 
-extractArchive :: Config -> String -> Wish DownloadFailure String
-extractArchive = (config, sanitizedUrl) => pipe(
-  unzipPkg(config),
-  andDo(renameInnerFolder(config, sanitizedUrl)),
-  andDo(copyPackageToTmpRoot(config, sanitizedUrl)),
-  andDo(cleanUp(config, sanitizedUrl)),
-)(sanitizedUrl)
+downloadErrorMessage :: Dependency -> DownloadFailure -> String
+export downloadErrorMessage = (dependency, failure) =>
+  `Package from '${dependency.url}' failed to be downloaded: ${formatDownloadFailure(failure)}`
+
+
+removeIfExists :: Config -> String -> Wish {} {}
+removeIfExists = (config, path) => pipe(
+  config.exists,
+  bichain(
+    always(of({})),
+    () => config.remove(path, { recursive: true }) |> discardError(always({}))
+  )
+)(path)
+
+
+validateCacheEntry :: Config -> Dependency -> Wish DownloadFailure {}
+validateCacheEntry = (config, dependency) => pipe(
+  cachePath,
+  madlibJsonPath,
+  config.exists,
+  map(always({})),
+  mapRej(always(CacheValidationFailure(cachePath(dependency))))
+)(dependency)
+
+
+validateGlobalCacheEntry :: Config -> Dependency -> Wish {} {}
+validateGlobalCacheEntry = (config, dependency) => pipe(
+  globalCachePath,
+  madlibJsonPath,
+  config.exists,
+  map(always({})),
+  mapRej(always({}))
+)(dependency)
+
+
+copyFromGlobalToProject :: Config -> Dependency -> Wish {} DownloadResult
+copyFromGlobalToProject = (config, dependency) =>
+  removeIfExists(config, cachePath(dependency))
+    |> mapRej(always(LocalCopyFailure(cachePath(dependency))))
+    |> chain((_) => config.copy(
+      globalCachePath(dependency),
+      cachePath(dependency),
+      { recursive: true, overwrite: true, exclude: [] }
+    ) |> mapRej(always(LocalCopyFailure(globalCachePath(dependency)))))
+    |> chain((_) => validateCacheEntry(config, dependency))
+    |> andDo(of(Downloaded(dependency, FromCache)))
+    |> discardError((failure) => DownloadError(dependency, failure))
+
+
+populateGlobalCache :: Config -> Dependency -> Wish {} {}
+populateGlobalCache = (config, dependency) =>
+  config.createDir(globalCacheBase({}), { recursive: true })
+    |> chain((_) => config.copy(
+      cachePath(dependency),
+      globalCachePath(dependency),
+      { recursive: true, overwrite: true, exclude: [] }
+    ))
+    |> discardError(always({}))
 
 
 getPackageData :: Config -> String -> Wish DownloadFailure ByteArray
 getPackageData = (config, url) => pipe(
   config.getBytes,
-  mapRej(always(DownloadFailure)),
+  mapRej(formatHttpError),
   chain(
-    (response) => where(response) {
-      { status: 302 } =>
-        pipe(
+    (response) => response.status == OK
+      ? of(response.body)
+      : response.status == 301 || response.status == 302 || response.status == 303 || response.status == 307 || response.status == 308
+        ? pipe(
           getHeader("Location"),
           where {
             [Header(_, redirectUrl), ..._] =>
               getPackageData(config, redirectUrl)
 
             _ =>
-              bad(DownloadFailure)
+              bad(RedirectMissingLocation(url))
           },
         )(response)
-
-      r =>
-        of(r.body)
-    },
-  ),
-  mapRej(always(DownloadFailure)),
+        : bad(HttpStatusFailure(response.status))
+  )
 )(url)
 
 
 saveArchive :: Config -> Dependency -> ByteArray -> Wish DownloadFailure {}
 saveArchive = (config, dependency, data) => pipe(
-  config.writeBytes(`${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}.zip`),
-  mapRej(always(DownloadFailure)),
+  config.writeBytes(archivePath(dependency)),
+  mapRej(always(ArchiveWriteFailure(archivePath(dependency))))
 )(data)
 
 
+promoteExtractedRoot :: Config -> Dependency -> String -> Wish DownloadFailure {}
+promoteExtractedRoot = (config, dependency, extractedRoot) =>
+  removeIfExists(config, cachePath(dependency))
+    |> mapRej(always(InvalidArchiveShape(`could not clean '${cachePath(dependency)}'`)))
+    |> chain((_) => config.rename(extractedRoot, cachePath(dependency)) |> mapRej(always(InvalidArchiveShape(`could not promote '${extractedRoot}' to '${cachePath(dependency)}'`))))
+
+
+normalizeExtractedArchive :: Config -> Dependency -> Wish DownloadFailure {}
+normalizeExtractedArchive = (config, dependency) => {
+  root = extractPath(dependency)
+  promoteSingleEntry = (entry) => {
+    child = FilePath.joinPath([root, entry])
+    return config.exists(madlibJsonPath(child))
+      |> bichain(always(of(false)), always(of(true)))
+      |> chain((hasManifest) => hasManifest
+        ? promoteExtractedRoot(config, dependency, child)
+        : bad(InvalidArchiveShape("expected madlib.json at archive root or in the single top-level directory")))
+  }
+
+  return config.exists(madlibJsonPath(root))
+    |> bichain(
+      always(
+        config.readDir(root)
+          |> mapRej(always(InvalidArchiveShape(`could not read extracted archive '${root}'`)))
+          |> chain(
+            where {
+              [entry] =>
+                promoteSingleEntry(entry)
+
+              _ =>
+                bad(InvalidArchiveShape("expected madlib.json at archive root or in a single top-level directory"))
+            }
+          )
+      ),
+      always(promoteExtractedRoot(config, dependency, root))
+    )
+}
+
+
+extractArchive :: Config -> Dependency -> Wish DownloadFailure {}
+extractArchive = (config, dependency) =>
+  removeIfExists(config, extractPath(dependency))
+    |> mapRej(always(ArchiveExtractFailure(extractPath(dependency))))
+    |> chain((_) => config.createDir(extractPath(dependency), { recursive: true }) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
+    |> chain((_) => config.unzip(archivePath(dependency), extractPath(dependency)) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
+    |> chain((_) => normalizeExtractedArchive(config, dependency))
+    |> chain((_) => validateCacheEntry(config, dependency))
+    |> chain((_) => removeIfExists(config, archivePath(dependency)) |> mapRej(always(ArchiveWriteFailure(archivePath(dependency)))))
+    |> chain((_) => removeIfExists(config, extractPath(dependency)) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
+
+
 downloadPackageWithHttp :: Config -> Dependency -> String -> Wish {} DownloadResult
-downloadPackageWithHttp = (config, dependency, url) => pipe(
-  getPackageData(config),
-  chain(saveArchive(config, dependency)),
-  andDo(extractArchive(config, dependency.sanitizedUrl)),
-  andDo(of(Downloaded(dependency))),
-  discardError(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`))),
-)(url)
+downloadPackageWithHttp = (config, dependency, url) =>
+  removeIfExists(config, archivePath(dependency))
+    |> mapRej(always(ArchiveWriteFailure(archivePath(dependency))))
+    |> chain((_) => removeIfExists(config, extractPath(dependency)) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
+    |> chain((_) => getPackageData(config, url))
+    |> chain(saveArchive(config, dependency))
+    |> andDo(extractArchive(config, dependency))
+    |> andDo(of(Downloaded(dependency, FromRemote)))
+    |> chainRej((failure) => removeIfExists(config, archivePath(dependency)) |> andDo(removeIfExists(config, extractPath(dependency))) |> andDo(of(DownloadError(dependency, failure))))
 
 
 copyLocalPackage :: Config -> Dependency -> String -> Wish {} DownloadResult
@@ -133,24 +253,25 @@ copyLocalPackage = (config, dependency, uri) => pipe(
   (path) => pipe(
     (p) => FilePath.joinPath([p, "madlib.json"]),
     config.exists,
-    chain((exists) => exists ? of(path) : bad({})),
+    mapRej(always(LocalCopyFailure(path))),
+    chain((exists) => exists ? of(path) : bad(LocalCopyFailure(path))),
   )(path),
   chain((path) =>
-    pipe(
-      (p) => [
-        "-c",
-        `cp -R ${p} ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}`,
-      ],
-      config.exec("sh", $, Process.DEFAULT_COMMAND_OPTIONS),
-      andDo(config.exec("sh", ["-c", `rm -r ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}/.git`], Process.DEFAULT_COMMAND_OPTIONS)),
-      andDo(config.exec("sh", ["-c", `rm -r ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}/madlib_modules`], Process.DEFAULT_COMMAND_OPTIONS)),
-      andDo(config.exec("sh", ["-c", `rm -r ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}/.module_cache`], Process.DEFAULT_COMMAND_OPTIONS)),
-      andDo(config.exec("sh", ["-c", `rm -r ${Constants.TEMPORARY_MODULES_PATH}${dependency.sanitizedUrl}/node_modules`], Process.DEFAULT_COMMAND_OPTIONS)),
-      mapRej(always({})),
-    )(path),
+    removeIfExists(config, cachePath(dependency))
+    |> mapRej(always(LocalCopyFailure(path)))
+    |> chain((_) => config.copy(
+      path,
+      cachePath(dependency),
+      {
+        recursive: true,
+        overwrite: true,
+        exclude: [".git", "madlib_modules", ".module_cache", "node_modules"],
+      },
+    ) |> mapRej(always(LocalCopyFailure(path))))
+    |> chain((_) => validateCacheEntry(config, dependency))
   ),
-  andDo(of(Downloaded(dependency))),
-  discardError(always(DownloadError(`Package from '${dependency.url}' failed to be downloaded`))),
+  andDo(of(Downloaded(dependency, FromRemote))),
+  discardError((failure) => DownloadError(dependency, failure))
 )(uri)
 
 
@@ -166,13 +287,24 @@ downloadPackage = (config, dependency) => pipe(
 
 
 downloadIfNotCached :: Config -> Dependency -> Wish {} DownloadResult
-export downloadIfNotCached = (config, dependency) => pipe(
-  (dep) => config.exists(`${Constants.TEMPORARY_MODULES_PATH}${dep.sanitizedUrl}`),
-  map(always(true)),
-  discardError(always(false)),
-  chain(
-    (alreadyDownloaded) => alreadyDownloaded
-      ? of(Downloaded(dependency))
-      : downloadPackage(config, dependency),
-  ),
-)(dependency)
+export downloadIfNotCached = (config, dependency) =>
+  validateCacheEntry(config, dependency)
+    |> bichain(
+      (_) => validateGlobalCacheEntry(config, dependency)
+        |> bichain(
+          (_) => removeIfExists(config, cachePath(dependency))
+            |> andDo(downloadPackage(config, dependency))
+            |> chain(
+              (result) => where(result) {
+                Downloaded(d, _) =>
+                  populateGlobalCache(config, d)
+                    |> andDo(of(Downloaded(d, FromRemote)))
+
+                DownloadError(_, _) =>
+                  of(result)
+              }
+            ),
+          (_) => copyFromGlobalToProject(config, dependency)
+        ),
+      always(of(Downloaded(dependency, FromCache)))
+    )

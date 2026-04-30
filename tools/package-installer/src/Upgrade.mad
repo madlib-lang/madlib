@@ -1,0 +1,355 @@
+import type { Wish } from "Wish"
+import type { Config } from "./Config"
+
+import { Wish } from "Wish"
+import { andDo } from "Monad"
+import { bichain, discardError, good, mapRej, parallelN } from "Wish"
+import type { Maybe } from "Maybe"
+import { Just, Nothing } from "Maybe"
+import { Left, Right } from "Either"
+import { always, identity } from "Function"
+import ByteArray from "ByteArray"
+import Dictionary from "Dictionary"
+import IO from "IO"
+import J from "Json/Parse"
+import List from "List"
+import String from "String"
+import Terminal from "Terminal"
+
+import MadlibLock from "./MadlibLock"
+import Constants from "./Constants"
+import Color from "./Color"
+
+
+alias GitHubInfo = { owner :: String, repo :: String, currentTag :: String }
+
+export alias UpgradeCandidate = {
+  packageName :: String,
+  currentVersion :: String,
+  currentUrl :: String,
+  newUrl :: String,
+  latestTag :: String,
+}
+
+
+// ---- URL helpers ------------------------------------------------------------
+
+parseGitHubTagUrl :: String -> Maybe GitHubInfo
+parseGitHubTagUrl = (url) => where(String.split("/", url)) {
+  ["https:", "", "github.com", owner, repo, "archive", "refs", "tags", tagZip] =>
+    Just({ owner, repo, currentTag: String.dropLast(4, tagZip) })
+
+  _ =>
+    Nothing
+}
+
+
+buildNewUrl :: GitHubInfo -> String -> String
+buildNewUrl = (info, tag) =>
+  `https://github.com/${info.owner}/${info.repo}/archive/refs/tags/${tag}.zip`
+
+
+// ---- GitHub API -------------------------------------------------------------
+
+checkLatestRelease :: Config -> GitHubInfo -> Wish {} (Maybe String)
+checkLatestRelease = (config, info) => pipe(
+  config.getBytes,
+  map(
+    (response) => pipe(
+      .body,
+      ByteArray.toString,
+      J.parse(J.field("tag_name", J.string)),
+      where {
+        Right(tag) =>
+          tag == info.currentTag ? Nothing : Just(tag)
+
+        Left(_) =>
+          Nothing
+      }
+    )(response)
+  ),
+  discardError(always(Nothing))
+)(`https://api.github.com/repos/${info.owner}/${info.repo}/releases/latest`)
+
+
+// ---- Candidate building -----------------------------------------------------
+
+buildCandidate :: Config -> String -> MadlibLock.LockEntry -> Wish {} (Maybe UpgradeCandidate)
+buildCandidate = (config, url, entry) => where(parseGitHubTagUrl(url)) {
+  Nothing =>
+    of(Nothing)
+
+  Just(info) =>
+    checkLatestRelease(config, info)
+      |> map(
+          (maybeTag) => where(maybeTag) {
+            Nothing =>
+              Nothing
+
+            Just(tag) =>
+              Just({
+                packageName: entry.name,
+                currentVersion: entry.version,
+                currentUrl: url,
+                newUrl: buildNewUrl(info, tag),
+                latestTag: tag,
+              })
+          }
+        )
+}
+
+
+buildCandidates :: Config -> MadlibLock.MadlibLock -> Wish {} (List UpgradeCandidate)
+buildCandidates = (config, lock) => pipe(
+  Dictionary.toList,
+  map(
+    (pair) => where(pair) {
+      #[url, entry] =>
+        buildCandidate(config, url, entry)
+    }
+  ),
+  parallelN(8),
+  map(List.mapMaybe(identity))
+)(lock.packages)
+
+
+// ---- Rendering helpers ------------------------------------------------------
+
+renderCandidateLine :: Integer -> Boolean -> Integer -> UpgradeCandidate -> {}
+renderCandidateLine = (cursorPos, isSelected, idx, cand) => {
+  arrow = idx == cursorPos ? Color.bold(" > ") : "   "
+  check = isSelected ? Color.green("[x]") : "[ ]"
+  IO.put(Terminal.clearLine({}))
+  IO.putLine(`${check}${arrow}${Color.bold(cand.packageName)}  ${Color.yellow(cand.currentVersion)} → ${Color.green(cand.latestTag)}`)
+}
+
+
+// ---- Interactive picker (TTY) -----------------------------------------------
+
+interactivePicker :: List UpgradeCandidate -> Wish {} (List UpgradeCandidate)
+interactivePicker = (candidates) => Wish((reject, resolve) => {
+  count = List.length(candidates)
+  cursor = 0
+  selected :: List Boolean
+  selected = List.repeat(true, count)
+  renderedLines = 0
+  handlerCell :: List Terminal.HandlerId
+  handlerCell = []
+
+  renderMenu = () => {
+    if (renderedLines > 0) {
+      IO.put(Terminal.moveCursorUp(renderedLines))
+    } else {
+      {}
+    }
+    IO.put(Terminal.clearLine({}))
+    IO.putLine(Color.bold("Select upgrades: ") ++ "↑↓ move  space toggle  enter confirm  q quit")
+    IO.put(Terminal.clearLine({}))
+    IO.putLine("")
+    indices = List.range(0, count)
+    List.forEach(
+      (triple) => where(triple) {
+        #[#[cand, isSelected], idx] =>
+          renderCandidateLine(cursor, isSelected, idx, cand)
+      },
+      List.zip(List.zip(candidates, selected), indices)
+    )
+    renderedLines := 2 + count
+  }
+
+  clearHandler = () => {
+    List.forEach(Terminal.clearKeyPressedHandler, handlerCell)
+    handlerCell := []
+  }
+
+  cleanup = () => {
+    Terminal.disableTTYRawMode({})
+    IO.put(Terminal.showCursor({}))
+  }
+
+  confirmSelection = () => {
+    clearHandler({})
+    cleanup({})
+    IO.putLine("")
+    selectedCandidates = List.mapMaybe(
+      (pair) => where(pair) {
+        #[cand, true] => Just(cand)
+        _ => Nothing
+      },
+      List.zip(candidates, selected)
+    )
+    resolve(selectedCandidates)
+  }
+
+  cancelSelection = () => {
+    clearHandler({})
+    cleanup({})
+    IO.putLine("")
+    reject({})
+  }
+
+  doMoveUp = () => {
+    cursor := cursor > 0 ? cursor - 1 : count - 1
+    renderMenu({})
+  }
+
+  doMoveDown = () => {
+    cursor := cursor < count - 1 ? cursor + 1 : 0
+    renderMenu({})
+  }
+
+  doToggle = () => {
+    selected := List.mapWithIndex(
+      (v, i) => i == cursor ? !v : v,
+      selected
+    )
+    renderMenu({})
+  }
+
+  handleKey = (key) => where(key) {
+    "\x1b[A" => doMoveUp({})
+    "\x1b[B" => doMoveDown({})
+    " " => doToggle({})
+    "\r" => confirmSelection({})
+    "q" => cancelSelection({})
+    "\x03" => cancelSelection({})
+    _ => {}
+  }
+
+  Terminal.enableTTYRawMode({})
+  IO.put(Terminal.hideCursor({}))
+  renderMenu({})
+  hid = Terminal.onKeyPressed(handleKey)
+  handlerCell := [hid]
+
+  return () => {
+    clearHandler({})
+    cleanup({})
+  }
+})
+
+
+// ---- Non-TTY fallback: auto-select all --------------------------------------
+
+selectAll :: List UpgradeCandidate -> Wish {} (List UpgradeCandidate)
+selectAll = (candidates) => {
+  IO.putLine("")
+  List.forEach(
+    (cand) => IO.putLine(
+      `  ${Color.bold(cand.packageName)}  ${Color.yellow(cand.currentVersion)} → ${Color.green(cand.latestTag)}`
+    ),
+    candidates
+  )
+  IO.putLine("")
+  return of(candidates)
+}
+
+
+// ---- Apply selected upgrades ------------------------------------------------
+
+applyUpgrades :: Config -> List UpgradeCandidate -> Wish {} {}
+applyUpgrades = (config, selected) => {
+  updateJson =
+    config.readFile("madlib.json")
+      |> mapRej(always({}))
+      |> map(
+          (content) => List.reduce(
+            (acc, cand) => pipe(String.split(cand.currentUrl), String.join(cand.newUrl))(acc),
+            content,
+            selected
+          )
+        )
+      |> chain(
+          (newContent) => config.writeFile("madlib.json", newContent)
+            |> mapRej(always({}))
+        )
+
+  updateLock =
+    MadlibLock.load(config, Constants.LOCK_FILE_PATH)
+      |> discardError(always(MadlibLock.empty))
+      |> map(
+          (lock) => ({
+            ...lock,
+            packages: List.reduce(
+              (dict, cand) => Dictionary.remove(cand.currentUrl, dict),
+              lock.packages,
+              selected
+            ),
+          })
+        )
+      |> chain(
+          (lock) => MadlibLock.write(config, Constants.LOCK_FILE_PATH, lock)
+            |> discardError(always({}))
+        )
+
+  return updateJson |> andDo(updateLock)
+}
+
+
+// ---- Orchestration ----------------------------------------------------------
+
+noUpgradesSelected :: {} -> Wish {} {}
+noUpgradesSelected = (_) => {
+  IO.putLine("No upgrades selected.")
+  return good({})
+}
+
+runApplyUpgrades :: Config -> List UpgradeCandidate -> Wish {} {}
+runApplyUpgrades = (config, selectedCandidates) => {
+  count = List.length(selectedCandidates)
+  IO.putLine(Color.bold("Applying upgrades..."))
+  return applyUpgrades(config, selectedCandidates)
+    |> chain(
+        (_) => {
+          IO.putLine(Color.green(`Applied ${show(count)} upgrade(s). Run madlib install to fetch the new packages.`))
+          IO.putLine("")
+          return good({})
+        }
+      )
+}
+
+applySelected :: Config -> List UpgradeCandidate -> Wish {} {}
+applySelected = (config, selectedCandidates) =>
+  List.isEmpty(selectedCandidates)
+    ? noUpgradesSelected({})
+    : runApplyUpgrades(config, selectedCandidates)
+
+
+noUpgradesAvailable :: {} -> Wish {} {}
+noUpgradesAvailable = (_) => {
+  IO.putLine(Color.green("All packages are up to date."))
+  IO.putLine("")
+  return good({})
+}
+
+runPicker :: Config -> List UpgradeCandidate -> Wish {} {}
+runPicker = (config, candidates) =>
+  (config.isTTY({}) ? interactivePicker(candidates) : selectAll(candidates))
+    |> chain(applySelected(config))
+    |> discardError(always({}))
+
+processCandidates :: Config -> List UpgradeCandidate -> Wish {} {}
+processCandidates = (config, candidates) =>
+  List.isEmpty(candidates)
+    ? noUpgradesAvailable({})
+    : runPicker(config, candidates)
+
+
+noLockFile :: {} -> Wish {} {}
+noLockFile = (_) => {
+  IO.putLine(Color.yellow("madlib.lock not found — run madlib install first"))
+  return good({})
+}
+
+render :: Config -> Wish {} {}
+export render = (config) => {
+  IO.putLine("")
+  IO.putLine("Checking for updates...")
+
+  return MadlibLock.load(config, Constants.LOCK_FILE_PATH)
+    |> bichain(
+        always(noLockFile({})),
+        (lock) => buildCandidates(config, lock)
+          |> chain(processCandidates(config))
+      )
+}

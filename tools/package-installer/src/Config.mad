@@ -3,8 +3,11 @@ import type { CommandResult, CommandOptions } from "Process"
 import type { Response, Error } from "Http"
 import IO from "IO"
 
-import File from "File"
+import Archive from "Archive"
+import Date from "Date"
 import Directory from "Directory"
+import File from "File"
+import Terminal from "Terminal"
 import { exec } from "Process"
 import { getBytes } from "Http"
 
@@ -14,9 +17,16 @@ export alias Config = {
   writeFile :: String -> String -> Wish IO.Error {},
   writeBytes :: String -> ByteArray -> Wish IO.Error {},
   readDir :: String -> Wish IO.Error (List String),
+  createDir :: String -> Directory.CreateOptions -> Wish IO.Error {},
+  remove :: String -> Directory.RemoveOptions -> Wish IO.Error {},
+  copy :: String -> String -> Directory.CopyOptions -> Wish IO.Error {},
+  rename :: String -> String -> Wish IO.Error {},
+  unzip :: String -> String -> Wish IO.Error {},
   exec :: String -> List String -> CommandOptions -> Wish CommandResult CommandResult,
   exists :: String -> Wish {} Boolean,
   getBytes :: String -> Wish (Error ByteArray) (Response ByteArray),
+  isTTY :: {} -> Boolean,
+  now :: {} -> Integer,
 }
 
 defaultConfig :: Config
@@ -25,7 +35,14 @@ export defaultConfig = {
   writeFile: File.write,
   writeBytes: File.writeBytes,
   readDir: Directory.read,
+  createDir: Directory.create,
+  remove: Directory.remove,
+  copy: Directory.copy,
+  rename: Directory.rename,
+  unzip: Archive.unzip,
   exec,
   exists: File.exists,
-  getBytes
+  getBytes,
+  isTTY: Terminal.isTTY,
+  now: pipe(Date.now, Date.getTimestamp),
 }

@@ -471,12 +471,16 @@ export parallelN = (concurrent, wishes) => Wish(
 
     setTimeout(
       () => {
-        forEach(
-          (i) => {
-            fork(i, wishesNotStarted)
-          },
-          range(0, concurrent < 0 ? amountOfWishesToProcess : concurrent),
-        )
+        if (amountOfWishesToProcess == 0) {
+          goodCB([])
+        } else {
+          forEach(
+            (i) => {
+              fork(i, wishesNotStarted)
+            },
+            range(0, concurrent < 0 ? amountOfWishesToProcess : concurrent),
+          )
+        }
       },
       0,
     )

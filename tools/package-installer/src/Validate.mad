@@ -28,7 +28,9 @@ export alias ValidationOutput = {
   context :: Context,
   shouldCopy :: Boolean,
   dependency :: Dependency,
-  madlibDotJson :: MadlibDotJson
+  madlibDotJson :: MadlibDotJson,
+  buildHash :: String,
+  versionHash :: String,
 }
 
 
@@ -125,8 +127,35 @@ instance Monad Validate {
 
 
 
+errorMessage :: Error -> String
+export errorMessage = where {
+  CopyToMadlibModulesFailed(msg) =>
+    msg
+
+  MadlibDotJsonCouldNotBeLoaded(msg) =>
+    msg
+}
+
+warningMessage :: Warning -> String
+export warningMessage = where {
+  OutOfRangeVersion =>
+    "Package version does not match constraints"
+
+  InvalidVersionHash =>
+    "Package version hash is corrupted"
+
+  InvalidBuildHash =>
+    "Build hash is corrupted"
+
+  VersionDotLockMissing =>
+    "version.lock file missing"
+
+  BuildHashCouldNotBeGenerated =>
+    "Build hash could not be generated"
+}
+
 printError :: a -> Error -> a
-export printError = (a, error) => where(IO.trace("err", error)) {
+export printError = (a, error) => where(error) {
   CopyToMadlibModulesFailed(msg) =>
     IO.putLineAndPass(`  - ${Color.red(msg)}`, a)
 
@@ -137,22 +166,22 @@ export printError = (a, error) => where(IO.trace("err", error)) {
 printWarning :: a -> Warning -> a
 export printWarning = (a, warning) => where(warning) {
   OutOfRangeVersion =>
-    IO.putLineAndPass(`  - ${Color.yellow("Package version does not match constraints")}`, a)
+    IO.putLineAndPass(`  - ${Color.yellow(warningMessage(warning))}`, a)
 
   InvalidVersionHash =>
-    IO.putLineAndPass(`  - ${Color.yellow("Package version hash is corrupted")}`, a)
+    IO.putLineAndPass(`  - ${Color.yellow(warningMessage(warning))}`, a)
 
   InvalidBuildHash =>
     IO.putLineAndPass(
-      `  - ${Color.yellow("Build hash is corrupted")}`,
+      `  - ${Color.yellow(warningMessage(warning))}`,
       a
     )
 
   VersionDotLockMissing =>
-    IO.putLineAndPass(`  - ${Color.yellow("version.lock file missing")}`, a)
+    IO.putLineAndPass(`  - ${Color.yellow(warningMessage(warning))}`, a)
 
-  _ =>
-    a
+  BuildHashCouldNotBeGenerated =>
+    IO.putLineAndPass(`  - ${Color.yellow(warningMessage(warning))}`, a)
 }
 
 
@@ -276,8 +305,8 @@ export unsafeGetValidationValue = where {
   ValidationError(_, _, Just(a)) =>
     a
 
-  _ =>
-    ???
+  ValidationError(_, error, Nothing) =>
+    unsafeGetValidationValue(ValidationError([], error, Nothing))
 }
 
 getValidationValue :: Validate a -> Maybe a
@@ -315,8 +344,8 @@ buildBadRangeResult = (madlibDotJson, versionInfo, versionRange) => NotValid(
 )
 
 
-buildValidationOutput :: Context -> MadlibDotJson -> Dependency -> Validate RangeOutput -> Validate ValidationOutput
-buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
+buildValidationOutput :: Context -> MadlibDotJson -> Dependency -> String -> String -> Validate RangeOutput -> Validate ValidationOutput
+buildValidationOutput = (context, madlibDotJson, dependency, buildHash, versionHash, rangeResult) => {
   rangeOutput = unsafeGetValidationValue(rangeResult)
 
   validationOutput = {
@@ -327,7 +356,9 @@ buildValidationOutput = (context, madlibDotJson, dependency, rangeResult) => {
     ),
     shouldCopy: rangeOutput.shouldCopy,
     dependency: { ...dependency, name: Just(madlibDotJson.name) },
-    madlibDotJson
+    madlibDotJson,
+    buildHash,
+    versionHash,
   }
 
   return setValidationResultValue(validationOutput, rangeResult)
@@ -346,7 +377,13 @@ validateVersion = (context, dependency, validationInput) => {
       buildGoodRangeResult(madlibDotJson, versionInfo),
       buildBadRangeResult(madlibDotJson, versionInfo)
     ),
-    buildValidationOutput(context, madlibDotJson, dependency)
+    buildValidationOutput(
+      context,
+      madlibDotJson,
+      dependency,
+      validationInput.computedBuildHash,
+      validationInput.computedVersionHash
+    )
   )(versionInfo.range)
 }
 

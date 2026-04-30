@@ -1,0 +1,15 @@
+import { assertEquals, test } from "Test"
+
+import Terminal from "./Terminal"
+
+
+
+test(
+  "terminal escape helpers",
+  () => do {
+    _ <- assertEquals(Terminal.clearLine({}), "\x1b[2K\r")
+    _ <- assertEquals(Terminal.moveCursorUp(3), "\x1b[3A")
+    _ <- assertEquals(Terminal.hideCursor({}), "\x1b[?25l")
+    return assertEquals(Terminal.showCursor({}), "\x1b[?25h")
+  },
+)

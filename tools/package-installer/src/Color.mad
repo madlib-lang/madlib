@@ -1,5 +1,6 @@
 import Process from "Process"
 import IO from "IO"
+import Terminal from "Terminal"
 import { Just, Nothing } from "Maybe"
 
 
@@ -20,4 +21,8 @@ export green = (text) => IS_COLOR_ENABLED
 
 export yellow = (text) => IS_COLOR_ENABLED
   ? IO.yellow(text)
+  : text
+
+export bold = (text) => IS_COLOR_ENABLED
+  ? Terminal.text.bold(text)
   : text

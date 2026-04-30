@@ -1,0 +1,115 @@
+import type { Wish } from "Wish"
+import type { Config } from "./Config"
+import type { LockEntry } from "./MadlibLock"
+
+import { discardError } from "Wish"
+import { fromMaybe, Just, Nothing } from "Maybe"
+import { always } from "Function"
+import IO from "IO"
+import List from "List"
+import String from "String"
+import Dictionary from "Dictionary"
+
+import MadlibDotJson from "./MadlibDotJson"
+import MadlibLock from "./MadlibLock"
+import Version from "./Version"
+import Constants from "./Constants"
+import Color from "./Color"
+
+
+// Find all paths (as lists of URLs) from rootUrls to any package named targetName.
+// Guard against cycles via currentPath.
+findPaths :: String -> Dictionary String LockEntry -> List String -> List String -> List (List String)
+findPaths = (targetName, packages, currentPath, urlsToSearch) => pipe(
+  map(
+    (url) => where(Dictionary.get(url, packages)) {
+      Nothing =>
+        []
+
+      Just(entry) =>
+        entry.name == targetName
+          ? [[...currentPath, url]]
+          : List.includes(url, currentPath)
+            ? []
+            : findPaths(targetName, packages, [...currentPath, url], entry.dependencies)
+    }
+  ),
+  List.flatten
+)(urlsToSearch)
+
+
+urlToLabel :: Dictionary String LockEntry -> String -> String
+urlToLabel = (packages, url) => where(Dictionary.get(url, packages)) {
+  Just(entry) =>
+    `${Color.bold(entry.name)}@${entry.version}`
+
+  Nothing =>
+    Color.yellow(url)
+}
+
+
+pathToString :: Dictionary String LockEntry -> String -> List String -> String
+pathToString = (packages, rootLabel, urlPath) => pipe(
+  map(urlToLabel(packages)),
+  (segments) => [rootLabel, ...segments],
+  String.join(" → ")
+)(urlPath)
+
+
+printNotFound :: String -> {}
+printNotFound = (targetName) =>
+  IO.putLine(`${Color.bold(targetName)} is not in the dependency tree`)
+
+
+printPaths :: String -> String -> List (List String) -> Dictionary String LockEntry -> {}
+printPaths = (targetName, rootLabel, paths, packages) => {
+  IO.putLine(`${Color.bold(targetName)} is a dependency of:`)
+  IO.putLine("")
+  List.forEach(
+    (path) => IO.putLine(`  ${pathToString(packages, rootLabel, path)}`),
+    paths
+  )
+}
+
+
+renderWhyOutput :: MadlibDotJson.MadlibDotJson -> MadlibLock.MadlibLock -> String -> {}
+renderWhyOutput = (mdj, lock, targetName) => {
+  rootLabel = `${Color.bold(mdj.name)}@${Version.showVersion(mdj.version)}`
+  rootDeps = mdj.dependencies |> fromMaybe([]) |> map(.url)
+  paths = findPaths(targetName, lock.packages, [], rootDeps)
+
+  IO.putLine("")
+  if (List.length(paths) == 0) {
+    printNotFound(targetName)
+  } else {
+    printPaths(targetName, rootLabel, paths, lock.packages)
+  }
+  IO.putLine("")
+}
+
+
+render :: Config -> String -> Wish {} {}
+export render = (config, targetName) => {
+  loadMdj = MadlibDotJson.load(config, "madlib.json")
+    |> map(Just)
+    |> discardError(always(Nothing))
+
+  loadLock = MadlibLock.load(config, Constants.LOCK_FILE_PATH)
+    |> map(Just)
+    |> discardError(always(Nothing))
+
+  return loadMdj |> chain(
+    (maybeMdj) => loadLock |> map(
+      (maybeLock) => where(#[maybeMdj, maybeLock]) {
+        #[Nothing, _] =>
+          IO.putLine(Color.red("madlib.json not found"))
+
+        #[Just(_), Nothing] =>
+          IO.putLine(Color.yellow("madlib.lock not found — run madlib install first"))
+
+        #[Just(mdj), Just(lock)] =>
+          renderWhyOutput(mdj, lock, targetName)
+      }
+    )
+  )
+}

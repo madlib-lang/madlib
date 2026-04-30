@@ -54,9 +54,16 @@ DEFAULT_CONFIG = {
   writeFile: (_, _) => good({}),
   writeBytes: (_, _) => good({}),
   readDir: always(good([])),
+  createDir: (_, _) => good({}),
+  remove: (_, _) => good({}),
+  copy: (_, _, _) => good({}),
+  rename: (_, _) => good({}),
+  unzip: (_, _) => good({}),
   exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
   exists: always(good(true)),
   getBytes: always(good({ headers: [], status: 200, body: ByteArray.empty() })),
+  isTTY: (_) => false,
+  now: (_) => 0,
 }
 
 

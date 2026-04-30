@@ -3,6 +3,38 @@ import String from "String"
 type HandlerId = HandlerId
 export type HandlerId
 
+/**
+ * Clears the current terminal line.
+ *
+ * @since 0.26.3
+ */
+clearLine :: {} -> String
+export clearLine = () => "\x1b[2K\r"
+
+/**
+ * Moves the terminal cursor up by the provided number of lines.
+ *
+ * @since 0.26.3
+ */
+moveCursorUp :: Integer -> String
+export moveCursorUp = (lines) => `\x1b[${show(lines)}A`
+
+/**
+ * Hides the terminal cursor.
+ *
+ * @since 0.26.3
+ */
+hideCursor :: {} -> String
+export hideCursor = () => "\x1b[?25l"
+
+/**
+ * Shows the terminal cursor.
+ *
+ * @since 0.26.3
+ */
+showCursor :: {} -> String
+export showCursor = () => "\x1b[?25h"
+
 END_COLOR = "\x1b[0m"
 
 colorize :: String -> String -> String
@@ -156,6 +188,9 @@ getTTYModeFFI = extern "madlib__stdio__getTTYMode"
 getTTYMode :: {} -> TTYMode
 export getTTYMode = () => getTTYModeFFI() == 0 ? NormalMode : RawMode
 
+isTTY :: {} -> Boolean
+export isTTY = extern "madlib__stdio__isTTY"
+
 
 onWindowResizedFFI :: ({} -> {}) -> HandlerId
 onWindowResizedFFI = extern "madlib__stdio__onWindowResized"
@@ -233,6 +268,11 @@ export getTTYMode = () => #- {
     return { __constructor: "RawMode", __a: 0 }
   }
   return { __constructor: "NormalMode", __a: 0 }
+} -#
+
+isTTY :: {} -> Boolean
+export isTTY = () => #- {
+  return !!(process.stdout && process.stdout.isTTY)
 } -#
 
 

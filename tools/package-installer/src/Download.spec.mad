@@ -1,0 +1,150 @@
+import { ErrorWithMessage, assertEquals, test } from "Test"
+import ByteArray from "ByteArray"
+import { OK } from "Http"
+import { Nothing } from "Maybe"
+import { always } from "Function"
+import String from "String"
+import { good, bad, mapRej } from "Wish"
+
+import type { Dependency } from "./Dependency"
+
+import { downloadIfNotCached } from "./Download"
+import { Downloaded, DownloadError, FromCache, FromRemote, formatDownloadFailure } from "./Download"
+import { AnyVersion } from "./Version"
+import { sanitizeUrl } from "./URL"
+
+
+
+dependency :: String -> Dependency
+dependency = (url) => ({
+  description: Nothing,
+  url,
+  sanitizedUrl: sanitizeUrl(url),
+  versionRange: AnyVersion,
+  name: Nothing,
+})
+
+resultLabel = where {
+  Downloaded(_, FromCache) =>
+    "cache"
+
+  Downloaded(_, FromRemote) =>
+    "remote"
+
+  DownloadError(_, failure) =>
+    formatDownloadFailure(failure)
+}
+
+localExists = (path) => String.startsWith(".module_cache/", path) ? good(true) : bad({})
+
+baseConfig = {
+  readFile: (_) => good(""),
+  writeFile: (_, _) => good({}),
+  writeBytes: (_, _) => good({}),
+  readDir: (_) => good([]),
+  createDir: (_, _) => good({}),
+  remove: (_, _) => good({}),
+  copy: (_, _, _) => good({}),
+  rename: (_, _) => good({}),
+  unzip: (_, _) => good({}),
+  exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
+  exists: localExists,
+  getBytes: (_) => good({ headers: [], status: OK, body: ByteArray.empty() }),
+  isTTY: (_) => false,
+  now: (_) => 0,
+}
+
+
+test("downloadIfNotCached - valid cache is reused", (_) => {
+  dep = dependency("http://repo.com/test-package.zip")
+
+  return downloadIfNotCached(baseConfig, dep)
+    |> map(resultLabel)
+    |> mapRej(always(ErrorWithMessage("download failed")))
+    |> chain(assertEquals($, "cache"))
+})
+
+
+test("downloadIfNotCached - zip with package at archive root is normalized", (_) => {
+  dep = dependency("http://repo.com/root-package.zip")
+  cacheReady = false
+
+  config = {
+    ...baseConfig,
+    exists: (path) => {
+      cacheManifest = `.module_cache/${dep.sanitizedUrl}/madlib.json`
+      extractedManifest = `.module_cache/${dep.sanitizedUrl}-tmp/madlib.json`
+
+      return path == cacheManifest
+        ? cacheReady ? good(true) : bad({})
+        : path == extractedManifest
+          ? good(true)
+          : localExists(path)
+    },
+    rename: (_, _) => {
+      cacheReady := true
+      return good({})
+    },
+  }
+
+  return downloadIfNotCached(config, dep)
+    |> map(resultLabel)
+    |> mapRej(always(ErrorWithMessage("download failed")))
+    |> chain(assertEquals($, "remote"))
+})
+
+
+test("downloadIfNotCached - zip with one top-level package directory is normalized", (_) => {
+  dep = dependency("http://repo.com/folder-package.zip")
+  cacheReady = false
+
+  config = {
+    ...baseConfig,
+    readDir: (_) => good(["pkg"]),
+    exists: (path) => {
+      cacheManifest = `.module_cache/${dep.sanitizedUrl}/madlib.json`
+      rootManifest = `.module_cache/${dep.sanitizedUrl}-tmp/madlib.json`
+      childManifest = `.module_cache/${dep.sanitizedUrl}-tmp/pkg/madlib.json`
+
+      return path == cacheManifest
+        ? cacheReady ? good(true) : bad({})
+        : path == rootManifest
+          ? bad({})
+          : path == childManifest
+            ? good(true)
+            : localExists(path)
+    },
+    rename: (_, _) => {
+      cacheReady := true
+      return good({})
+    },
+  }
+
+  return downloadIfNotCached(config, dep)
+    |> map(resultLabel)
+    |> mapRej(always(ErrorWithMessage("download failed")))
+    |> chain(assertEquals($, "remote"))
+})
+
+
+test("downloadIfNotCached - malformed zip shape returns diagnostic", (_) => {
+  dep = dependency("http://repo.com/bad-package.zip")
+
+  config = {
+    ...baseConfig,
+    readDir: (_) => good(["a", "b"]),
+    exists: (path) => {
+      cacheManifest = `.module_cache/${dep.sanitizedUrl}/madlib.json`
+      rootManifest = `.module_cache/${dep.sanitizedUrl}-tmp/madlib.json`
+
+      return path == cacheManifest || path == rootManifest
+        ? bad({})
+        : localExists(path)
+    },
+  }
+
+  return downloadIfNotCached(config, dep)
+    |> map(resultLabel)
+    |> mapRej(always(ErrorWithMessage("download failed")))
+    |> chain(assertEquals($, "invalid archive shape: expected madlib.json at archive root or in a single top-level directory — try deleting .module_cache/ and retrying"))
+})

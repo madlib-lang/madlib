@@ -5,6 +5,7 @@
 #include "string_header.hpp"
 #include <iostream>
 #include <cstring>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -243,6 +244,11 @@ madlib__list__Node_t *madlib__stdio__getWindowSize() {
   result = madlib__list__internal__push((void *) rows, result);
   result = madlib__list__internal__push((void *) cols, result);
   return result;
+}
+
+
+bool madlib__stdio__isTTY() {
+  return isatty(STDOUT) == 1;
 }
 
 

@@ -1,5 +1,7 @@
 import type { Maybe } from "Maybe"
 import type { Version, VersionRange } from "./Version"
+import type { LockEntry } from "./MadlibLock"
+import type { MadlibLock } from "./MadlibLock"
 
 import { Just, Nothing } from "Maybe"
 import Dict from "Dictionary"
@@ -7,6 +9,7 @@ import List from "List"
 import { identity, ifElse, not } from "Function"
 
 import { AnyVersion } from "./Version"
+import { sanitizeUrl } from "./URL"
 
 
 
@@ -17,14 +20,16 @@ export alias VersionInfo = {
 
 export alias Context = {
   versions :: Dictionary String VersionInfo,
-  installedPackages :: List String
+  installedPackages :: List String,
+  lockEntries :: Dictionary String LockEntry,
 }
 
 
 initialContext :: Context
 export initialContext = {
   versions: Dict.empty,
-  installedPackages: []
+  installedPackages: [],
+  lockEntries: Dict.empty,
 }
 
 
@@ -67,3 +72,19 @@ export hasPackageBeenInstalled = (sanitizedUrl, context) => pipe(
   .installedPackages,
   List.includes(sanitizedUrl)
 )(context)
+
+addLockEntry :: String -> LockEntry -> Context -> Context
+export addLockEntry = (url, entry, context) => ({
+  ...context,
+  lockEntries: Dict.insert(url, entry, context.lockEntries),
+})
+
+
+// Build a starting context from a previously-written lock file so that all
+// packages already on disk are treated as installed and skipped in this run.
+contextFromLock :: MadlibLock -> Context
+export contextFromLock = (lock) => ({
+  versions: Dict.empty,
+  installedPackages: pipe(Dict.keys, map(sanitizeUrl))(lock.packages),
+  lockEntries: lock.packages,
+})

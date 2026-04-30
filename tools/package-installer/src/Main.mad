@@ -1,13 +1,66 @@
 import { fulfill } from "Wish"
 import { identity } from "Function"
 import IO from "IO"
+import List from "List"
+import Process from "Process"
 
 import { run } from "./Run"
 import { defaultConfig } from "./Config"
+import Graph from "./Graph"
+import Upgrade from "./Upgrade"
+import Why from "./Why"
+
+
+type Mode
+  = Install
+  | ShowGraph
+  | ShowUpgrade
+  | ShowWhy(String)
+
+
+parseMode :: List String -> Mode
+parseMode = (args) => where(List.drop(1, args)) {
+  ["--graph", ..._] =>
+    ShowGraph
+
+  ["--upgrade", ..._] =>
+    ShowUpgrade
+
+  ["--why", pkg, ..._] =>
+    ShowWhy(pkg)
+
+  _ =>
+    Install
+}
+
 
 main = () => {
-  pipe(
-    run,
-    fulfill(IO.trace("error"), identity)
-  )(defaultConfig)
+  mode = parseMode(Process.Argv)
+  config = defaultConfig
+
+  where(mode) {
+    ShowUpgrade =>
+      pipe(
+        Upgrade.render,
+        fulfill(IO.trace("error"), identity)
+      )(config)
+
+    _ =>
+      pipe(
+        run,
+        chain(
+          (_) => where(mode) {
+            ShowGraph =>
+              Graph.render(config)
+
+            ShowWhy(pkg) =>
+              Why.render(config, pkg)
+
+            _ =>
+              of({})
+          }
+        ),
+        fulfill(IO.trace("error"), identity)
+      )(config)
+  }
 }

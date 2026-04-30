@@ -54,6 +54,11 @@ test("load     - success", (_) => {
     writeFile: (_, _) => good({}),
     writeBytes: (_, _) => good({}),
     readDir: always(good([])),
+    createDir: (_, _) => good({}),
+    remove: (_, _) => good({}),
+    copy: (_, _, _) => good({}),
+    rename: (_, _) => good({}),
+    unzip: (_, _) => good({}),
     exists: always(good(true)),
     exec: (_, _, _) => good({ exitCode: 0, stdout: "OK", stderr: "" }),
     getBytes: always(
@@ -62,7 +67,9 @@ test("load     - success", (_) => {
         headers: [],
         status: OK
       })
-    )
+    ),
+    isTTY: (_) => false,
+    now: (_) => 0,
   }
 
   expected = {

@@ -95,3 +95,67 @@ test(
     return assertEquals(content, "idempotent")
   },
 )
+
+
+test(
+  "copy - recursive copies nested files and honors excludes",
+  () => do {
+    root = testRootFor("copy-recursive")
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+    _ <- expectSuccess("failed to create source directory", Directory.create(`${root}/source/nested`, { recursive: true }))
+    _ <- expectSuccess("failed to create excluded directory", Directory.create(`${root}/source/node_modules`, { recursive: true }))
+    _ <- expectSuccess("failed to write source file", File.write(`${root}/source/nested/value.txt`, "copied"))
+    _ <- expectSuccess("failed to write excluded file", File.write(`${root}/source/node_modules/value.txt`, "excluded"))
+    _ <- expectSuccess(
+      "failed to copy directory",
+      Directory.copy(
+        `${root}/source`,
+        `${root}/destination`,
+        { recursive: true, overwrite: true, exclude: ["node_modules"] },
+      ),
+    )
+
+    copied <- expectSuccess("failed to read copied file", File.read(`${root}/destination/nested/value.txt`))
+    excludedMissing <- bichain(
+      always(good(true)),
+      always(good(false)),
+      File.exists(`${root}/destination/node_modules/value.txt`),
+    )
+    _ <- expectSuccess("failed to clean test directory", Directory.remove(root, { recursive: true }))
+    _ <- assertEquals(copied, "copied")
+    return assertEquals(excludedMissing, true)
+  },
+)
+
+
+test(
+  "rename - moves a directory",
+  () => do {
+    root = testRootFor("rename")
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+    _ <- expectSuccess("failed to create source directory", Directory.create(`${root}/source`, { recursive: true }))
+    _ <- expectSuccess("failed to write source file", File.write(`${root}/source/value.txt`, "renamed"))
+    _ <- expectSuccess("failed to rename directory", Directory.rename(`${root}/source`, `${root}/renamed`))
+    content <- expectSuccess("failed to read renamed file", File.read(`${root}/renamed/value.txt`))
+    _ <- expectSuccess("failed to clean test directory", Directory.remove(root, { recursive: true }))
+    return assertEquals(content, "renamed")
+  },
+)
+
+
+test(
+  "remove - recursive removes nested directories",
+  () => do {
+    root = testRootFor("remove-recursive")
+    _ <- expectSuccess("failed to clean test directory", runShell(`rm -rf ${root}`))
+    _ <- expectSuccess("failed to create nested directory", Directory.create(`${root}/nested`, { recursive: true }))
+    _ <- expectSuccess("failed to write nested file", File.write(`${root}/nested/value.txt`, "removed"))
+    _ <- expectSuccess("failed to remove directory", Directory.remove(root, { recursive: true }))
+    missing <- bichain(
+      always(good(true)),
+      always(good(false)),
+      File.exists(`${root}/nested/value.txt`),
+    )
+    return assertEquals(missing, true)
+  },
+)

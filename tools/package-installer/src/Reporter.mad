@@ -1,0 +1,206 @@
+import IO from "IO"
+import List from "List"
+import String from "String"
+import Terminal from "Terminal"
+import Color from "./Color"
+
+export alias Reporter = {
+  start :: {} -> {},
+  scheduled :: Integer -> {},
+  downloading :: String -> {},
+  cached :: String -> {},
+  downloaded :: String -> {},
+  validating :: String -> {},
+  installing :: String -> {},
+  installed :: String -> {},
+  skipped :: String -> {},
+  reportedWarning :: String -> {},
+  failed :: String -> {},
+  complete :: {} -> {},
+}
+
+
+line :: String -> {}
+line = IO.putLine
+
+colorCount :: (String -> String) -> Integer -> String
+colorCount = (colorFn, count) => count > 0 ? colorFn(show(count)) : show(count)
+
+statusLine :: Integer -> Integer -> Integer -> Integer -> Integer -> Integer -> Integer -> Integer -> String
+statusLine = (total, cached, downloaded, validating, installing, installed, warnings, failed) =>
+  `madlib packages  total ${show(total)}  cached ${show(cached)}  downloaded ${show(downloaded)}  validating ${show(validating)}  installing ${show(installing)}  installed ${colorCount(Color.green, installed)}  warnings ${colorCount(Color.yellow, warnings)}  failed ${colorCount(Color.red, failed)}`
+
+renderLive :: Boolean -> Integer -> String -> {}
+renderLive = (tty, renderedLines, message) => if (tty) do {
+  if (renderedLines > 0) {
+    IO.put(Terminal.moveCursorUp(renderedLines))
+  }
+  IO.put(Terminal.clearLine({}))
+  IO.putLine(message)
+} else {
+  {}
+}
+
+formatMessages :: (String -> String) -> List String -> String
+formatMessages = (colorFn, messages) => pipe(
+  List.reverse,
+  map((msg) => `  - ${colorFn(msg)}`),
+  String.unlines
+)(messages)
+
+
+make :: Boolean -> Integer -> Reporter
+export make = (tty, startedAt) => {
+  total = 0
+  cached = 0
+  downloaded = 0
+  validating = 0
+  installing = 0
+  installed = 0
+  skipped = 0
+  warnings = 0
+  failuresCount = 0
+  renderedLines = 0
+  failures :: List String
+  failures = []
+  warningMessages :: List String
+  warningMessages = []
+
+  render = () => {
+    renderLive(
+      tty,
+      renderedLines,
+      statusLine(total, cached, downloaded, validating, installing, installed, warnings, failuresCount)
+    )
+    renderedLines := tty ? 1 : 0
+  }
+
+  log = (message) => if (!tty) {
+    line(message)
+  } else {
+    {}
+  }
+
+  start = () => {
+    if (tty) {
+      IO.put(Terminal.hideCursor({}))
+    } else {
+      line("Installing dependencies ...")
+    }
+    render({})
+  }
+
+  scheduled = (amount) => {
+    total := total + amount
+    render({})
+  }
+
+  downloading = (name) => {
+    log(`downloading ${name}`)
+    render({})
+  }
+
+  markCached = (name) => {
+    cached := cached + 1
+    log(`cached ${name}`)
+    render({})
+  }
+
+  markDownloaded = (name) => {
+    downloaded := downloaded + 1
+    log(`downloaded ${name}`)
+    render({})
+  }
+
+  markValidating = (name) => {
+    validating := validating + 1
+    log(`validating ${name}`)
+    render({})
+  }
+
+  markInstalling = (name) => {
+    installing := installing + 1
+    log(`installing ${name}`)
+    render({})
+  }
+
+  markInstalled = (name) => {
+    installed := installed + 1
+    log(`installed ${name}`)
+    render({})
+  }
+
+  markSkipped = (name) => {
+    skipped := skipped + 1
+    log(`skipped ${name}`)
+    render({})
+  }
+
+  complete = () => do {
+      if (tty) {
+        IO.put(Terminal.showCursor({}))
+      }
+
+      elapsed = DateNow({}) - startedAt
+      line("")
+      line(Color.bold("Package install summary"))
+      line(`  total: ${show(total)}`)
+      line(`  installed: ${colorCount(Color.green, installed)}`)
+      line(`  reused from cache: ${show(cached)}`)
+      line(`  downloaded: ${show(downloaded)}`)
+      line(`  skipped: ${show(skipped)}`)
+      line(`  warnings: ${colorCount(Color.yellow, warnings)}`)
+      line(`  failures: ${colorCount(Color.red, failuresCount)}`)
+      line(`  elapsed: ${show(elapsed)}ms`)
+
+      if (warnings > 0) do {
+        line("")
+        line(Color.yellow("Warnings:"))
+        IO.put(formatMessages(Color.yellow, warningMessages))
+      }
+
+      if (failuresCount > 0) do {
+        line("")
+        line(Color.red("Failures:"))
+        IO.put(formatMessages(Color.red, failures))
+      }
+  }
+
+  reportedWarning = (message) => {
+    warnings := warnings + 1
+    warningMessages := [message, ...warningMessages]
+    log("warning: " ++ message)
+    render({})
+  }
+
+  failed = (message) => do {
+      failuresCount := failuresCount + 1
+      failures := [message, ...failures]
+      log("error: " ++ message)
+      render({})
+  }
+
+  return {
+    start: start,
+    scheduled: scheduled,
+    downloading: downloading,
+    cached: markCached,
+    downloaded: markDownloaded,
+    validating: markValidating,
+    installing: markInstalling,
+    installed: markInstalled,
+    skipped: markSkipped,
+    reportedWarning: reportedWarning,
+    failed: failed,
+    complete: complete,
+  }
+}
+
+
+#iftarget llvm
+DateNow :: {} -> Integer
+DateNow = extern "madlib__date__now"
+#elseif js
+DateNow :: {} -> Integer
+DateNow = extern "Date.now"
+#endif

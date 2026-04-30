@@ -1,0 +1,104 @@
+import type { Wish } from "Wish"
+import type { Value } from "Json/Value"
+import type { Config } from "./Config"
+
+import { bad, mapRej } from "Wish"
+import { Left, Right } from "Either"
+import J from "Json/Parse"
+import Print from "Json/Print"
+import Dictionary from "Dictionary"
+import { always } from "Function"
+import IO from "IO"
+
+
+export alias LockEntry = {
+  name :: String,
+  version :: String,
+  buildHash :: String,
+  versionHash :: String,
+  dependencies :: List String,
+}
+
+export alias MadlibLock = {
+  lockfileVersion :: Integer,
+  packages :: Dictionary String LockEntry,
+}
+
+
+empty :: MadlibLock
+export empty = {
+  lockfileVersion: 1,
+  packages: Dictionary.empty,
+}
+
+
+// ---- Parsing ----------------------------------------------------------------
+
+lockEntryParser :: J.Parser LockEntry
+lockEntryParser = J.chain5(
+  (name, version, buildHash, versionHash, dependencies) => J.succeed({
+    name,
+    version,
+    buildHash,
+    versionHash,
+    dependencies,
+  }),
+  J.field("name", J.string),
+  J.field("version", J.string),
+  J.field("buildHash", J.string),
+  J.field("versionHash", J.string),
+  J.field("dependencies", J.list(J.string))
+)
+
+parser :: J.Parser MadlibLock
+parser = J.map2(
+  (lockfileVersion, packages) => ({ lockfileVersion, packages }),
+  J.field("lockfileVersion", J.integer),
+  J.field("packages", J.dict(lockEntryParser))
+)
+
+
+// ---- Serialization ----------------------------------------------------------
+
+serializeLockEntry :: LockEntry -> Value
+serializeLockEntry = (entry) => Print.object([
+  #["name", Print.string(entry.name)],
+  #["version", Print.string(entry.version)],
+  #["buildHash", Print.string(entry.buildHash)],
+  #["versionHash", Print.string(entry.versionHash)],
+  #["dependencies", Print.list(Print.string, entry.dependencies)],
+])
+
+serialize :: MadlibLock -> String
+serialize = (lock) => pipe(
+  (l) => Print.object([
+    #["lockfileVersion", Print.integer(l.lockfileVersion)],
+    #["packages", Print.dict(serializeLockEntry, l.packages)],
+  ]),
+  Print.print(80)
+)(lock)
+
+
+// ---- File I/O ---------------------------------------------------------------
+
+load :: Config -> String -> Wish String MadlibLock
+export load = (config, path) => pipe(
+  config.readFile,
+  mapRej(always(`Lock file not found at '${path}'`)),
+  chain(
+    pipe(
+      J.parse(parser),
+      where {
+        Left(_) =>
+          bad(`Lock file at '${path}' is malformed`)
+
+        Right(lock) =>
+          of(lock)
+      }
+    )
+  )
+)(path)
+
+
+write :: Config -> String -> MadlibLock -> Wish IO.Error {}
+export write = (config, path, lock) => config.writeFile(path, serialize(lock))

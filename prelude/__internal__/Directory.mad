@@ -19,9 +19,21 @@ export PermissionDenied
 export UnknownError
 
 export alias CreateOptions = { recursive :: Boolean }
+export alias RemoveOptions = { recursive :: Boolean }
+export alias CopyOptions = {
+  recursive :: Boolean,
+  overwrite :: Boolean,
+  exclude :: List String
+}
 
 DEFAULT_CREATE_OPTIONS :: CreateOptions
 export DEFAULT_CREATE_OPTIONS = { recursive: false }
+
+DEFAULT_REMOVE_OPTIONS :: RemoveOptions
+export DEFAULT_REMOVE_OPTIONS = { recursive: false }
+
+DEFAULT_COPY_OPTIONS :: CopyOptions
+export DEFAULT_COPY_OPTIONS = { recursive: false, overwrite: false, exclude: [] }
 
 
 #iftarget js
@@ -111,11 +123,97 @@ export create = (path, options) => Wish((bad, good) => #- {
   }
 } -#)
 
+/**
+ * Removes a file or directory.
+ *
+ * @since 0.26.3
+ */
+remove :: String -> RemoveOptions -> Wish Error {}
+export remove = (path, options) => Wish((bad, good) => #- {
+  let canceled = false;
+
+  prelude_directory_fs.rm(path, { recursive: options.recursive, force: false }, (err) => {
+    if (canceled) {
+      return;
+    }
+
+    err
+      ? bad({ __constructor: "UnknownError", __a: 0 })
+      : good(null)
+  });
+
+  return () => {
+    canceled = true;
+  }
+} -#)
+
+/**
+ * Copies a file or directory.
+ *
+ * @since 0.26.3
+ */
+copy :: String -> String -> CopyOptions -> Wish Error {}
+export copy = (sourcePath, destinationPath, options) => Wish((bad, good) => #- {
+  let canceled = false;
+  const excluded = new Set(__listToJSArray__(options.exclude));
+
+  prelude_directory_fs.cp(
+    sourcePath,
+    destinationPath,
+    {
+      recursive: options.recursive,
+      force: options.overwrite,
+      errorOnExist: !options.overwrite,
+      filter: (src) => !excluded.has(src.split(/[\\/]/).filter(Boolean).pop() || "")
+    },
+    (err) => {
+      if (canceled) {
+        return;
+      }
+
+      err
+        ? bad({ __constructor: "UnknownError", __a: 0 })
+        : good(null)
+    }
+  );
+
+  return () => {
+    canceled = true;
+  }
+} -#)
+
+/**
+ * Renames or moves a file or directory.
+ *
+ * @since 0.26.3
+ */
+rename :: String -> String -> Wish Error {}
+export rename = (sourcePath, destinationPath) => Wish((bad, good) => #- {
+  let canceled = false;
+
+  prelude_directory_fs.rename(sourcePath, destinationPath, (err) => {
+    if (canceled) {
+      return;
+    }
+
+    err
+      ? bad({ __constructor: "UnknownError", __a: 0 })
+      : good(null)
+  });
+
+  return () => {
+    canceled = true;
+  }
+} -#)
+
 #elseif llvm
 
 type Handle = Handle(Handle)
 
 type CreateHandle = CreateHandle(CreateHandle)
+type RemoveHandle = RemoveHandle(RemoveHandle)
+type CopyHandle = CopyHandle(CopyHandle)
+type RenameHandle = RenameHandle(RenameHandle)
 
 cancelRead :: Handle -> {}
 cancelRead = extern "madlib__directory__cancelRead"
@@ -128,6 +226,24 @@ cancelCreate = extern "madlib__directory__cancelCreate"
 
 createFFI :: String -> Boolean -> (Integer -> {} -> {}) -> CreateHandle
 createFFI = extern "madlib__directory__create"
+
+cancelRemove :: RemoveHandle -> {}
+cancelRemove = extern "madlib__directory__cancelRemove"
+
+removeFFI :: String -> Boolean -> (Integer -> {} -> {}) -> RemoveHandle
+removeFFI = extern "madlib__directory__remove"
+
+cancelCopy :: CopyHandle -> {}
+cancelCopy = extern "madlib__directory__cancelCopy"
+
+copyFFI :: String -> String -> Boolean -> Boolean -> List String -> (Integer -> {} -> {}) -> CopyHandle
+copyFFI = extern "madlib__directory__copy"
+
+cancelRename :: RenameHandle -> {}
+cancelRename = extern "madlib__directory__cancelRename"
+
+renameFFI :: String -> String -> (Integer -> {} -> {}) -> RenameHandle
+renameFFI = extern "madlib__directory__rename"
 
 /**
  * Reads a directory and returns a Wish containing the file entries
@@ -182,6 +298,87 @@ export create = (path, options) => Wish((bad, good) => {
   return () => {
     if (!done) {
       cancelCreate(id)
+    }
+  }
+})
+
+/**
+ * Removes a file or directory.
+ *
+ * @since 0.26.3
+ */
+remove :: String -> RemoveOptions -> Wish Error {}
+export remove = (path, options) => Wish((bad, good) => {
+  done = false
+  id = removeFFI(
+    path,
+    options.recursive,
+    (libuvError, _) => {
+      done := true
+      libuvError != 0
+        ? bad(Error.fromLibuvError(libuvError))
+        : good({})
+    },
+  )
+
+  return () => {
+    if (!done) {
+      cancelRemove(id)
+    }
+  }
+})
+
+/**
+ * Copies a file or directory.
+ *
+ * @since 0.26.3
+ */
+copy :: String -> String -> CopyOptions -> Wish Error {}
+export copy = (sourcePath, destinationPath, options) => Wish((bad, good) => {
+  done = false
+  id = copyFFI(
+    sourcePath,
+    destinationPath,
+    options.recursive,
+    options.overwrite,
+    options.exclude,
+    (libuvError, _) => {
+      done := true
+      libuvError != 0
+        ? bad(Error.fromLibuvError(libuvError))
+        : good({})
+    },
+  )
+
+  return () => {
+    if (!done) {
+      cancelCopy(id)
+    }
+  }
+})
+
+/**
+ * Renames or moves a file or directory.
+ *
+ * @since 0.26.3
+ */
+rename :: String -> String -> Wish Error {}
+export rename = (sourcePath, destinationPath) => Wish((bad, good) => {
+  done = false
+  id = renameFFI(
+    sourcePath,
+    destinationPath,
+    (libuvError, _) => {
+      done := true
+      libuvError != 0
+        ? bad(Error.fromLibuvError(libuvError))
+        : good({})
+    },
+  )
+
+  return () => {
+    if (!done) {
+      cancelRename(id)
     }
   }
 })

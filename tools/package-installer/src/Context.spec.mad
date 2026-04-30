@@ -19,7 +19,8 @@ CONTEXT_POPULATED = {
       range: VersionRange(Version(0, 0, 1), Version(1, 0, 0))
     }
   }},
-  installedPackages: ["http___url_from_maddoc"]
+  installedPackages: ["http___url_from_maddoc"],
+  lockEntries: Dict.empty
 }
 
 test("findByName               - found", (_) => {
@@ -48,7 +49,8 @@ test("updateEntry", (_) => {
         range: VersionRange(Version(0, 0, 1), Version(1, 0, 0))
       }
     }},
-    installedPackages: []
+    installedPackages: [],
+    lockEntries: Dict.empty
   }
   actual = updateEntry(
     "MadDoc",
@@ -64,7 +66,8 @@ test("updateEntry", (_) => {
 test("addInstalledPackage      - first time", (_) => {
   expected = {
     versions: Dict.empty,
-    installedPackages: ["http___url_from_maddoc"]
+    installedPackages: ["http___url_from_maddoc"],
+    lockEntries: Dict.empty
   }
   actual = addInstalledPackage("http___url_from_maddoc", initialContext)
   return assertEquals(actual, expected)
@@ -73,11 +76,13 @@ test("addInstalledPackage      - first time", (_) => {
 test("addInstalledPackage      - second time", (_) => {
   context = {
     versions: Dict.empty,
-    installedPackages: ["http___url_from_maddoc"]
+    installedPackages: ["http___url_from_maddoc"],
+    lockEntries: Dict.empty
   }
   expected = {
     versions: Dict.empty,
-    installedPackages: ["http___url_from_maddoc"]
+    installedPackages: ["http___url_from_maddoc"],
+    lockEntries: Dict.empty
   }
   actual = addInstalledPackage("http___url_from_maddoc", context)
   return assertEquals(actual, expected)
@@ -91,7 +96,8 @@ test("hasPackageBeenInstalled  - not installed", (_) => {
 test("hasPackageBeenInstalled  - installed", (_) => {
   context = {
     versions: Dict.empty,
-    installedPackages: ["http___url_from_maddoc"]
+    installedPackages: ["http___url_from_maddoc"],
+    lockEntries: Dict.empty
   }
   actual = hasPackageBeenInstalled("http___url_from_maddoc", context)
   return assertEquals(actual, true)

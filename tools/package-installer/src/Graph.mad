@@ -1,0 +1,129 @@
+import type { Wish } from "Wish"
+import type { Config } from "./Config"
+import type { LockEntry } from "./MadlibLock"
+
+import { discardError } from "Wish"
+import { fromMaybe, Just, Nothing } from "Maybe"
+import { always } from "Function"
+import IO from "IO"
+import List from "List"
+import String from "String"
+import Dictionary from "Dictionary"
+
+import MadlibDotJson from "./MadlibDotJson"
+import MadlibLock from "./MadlibLock"
+import Version from "./Version"
+import Constants from "./Constants"
+import Color from "./Color"
+
+
+buildLinePrefix :: List Boolean -> Boolean -> String
+buildLinePrefix = (ancestorIsLast, isLast) => {
+  ancestorPart = pipe(
+    map((wasLast) => wasLast ? "    " : "│   "),
+    String.join("")
+  )(ancestorIsLast)
+  connector = isLast ? "└── " : "├── "
+  return `${ancestorPart}${connector}`
+}
+
+
+// Prepend a node line to the result of its children, preserving the visited set.
+prependLine :: String -> #[List String, Dictionary String Boolean] -> #[List String, Dictionary String Boolean]
+prependLine = (line, childResult) => where(childResult) {
+  #[childLines, vis] =>
+    #[[line, ...childLines], vis]
+}
+
+
+// Combine two consecutive results, threading the visited set from left to right.
+combineResults :: #[List String, Dictionary String Boolean] -> #[List String, Dictionary String Boolean] -> #[List String, Dictionary String Boolean]
+combineResults = (left, right) => where(#[left, right]) {
+  #[#[lLines, _], #[rLines, rVis]] =>
+    #[lLines ++ rLines, rVis]
+}
+
+
+// renderNode and renderChildren are mutually recursive top-level functions.
+// They return #[lines, updatedVisited] — no mutation, no { } in where arms.
+
+renderNode :: Dictionary String LockEntry -> Dictionary String Boolean -> List Boolean -> String -> Boolean -> #[List String, Dictionary String Boolean]
+renderNode = (packages, visited, ancestorIsLast, url, isLast) =>
+  where(Dictionary.get(url, packages)) {
+    Nothing =>
+      #[[`${buildLinePrefix(ancestorIsLast, isLast)}${Color.yellow(url)}  (unresolved)`], visited]
+
+    Just(entry) =>
+      where(Dictionary.get(url, visited)) {
+        Just(_) =>
+          #[[`${buildLinePrefix(ancestorIsLast, isLast)}${Color.bold(entry.name)}@${entry.version}  ${Color.yellow("(deduped)")}`], visited]
+
+        Nothing =>
+          prependLine(
+            `${buildLinePrefix(ancestorIsLast, isLast)}${Color.bold(entry.name)}@${entry.version}`,
+            renderChildren(
+              packages,
+              Dictionary.insert(url, true, visited),
+              [...ancestorIsLast, isLast],
+              entry.dependencies
+            )
+          )
+      }
+  }
+
+
+renderChildren :: Dictionary String LockEntry -> Dictionary String Boolean -> List Boolean -> List String -> #[List String, Dictionary String Boolean]
+renderChildren = (packages, visited, ancestorIsLast, deps) => where(deps) {
+  [] =>
+    #[[], visited]
+
+  [url] =>
+    renderNode(packages, visited, ancestorIsLast, url, true)
+
+  [url, ...rest] =>
+    where(renderNode(packages, visited, ancestorIsLast, url, false)) {
+      #[urlLines, newVis] =>
+        combineResults(#[urlLines, newVis], renderChildren(packages, newVis, ancestorIsLast, rest))
+    }
+}
+
+
+// Top-level rendering with IO — function body block is valid here.
+renderGraphOutput :: MadlibDotJson.MadlibDotJson -> MadlibLock.MadlibLock -> {}
+renderGraphOutput = (mdj, lock) => {
+  rootDeps = mdj.dependencies |> fromMaybe([]) |> map(.url)
+  renderResult = renderChildren(lock.packages, Dictionary.empty, [], rootDeps)
+  IO.putLine("")
+  IO.putLine(`${Color.bold(mdj.name)}@${Version.showVersion(mdj.version)}`)
+  List.forEach(IO.putLine, where(renderResult) { #[lines, _] => lines })
+  IO.putLine("")
+}
+
+
+render :: Config -> Wish {} {}
+export render = (config) => {
+  loadMdj = MadlibDotJson.load(config, "madlib.json")
+    |> map(Just)
+    |> discardError(always(Nothing))
+
+  loadLock = MadlibLock.load(config, Constants.LOCK_FILE_PATH)
+    |> map(Just)
+    |> discardError(always(Nothing))
+
+  return loadMdj |> chain(
+    (maybeMdj) => loadLock |> map(
+      (maybeLock) => where(#[maybeMdj, maybeLock]) {
+        #[Nothing, _] =>
+          IO.putLine(Color.red("madlib.json not found — cannot render graph"))
+
+        #[Just(mdj), Nothing] =>
+          IO.putLine(
+            `${Color.bold(mdj.name)}@${Version.showVersion(mdj.version)}  ${Color.yellow("(run madlib install first)")}`
+          )
+
+        #[Just(mdj), Just(lock)] =>
+          renderGraphOutput(mdj, lock)
+      }
+    )
+  )
+}

@@ -1,4 +1,3 @@
-import type { Maybe } from "Maybe"
 import { assertEquals, test } from "Test"
 import { Nothing, Just } from "Maybe"
 
@@ -15,7 +14,6 @@ import {
   OutOfRangeVersion,
   MadlibDotJsonCouldNotBeLoaded
 } from "./Validate"
-import type { Validate } from "./Validate"
 
 
 
@@ -58,7 +56,9 @@ test("validate", (_) => {
     ),
     shouldCopy: true,
     dependency: { ...DEFAULT_DEPENDENCY, name: Just("package-name") },
-    madlibDotJson: MADLIBDOTJSON
+    madlibDotJson: MADLIBDOTJSON,
+    buildHash: "",
+    versionHash: "",
   })
 
   actual = validate(initialContext, DEFAULT_DEPENDENCY, DEFAULT_INPUT)
@@ -85,7 +85,9 @@ test("validate - fail", (_) => {
         name: Just("package-name"),
         versionRange: FromVersion(Version(2, 0, 0))
       },
-      madlibDotJson: MADLIBDOTJSON
+      madlibDotJson: MADLIBDOTJSON,
+      buildHash: "",
+      versionHash: "",
     }
   )
 

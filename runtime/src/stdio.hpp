@@ -37,6 +37,7 @@ uv_tty_t *madlib__stdio__onKeyPressed(PAP_t *callback);
 uv_signal_t *madlib__stdio__onWindowResized(PAP_t *callback);
 void madlib__stdio__clearWindowResizeHandler(uv_signal_t *handle);
 madlib__list__Node_t *madlib__stdio__getWindowSize();
+bool madlib__stdio__isTTY();
 
 void madlib__stdio__cancelGet(StdinData_t *handle);
 
