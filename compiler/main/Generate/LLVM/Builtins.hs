@@ -34,6 +34,7 @@ module Generate.LLVM.Builtins
   , areStringsNotEqual
   , strConcat
   , strConcatN
+  , madlistArenaExpandHp
     -- * Allocation helpers
   , isAtomicType
   , chooseMalloc
@@ -177,6 +178,11 @@ strConcat =
 strConcatN :: Operand
 strConcatN =
   Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType stringType [Type.i64] True) (mkName "madlib__string__concat_n"))
+
+
+madlistArenaExpandHp :: Operand
+madlistArenaExpandHp =
+  Operand.ConstantOperand (Constant.GlobalReference (Type.ptr $ Type.FunctionType Type.void [Type.i64] False) (mkName "madlib__list__arena__expand_hp"))
 
 
 -- Allocation helpers

@@ -84,6 +84,11 @@ madlib__list__Node_t *madlib__list__map(PAP_t *pap,
   return head;
 }
 
+void madlib__list__arena__expand_hp(int64_t nodeCount) {
+  if (nodeCount < 1024) return;
+  GC_expand_hp((size_t)nodeCount * sizeof(madlib__list__Node_t) * 2);
+}
+
 void *madlib__list__reduce(PAP_t *pap, void *initialValue,
                            madlib__list__Node_t *list) {
   while (list->value != NULL) {

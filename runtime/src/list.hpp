@@ -41,6 +41,8 @@ madlib__list__Node_t *madlib__list__internal__append(void *item, madlib__list__N
 
 madlib__list__Node_t *madlib__list__internal__copy(madlib__list__Node_t *list);
 
+void madlib__list__arena__expand_hp(int64_t nodeCount);
+
 #ifdef __cplusplus
 }
 #endif

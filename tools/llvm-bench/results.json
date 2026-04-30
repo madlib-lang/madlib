@@ -1,0 +1,86 @@
+{
+  "capturedAt": "2026-04-29T13:09:40.963Z",
+  "backend": "llvm",
+  "results": [
+    {
+      "name": "BenchWhere",
+      "iters": 5,
+      "warmup": 1,
+      "samples": [
+        55.146416,
+        54.692417,
+        56.34425,
+        54.740875,
+        53.671791
+      ],
+      "medianMs": 54.740875,
+      "minMs": 53.671791,
+      "maxMs": 56.34425,
+      "checksum": "a92c1fbb68d2bfc3"
+    },
+    {
+      "name": "BenchADT",
+      "iters": 5,
+      "warmup": 1,
+      "samples": [
+        908.264875,
+        905.316625,
+        881.640792,
+        875.609084,
+        874.599667
+      ],
+      "medianMs": 881.640792,
+      "minMs": 874.599667,
+      "maxMs": 908.264875,
+      "checksum": "47ffcd689b779270"
+    },
+    {
+      "name": "BenchTuple",
+      "iters": 5,
+      "warmup": 1,
+      "samples": [
+        549.977833,
+        546.421792,
+        553.122625,
+        552.005916,
+        542.380833
+      ],
+      "medianMs": 549.977833,
+      "minMs": 542.380833,
+      "maxMs": 553.122625,
+      "checksum": "77ff698fda278023"
+    },
+    {
+      "name": "BenchSaturatedCalls",
+      "iters": 5,
+      "warmup": 1,
+      "samples": [
+        7.734917,
+        7.60575,
+        7.787084,
+        7.842042,
+        8.022167
+      ],
+      "medianMs": 7.787084,
+      "minMs": 7.60575,
+      "maxMs": 8.022167,
+      "checksum": "f8ed1e242e44f6fa"
+    },
+    {
+      "name": "BenchListOps",
+      "iters": 5,
+      "warmup": 1,
+      "samples": [
+        101.67025,
+        103.345292,
+        100.587833,
+        100.042625,
+        100.385208
+      ],
+      "medianMs": 100.587833,
+      "minMs": 100.042625,
+      "maxMs": 103.345292,
+      "checksum": "3c34ece3eea6ab0f"
+    }
+  ]
+}

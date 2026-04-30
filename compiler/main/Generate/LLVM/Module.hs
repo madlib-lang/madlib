@@ -359,6 +359,7 @@ generateLLVMModule ctx safeBitcastFn env isMain currentModulePaths initialSymbol
   extern (AST.mkName "madlib__list__singleton")                      [Type.ptr Type.i8] listType
   extern (AST.mkName "madlib__list__internal__push")                 [Type.ptr Type.i8, listType] listType
   extern (AST.mkName "madlib__list__concat")                         [listType, listType] listType
+  extern (AST.mkName "madlib__list__arena__expand_hp")               [Type.i64] Type.void
 
   extern (AST.mkName "GC_malloc")              [Type.i64] (Type.ptr Type.i8)
   extern (AST.mkName "GC_malloc_atomic")       [Type.i64] (Type.ptr Type.i8)

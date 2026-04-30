@@ -76,7 +76,8 @@ static void reserveHeapForListCount(int64_t count, size_t multiplier) {
   const uint64_t physicalMemory = getPhysicalMemoryBytes();
   const size_t listBytes = saturatingMul((size_t)count, sizeof(madlib__list__Node_t));
   const size_t requestedReserve = saturatingMul(listBytes, multiplier);
-  const size_t maxReserve = clampSize((size_t)(physicalMemory / 2ULL), 512ULL * 1024ULL * 1024ULL, 8ULL * 1024ULL * 1024ULL * 1024ULL);
+  const size_t safeOsBuffer = 2ULL * 1024ULL * 1024ULL * 1024ULL;
+  const size_t maxReserve = physicalMemory > safeOsBuffer ? physicalMemory - safeOsBuffer : 512ULL * 1024ULL * 1024ULL;
   const size_t reserveBytes = clampSize(requestedReserve, 256ULL * 1024ULL * 1024ULL, maxReserve);
 
   GC_expand_hp(reserveBytes);

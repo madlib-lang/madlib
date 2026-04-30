@@ -1,0 +1,37 @@
+{
+  "iters": 5,
+  "warmup": 1,
+  "benchmarks": [
+    {
+      "name": "BenchADT",
+      "source": "fixtures/BenchADT.mad",
+      "entry": "fixtures/BenchADT.mjs"
+    },
+    {
+      "name": "BenchSaturatedCalls",
+      "source": "fixtures/BenchSaturatedCalls.mad",
+      "entry": "fixtures/BenchSaturatedCalls.mjs"
+    },
+    {
+      "name": "BenchListOps",
+      "source": "fixtures/BenchListOps.mad",
+      "entry": "fixtures/BenchListOps.mjs"
+    },
+    {
+      "name": "BenchWhere",
+      "source": "fixtures/BenchWhere.mad",
+      "entry": "fixtures/BenchWhere.mjs"
+    },
+    {
+      "name": "test-bench-string",
+      "source": "fixtures/test-bench-string.mad",
+      "entry": "fixtures/test-bench-string.mjs"
+    },
+    {
+      "name": "test-bench-parse",
+      "source": "fixtures/test-bench-parse.mad",
+      "entry": "fixtures/test-bench-parse.mjs",
+      "iters": 20
+    }
+  ]
+}
