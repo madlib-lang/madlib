@@ -527,6 +527,23 @@ pJSBlockExpr = do
   return $ Src.Source area target (Src.JSExp content)
 
 
+-- | Build a block expression from the list returned by pMultiExpBody.
+-- pMultiExpBody always appends a sentinel LUnit (emptyArea) when it reaches
+-- the closing '}'. Strip that sentinel so the last real statement is the
+-- block's value, then wrap multiple statements in Do.
+buildBlockExp :: Area -> Area -> Src.SourceTarget -> [Src.Exp] -> Src.Exp
+buildBlockExp blockStart blockEnd target exprs =
+  let stripped = case exprs of
+        [] -> []
+        _  -> case last exprs of
+          Src.Source a _ Src.LUnit | a == emptyArea -> init exprs
+          _                                          -> exprs
+  in case stripped of
+    []  -> Src.Source (mergeAreas blockStart blockEnd) target Src.LUnit
+    [e] -> e
+    _   -> Src.Source (mergeAreas blockStart blockEnd) target (Src.Do stripped)
+
+
 -- If/Else --
 
 pIf' :: Parser Src.Exp
@@ -543,12 +560,12 @@ pIf' = do
     mt <- peekTok
     case mt of
       Just TkLeftCurly -> do
-        pLeftCurly
+        (blockStart, _) <- withArea (void pLeftCurly)
         rets
-        body <- pExp
+        exprs <- pMultiExpBody
         rets
-        void $ withArea (void pRightCurly)
-        return body
+        (blockEnd, _) <- withArea (void pRightCurly)
+        return $ buildBlockExp blockStart blockEnd target exprs
       _ -> pExp
   elseResult <- optional $ try $ do
     maybeRet
@@ -557,12 +574,12 @@ pIf' = do
     mt2 <- peekTok
     case mt2 of
       Just TkLeftCurly -> do
-        pLeftCurly
+        (blockStart, _) <- withArea (void pLeftCurly)
         rets
-        body <- pExp
+        exprs <- pMultiExpBody
         rets
         (endArea, _) <- withArea (void pRightCurly)
-        return (body, endArea)
+        return (buildBlockExp blockStart endArea target exprs, endArea)
       _ -> do
         body <- pExp
         return (body, Src.getArea body)
@@ -589,12 +606,12 @@ pWhile' = do
     mt <- peekTok
     case mt of
       Just TkLeftCurly -> do
-        pLeftCurly
+        (blockStart, _) <- withArea (void pLeftCurly)
         rets
-        e <- pExp
+        exprs <- pMultiExpBody
         rets
         (endArea, _) <- withArea (void pRightCurly)
-        return (e, endArea)
+        return (buildBlockExp blockStart endArea target exprs, endArea)
       _ -> do
         e <- pExp
         return (e, Src.getArea e)

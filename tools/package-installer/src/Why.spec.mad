@@ -1,0 +1,120 @@
+import { assertEquals, test } from "Test"
+import Dictionary from "Dictionary"
+import List from "List"
+
+import { findPaths } from "./Why"
+
+
+// Fixture: bar and baz are direct deps; both depend on foo (single path each).
+PACKAGES = Dictionary.fromList([
+  #["https://example.com/foo.zip", {
+    name: "foo",
+    version: "1.0.0",
+    buildHash: "aaa",
+    versionHash: "bbb",
+    dependencies: [],
+  }],
+  #["https://example.com/bar.zip", {
+    name: "bar",
+    version: "1.0.0",
+    buildHash: "ccc",
+    versionHash: "ddd",
+    dependencies: ["https://example.com/foo.zip"],
+  }],
+  #["https://example.com/baz.zip", {
+    name: "baz",
+    version: "1.0.0",
+    buildHash: "eee",
+    versionHash: "fff",
+    dependencies: ["https://example.com/foo.zip"],
+  }],
+])
+
+ROOT_DEPS = [
+  "https://example.com/bar.zip",
+  "https://example.com/baz.zip",
+]
+
+
+test("findPaths - direct root dependency is found", (_) => {
+  paths = findPaths("bar", PACKAGES, [], ROOT_DEPS)
+  return assertEquals(paths, [["https://example.com/bar.zip"]])
+})
+
+test("findPaths - transitive dependency found via single intermediary", (_) => {
+  barOnlyRoot = ["https://example.com/bar.zip"]
+  paths = findPaths("foo", PACKAGES, [], barOnlyRoot)
+  return assertEquals(paths, [["https://example.com/bar.zip", "https://example.com/foo.zip"]])
+})
+
+test("findPaths - multiple paths when several roots lead to the same package", (_) => {
+  paths = findPaths("foo", PACKAGES, [], ROOT_DEPS)
+  return assertEquals(List.length(paths), 2)
+})
+
+test("findPaths - returns empty list for a package not in the graph", (_) => {
+  paths = findPaths("nonexistent", PACKAGES, [], ROOT_DEPS)
+  return assertEquals(paths, [])
+})
+
+test("findPaths - returns empty list when root deps list is empty", (_) => {
+  paths = findPaths("foo", PACKAGES, [], [])
+  return assertEquals(paths, [])
+})
+
+test("findPaths - deep transitive path (3 hops)", (_) => {
+  deep = Dictionary.fromList([
+    #["https://example.com/a.zip", {
+      name: "a",
+      version: "1.0.0",
+      buildHash: "",
+      versionHash: "",
+      dependencies: ["https://example.com/b.zip"],
+    }],
+    #["https://example.com/b.zip", {
+      name: "b",
+      version: "1.0.0",
+      buildHash: "",
+      versionHash: "",
+      dependencies: ["https://example.com/c.zip"],
+    }],
+    #["https://example.com/c.zip", {
+      name: "c",
+      version: "1.0.0",
+      buildHash: "",
+      versionHash: "",
+      dependencies: [],
+    }],
+  ])
+  paths = findPaths("c", deep, [], ["https://example.com/a.zip"])
+  return assertEquals(
+    paths,
+    [["https://example.com/a.zip", "https://example.com/b.zip", "https://example.com/c.zip"]]
+  )
+})
+
+test("findPaths - cycle guard prevents infinite loop", (_) => {
+  cyclePackages = Dictionary.fromList([
+    #["https://example.com/x.zip", {
+      name: "x",
+      version: "1.0.0",
+      buildHash: "",
+      versionHash: "",
+      dependencies: ["https://example.com/y.zip"],
+    }],
+    #["https://example.com/y.zip", {
+      name: "y",
+      version: "1.0.0",
+      buildHash: "",
+      versionHash: "",
+      dependencies: ["https://example.com/x.zip"],
+    }],
+  ])
+  paths = findPaths("nonexistent", cyclePackages, [], ["https://example.com/x.zip"])
+  return assertEquals(paths, [])
+})
+
+test("findPaths - URL missing from packages dictionary is silently skipped", (_) => {
+  paths = findPaths("foo", PACKAGES, [], ["https://example.com/does-not-exist.zip"])
+  return assertEquals(paths, [])
+})

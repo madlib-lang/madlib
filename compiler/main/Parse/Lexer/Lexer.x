@@ -40,7 +40,7 @@ tokens :-
 
 -- Skip whitespace (no newlines)
 <0,interp> [\ \t\f\v\r]+ ;
-<0,interp> "//" [^\n]*   ;
+<0> "//" [^\n]*   ;
 -- Block comments: use a start code so they can span multiple lines
 <0,interp>     "/*"  { beginBlockComment }
 <blkcmt>        "*/" { endBlockComment }

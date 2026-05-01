@@ -35,7 +35,7 @@ export alias UpgradeCandidate = {
 // ---- URL helpers ------------------------------------------------------------
 
 parseGitHubTagUrl :: String -> Maybe GitHubInfo
-parseGitHubTagUrl = (url) => where(String.split("/", url)) {
+export parseGitHubTagUrl = (url) => where(String.split("/", url)) {
   ["https:", "", "github.com", owner, repo, "archive", "refs", "tags", tagZip] =>
     Just({ owner, repo, currentTag: String.dropLast(4, tagZip) })
 
@@ -45,7 +45,7 @@ parseGitHubTagUrl = (url) => where(String.split("/", url)) {
 
 
 buildNewUrl :: GitHubInfo -> String -> String
-buildNewUrl = (info, tag) =>
+export buildNewUrl = (info, tag) =>
   `https://github.com/${info.owner}/${info.repo}/archive/refs/tags/${tag}.zip`
 
 
@@ -248,7 +248,7 @@ selectAll = (candidates) => {
 // ---- Apply selected upgrades ------------------------------------------------
 
 applyUpgrades :: Config -> List UpgradeCandidate -> Wish {} {}
-applyUpgrades = (config, selected) => {
+export applyUpgrades = (config, selected) => {
   updateJson =
     config.readFile("madlib.json")
       |> mapRej(always({}))

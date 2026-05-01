@@ -1,0 +1,189 @@
+import { ErrorWithMessage, assertEquals, test } from "Test"
+import { good, bad, mapRej } from "Wish"
+import { always } from "Function"
+import { Just, Nothing } from "Maybe"
+import ByteArray from "ByteArray"
+import Dictionary from "Dictionary"
+import IO from "IO"
+import String from "String"
+import { OK } from "Http"
+
+import type { Config } from "./Config"
+import { parseGitHubTagUrl, buildNewUrl, applyUpgrades } from "./Upgrade"
+
+
+baseConfig :: Config
+baseConfig = {
+  readFile: (_) => good(""),
+  writeFile: (_, _) => good({}),
+  writeBytes: (_, _) => good({}),
+  readDir: (_) => good([]),
+  createDir: (_, _) => good({}),
+  remove: (_, _) => good({}),
+  copy: (_, _, _) => good({}),
+  rename: (_, _) => good({}),
+  unzip: (_, _) => good({}),
+  exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
+  exists: (_) => good(true),
+  getBytes: (_) => good({ headers: [], status: OK, body: ByteArray.empty() }),
+  getBytesWithProgress: (_, _) => good({ headers: [], status: OK, body: ByteArray.empty() }),
+  isTTY: (_) => false,
+  now: (_) => 0,
+}
+
+
+// ---- parseGitHubTagUrl -------------------------------------------------------
+
+GITHUB_TAG_URL = "https://github.com/owner/repo/archive/refs/tags/v1.2.3.zip"
+
+test("parseGitHubTagUrl - valid GitHub archive tag URL returns Just", (_) =>
+  assertEquals(
+    parseGitHubTagUrl(GITHUB_TAG_URL),
+    Just({ owner: "owner", repo: "repo", currentTag: "v1.2.3" })
+  )
+)
+
+test("parseGitHubTagUrl - non-GitHub URL returns Nothing", (_) =>
+  assertEquals(parseGitHubTagUrl("https://example.com/pkg.zip"), Nothing)
+)
+
+test("parseGitHubTagUrl - GitHub URL without tags path returns Nothing", (_) =>
+  assertEquals(parseGitHubTagUrl("https://github.com/owner/repo"), Nothing)
+)
+
+test("parseGitHubTagUrl - GitHub URL missing refs/tags segment returns Nothing", (_) =>
+  assertEquals(
+    parseGitHubTagUrl("https://github.com/owner/repo/archive/v1.2.3.zip"),
+    Nothing
+  )
+)
+
+
+// ---- buildNewUrl ------------------------------------------------------------
+
+test("buildNewUrl - constructs correct GitHub archive URL for given tag", (_) => {
+  expected = "https://github.com/myorg/mypkg/archive/refs/tags/v2.0.0.zip"
+  return assertEquals(buildNewUrl({ owner: "myorg", repo: "mypkg", currentTag: "v1.0.0" }, "v2.0.0"), expected)
+})
+
+test("buildNewUrl - preserves owner and repo in new URL", (_) => {
+  url = buildNewUrl({ owner: "acme", repo: "widget", currentTag: "1.0.0" }, "2.0.0")
+  return assertEquals(String.contains("acme/widget", url), true)
+})
+
+
+// ---- applyUpgrades ----------------------------------------------------------
+
+CURRENT_URL = "https://github.com/example/pkg/archive/refs/tags/v1.0.0.zip"
+NEW_URL = "https://github.com/example/pkg/archive/refs/tags/v2.0.0.zip"
+
+UPGRADE_CANDIDATE = {
+  packageName: "pkg",
+  currentVersion: "1.0.0",
+  currentUrl: CURRENT_URL,
+  newUrl: NEW_URL,
+  latestTag: "v2.0.0",
+}
+
+MADLIB_JSON_WITH_DEP = "{ \"dependencies\": [{ \"url\": \"" ++ CURRENT_URL ++ "\" }] }"
+
+LOCK_JSON = "{\"lockfileVersion\":1,\"packages\":{\"" ++ CURRENT_URL ++ "\":{\"name\":\"pkg\",\"version\":\"1.0.0\",\"buildHash\":\"aaa\",\"versionHash\":\"bbb\",\"dependencies\":[]}}}"
+
+
+test("applyUpgrades - replaces old URL with new URL in madlib.json", (_) => {
+  written = ""
+  config = {
+    ...baseConfig,
+    readFile: (path) => path == "madlib.json" ? good(MADLIB_JSON_WITH_DEP) : good("{}"),
+    writeFile: (path, content) => {
+      if (path == "madlib.json") {
+        written := content
+        return {}
+      }
+      return good({})
+    },
+  }
+  return applyUpgrades(config, [UPGRADE_CANDIDATE])
+    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
+    |> chain((_) => assertEquals(String.contains(NEW_URL, written), true))
+})
+
+test("applyUpgrades - old URL is no longer present in updated madlib.json", (_) => {
+  written = ""
+  config = {
+    ...baseConfig,
+    readFile: (path) => path == "madlib.json" ? good(MADLIB_JSON_WITH_DEP) : good("{}"),
+    writeFile: (path, content) => {
+      if (path == "madlib.json") {
+        written := content
+        return {}
+      }
+      return good({})
+    },
+  }
+  return applyUpgrades(config, [UPGRADE_CANDIDATE])
+    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
+    |> chain((_) => assertEquals(String.contains(CURRENT_URL, written), false))
+})
+
+test("applyUpgrades - removes old URL key from lock file", (_) => {
+  writtenLock = ""
+  config = {
+    ...baseConfig,
+    readFile: (path) => path == "./madlib.lock" ? good(LOCK_JSON) : good(MADLIB_JSON_WITH_DEP),
+    writeFile: (path, content) => {
+      if (path == "./madlib.lock") {
+        writtenLock := content
+        return {}
+      }
+      return good({})
+    },
+  }
+  return applyUpgrades(config, [UPGRADE_CANDIDATE])
+    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
+    |> chain((_) => assertEquals(String.contains(CURRENT_URL, writtenLock), false))
+})
+
+test("applyUpgrades - empty selection leaves madlib.json content unchanged", (_) => {
+  written = ""
+  config = {
+    ...baseConfig,
+    readFile: (_) => good(MADLIB_JSON_WITH_DEP),
+    writeFile: (path, content) => {
+      if (path == "madlib.json") {
+        written := content
+        return {}
+      }
+      return good({})
+    },
+  }
+  return applyUpgrades(config, [])
+    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
+    |> chain((_) => assertEquals(written, MADLIB_JSON_WITH_DEP))
+})
+
+test("applyUpgrades - multiple candidates all get applied", (_) => {
+  written = ""
+  candidate2 = {
+    packageName: "other",
+    currentVersion: "0.1.0",
+    currentUrl: "https://github.com/example/other/archive/refs/tags/v0.1.0.zip",
+    newUrl: "https://github.com/example/other/archive/refs/tags/v0.2.0.zip",
+    latestTag: "v0.2.0",
+  }
+  jsonWithTwo = MADLIB_JSON_WITH_DEP ++ ", { \"url\": \"https://github.com/example/other/archive/refs/tags/v0.1.0.zip\" }"
+  config = {
+    ...baseConfig,
+    readFile: (path) => path == "madlib.json" ? good(jsonWithTwo) : good("{}"),
+    writeFile: (path, content) => {
+      if (path == "madlib.json") {
+        written := content
+        return {}
+      }
+      return good({})
+    },
+  }
+  return applyUpgrades(config, [UPGRADE_CANDIDATE, candidate2])
+    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
+    |> chain((_) => assertEquals(String.contains(NEW_URL, written) && String.contains("v0.2.0", written), true))
+})

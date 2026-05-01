@@ -2,14 +2,14 @@ module Run.PackageInstaller where
 
 import           GHC.IO                         ( )
 import           System.FilePath                ( takeDirectory )
-import           System.Process
+import           System.Process                 ( callProcess )
 import           Control.Exception              ( try )
 import           System.Environment             ( getEnv )
 import           System.Environment.Executable  ( getExecutablePath )
 
 
-runPackageInstaller :: IO ()
-runPackageInstaller = do
+runPackageInstaller :: Bool -> Bool -> Maybe String -> IO ()
+runPackageInstaller graph upgrade mWhy = do
   executablePath              <- getExecutablePath
   packageInstallerPath        <- try $ getEnv "PKG_INSTALLER_PATH"
   packageInstallerPathChecked <- case (packageInstallerPath :: Either IOError String) of
@@ -17,4 +17,8 @@ runPackageInstaller = do
       return $ takeDirectory executablePath <> "/package-installer.js"
     Right p -> return p
 
-  callCommand $ "node \"" <> packageInstallerPathChecked <> "\""
+  let extraArgs = concat [ if graph   then ["--graph"]   else []
+                         , if upgrade then ["--upgrade"] else []
+                         , maybe [] (\pkg -> ["--why", pkg]) mWhy
+                         ]
+  callProcess "node" (packageInstallerPathChecked : extraArgs)

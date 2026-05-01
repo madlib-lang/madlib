@@ -42,7 +42,7 @@ addPackage url maybeName = do
       MadlibDotJson.save madlibDotJsonPath updatedJson
       putStrLn $ "Added package '" <> name <> "' from " <> url
       putStrLn "Running install..."
-      runPackageInstaller
+      runPackageInstaller False False Nothing
 
 
 removePackage :: String -> IO ()

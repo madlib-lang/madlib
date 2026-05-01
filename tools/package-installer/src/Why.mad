@@ -20,7 +20,7 @@ import Color from "./Color"
 // Find all paths (as lists of URLs) from rootUrls to any package named targetName.
 // Guard against cycles via currentPath.
 findPaths :: String -> Dictionary String LockEntry -> List String -> List String -> List (List String)
-findPaths = (targetName, packages, currentPath, urlsToSearch) => pipe(
+export findPaths = (targetName, packages, currentPath, urlsToSearch) => pipe(
   map(
     (url) => where(Dictionary.get(url, packages)) {
       Nothing =>
