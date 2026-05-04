@@ -13,7 +13,8 @@ import type { Maybe } from "Maybe"
 import { Just, Nothing, fromMaybe } from "Maybe"
 import { always } from "Function"
 import { Wish } from "Wish"
-import { discardError } from "Wish"
+import { andDo } from "Monad"
+import { discardError, mapRej } from "Wish"
 
 import Color from "./Color"
 import ConflictAnalysis from "./ConflictAnalysis"
@@ -146,29 +147,48 @@ copyChosenVersion = (config, conflictedName, vc) => where(vc) {
       `${Constants.MADLIB_MODULES_PATH}${conflictedName}/`,
       { recursive: true }
     )
+      |> discardError(always({}))
       |> chain((_) => config.copy(
         `${Constants.TEMPORARY_MODULES_PATH}${sanitizeUrl(url)}/`,
         `${Constants.MADLIB_MODULES_PATH}${conflictedName}/`,
         { recursive: true, overwrite: true, exclude: [] }
-      ))
-      |> discardError(always({}))
+      ) |> mapRej(always({})))
 }
 
 
-resolveConflict :: Config -> String -> Dictionary String LockEntry -> List String -> String -> Wish {} {}
+// Prune `packages` to remove all entries for `conflictedName` except `chosenUrl`.
+pruneConflict :: String -> String -> Dictionary String LockEntry -> Dictionary String LockEntry
+export pruneConflict = (conflictedName, chosenUrl, packages) =>
+  Dictionary.reduce(
+    (url, entry, acc) =>
+      entry.name == conflictedName && url != chosenUrl
+        ? acc
+        : Dictionary.insert(url, entry, acc),
+    Dictionary.empty,
+    packages
+  )
+
+
+resolveConflict :: Config -> String -> Dictionary String LockEntry -> List String -> String -> Wish {} (Dictionary String LockEntry)
 resolveConflict = (config, rootLabel, packages, rootDeps, conflictedName) =>
   pickForConflict(rootLabel, packages, rootDeps, conflictedName)
-    |> chain(copyChosenVersion(config, conflictedName))
-    |> discardError(always({}))
+    |> chain(
+        (chosenVc) => where(chosenVc) {
+          VersionChoice(_, chosenUrl) =>
+            copyChosenVersion(config, conflictedName, chosenVc)
+              |> andDo(of(pruneConflict(conflictedName, chosenUrl, packages)))
+        }
+      )
+    |> discardError(always(packages))
 
 
-runInteractive :: Config -> String -> Dictionary String LockEntry -> List String -> List String -> Wish {} {}
+runInteractive :: Config -> String -> Dictionary String LockEntry -> List String -> List String -> Wish {} (Dictionary String LockEntry)
 runInteractive = (config, rootLabel, packages, rootDeps, conflictedNames) => {
   IO.putLine("")
   IO.putLine(Color.bold(Color.yellow("Dependency conflicts detected — interactive resolution:")))
   return List.reduceM(
-    (_, name) => resolveConflict(config, rootLabel, packages, rootDeps, name),
-    {},
+    (dict, name) => resolveConflict(config, rootLabel, dict, rootDeps, name),
+    packages,
     conflictedNames
   )
 }
@@ -181,7 +201,10 @@ staticReport = (madlibDotJson, lock) => {
 }
 
 
-run :: Config -> MadlibDotJson -> MadlibLock -> Wish {} {}
+// Returns the lock file updated to reflect the user's resolution choices.
+// On TTY: interactive picker, chosen URLs kept, others pruned from the lock.
+// Non-TTY: static report printed, original lock returned unchanged.
+run :: Config -> MadlibDotJson -> MadlibLock -> Wish {} MadlibLock
 export run = (config, madlibDotJson, lock) => {
   isTTY = config.isTTY({})
   rootLabel = `${Color.bold(madlibDotJson.name)}@${Version.showVersion(madlibDotJson.version)}`
@@ -191,5 +214,6 @@ export run = (config, madlibDotJson, lock) => {
 
   return isTTY && List.length(conflictedNames) > 0
     ? runInteractive(config, rootLabel, packages, rootDeps, conflictedNames)
-    : staticReport(madlibDotJson, lock)
+        |> map((updatedPackages) => ({ ...lock, packages: updatedPackages }))
+    : staticReport(madlibDotJson, lock) |> andDo(of(lock))
 }

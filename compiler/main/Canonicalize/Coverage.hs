@@ -392,13 +392,17 @@ mkExternCoverageBindings outerArea innerArea scheme fnName externName isExported
                     rawRef
                     (zip paramRefs (replicate (max 0 (arity - 1)) False ++ [True]))
   tracker <- makeFunctionTracker astPath line fnName
-  let innerBody = Canonical emptyArea (Do [tracker, applied])
-      wrapped   = foldr (\p acc -> Canonical emptyArea (Abs p [acc])) innerBody paramPats
-      rhs       = if null params then Canonical emptyArea (Do [tracker, rawRef]) else wrapped
-      rawExtern = Canonical innerArea (Extern scheme rawName externName)
-      wrapperRhs = if isExported
-                   then Canonical outerArea (Export (Canonical innerArea (Assignment fnName rhs)))
-                   else Canonical outerArea (Assignment fnName rhs)
+  let innerBody    = Canonical emptyArea (Do [tracker, applied])
+      wrapped      = foldr (\p acc -> Canonical emptyArea (Abs p [acc])) innerBody paramPats
+      rhs          = if null params then Canonical emptyArea (Do [tracker, rawRef]) else wrapped
+      rawExtern    = Canonical innerArea (Extern scheme rawName externName)
+      assignNode   = Canonical innerArea (Assignment fnName rhs)
+      -- Wrap in TypedExp so the scope checker sees this as a typed declaration,
+      -- preserving the forward-reference semantics of the original extern annotation.
+      -- The synthetic TRSingle typing is display-only; scheme drives type inference.
+      synthTyping  = Canonical emptyArea (TRSingle fnName)
+      innerNode    = if isExported then Canonical outerArea (Export assignNode) else assignNode
+      wrapperRhs   = Canonical outerArea (TypedExp innerNode synthTyping scheme)
   return [rawExtern, wrapperRhs]
 
 

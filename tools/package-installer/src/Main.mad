@@ -39,6 +39,12 @@ main = () => {
   config = defaultConfig
 
   where(mode) {
+    ShowGraph =>
+      pipe(
+        Graph.render,
+        fulfill(IO.trace("error"), identity)
+      )(config)
+
     ShowUpgrade =>
       pipe(
         Upgrade.render,
@@ -50,9 +56,6 @@ main = () => {
         run,
         chain(
           (_) => where(mode) {
-            ShowGraph =>
-              Graph.render(config)
-
             ShowWhy(pkg) =>
               Why.render(config, pkg)
 

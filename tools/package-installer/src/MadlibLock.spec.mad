@@ -4,12 +4,13 @@ import { always } from "Function"
 import { Just } from "Maybe"
 import ByteArray from "ByteArray"
 import Dictionary from "Dictionary"
+import List from "List"
 import IO from "IO"
 import String from "String"
 import { OK } from "Http"
 
 import type { Config } from "./Config"
-import { load, write, empty } from "./MadlibLock"
+import { load, write, empty, normalizeDependencies } from "./MadlibLock"
 
 
 VALID_LOCK_JSON = `{
@@ -158,6 +159,74 @@ test("round-trip: write then load recovers lockfileVersion", (_) => {
     |> mapRej(always(ErrorWithMessage("round-trip failed")))
     |> chain((reloaded) => assertEquals(reloaded.lockfileVersion, 1))
 })
+
+// ---- normalizeDependencies ---------------------------------------------------
+
+STUDY_V1_URL = "https://example.com/study-v1.zip"
+STUDY_V3_URL = "https://example.com/study-v3.zip"
+DYE_URL      = "https://example.com/dye.zip"
+
+ALL_PACKAGES = Dictionary.fromList([
+  #[STUDY_V1_URL, { name: "study", version: "0.0.1", buildHash: "aaa", versionHash: "bbb", dependencies: [] }],
+  #[STUDY_V3_URL, { name: "study", version: "0.0.3", buildHash: "ccc", versionHash: "ddd", dependencies: [] }],
+  #[DYE_URL,      { name: "dye",   version: "1.0.0", buildHash: "eee", versionHash: "fff", dependencies: [STUDY_V1_URL] }],
+])
+
+RESOLVED_LOCK = {
+  lockfileVersion: 1,
+  packages: Dictionary.fromList([
+    #[STUDY_V3_URL, { name: "study", version: "0.0.3", buildHash: "ccc", versionHash: "ddd", dependencies: [] }],
+    #[DYE_URL,      { name: "dye",   version: "1.0.0", buildHash: "eee", versionHash: "fff", dependencies: [STUDY_V1_URL] }],
+  ]),
+}
+
+test("normalizeDependencies - replaces pruned dep URL with surviving URL in dependents", (_) => {
+  result = normalizeDependencies(ALL_PACKAGES, RESOLVED_LOCK)
+  dyeEntry = Dictionary.get(DYE_URL, result.packages)
+  return assertEquals(dyeEntry, Just({ name: "dye", version: "1.0.0", buildHash: "eee", versionHash: "fff", dependencies: [STUDY_V3_URL] }))
+})
+
+test("normalizeDependencies - pruned URL does not appear in any dependencies list", (_) => {
+  result = normalizeDependencies(ALL_PACKAGES, RESOLVED_LOCK)
+  allDeps = Dictionary.reduce(
+    (_, entry, acc) => [...acc, ...entry.dependencies],
+    [],
+    result.packages
+  )
+  return assertEquals(List.any((u) => u == STUDY_V1_URL, allDeps), false)
+})
+
+test("normalizeDependencies - surviving entry is untouched when no conflicts", (_) => {
+  noConflict = Dictionary.fromList([
+    #[STUDY_V3_URL, { name: "study", version: "0.0.3", buildHash: "ccc", versionHash: "ddd", dependencies: [] }],
+  ])
+  lock = { lockfileVersion: 1, packages: noConflict }
+  result = normalizeDependencies(noConflict, lock)
+  return assertEquals(Dictionary.length(result.packages), 1)
+})
+
+test("normalizeDependencies - lockfileVersion is preserved", (_) => {
+  result = normalizeDependencies(ALL_PACKAGES, RESOLVED_LOCK)
+  return assertEquals(result.lockfileVersion, 1)
+})
+
+test("normalizeDependencies - keeps dep URL unchanged when no survivor found", (_) => {
+  // DYE depends on a URL that never had a surviving counterpart
+  orphanUrl = "https://example.com/gone.zip"
+  pkgs = Dictionary.fromList([
+    #[DYE_URL, { name: "dye", version: "1.0.0", buildHash: "eee", versionHash: "fff", dependencies: [orphanUrl] }],
+  ])
+  lock = { lockfileVersion: 1, packages: pkgs }
+  result = normalizeDependencies(Dictionary.fromList([
+    #[orphanUrl, { name: "gone", version: "1.0.0", buildHash: "g", versionHash: "h", dependencies: [] }],
+    #[DYE_URL,   { name: "dye",  version: "1.0.0", buildHash: "eee", versionHash: "fff", dependencies: [orphanUrl] }],
+  ]), lock)
+  dyeEntry = Dictionary.get(DYE_URL, result.packages)
+  return assertEquals(dyeEntry, Just({ name: "dye", version: "1.0.0", buildHash: "eee", versionHash: "fff", dependencies: [orphanUrl] }))
+})
+
+
+// ---- round-trip --------------------------------------------------------------
 
 test("round-trip: write then load recovers package entry", (_) => {
   stored = ""

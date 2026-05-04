@@ -93,10 +93,8 @@ renderGraphOutput :: MadlibDotJson.MadlibDotJson -> MadlibLock.MadlibLock -> {}
 renderGraphOutput = (mdj, lock) => {
   rootDeps = mdj.dependencies |> fromMaybe([]) |> map(.url)
   renderResult = renderChildren(lock.packages, Dictionary.empty, [], rootDeps)
-  IO.putLine("")
   IO.putLine(`${Color.bold(mdj.name)}@${Version.showVersion(mdj.version)}`)
   List.forEach(IO.putLine, where(renderResult) { #[lines, _] => lines })
-  IO.putLine("")
 }
 
 

@@ -1,262 +1,266 @@
-// import { assertEquals, test, ErrorWithMessage } from "Test"
-// import { bad, bichain, good } from "Wish"
-// import { OK, NotFound } from "Http"
-// import { always } from "Function"
-// import { andDo } from "Monad"
-// import type { CommandResult } from "Process"
+import { ErrorWithMessage, assertEquals, test } from "Test"
+import { good, bad, mapRej } from "Wish"
+import { always } from "Function"
+import ByteArray from "ByteArray"
+import Dictionary from "Dictionary"
+import IO from "IO"
+import String from "String"
+import { OK } from "Http"
 
-// import type { Config } from "./Config"
-
-// import { run } from "./Run"
-
-
-
-// LOCAL_MADLIB_DOT_JSON = `{
-//   "name": "LocalPackage",
-//   "main": "src/Main.mad",
-//   "version": "0.1.0",
-//   "dependencies": [
-//     {
-//       "url": "http://repo.com/test-package.zip",
-//       "minVersion": "0.0.1",
-//       "description": "madparser"
-//     }
-//   ]
-// }`
+import type { Config } from "./Config"
+import { run } from "./Run"
 
 
-// TEST_PACKAGE_MADLIB_DOT_JSON = `{
-//   "name": "TestPackage",
-//   "version": "0.0.1",
-//   "main": "src/Main.mad"
-// }`
+// ---- Fixtures ----------------------------------------------------------------
+
+DEP_URL = "http://repo.com/test-pkg.zip"
+DEP_CACHE_MANIFEST = ".module_cache/http___repo_com_test_pkg_zip/madlib.json"
+MODULES_MANIFEST = "./madlib_modules/TestPkg/madlib.json"
+LOCK_FILE_PATH = "./madlib.lock"
+
+EMPTY_MADLIB_DOT_JSON = `{
+  "name": "my-app",
+  "version": "1.0.0",
+  "main": "src/Main.mad"
+}`
+
+LOCAL_MADLIB_DOT_JSON = `{
+  "name": "my-app",
+  "version": "1.0.0",
+  "main": "src/Main.mad",
+  "dependencies": [
+    { "url": "http://repo.com/test-pkg.zip", "description": "test-pkg" }
+  ]
+}`
+
+DEP_MADLIB_DOT_JSON = `{
+  "name": "TestPkg",
+  "version": "0.1.0",
+  "main": "src/Main.mad"
+}`
+
+DEP_LOCK_JSON = `{
+  "lockfileVersion": 1,
+  "packages": {
+    "http://repo.com/test-pkg.zip": {
+      "name": "TestPkg",
+      "version": "0.1.0",
+      "buildHash": "abc123",
+      "versionHash": "def456",
+      "dependencies": []
+    }
+  }
+}`
 
 
-// TEST_PACKAGE_VERSION_DOT_LOCK = `{
-//   "buildHash": "089869a0fed9efb61ca8e6954f458623",
-//   "versionHash": "25e64aa754c310d45c1e084d574c1bb0",
-//   "api": {
-//     "apiNames": {},
-//     "apiInstances": [],
-//     "apiAliases": {},
-//     "apiTypes": {},
-//     "apiInterfaces": {}
-//   }
-// }`
+baseConfig :: Config
+baseConfig = {
+  readFile: (_) => bad(IO.UnknownError),
+  writeFile: (_, _) => good({}),
+  writeBytes: (_, _) => good({}),
+  readDir: (_) => good([]),
+  createDir: (_, _) => good({}),
+  remove: (_, _) => good({}),
+  copy: (_, _, _) => good({}),
+  rename: (_, _) => good({}),
+  unzip: (_, _) => good({}),
+  exec: (_, _, _) => good({ exitCode: 0, stdout: "", stderr: "" }),
+  exists: (_) => bad({}),
+  getBytes: (_) => good({ headers: [], status: OK, body: ByteArray.empty() }),
+  getBytesWithProgress: (_, _) => good({ headers: [], status: OK, body: ByteArray.empty() }),
+  isTTY: (_) => false,
+  now: (_) => 0,
+}
 
 
-// BASE_CONFIG :: Config
-// BASE_CONFIG = {
-//   readFile: where {
-//     "madlib.json" =>
-//       of(LOCAL_MADLIB_DOT_JSON)
+// ---- run - basic behavior ----------------------------------------------------
 
-//     ".module_cache/http___repo_com_test_package_zip/madlib.json" =>
-//       of(TEST_PACKAGE_MADLIB_DOT_JSON)
+test("run - succeeds when no madlib.json exists", (_) =>
+  run(baseConfig)
+    |> mapRej(always(ErrorWithMessage("run should not fail when madlib.json is absent")))
+)
 
-//     ".module_cache/http___repo_com_test_package_zip/version.lock" =>
-//       of(TEST_PACKAGE_VERSION_DOT_LOCK)
+test("run - writes lock file after install with no dependencies", (_) => {
+  lockContent = ""
+  config = {
+    ...baseConfig,
+    readFile: (path) => path == "madlib.json"
+      ? good(EMPTY_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    writeFile: (path, content) => {
+      if (path == LOCK_FILE_PATH) {
+        lockContent := content
+        return {}
+      }
+      return good({})
+    },
+  }
+  return run(config)
+    |> mapRej(always(ErrorWithMessage("run failed")))
+    |> chain((_) => assertEquals(String.contains(`"lockfileVersion"`, lockContent), true))
+})
 
-//     path =>
-//       bad(`file '${path}' does not exist`)
-//   },
-//   writeFile: (path, data) => where(path) {
-//     ".module_cache/http___repo_com_test_package_zip.zip" =>
-//       good("OK")
-//   },
-//   readDir: where {
-//     "./madlib_modules/" =>
-//       good(["TestPackage"])
-//   },
-//   exec: (command) => where(command) {
-//     "madlib package generate-hash -i .module_cache/http___repo_com_test_package_zip" =>
-//       good("089869a0fed9efb61ca8e6954f458623")
-
-//     _ =>
-//       good("OK")
-//   },
-//   exists: (_) => good("OK"),
-//   get: where {
-//     "http://repo.com/test-package.zip" =>
-//       good(Response({
-//         data: BinaryData(ByteArray),
-//         status: OK
-//       }))
-//   }
-// }
-
-
-
-// test("run - success", (_) => {
-//   expected = `Installing dependencies ...
-// Installing TestPackage version 0.0.1
-//   - \u001b[32minstalled!\u001b[0m
-
-// nodejs modules installed for 'TestPackage'
-// `
-
-//   return pipe(
-//     startStdOutRecording,
-//     chain(run),
-//     andDo(getRecordedStdOut),
-//     bichain(
-//       always(bad(ErrorWithMessage("should not fail"))),
-//       assertEquals($, expected)
-//     )
-//   )(BASE_CONFIG)
-// })
-
-// test("run - not in cache", (_) => {
-//   config = {
-//     ...BASE_CONFIG,
-//     exists: (path) => where(path) {
-//       ".module_cache/http___repo_com_test_package_zip" =>
-//         bad("nope")
-
-//       _ =>
-//         good("OK")
-//     }
-//   }
-//   expected = `Installing dependencies ...
-// Installing TestPackage version 0.0.1
-//   - \u001b[32minstalled!\u001b[0m
-
-// nodejs modules installed for 'TestPackage'
-// `
-
-//   return pipe(
-//     startStdOutRecording,
-//     chain(run),
-//     andDo(getRecordedStdOut),
-//     bichain(
-//       always(bad(ErrorWithMessage("should not fail"))),
-//       assertEquals($, expected)
-//     )
-//   )(config)
-// })
-
-// test("run - failed to download", (_) => {
-//   config = {
-//     ...BASE_CONFIG,
-//     exists: (path) => where(path) {
-//       ".module_cache/http___repo_com_test_package_zip" =>
-//         bad("nope")
-
-//       _ =>
-//         good("OK")
-//     },
-//     get: always(bad(Response({
-//       data: BinaryData(ByteArray),
-//       status: NotFound
-//     })))
-//   }
-//   expected = `Installing dependencies ...
-// \u001b[31mPackage from 'http://repo.com/test-package.zip' failed to be downloaded
-// \u001b[0m\nnodejs modules installed for 'TestPackage'
-// `
-
-//   return pipe(
-//     startStdOutRecording,
-//     chain(run),
-//     andDo(getRecordedStdOut),
-//     bichain(
-//       always(bad(ErrorWithMessage("should not fail"))),
-//       assertEquals($, expected)
-//     )
-//   )(config)
-// })
-
-// test("run - version too low", (_) => {
-//   config = {
-//     ...BASE_CONFIG,
-//     exists: (path) => where(path) {
-//       ".module_cache/http___repo_com_test_package_zip" =>
-//         bad("nope")
-
-//       _ =>
-//         good("OK")
-//     },
-//     readFile: where {
-//       "madlib.json" =>
-//         of(`{
-//           "name": "LocalPackage",
-//           "main": "src/Main.mad",
-//           "version": "0.1.0",
-//           "dependencies": [
-//             {
-//               "url": "http://repo.com/test-package.zip",
-//               "minVersion": "0.1.0",
-//               "description": "madparser"
-//             }
-//           ]
-//         }`)
-  
-//       ".module_cache/http___repo_com_test_package_zip/madlib.json" =>
-//         of(TEST_PACKAGE_MADLIB_DOT_JSON)
-  
-//       ".module_cache/http___repo_com_test_package_zip/version.lock" =>
-//         of(TEST_PACKAGE_VERSION_DOT_LOCK)
-  
-//       path =>
-//         bad(`file '${path}' does not exist`)
-//     }
-//   }
-//   expected = `Installing dependencies ...
-// Installing TestPackage version 0.0.1
-//   - \u001b[33mPackage version does not match constraints\u001b[0m
-//   - \u001b[32minstalled!\u001b[0m
-
-// nodejs modules installed for 'TestPackage'
-// `
-
-//   return pipe(
-//     startStdOutRecording,
-//     chain(run),
-//     andDo(getRecordedStdOut),
-//     bichain(
-//       always(bad(ErrorWithMessage("should not fail"))),
-//       assertEquals($, expected)
-//     )
-//   )(config)
-// })
+test("run - lock file written contains packages field when no dependencies", (_) => {
+  lockContent = ""
+  config = {
+    ...baseConfig,
+    readFile: (path) => path == "madlib.json"
+      ? good(EMPTY_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    writeFile: (path, content) => {
+      if (path == LOCK_FILE_PATH) {
+        lockContent := content
+        return {}
+      }
+      return good({})
+    },
+  }
+  return run(config)
+    |> mapRej(always(ErrorWithMessage("run failed")))
+    |> chain((_) => assertEquals(String.contains(`"packages"`, lockContent), true))
+})
 
 
-// test("run - fail to copy", (_) => {
-//   config = {
-//     ...BASE_CONFIG,
-//     exists: (path) => where(path) {
-//       ".module_cache/http___repo_com_test_package_zip" =>
-//         bad("nope")
+// ---- run - fresh install from warm cache ------------------------------------
 
-//       _ =>
-//         good("OK")
-//     },
-//     exec: (command) => where(command) {
-//       "madlib package generate-hash -i .module_cache/http___repo_com_test_package_zip" =>
-//         good("089869a0fed9efb61ca8e6954f458623")
+test("run - copies package to madlib_modules when cache is warm", (_) => {
+  copyCalled = false
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : path == DEP_CACHE_MANIFEST ? good(DEP_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    writeFile: (_, _) => good({}),
+    exists: (path) => path == DEP_CACHE_MANIFEST ? good(true) : bad({}),
+    exec: (cmd, _, _) => cmd == "madlib"
+      ? good({ exitCode: 0, stdout: "abc123", stderr: "" })
+      : good({ exitCode: 0, stdout: "", stderr: "" }),
+    readDir: (_) => good(["TestPkg"]),
+    copy: (_, _, _) => {
+      copyCalled := true
+      return good({})
+    },
+  }
+  return run(config)
+    |> mapRej(always(ErrorWithMessage("run failed")))
+    |> chain((_) => assertEquals(copyCalled, true))
+})
 
-//       "cp -R .module_cache/http___repo_com_test_package_zip/ ./madlib_modules/TestPackage" =>
-//         bad(CommandError(1, "could not copy file"))
+test("run - writes package name into lock file after fresh install", (_) => {
+  lockContent = ""
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : path == DEP_CACHE_MANIFEST ? good(DEP_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    writeFile: (path, content) => {
+      if (path == LOCK_FILE_PATH) {
+        lockContent := content
+        return {}
+      }
+      return good({})
+    },
+    exists: (path) => path == DEP_CACHE_MANIFEST ? good(true) : bad({}),
+    exec: (cmd, _, _) => cmd == "madlib"
+      ? good({ exitCode: 0, stdout: "abc123", stderr: "" })
+      : good({ exitCode: 0, stdout: "", stderr: "" }),
+    readDir: (_) => good(["TestPkg"]),
+  }
+  return run(config)
+    |> mapRej(always(ErrorWithMessage("run failed")))
+    |> chain((_) => assertEquals(String.contains(`"TestPkg"`, lockContent), true))
+})
 
-//       _ =>
-//         good("OK")
-//     }
-//   }
-//   expected = `Installing dependencies ...
-// Installing TestPackage version 0.0.1
-//   - \u001b[31mFailed to copy 'TestPackage'
-//     could not copy file\u001b[0m
+test("run - writes dep URL as key in lock file after fresh install", (_) => {
+  lockContent = ""
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : path == DEP_CACHE_MANIFEST ? good(DEP_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    writeFile: (path, content) => {
+      if (path == LOCK_FILE_PATH) {
+        lockContent := content
+        return {}
+      }
+      return good({})
+    },
+    exists: (path) => path == DEP_CACHE_MANIFEST ? good(true) : bad({}),
+    exec: (cmd, _, _) => cmd == "madlib"
+      ? good({ exitCode: 0, stdout: "abc123", stderr: "" })
+      : good({ exitCode: 0, stdout: "", stderr: "" }),
+    readDir: (_) => good(["TestPkg"]),
+  }
+  return run(config)
+    |> mapRej(always(ErrorWithMessage("run failed")))
+    |> chain((_) => assertEquals(String.contains(DEP_URL, lockContent), true))
+})
 
-// nodejs modules installed for 'TestPackage'
-// `
 
-//   return pipe(
-//     startStdOutRecording,
-//     chain(run),
-//     andDo(getRecordedStdOut),
-//     bichain(
-//       always(bad(ErrorWithMessage("should not fail"))),
-//       assertEquals($, expected)
-//     )
-//   )(config)
-// })
+// ---- run - delta install (package already on disk) --------------------------
+
+test("run - does not copy package that is already on disk (delta install)", (_) => {
+  copyCalled = false
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "./madlib.lock" ? good(DEP_LOCK_JSON)
+      : path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    exists: (path) => path == MODULES_MANIFEST ? good(true) : bad({}),
+    copy: (_, _, _) => {
+      copyCalled := true
+      return good({})
+    },
+  }
+  return run(config)
+    |> mapRej(always(ErrorWithMessage("run failed")))
+    |> chain((_) => assertEquals(copyCalled, false))
+})
+
+test("run - lock file still contains existing entry after delta install", (_) => {
+  lockContent = ""
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "./madlib.lock" ? good(DEP_LOCK_JSON)
+      : path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    writeFile: (path, content) => {
+      if (path == LOCK_FILE_PATH) {
+        lockContent := content
+        return {}
+      }
+      return good({})
+    },
+    exists: (path) => path == MODULES_MANIFEST ? good(true) : bad({}),
+  }
+  return run(config)
+    |> mapRej(always(ErrorWithMessage("run failed")))
+    |> chain((_) => assertEquals(String.contains(`"TestPkg"`, lockContent), true))
+})
+
+test("run - lock file preserves dep URL key after delta install", (_) => {
+  lockContent = ""
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "./madlib.lock" ? good(DEP_LOCK_JSON)
+      : path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    writeFile: (path, content) => {
+      if (path == LOCK_FILE_PATH) {
+        lockContent := content
+        return {}
+      }
+      return good({})
+    },
+    exists: (path) => path == MODULES_MANIFEST ? good(true) : bad({}),
+  }
+  return run(config)
+    |> mapRej(always(ErrorWithMessage("run failed")))
+    |> chain((_) => assertEquals(String.contains(DEP_URL, lockContent), true))
+})

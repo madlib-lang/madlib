@@ -8,6 +8,7 @@ import J from "Json/Parse"
 import Print from "Json/Print"
 import Dictionary from "Dictionary"
 import { always } from "Function"
+import { fromMaybe, Just, Nothing } from "Maybe"
 import IO from "IO"
 
 
@@ -102,3 +103,47 @@ export load = (config, path) => pipe(
 
 write :: Config -> String -> MadlibLock -> Wish IO.Error {}
 export write = (config, path, lock) => config.writeFile(path, serialize(lock))
+
+
+// After conflict resolution some URLs are pruned from the packages dict.
+// Rewrite every remaining entry's `dependencies` so that pruned URLs are
+// replaced by the URL of the surviving entry with the same package name.
+// URLs with no survivor (truly removed packages) are left unchanged.
+normalizeDependencies :: Dictionary String LockEntry -> MadlibLock -> MadlibLock
+export normalizeDependencies = (originalPackages, resolvedLock) => {
+  resolved = resolvedLock.packages
+
+  findSurvivor = (targetName) => Dictionary.reduce(
+    (url, entry, acc) => where(acc) {
+      Just(_) => acc
+      Nothing => entry.name == targetName ? Just(url) : Nothing
+    },
+    Nothing,
+    resolved
+  )
+
+  redirectMap = Dictionary.reduce(
+    (url, entry, acc) =>
+      Dictionary.includes(url, resolved)
+        ? acc
+        : where(findSurvivor(entry.name)) {
+            Just(survivorUrl) => Dictionary.insert(url, survivorUrl, acc)
+            Nothing           => acc
+          },
+    Dictionary.empty,
+    originalPackages
+  )
+
+  fixedPackages = Dictionary.mapWithKey(
+    (_, entry) => ({
+      ...entry,
+      dependencies: map(
+        (depUrl) => fromMaybe(depUrl, Dictionary.get(depUrl, redirectMap)),
+        entry.dependencies
+      ),
+    }),
+    resolved
+  )
+
+  return { ...resolvedLock, packages: fixedPackages }
+}

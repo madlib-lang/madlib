@@ -1,5 +1,6 @@
 import IO from "IO"
 import List from "List"
+import { Just, fromMaybe } from "Maybe"
 
 // A module-level list that should not be modified in-place
 sharedList :: List Integer
@@ -16,6 +17,11 @@ main = () => {
   IO.log(doubled)
 
   // sharedList should be unchanged
+  IO.log(sharedList)
+
+  // Calls can return aliases too: fromMaybe returns the Just payload directly.
+  quadrupled = map((x) => x * 4, fromMaybe([], Just(sharedList)))
+  IO.log(quadrupled)
   IO.log(sharedList)
 
   // Direct map on sharedList (Var) should use arena, not in-place

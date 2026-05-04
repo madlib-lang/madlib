@@ -103,23 +103,32 @@ topLevelSymbol :: Operand -> Symbol
 topLevelSymbol =
   Symbol TopLevelAssignment
 
--- | Conservative linearity check for in-place TRMC dispatch.
--- Returns True if the expression is provably a temporary (not aliased).
--- Variable references are considered potentially aliased.
--- Conditional expressions (If/Where/Do) are only linear if ALL branches are linear,
--- since any branch could evaluate to an aliased variable.
+-- | Conservative freshness check for in-place TRMC dispatch.
+-- In-place clones overwrite the input list nodes, so the argument must be a
+-- list spine allocated by this expression. Function calls are not fresh proof:
+-- calls such as fromMaybe([], Just(xs)) can return an aliased list.
 isLinearListArg :: Core.Exp -> Bool
 isLinearListArg exp = case exp of
-  Core.Typed _ _ _ (Core.Var _ _)       -> False  -- variable reference, might be aliased
-  Core.Typed _ _ _ (Core.If _ t f)      -> isLinearListArg t && isLinearListArg f
-  Core.Typed _ _ _ (Core.Where _ iss)   -> all isLinearListArgBranch iss
-  Core.Typed _ _ _ (Core.Do exps)       -> not (null exps) && isLinearListArg (last exps)
-  _                                     -> True  -- function call result, literal, constructor
+  Core.Typed _ _ _ (Core.ListConstructor items) ->
+    all isFreshListItem items
+  Core.Typed _ _ _ (Core.If _ t f) ->
+    isLinearListArg t && isLinearListArg f
+  Core.Typed _ _ _ (Core.Where _ iss) ->
+    all isLinearListArgBranch iss
+  Core.Typed _ _ _ (Core.Do exps) ->
+    not (null exps) && isLinearListArg (last exps)
+  _ ->
+    False
+
+isFreshListItem :: Core.ListItem -> Bool
+isFreshListItem item = case item of
+  Core.Typed _ _ _ (Core.ListItem _) -> True
+  _                                  -> False
 
 isLinearListArgBranch :: Core.Is -> Bool
 isLinearListArgBranch is = case is of
   Core.Typed _ _ _ (Core.Is _ body) -> isLinearListArg body
-  _                                 -> True
+  _                                 -> False
 
 constructorSymbol :: Operand -> Int -> Int -> Symbol
 constructorSymbol ctor id arity =

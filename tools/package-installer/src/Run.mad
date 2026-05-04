@@ -416,7 +416,8 @@ installPackages = (config, reporter, context, madlibDotJsonPath) => pipe(
                       config,
                       madlibDotJson,
                       { lockfileVersion: 1, packages: finalContext.lockEntries }
-                    ) |> andDo(of(finalContext)))
+                    ) |> map(MadlibLock.normalizeDependencies(finalContext.lockEntries))
+                      |> map((normalizedLock) => ({ ...finalContext, lockEntries: normalizedLock.packages })))
             }
           )
         )(madlibDotJson)
