@@ -1,15 +1,19 @@
 import type { Maybe } from "Maybe"
 import type { Wish } from "Wish"
+import type { Value } from "Json/Value"
 
 import { bad, mapRej } from "Wish"
 import { Just, Nothing } from "Maybe"
 import { Left, Right } from "Either"
 import J from "Json/Parse"
+import Print from "Json/Print"
+import Dictionary from "Dictionary"
 import { always } from "Function"
 
 import type { Config } from "./Config"
 
 import Version from "./Version"
+import { FromVersion, UntilVersion } from "./Version"
 import Dependency from "./Dependency"
 
 
@@ -79,3 +83,69 @@ export load = (config, path) => pipe(
   chain(parse),
   mapRej((e) => `madlib.json file at path '${path}' is malformed\nError: ${e}`)
 )(path)
+
+
+// ---- Serialization ----------------------------------------------------------
+
+serializeDependency :: Dependency.Dependency -> Value
+serializeDependency = (dep) => {
+  base = [#["url", Print.string(dep.url)]]
+
+  withDesc = where(dep.description) {
+    Just(desc) =>
+      [...base, #["description", Print.string(desc)]]
+
+    Nothing =>
+      base
+  }
+
+  withMin = where(dep.versionRange) {
+    Version.VersionRange(minV, _) =>
+      [...withDesc, #["minVersion", Print.string(Version.showVersion(minV))]]
+
+    FromVersion(minV) =>
+      [...withDesc, #["minVersion", Print.string(Version.showVersion(minV))]]
+
+    _ =>
+      withDesc
+  }
+
+  withMax = where(dep.versionRange) {
+    Version.VersionRange(_, maxV) =>
+      [...withMin, #["maxVersion", Print.string(Version.showVersion(maxV))]]
+
+    UntilVersion(maxV) =>
+      [...withMin, #["maxVersion", Print.string(Version.showVersion(maxV))]]
+
+    _ =>
+      withMin
+  }
+
+  return Print.object(withMax)
+}
+
+maybeField :: String -> (a -> Value) -> Maybe a -> List #[String, Value]
+maybeField = (key, fn, maybeVal) => where(maybeVal) {
+  Just(v) =>
+    [#[key, fn(v)]]
+
+  Nothing =>
+    []
+}
+
+serialize :: MadlibDotJson -> String
+export serialize = (mdj) => {
+  fields =
+    [
+      #["name", Print.string(mdj.name)],
+      #["version", Print.string(Version.showVersion(mdj.version))],
+      #["main", Print.string(mdj.main)],
+    ]
+    ++ maybeField("madlibVersion", Print.string, mdj.madlibVersion)
+    ++ maybeField("bin", Print.string, mdj.bin)
+    ++ maybeField("dependencies", (deps) => Print.list(serializeDependency, deps), mdj.dependencies)
+    ++ maybeField("importAliases", Print.dict(Print.string), mdj.importAliases)
+    ++ maybeField("hooks", Print.dict(Print.string), mdj.hooks)
+
+  return Print.print(80, Print.object(fields))
+}

@@ -104,7 +104,7 @@ removeIfExists = (config, path) => pipe(
   config.exists,
   bichain(
     always(of({})),
-    () => config.remove(path, { recursive: true }) |> discardError(always({}))
+    () => discardError(always({}), config.remove(path, { recursive: true }))
   )
 )(path)
 
@@ -131,49 +131,54 @@ validateGlobalCacheEntry = (config, dependency) => pipe(
 
 copyFromGlobalToProject :: Config -> Dependency -> Wish {} DownloadResult
 copyFromGlobalToProject = (config, dependency) =>
-  removeIfExists(config, cachePath(dependency))
-    |> mapRej(always(LocalCopyFailure(cachePath(dependency))))
-    |> chain((_) => config.copy(
+  pipe(
+    mapRej(always(LocalCopyFailure(cachePath(dependency)))),
+    chain((_) => pipe(
+      mapRej(always(LocalCopyFailure(globalCachePath(dependency))))
+    )(config.copy(
       globalCachePath(dependency),
       cachePath(dependency),
       { recursive: true, overwrite: true, exclude: [] }
-    ) |> mapRej(always(LocalCopyFailure(globalCachePath(dependency)))))
-    |> chain((_) => validateCacheEntry(config, dependency))
-    |> andDo(of(Downloaded(dependency, FromCache)))
-    |> discardError((failure) => DownloadError(dependency, failure))
+    ))),
+    chain((_) => validateCacheEntry(config, dependency)),
+    andDo(of(Downloaded(dependency, FromCache))),
+    discardError((failure) => DownloadError(dependency, failure))
+  )(removeIfExists(config, cachePath(dependency)))
 
 
 populateGlobalCache :: Config -> Dependency -> Wish {} {}
 populateGlobalCache = (config, dependency) =>
-  config.createDir(globalCacheBase({}), { recursive: true })
-    |> chain((_) => config.copy(
+  pipe(
+    chain((_) => config.copy(
       cachePath(dependency),
       globalCachePath(dependency),
       { recursive: true, overwrite: true, exclude: [] }
-    ))
-    |> discardError(always({}))
+    )),
+    discardError(always({}))
+  )(config.createDir(globalCacheBase({}), { recursive: true }))
 
 
 getPackageData :: Config -> (Integer -> Integer -> {}) -> String -> Wish DownloadFailure ByteArray
 getPackageData = (config, onProgress, url) =>
-  config.getBytesWithProgress(url, onProgress)
-    |> mapRej(formatHttpError)
-    |> chain(
-        (response) => response.status == OK
-          ? of(response.body)
-          : response.status == 301 || response.status == 302 || response.status == 303 || response.status == 307 || response.status == 308
-            ? pipe(
-              getHeader("Location"),
-              where {
-                [Header(_, redirectUrl), ..._] =>
-                  getPackageData(config, onProgress, redirectUrl)
+  pipe(
+    mapRej(formatHttpError),
+    chain(
+      (response) => response.status == OK
+        ? of(response.body)
+        : response.status == 301 || response.status == 302 || response.status == 303 || response.status == 307 || response.status == 308
+          ? pipe(
+            getHeader("Location"),
+            where {
+              [Header(_, redirectUrl), ..._] =>
+                getPackageData(config, onProgress, redirectUrl)
 
-                _ =>
-                  bad(RedirectMissingLocation(url))
-              },
-            )(response)
-            : bad(HttpStatusFailure(response.status))
-      )
+              _ =>
+                bad(RedirectMissingLocation(url))
+            },
+          )(response)
+          : bad(HttpStatusFailure(response.status))
+    )
+  )(config.getBytesWithProgress(url, onProgress))
 
 
 saveArchive :: Config -> Dependency -> ByteArray -> Wish DownloadFailure {}
@@ -185,9 +190,12 @@ saveArchive = (config, dependency, data) => pipe(
 
 promoteExtractedRoot :: Config -> Dependency -> String -> Wish DownloadFailure {}
 promoteExtractedRoot = (config, dependency, extractedRoot) =>
-  removeIfExists(config, cachePath(dependency))
-    |> mapRej(always(InvalidArchiveShape(`could not clean '${cachePath(dependency)}'`)))
-    |> chain((_) => config.rename(extractedRoot, cachePath(dependency)) |> mapRej(always(InvalidArchiveShape(`could not promote '${extractedRoot}' to '${cachePath(dependency)}'`))))
+  pipe(
+    mapRej(always(InvalidArchiveShape(`could not clean '${cachePath(dependency)}'`))),
+    chain((_) => pipe(
+      mapRej(always(InvalidArchiveShape(`could not promote '${extractedRoot}' to '${cachePath(dependency)}'`)))
+    )(config.rename(extractedRoot, cachePath(dependency))))
+  )(removeIfExists(config, cachePath(dependency)))
 
 
 normalizeExtractedArchive :: Config -> Dependency -> Wish DownloadFailure {}
@@ -195,19 +203,20 @@ normalizeExtractedArchive = (config, dependency) => {
   root = extractPath(dependency)
   promoteSingleEntry = (entry) => {
     child = FilePath.joinPath([root, entry])
-    return config.exists(madlibJsonPath(child))
-      |> bichain(always(of(false)), always(of(true)))
-      |> chain((hasManifest) => hasManifest
+    return pipe(
+      bichain(always(of(false)), always(of(true))),
+      chain((hasManifest) => hasManifest
         ? promoteExtractedRoot(config, dependency, child)
         : bad(InvalidArchiveShape("expected madlib.json at archive root or in the single top-level directory")))
+    )(config.exists(madlibJsonPath(child)))
   }
 
-  return config.exists(madlibJsonPath(root))
-    |> bichain(
+  return pipe(
+    bichain(
       always(
-        config.readDir(root)
-          |> mapRej(always(InvalidArchiveShape(`could not read extracted archive '${root}'`)))
-          |> chain(
+        pipe(
+          mapRej(always(InvalidArchiveShape(`could not read extracted archive '${root}'`))),
+          chain(
             where {
               [entry] =>
                 promoteSingleEntry(entry)
@@ -216,34 +225,51 @@ normalizeExtractedArchive = (config, dependency) => {
                 bad(InvalidArchiveShape("expected madlib.json at archive root or in a single top-level directory"))
             }
           )
+        )(config.readDir(root))
       ),
       always(promoteExtractedRoot(config, dependency, root))
     )
+  )(config.exists(madlibJsonPath(root)))
 }
 
 
 extractArchive :: Config -> Dependency -> Wish DownloadFailure {}
 extractArchive = (config, dependency) =>
-  removeIfExists(config, extractPath(dependency))
-    |> mapRej(always(ArchiveExtractFailure(extractPath(dependency))))
-    |> chain((_) => config.createDir(extractPath(dependency), { recursive: true }) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
-    |> chain((_) => config.unzip(archivePath(dependency), extractPath(dependency)) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
-    |> chain((_) => normalizeExtractedArchive(config, dependency))
-    |> chain((_) => validateCacheEntry(config, dependency))
-    |> chain((_) => removeIfExists(config, archivePath(dependency)) |> mapRej(always(ArchiveWriteFailure(archivePath(dependency)))))
-    |> chain((_) => removeIfExists(config, extractPath(dependency)) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
+  pipe(
+    mapRej(always(ArchiveExtractFailure(extractPath(dependency)))),
+    chain((_) => pipe(
+      mapRej(always(ArchiveExtractFailure(extractPath(dependency))))
+    )(config.createDir(extractPath(dependency), { recursive: true }))),
+    chain((_) => pipe(
+      mapRej(always(ArchiveExtractFailure(extractPath(dependency))))
+    )(config.unzip(archivePath(dependency), extractPath(dependency)))),
+    chain((_) => normalizeExtractedArchive(config, dependency)),
+    chain((_) => validateCacheEntry(config, dependency)),
+    chain((_) => pipe(
+      mapRej(always(ArchiveWriteFailure(archivePath(dependency))))
+    )(removeIfExists(config, archivePath(dependency)))),
+    chain((_) => pipe(
+      mapRej(always(ArchiveExtractFailure(extractPath(dependency))))
+    )(removeIfExists(config, extractPath(dependency))))
+  )(removeIfExists(config, extractPath(dependency)))
 
 
 downloadPackageWithHttp :: Config -> (Integer -> Integer -> {}) -> Dependency -> String -> Wish {} DownloadResult
 downloadPackageWithHttp = (config, onProgress, dependency, url) =>
-  removeIfExists(config, archivePath(dependency))
-    |> mapRej(always(ArchiveWriteFailure(archivePath(dependency))))
-    |> chain((_) => removeIfExists(config, extractPath(dependency)) |> mapRej(always(ArchiveExtractFailure(extractPath(dependency)))))
-    |> chain((_) => getPackageData(config, onProgress, url))
-    |> chain(saveArchive(config, dependency))
-    |> andDo(extractArchive(config, dependency))
-    |> andDo(of(Downloaded(dependency, FromRemote)))
-    |> chainRej((failure) => removeIfExists(config, archivePath(dependency)) |> andDo(removeIfExists(config, extractPath(dependency))) |> andDo(of(DownloadError(dependency, failure))))
+  pipe(
+    mapRej(always(ArchiveWriteFailure(archivePath(dependency)))),
+    chain((_) => pipe(
+      mapRej(always(ArchiveExtractFailure(extractPath(dependency))))
+    )(removeIfExists(config, extractPath(dependency)))),
+    chain((_) => getPackageData(config, onProgress, url)),
+    chain(saveArchive(config, dependency)),
+    andDo(extractArchive(config, dependency)),
+    andDo(of(Downloaded(dependency, FromRemote))),
+    chainRej((failure) => pipe(
+      andDo(removeIfExists(config, extractPath(dependency))),
+      andDo(of(DownloadError(dependency, failure)))
+    )(removeIfExists(config, archivePath(dependency))))
+  )(removeIfExists(config, archivePath(dependency)))
 
 
 copyLocalPackage :: Config -> Dependency -> String -> Wish {} DownloadResult
@@ -256,18 +282,21 @@ copyLocalPackage = (config, dependency, uri) => pipe(
     chain((exists) => exists ? of(path) : bad(LocalCopyFailure(path))),
   )(path),
   chain((path) =>
-    removeIfExists(config, cachePath(dependency))
-    |> mapRej(always(LocalCopyFailure(path)))
-    |> chain((_) => config.copy(
-      path,
-      cachePath(dependency),
-      {
-        recursive: true,
-        overwrite: true,
-        exclude: [".git", "madlib_modules", ".module_cache", "node_modules"],
-      },
-    ) |> mapRej(always(LocalCopyFailure(path))))
-    |> chain((_) => validateCacheEntry(config, dependency))
+    pipe(
+      mapRej(always(LocalCopyFailure(path))),
+      chain((_) => pipe(
+        mapRej(always(LocalCopyFailure(path)))
+      )(config.copy(
+        path,
+        cachePath(dependency),
+        {
+          recursive: true,
+          overwrite: true,
+          exclude: [".git", "madlib_modules", ".module_cache", "node_modules"],
+        },
+      ))),
+      chain((_) => validateCacheEntry(config, dependency))
+    )(removeIfExists(config, cachePath(dependency)))
   ),
   andDo(of(Downloaded(dependency, FromRemote))),
   discardError((failure) => DownloadError(dependency, failure))
@@ -287,23 +316,25 @@ downloadPackage = (config, onProgress, dependency) => pipe(
 
 downloadIfNotCached :: Config -> (Integer -> Integer -> {}) -> Dependency -> Wish {} DownloadResult
 export downloadIfNotCached = (config, onProgress, dependency) =>
-  validateCacheEntry(config, dependency)
-    |> bichain(
-      (_) => validateGlobalCacheEntry(config, dependency)
-        |> bichain(
-          (_) => removeIfExists(config, cachePath(dependency))
-            |> andDo(downloadPackage(config, onProgress, dependency))
-            |> chain(
+  pipe(
+    bichain(
+      (_) => pipe(
+        bichain(
+          (_) => pipe(
+            andDo(downloadPackage(config, onProgress, dependency)),
+            chain(
               (result) => where(result) {
                 Downloaded(d, _) =>
-                  populateGlobalCache(config, d)
-                    |> andDo(of(Downloaded(d, FromRemote)))
+                  andDo(of(Downloaded(d, FromRemote)), populateGlobalCache(config, d))
 
                 DownloadError(_, _) =>
                   of(result)
               }
-            ),
+            )
+          )(removeIfExists(config, cachePath(dependency))),
           (_) => copyFromGlobalToProject(config, dependency)
-        ),
+        )
+      )(validateGlobalCacheEntry(config, dependency)),
       always(of(Downloaded(dependency, FromCache)))
     )
+  )(validateCacheEntry(config, dependency))

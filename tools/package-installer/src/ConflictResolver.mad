@@ -14,7 +14,7 @@ import { Just, Nothing, fromMaybe } from "Maybe"
 import { always } from "Function"
 import { Wish } from "Wish"
 import { andDo } from "Monad"
-import { discardError, mapRej } from "Wish"
+import { bad, discardError, mapRej } from "Wish"
 
 import Color from "./Color"
 import ConflictAnalysis from "./ConflictAnalysis"
@@ -94,7 +94,7 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
     renderedLines := totalMenuLines
   }
 
-  return Wish((bad, good) => {
+  return Wish((reject, resolve) => {
     Terminal.enableTTYRawMode({})
     render({})
 
@@ -121,14 +121,14 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
       cleanup({})
       where(List.nth(selectedIndex, choices)) {
         Just(choice) =>
-          good(choice)
+          resolve(choice)
 
         Nothing =>
-          bad({})
+          reject({})
       }
     } else if (key == "\x03") do {
       cleanup({})
-      bad({})
+      reject({})
     } else {
       {}
     }
@@ -143,16 +143,19 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
 copyChosenVersion :: Config -> String -> VersionChoice -> Wish {} {}
 copyChosenVersion = (config, conflictedName, vc) => where(vc) {
   VersionChoice(_, url) =>
-    config.remove(
-      `${Constants.MADLIB_MODULES_PATH}${conflictedName}/`,
-      { recursive: true }
-    )
-      |> discardError(always({}))
-      |> chain((_) => config.copy(
+    pipe(
+      discardError(always({})),
+      chain((_) => pipe(
+        mapRej((err) => IO.putLineAndPass(`Failed to copy chosen version of '${conflictedName}': ${show(err)}`, {}))
+      )(config.copy(
         `${Constants.TEMPORARY_MODULES_PATH}${sanitizeUrl(url)}/`,
         `${Constants.MADLIB_MODULES_PATH}${conflictedName}/`,
         { recursive: true, overwrite: true, exclude: [] }
-      ) |> mapRej(always({})))
+      )))
+    )(config.remove(
+      `${Constants.MADLIB_MODULES_PATH}${conflictedName}/`,
+      { recursive: true }
+    ))
 }
 
 
@@ -171,15 +174,18 @@ export pruneConflict = (conflictedName, chosenUrl, packages) =>
 
 resolveConflict :: Config -> String -> Dictionary String LockEntry -> List String -> String -> Wish {} (Dictionary String LockEntry)
 resolveConflict = (config, rootLabel, packages, rootDeps, conflictedName) =>
-  pickForConflict(rootLabel, packages, rootDeps, conflictedName)
-    |> chain(
-        (chosenVc) => where(chosenVc) {
-          VersionChoice(_, chosenUrl) =>
+  pipe(
+    chain(
+      (chosenVc) => where(chosenVc) {
+        VersionChoice(_, chosenUrl) =>
+          andDo(
+            of(pruneConflict(conflictedName, chosenUrl, packages)),
             copyChosenVersion(config, conflictedName, chosenVc)
-              |> andDo(of(pruneConflict(conflictedName, chosenUrl, packages)))
-        }
-      )
-    |> discardError(always(packages))
+          )
+      }
+    ),
+    discardError(always(packages))
+  )(pickForConflict(rootLabel, packages, rootDeps, conflictedName))
 
 
 runInteractive :: Config -> String -> Dictionary String LockEntry -> List String -> List String -> Wish {} (Dictionary String LockEntry)
@@ -194,26 +200,31 @@ runInteractive = (config, rootLabel, packages, rootDeps, conflictedNames) => {
 }
 
 
-staticReport :: MadlibDotJson -> MadlibLock -> Wish {} {}
+// Prints the conflict report and fails so non-TTY installs surface a clear error.
+staticReport :: MadlibDotJson -> MadlibLock -> Wish String MadlibLock
 staticReport = (madlibDotJson, lock) => {
   ConflictAnalysis.analyze(madlibDotJson, lock)
-  return of({})
+  return bad("Dependency conflicts detected — resolve them manually or run in a TTY")
 }
 
 
 // Returns the lock file updated to reflect the user's resolution choices.
 // On TTY: interactive picker, chosen URLs kept, others pruned from the lock.
-// Non-TTY: static report printed, original lock returned unchanged.
-run :: Config -> MadlibDotJson -> MadlibLock -> Wish {} MadlibLock
+// Non-TTY: static report printed, install fails with an actionable message.
+run :: Config -> MadlibDotJson -> MadlibLock -> Wish String MadlibLock
 export run = (config, madlibDotJson, lock) => {
   isTTY = config.isTTY({})
   rootLabel = `${Color.bold(madlibDotJson.name)}@${Version.showVersion(madlibDotJson.version)}`
-  rootDeps = madlibDotJson.dependencies |> fromMaybe([]) |> map(.url)
+  rootDeps = pipe(fromMaybe([]), map(.url))(madlibDotJson.dependencies)
   packages = lock.packages
   conflictedNames = ConflictAnalysis.findConflictedNames(packages)
 
-  return isTTY && List.length(conflictedNames) > 0
-    ? runInteractive(config, rootLabel, packages, rootDeps, conflictedNames)
-        |> map((updatedPackages) => ({ ...lock, packages: updatedPackages }))
-    : staticReport(madlibDotJson, lock) |> andDo(of(lock))
+  return List.length(conflictedNames) == 0
+    ? of(lock)
+    : isTTY
+      ? pipe(
+          mapRej(always("Conflict resolution was cancelled")),
+          map((updatedPackages) => ({ ...lock, packages: updatedPackages }))
+        )(runInteractive(config, rootLabel, packages, rootDeps, conflictedNames))
+      : staticReport(madlibDotJson, lock)
 }

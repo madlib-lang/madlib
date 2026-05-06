@@ -9,7 +9,6 @@ import List from "List"
 import { identity, ifElse, not } from "Function"
 
 import { AnyVersion } from "./Version"
-import { sanitizeUrl } from "./URL"
 
 
 
@@ -22,6 +21,7 @@ export alias Context = {
   versions :: Dictionary String VersionInfo,
   installedPackages :: List String,
   lockEntries :: Dictionary String LockEntry,
+  sourceLockEntries :: Dictionary String LockEntry,
 }
 
 
@@ -30,6 +30,7 @@ export initialContext = {
   versions: Dict.empty,
   installedPackages: [],
   lockEntries: Dict.empty,
+  sourceLockEntries: Dict.empty,
 }
 
 
@@ -85,6 +86,7 @@ export addLockEntry = (url, entry, context) => ({
 contextFromLock :: MadlibLock -> Context
 export contextFromLock = (lock) => ({
   versions: Dict.empty,
-  installedPackages: pipe(Dict.keys, map(sanitizeUrl))(lock.packages),
-  lockEntries: lock.packages,
+  installedPackages: [],
+  lockEntries: Dict.empty,
+  sourceLockEntries: lock.packages,
 })

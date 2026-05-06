@@ -1,36 +1,5 @@
-import { mapChars } from "String"
-
-
-replaceSpecialChar :: Char -> Char
-replaceSpecialChar = where {
-  ':' =>
-    '_'
-
-  '/' =>
-    '_'
-
-  '#' =>
-    '_'
-
-  '.' =>
-    '_'
-
-  '?' =>
-    '_'
-
-  '&' =>
-    '_'
-
-  '=' =>
-    '_'
-
-  '-' =>
-    '_'
-
-  char =>
-    char
-}
+import { hashString } from "./Hash"
 
 
 sanitizeUrl :: String -> String
-export sanitizeUrl = mapChars(replaceSpecialChar)
+export sanitizeUrl = (url) => `u_${hashString(url)}`

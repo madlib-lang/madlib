@@ -1,10 +1,11 @@
 import { ErrorWithMessage, assertEquals, test } from "Test"
-import { good, mapRej } from "Wish"
+import { good, bad, mapRej, bichain } from "Wish"
 import { always } from "Function"
 import { Just } from "Maybe"
 import ByteArray from "ByteArray"
 import Dictionary from "Dictionary"
 import List from "List"
+import String from "String"
 import { OK } from "Http"
 
 import type { Config } from "./Config"
@@ -159,19 +160,26 @@ test("run - non-TTY returns original lock when no conflicts", (_) => {
     }],
   ])
   noConflictLock = { lockfileVersion: 1, packages: singlePackage }
-  return ConflictResolver.run(baseConfig, FOO_MADLIB_JSON, noConflictLock)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((lock) => assertEquals(Dictionary.length(lock.packages), 1))
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((lock) => assertEquals(Dictionary.length(lock.packages), 1))
+  )(ConflictResolver.run(baseConfig, FOO_MADLIB_JSON, noConflictLock))
 })
 
-test("run - non-TTY with conflicts returns lock with all entries unchanged", (_) =>
-  ConflictResolver.run(baseConfig, FOO_MADLIB_JSON, FOO_LOCK)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((lock) => assertEquals(Dictionary.length(lock.packages), Dictionary.length(PACKAGES)))
+test("run - non-TTY with conflicts fails with an error", (_) =>
+  pipe(
+    bichain(
+      (_) => good({}),
+      (_) => bad(ErrorWithMessage("expected run to fail for non-TTY with conflicts"))
+    )
+  )(ConflictResolver.run(baseConfig, FOO_MADLIB_JSON, FOO_LOCK))
 )
 
-test("run - non-TTY preserves lockfileVersion", (_) =>
-  ConflictResolver.run(baseConfig, FOO_MADLIB_JSON, FOO_LOCK)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((lock) => assertEquals(lock.lockfileVersion, 1))
+test("run - non-TTY with conflicts error message mentions conflicts", (_) =>
+  pipe(
+    bichain(
+      (msg) => assertEquals(String.contains("conflict", String.toLower(msg)), true),
+      (_) => bad(ErrorWithMessage("expected run to fail for non-TTY with conflicts"))
+    )
+  )(ConflictResolver.run(baseConfig, FOO_MADLIB_JSON, FOO_LOCK))
 )

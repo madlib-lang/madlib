@@ -52,18 +52,18 @@ main = () => {
       )(config)
 
     _ =>
-      pipe(
-        run,
-        chain(
-          (_) => where(mode) {
-            ShowWhy(pkg) =>
-              Why.render(config, pkg)
+      where(mode) {
+        ShowWhy(pkg) =>
+          pipe(
+            Why.render(config, pkg),
+            fulfill(IO.trace("error"), identity)
+          )
 
-            _ =>
-              of({})
-          }
-        ),
-        fulfill(IO.trace("error"), identity)
-      )(config)
+        _ =>
+          pipe(
+            run,
+            fulfill(IO.trace("error"), identity)
+          )(config)
+      }
   }
 }

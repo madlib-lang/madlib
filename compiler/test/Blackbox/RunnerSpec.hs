@@ -276,6 +276,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/inline-duplicates-arg-effects"
         , "compiler/test/Blackbox/test-cases/inline-drops-unused-arg-effects"
         , "compiler/test/Blackbox/test-cases/tco-advanced"
+        , "compiler/test/Blackbox/test-cases/js-recursive-callback-where"
         , "compiler/test/Blackbox/test-cases/higher-order-inlining"
         , "compiler/test/Blackbox/test-cases/bool-precedence"
         , "compiler/test/Blackbox/test-cases/do-in-branches"

@@ -1,26 +1,34 @@
 import { test, assertEquals } from "Test"
+import String from "String"
 
 import { sanitizeUrl } from "./URL"
 
 
 test("sanitizeUrl", (_) =>
-  assertEquals(sanitizeUrl("https://url.tld"), "https___url_tld")
+  assertEquals(String.startsWith("u_", sanitizeUrl("https://url.tld")), true)
 )
 
 test("sanitizeUrl - #", (_) =>
-  assertEquals(sanitizeUrl("https://url.tld#anchor"), "https___url_tld_anchor")
+  assertEquals(String.startsWith("u_", sanitizeUrl("https://url.tld#anchor")), true)
 )
 
 test("sanitizeUrl - ? and =", (_) =>
   assertEquals(
-    sanitizeUrl("https://url.tld?param=value"),
-    "https___url_tld_param_value"
+    String.startsWith("u_", sanitizeUrl("https://url.tld?param=value")),
+    true
   )
 )
 
 test("sanitizeUrl - -", (_) =>
   assertEquals(
-    sanitizeUrl("https://dom-ain.tld"),
-    "https___dom_ain_tld"
+    String.startsWith("u_", sanitizeUrl("https://dom-ain.tld")),
+    true
+  )
+)
+
+test("sanitizeUrl - distinct urls do not collide", (_) =>
+  assertEquals(
+    sanitizeUrl("https://dom-ain.tld") == sanitizeUrl("https://dom_ain.tld"),
+    false
   )
 )

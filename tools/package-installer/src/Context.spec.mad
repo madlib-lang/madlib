@@ -20,7 +20,8 @@ CONTEXT_POPULATED = {
     }
   }},
   installedPackages: ["http___url_from_maddoc"],
-  lockEntries: Dict.empty
+  lockEntries: Dict.empty,
+  sourceLockEntries: Dict.empty
 }
 
 test("findByName               - found", (_) => {
@@ -50,7 +51,8 @@ test("updateEntry", (_) => {
       }
     }},
     installedPackages: [],
-    lockEntries: Dict.empty
+    lockEntries: Dict.empty,
+    sourceLockEntries: Dict.empty
   }
   actual = updateEntry(
     "MadDoc",
@@ -67,7 +69,8 @@ test("addInstalledPackage      - first time", (_) => {
   expected = {
     versions: Dict.empty,
     installedPackages: ["http___url_from_maddoc"],
-    lockEntries: Dict.empty
+    lockEntries: Dict.empty,
+    sourceLockEntries: Dict.empty
   }
   actual = addInstalledPackage("http___url_from_maddoc", initialContext)
   return assertEquals(actual, expected)
@@ -77,12 +80,14 @@ test("addInstalledPackage      - second time", (_) => {
   context = {
     versions: Dict.empty,
     installedPackages: ["http___url_from_maddoc"],
-    lockEntries: Dict.empty
+    lockEntries: Dict.empty,
+    sourceLockEntries: Dict.empty
   }
   expected = {
     versions: Dict.empty,
     installedPackages: ["http___url_from_maddoc"],
-    lockEntries: Dict.empty
+    lockEntries: Dict.empty,
+    sourceLockEntries: Dict.empty
   }
   actual = addInstalledPackage("http___url_from_maddoc", context)
   return assertEquals(actual, expected)
@@ -97,7 +102,8 @@ test("hasPackageBeenInstalled  - installed", (_) => {
   context = {
     versions: Dict.empty,
     installedPackages: ["http___url_from_maddoc"],
-    lockEntries: Dict.empty
+    lockEntries: Dict.empty,
+    sourceLockEntries: Dict.empty
   }
   actual = hasPackageBeenInstalled("http___url_from_maddoc", context)
   return assertEquals(actual, true)

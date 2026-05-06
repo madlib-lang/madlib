@@ -91,7 +91,7 @@ renderChildren = (packages, visited, ancestorIsLast, deps) => where(deps) {
 // Top-level rendering with IO — function body block is valid here.
 renderGraphOutput :: MadlibDotJson.MadlibDotJson -> MadlibLock.MadlibLock -> {}
 renderGraphOutput = (mdj, lock) => {
-  rootDeps = mdj.dependencies |> fromMaybe([]) |> map(.url)
+  rootDeps = pipe(fromMaybe([]), map(.url))(mdj.dependencies)
   renderResult = renderChildren(lock.packages, Dictionary.empty, [], rootDeps)
   IO.putLine(`${Color.bold(mdj.name)}@${Version.showVersion(mdj.version)}`)
   List.forEach(IO.putLine, where(renderResult) { #[lines, _] => lines })
@@ -100,16 +100,18 @@ renderGraphOutput = (mdj, lock) => {
 
 render :: Config -> Wish {} {}
 export render = (config) => {
-  loadMdj = MadlibDotJson.load(config, "madlib.json")
-    |> map(Just)
-    |> discardError(always(Nothing))
+  loadMdj = pipe(
+    map(Just),
+    discardError(always(Nothing))
+  )(MadlibDotJson.load(config, "madlib.json"))
 
-  loadLock = MadlibLock.load(config, Constants.LOCK_FILE_PATH)
-    |> map(Just)
-    |> discardError(always(Nothing))
+  loadLock = pipe(
+    map(Just),
+    discardError(always(Nothing))
+  )(MadlibLock.load(config, Constants.LOCK_FILE_PATH))
 
-  return loadMdj |> chain(
-    (maybeMdj) => loadLock |> map(
+  return chain(
+    (maybeMdj) => map(
       (maybeLock) => where(#[maybeMdj, maybeLock]) {
         #[Nothing, _] =>
           IO.putLine(Color.red("madlib.json not found — cannot render graph"))
@@ -121,7 +123,9 @@ export render = (config) => {
 
         #[Just(mdj), Just(lock)] =>
           renderGraphOutput(mdj, lock)
-      }
-    )
+      },
+      loadLock
+    ),
+    loadMdj
   )
 }

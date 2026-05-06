@@ -6,3 +6,7 @@ import {} from "./Version"
 
 hashVersion :: Version -> String
 export hashVersion = (version) => pipe(show, Crypto.md5)(version)
+
+
+hashString :: String -> String
+export hashString = Crypto.md5

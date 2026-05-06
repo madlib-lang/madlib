@@ -32,7 +32,7 @@ export dependencyParser = J.field(
         sanitizedUrl: sanitizeUrl(url)
       }),
       J.field("url", J.string),
-      J.field("description", J.maybe(J.string)),
+      J.maybe(J.field("description", J.string)),
       J.map1(chain(Version.parse), J.maybe(J.field("minVersion", J.string))),
       J.map1(chain(Version.parse), J.maybe(J.field("maxVersion", J.string)))
     )

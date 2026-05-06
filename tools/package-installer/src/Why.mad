@@ -75,7 +75,7 @@ printPaths = (targetName, rootLabel, paths, packages) => {
 renderWhyOutput :: MadlibDotJson.MadlibDotJson -> MadlibLock.MadlibLock -> String -> {}
 renderWhyOutput = (mdj, lock, targetName) => {
   rootLabel = `${Color.bold(mdj.name)}@${Version.showVersion(mdj.version)}`
-  rootDeps = mdj.dependencies |> fromMaybe([]) |> map(.url)
+  rootDeps = pipe(fromMaybe([]), map(.url))(mdj.dependencies)
   paths = findPaths(targetName, lock.packages, [], rootDeps)
 
   IO.putLine("")
@@ -90,16 +90,18 @@ renderWhyOutput = (mdj, lock, targetName) => {
 
 render :: Config -> String -> Wish {} {}
 export render = (config, targetName) => {
-  loadMdj = MadlibDotJson.load(config, "madlib.json")
-    |> map(Just)
-    |> discardError(always(Nothing))
+  loadMdj = pipe(
+    map(Just),
+    discardError(always(Nothing))
+  )(MadlibDotJson.load(config, "madlib.json"))
 
-  loadLock = MadlibLock.load(config, Constants.LOCK_FILE_PATH)
-    |> map(Just)
-    |> discardError(always(Nothing))
+  loadLock = pipe(
+    map(Just),
+    discardError(always(Nothing))
+  )(MadlibLock.load(config, Constants.LOCK_FILE_PATH))
 
-  return loadMdj |> chain(
-    (maybeMdj) => loadLock |> map(
+  return chain(
+    (maybeMdj) => map(
       (maybeLock) => where(#[maybeMdj, maybeLock]) {
         #[Nothing, _] =>
           IO.putLine(Color.red("madlib.json not found"))
@@ -109,7 +111,9 @@ export render = (config, targetName) => {
 
         #[Just(mdj), Just(lock)] =>
           renderWhyOutput(mdj, lock, targetName)
-      }
-    )
+      },
+      loadLock
+    ),
+    loadMdj
   )
 }

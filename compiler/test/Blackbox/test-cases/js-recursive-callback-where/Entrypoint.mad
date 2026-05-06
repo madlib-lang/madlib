@@ -1,0 +1,29 @@
+import IO from "IO"
+import List from "List"
+import { Just, Nothing } from "Maybe"
+
+firstNonZero :: List Integer -> Integer
+firstNonZero = (items) => where(items) {
+  [item, ...rest] =>
+    where(List.mapMaybe((candidate) => where(candidate) {
+      0 =>
+        Nothing
+
+      _ =>
+        Just(candidate)
+    }, [item])) {
+      [value, ..._] =>
+        value
+
+      [] =>
+        firstNonZero(rest)
+    }
+
+  [] =>
+    0
+}
+
+main = () => {
+  IO.log(firstNonZero([0, 0, 7]))
+  IO.log(firstNonZero([0, 0]))
+}

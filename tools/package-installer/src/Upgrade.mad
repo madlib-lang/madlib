@@ -5,7 +5,7 @@ import { Wish } from "Wish"
 import { andDo } from "Monad"
 import { bichain, discardError, good, mapRej, parallelN } from "Wish"
 import type { Maybe } from "Maybe"
-import { Just, Nothing } from "Maybe"
+import { Just, Nothing, fromMaybe } from "Maybe"
 import { Left, Right } from "Either"
 import { always, identity } from "Function"
 import ByteArray from "ByteArray"
@@ -16,6 +16,7 @@ import List from "List"
 import String from "String"
 import Terminal from "Terminal"
 
+import MadlibDotJson from "./MadlibDotJson"
 import MadlibLock from "./MadlibLock"
 import Constants from "./Constants"
 import Color from "./Color"
@@ -80,22 +81,22 @@ buildCandidate = (config, url, entry) => where(parseGitHubTagUrl(url)) {
     of(Nothing)
 
   Just(info) =>
-    checkLatestRelease(config, info)
-      |> map(
-          (maybeTag) => where(maybeTag) {
-            Nothing =>
-              Nothing
+    map(
+      (maybeTag) => where(maybeTag) {
+        Nothing =>
+          Nothing
 
-            Just(tag) =>
-              Just({
-                packageName: entry.name,
-                currentVersion: entry.version,
-                currentUrl: url,
-                newUrl: buildNewUrl(info, tag),
-                latestTag: tag,
-              })
-          }
-        )
+        Just(tag) =>
+          Just({
+            packageName: entry.name,
+            currentVersion: entry.version,
+            currentUrl: url,
+            newUrl: buildNewUrl(info, tag),
+            latestTag: tag,
+          })
+      },
+      checkLatestRelease(config, info)
+    )
 }
 
 
@@ -111,6 +112,17 @@ buildCandidates = (config, lock) => pipe(
   parallelN(8),
   map(List.mapMaybe(identity))
 )(lock.packages)
+
+
+filterRootCandidates :: Config -> List UpgradeCandidate -> Wish {} (List UpgradeCandidate)
+filterRootCandidates = (config, candidates) => pipe(
+  MadlibDotJson.load(config),
+  map((mdj) => {
+    rootUrls = pipe(fromMaybe([]), map(.url))(mdj.dependencies)
+    return List.filter((candidate) => List.includes(candidate.currentUrl, rootUrls), candidates)
+  }),
+  discardError(always(candidates))
+)("madlib.json")
 
 
 // ---- Rendering helpers ------------------------------------------------------
@@ -250,39 +262,55 @@ selectAll = (candidates) => {
 applyUpgrades :: Config -> List UpgradeCandidate -> Wish {} {}
 export applyUpgrades = (config, selected) => {
   updateJson =
-    config.readFile("madlib.json")
-      |> mapRej(always({}))
-      |> map(
-          (content) => List.reduce(
-            (acc, cand) => pipe(String.split(cand.currentUrl), String.join(cand.newUrl))(acc),
-            content,
-            selected
-          )
-        )
-      |> chain(
-          (newContent) => config.writeFile("madlib.json", newContent)
-            |> mapRej(always({}))
-        )
+    pipe(
+      MadlibDotJson.load(config),
+      mapRej(always({})),
+      map(
+        (mdj) => ({
+          ...mdj,
+          dependencies: map(
+            (deps) => map(
+              (dep) => where(List.find((c) => c.currentUrl == dep.url, selected)) {
+                Just(cand) => { ...dep, url: cand.newUrl }
+                Nothing => dep
+              },
+              deps
+            ),
+            mdj.dependencies
+          ),
+        })
+      ),
+      chain(
+        (mdj) => pipe(
+          config.writeFile("madlib.json"),
+          mapRej(always({}))
+        )(MadlibDotJson.serialize(mdj))
+      )
+    )("madlib.json")
 
   updateLock =
-    MadlibLock.load(config, Constants.LOCK_FILE_PATH)
-      |> discardError(always(MadlibLock.empty))
-      |> map(
-          (lock) => ({
-            ...lock,
-            packages: List.reduce(
-              (dict, cand) => Dictionary.remove(cand.currentUrl, dict),
-              lock.packages,
-              selected
-            ),
-          })
-        )
-      |> chain(
-          (lock) => MadlibLock.write(config, Constants.LOCK_FILE_PATH, lock)
-            |> discardError(always({}))
-        )
+    pipe(
+      MadlibLock.load(config),
+      discardError(always(MadlibLock.empty)),
+      map(
+        (lock) => ({
+          ...lock,
+          packages: List.reduce(
+            (dict, cand) => Dictionary.remove(cand.currentUrl, dict),
+            lock.packages,
+            selected
+          ),
+        })
+      ),
+      chain(
+        (lock) => pipe(
+          MadlibLock.write(config, Constants.LOCK_FILE_PATH),
+          discardError(always({}))
+        )(lock)
+      )
+    )(Constants.LOCK_FILE_PATH)
 
-  return updateJson |> andDo(updateLock)
+  return andDo(updateLock, updateJson)
 }
 
 
@@ -298,14 +326,15 @@ runApplyUpgrades :: Config -> List UpgradeCandidate -> Wish {} {}
 runApplyUpgrades = (config, selectedCandidates) => {
   count = List.length(selectedCandidates)
   IO.putLine(Color.bold("Applying upgrades..."))
-  return applyUpgrades(config, selectedCandidates)
-    |> chain(
-        (_) => {
-          IO.putLine(Color.green(`Applied ${show(count)} upgrade(s). Run madlib install to fetch the new packages.`))
-          IO.putLine("")
-          return good({})
-        }
-      )
+  return pipe(
+    chain(
+      (_) => {
+        IO.putLine(Color.green(`Applied ${show(count)} upgrade(s). Run madlib install to fetch the new packages.`))
+        IO.putLine("")
+        return good({})
+      }
+    )
+  )(applyUpgrades(config, selectedCandidates))
 }
 
 applySelected :: Config -> List UpgradeCandidate -> Wish {} {}
@@ -324,9 +353,10 @@ noUpgradesAvailable = (_) => {
 
 runPicker :: Config -> List UpgradeCandidate -> Wish {} {}
 runPicker = (config, candidates) =>
-  (config.isTTY({}) ? interactivePicker(candidates) : selectAll(candidates))
-    |> chain(applySelected(config))
-    |> discardError(always({}))
+  pipe(
+    chain(applySelected(config)),
+    discardError(always({}))
+  )(config.isTTY({}) ? interactivePicker(candidates) : selectAll(candidates))
 
 processCandidates :: Config -> List UpgradeCandidate -> Wish {} {}
 processCandidates = (config, candidates) =>
@@ -341,15 +371,23 @@ noLockFile = (_) => {
   return good({})
 }
 
+renderLock :: Config -> MadlibLock.MadlibLock -> Wish {} {}
+renderLock = (config, lock) => do {
+  candidates <- buildCandidates(config, lock)
+  filteredCandidates <- filterRootCandidates(config, candidates)
+  _ <- processCandidates(config, filteredCandidates)
+  return of({})
+}
+
 render :: Config -> Wish {} {}
 export render = (config) => {
   IO.putLine("")
   IO.putLine("Checking for updates...")
 
-  return MadlibLock.load(config, Constants.LOCK_FILE_PATH)
-    |> bichain(
-        always(noLockFile({})),
-        (lock) => buildCandidates(config, lock)
-          |> chain(processCandidates(config))
-      )
+  return pipe(
+    bichain(
+      always(noLockFile({})),
+      renderLock(config)
+    )
+  )(MadlibLock.load(config, Constants.LOCK_FILE_PATH))
 }

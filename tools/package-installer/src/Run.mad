@@ -1,7 +1,7 @@
 import type { Wish } from "Wish"
 import type { Maybe } from "Maybe"
 import List from "List"
-import { bad, bichain, chainRej, discardError, mapRej, parallelN } from "Wish"
+import { bad, bichain, chainRej, discardError, good, mapRej, parallelN } from "Wish"
 import IO from "IO"
 import { Just, Nothing, fromMaybe } from "Maybe"
 import Process from "Process"
@@ -14,6 +14,7 @@ import type { Context } from "./Context"
 import type { Dependency } from "./Dependency"
 import type { MadlibDotJson } from "./MadlibDotJson"
 import type { VersionDotLock } from "./VersionDotLock"
+import type { LockEntry } from "./MadlibLock"
 import type { Validate, ValidationInput, ValidationOutput } from "./Validate"
 import type { Config } from "./Config"
 import type { Reporter } from "./Reporter"
@@ -37,6 +38,7 @@ import {
   errorMessage
 } from "./Validate"
 import Constants from "./Constants"
+import type { DownloadResult } from "./Download"
 import { DownloadError, Downloaded, downloadIfNotCached } from "./Download"
 import { FromCache, FromRemote, downloadErrorMessage } from "./Download"
 import { hashVersion } from "./Hash"
@@ -61,22 +63,18 @@ copyPackageToMadlibModules = (config, dependency) => pipe(
 )(dependency)
 
 
-installNodeModules :: Config -> String -> Wish {} String
-installNodeModules = (config, pkgName) => pipe(
-  (name) => `${Constants.MADLIB_MODULES_PATH}${name}/`,
-  (path) => config.exists(`${path}package.json`) |> andDo(of(path)),
-  mapRej(always("")),
-  map((path) => ["install", path,]),
-  chain(
-    pipe(
-      config.exec("npm", $, Process.DEFAULT_COMMAND_OPTIONS),
-      mapRej(.stderr)
-    )
-  ),
-  map(.stdout),
-  map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`)),
-  discardError(IO.putLineAndPass(`No node modules to install for '${pkgName}'`))
-)(pkgName)
+installNodeModules :: Config -> String -> Wish String String
+installNodeModules = (config, pkgName) => {
+  path = `${Constants.MADLIB_MODULES_PATH}${pkgName}/`
+  return bichain(
+    always(of("")),
+    (_) => pipe(
+      mapRej(.stderr),
+      map(.stdout),
+      map(IO.putLineAndPass(`nodejs modules installed for '${pkgName}'`))
+    )(config.exec("npm", ["install", path], Process.DEFAULT_COMMAND_OPTIONS))
+  )(config.exists(`${path}package.json`))
+}
 
 
 projectBaseUrl :: Dependency -> String
@@ -175,9 +173,6 @@ copyPackageFromTmp = (config, validationResult) => where (validationResult) {
 
 tryRecovery :: Validate a -> Validate a
 tryRecovery = (validation) => where (validation) {
-  ValidationError(_, _, Just(a)) =>
-    pure(a)
-
   _ =>
     validation
 }
@@ -226,16 +221,15 @@ postProcess = (previousContextAndDeps, processedDependency, validation) => where
         version: Version.showVersion(result.madlibDotJson.version),
         buildHash: result.buildHash,
         versionHash: result.versionHash,
-        dependencies: result.madlibDotJson.dependencies
-          |> fromMaybe([])
-          |> map(.url),
+        dependencies: pipe(fromMaybe([]), map(.url))(result.madlibDotJson.dependencies),
       }
       return pipe(
         (validationResult) => ({
           ...validationResult,
-          context: validationResult.context
-            |> addInstalledPackage(processedDependency.sanitizedUrl)
-            |> addLockEntry(processedDependency.url, lockEntry),
+          context: pipe(
+            addInstalledPackage(processedDependency.sanitizedUrl),
+            addLockEntry(processedDependency.url, lockEntry)
+          )(validationResult.context),
         }),
         (validationResult) => validationResult.shouldCopy
           ? #[
@@ -248,7 +242,71 @@ postProcess = (previousContextAndDeps, processedDependency, validation) => where
           : #[validationResult.context, Tuple.snd(previousContextAndDeps)],
         runPostInstallHook(false, result.madlibDotJson)
       )(result)
+  }
+}
+
+lookupSourceLockEntry :: Context -> Dependency -> Maybe LockEntry
+lookupSourceLockEntry = (context, dependency) => Dictionary.get(dependency.url, context.sourceLockEntries)
+
+installedDependencyChildren :: Context -> List Dependency -> List Dependency
+installedDependencyChildren = (context, dependencies) => pipe(
+  List.mapMaybe(
+    (dependency) => where(lookupSourceLockEntry(context, dependency)) {
+      Just(entry) =>
+        Just(
+          map(
+            (url) => ({
+              url,
+              sanitizedUrl: sanitizeUrl(url),
+              versionRange: AnyVersion,
+              description: Nothing,
+              name: Nothing,
+            }),
+            entry.dependencies
+          )
+        )
+
+      Nothing =>
+        Nothing
     }
+  ),
+  List.flatten
+)(dependencies)
+
+recordInstalledDependencies :: Context -> List Dependency -> Context
+recordInstalledDependencies = (context, installedDependencies) =>
+  List.reduce(
+    (acc, dependency) => where(lookupSourceLockEntry(acc, dependency)) {
+      Just(entry) =>
+        pipe(
+          addInstalledPackage(dependency.sanitizedUrl),
+          addLockEntry(dependency.url, entry)
+        )(acc)
+
+      Nothing =>
+        acc
+    },
+    context,
+    installedDependencies
+  )
+
+
+isDownloadError :: DownloadResult -> Boolean
+isDownloadError = where {
+  DownloadError(_, _) =>
+    true
+
+  _ =>
+    false
+}
+
+downloadedDependency :: DownloadResult -> Maybe Dependency
+downloadedDependency = where {
+  DownloadError(_, _) =>
+    Nothing
+
+  Downloaded(a, _) =>
+    Just(a)
 }
 
 
@@ -292,14 +350,16 @@ processDependency = (config, reporter, contextAndNextDeps, dependency) => pipe(
   ),
   chain((validation) => where(validation) {
     ValidationError(_, _, _) =>
-      postProcess(contextAndNextDeps, dependency, validation)
+      where(validation) {
+        ValidationError(_, err, _) =>
+          bad({})
+
+        _ =>
+          bad({})
+      }
 
     _ =>
-      do {
-        result = unsafeGetValidationValue(validation)
-        reporter.installed(result.madlibDotJson.name)
-        return postProcess(contextAndNextDeps, dependency, validation)
-      }
+      postProcess(contextAndNextDeps, dependency, validation)
   })
 )(dependency)
 
@@ -315,65 +375,62 @@ filterAlreadyInstalledDependencies = (context, dependencies) => List.filter(
 
 
 processDependencies :: Config -> Reporter -> Context -> List Dependency -> Wish {} #[Context, List Dependency]
-processDependencies = (config, reporter, context, dependencies) => pipe(
-  filterAlreadyInstalledDependencies(context),
-  (deps) => {
-    reporter.scheduled(List.length(deps))
-    return deps
-  },
-  pipe(
+processDependencies = (config, reporter, context, dependencies) => {
+  pending = filterAlreadyInstalledDependencies(context, dependencies)
+  installed = List.filter((dependency) => hasPackageBeenInstalled(dependency.sanitizedUrl, context), dependencies)
+  contextWithInstalled = recordInstalledDependencies(context, installed)
+  installedChildren = installedDependencyChildren(contextWithInstalled, installed)
+
+  reporter.scheduled(List.length(pending))
+
+  return List.isEmpty(pending)
+    ? List.isEmpty(installedChildren)
+      ? of(#[contextWithInstalled, installedChildren])
+      : processDependencies(config, reporter, contextWithInstalled, installedChildren)
+    : pipe(
     map((dependency) => {
       reporter.downloading(dependency.url)
       return pipe(
         downloadIfNotCached(config, reporter.progress(dependency.url)),
-        map((result) => where(result) {
-          Downloaded(d, FromCache) =>
-            do {
+        map((result) => {
+          where(result) {
+            Downloaded(d, FromCache) =>
               reporter.cached(d.url)
-              return result
-            }
 
-          Downloaded(d, FromRemote) =>
-            do {
+            Downloaded(d, FromRemote) =>
               reporter.downloaded(d.url)
-              return result
-            }
 
-          DownloadError(d, failure) =>
-            do {
+            DownloadError(d, failure) =>
+              do {
               reporter.downloadFinished(d.url)
               reporter.failed(downloadErrorMessage(d, failure))
-              return result
             }
+          }
+          return result
         })
       )(dependency)
     }),
-    parallelN(8)
-  ),
-  map(
-    pipe(
-      List.mapMaybe(
-        where {
-          DownloadError(_, _) =>
-            Nothing
-
-          Downloaded(a, _) =>
-            Just(a)
-        }
+    parallelN(8),
+    chain((results) => List.any(isDownloadError, results)
+      ? bad({})
+      : (
+        chain(
+          List.reduceM(processDependency(config, reporter), #[contextWithInstalled, []]),
+          good(List.mapMaybe(downloadedDependency, results))
+        )
       )
-    )
-  ),
-  chain(List.reduceM(processDependency(config, reporter), #[context, []])),
-  chain(
-    where {
-      #[_context, [,]] =>
-        of(#[_context, []])
+    ),
+    chain(
+      where {
+        #[_context, [,]] =>
+          of(#[_context, []])
 
-      #[_context, nextDependencies] =>
-        processDependencies(config, reporter, _context, nextDependencies)
-    }
-  )
-)(dependencies)
+        #[_context, nextDependencies] =>
+          processDependencies(config, reporter, _context, mappend(nextDependencies, installedDependencyChildren(_context, installed)))
+      }
+    )
+  )(pending)
+}
 
 
 installedDependencyFolders :: Config -> Wish {} (List String)
@@ -387,7 +444,10 @@ installPackages :: Config -> Reporter -> Context -> String -> Wish {} Context
 installPackages = (config, reporter, context, madlibDotJsonPath) => pipe(
   config.readFile,
   mapRej(always(Constants.MADLIB_NOT_FOUND)),
-  chain((content) => config.createDir(Constants.MADLIB_MODULES_PATH, { recursive: true }) |> mapRej(always(Constants.MADLIB_NOT_FOUND)) |> andDo(of(content))),
+  chain((content) => pipe(
+    mapRej(always(Constants.MADLIB_NOT_FOUND)),
+    andDo(of(content))
+  )(config.createDir(Constants.MADLIB_MODULES_PATH, { recursive: true }))),
   discardError(identity),
   chain(
     pipe(
@@ -404,20 +464,27 @@ installPackages = (config, reporter, context, madlibDotJsonPath) => pipe(
           chain(
             where {
               #[finalContext, _] =>
-                installedDependencyFolders(config)
-                  |> chain(
-                      pipe(
-                        map(installNodeModules(config)),
-                        parallelN(4)
-                      )
-                    )
-                  |> chain(runPostInstallHook(true, madlibDotJson))
-                  |> chain((_) => ConflictResolver.run(
-                      config,
-                      madlibDotJson,
-                      { lockfileVersion: 1, packages: finalContext.lockEntries }
-                    ) |> map(MadlibLock.normalizeDependencies(finalContext.lockEntries))
-                      |> map((normalizedLock) => ({ ...finalContext, lockEntries: normalizedLock.packages })))
+                pipe(
+                  mapRej(always({})),
+                  chain((resolvedLock) =>
+                    chain(
+                      (folders) =>
+                        pipe(
+                          map(installNodeModules(config)),
+                          parallelN(4),
+                          mapRej((msg) => IO.putLineAndPass(msg, {})),
+                          andDo(of({
+                            ...finalContext,
+                            lockEntries: resolvedLock.packages,
+                          })),
+                          chain((ctx) => runPostInstallHook(true, madlibDotJson, ctx))
+                        )(folders)
+                    )(installedDependencyFolders(config))
+                  )
+                )(ConflictResolver.run(config, madlibDotJson, {
+                  lockfileVersion: 1,
+                  packages: finalContext.lockEntries,
+                }))
             }
           )
         )(madlibDotJson)
@@ -425,11 +492,6 @@ installPackages = (config, reporter, context, madlibDotJsonPath) => pipe(
     )
   )
 )(madlibDotJsonPath)
-
-
-
-
-
 
 
 /**
@@ -440,7 +502,7 @@ installPackages = (config, reporter, context, madlibDotJsonPath) => pipe(
 prepare :: Config -> String -> Wish String String
 prepare = (config, packageDotJsonPath) => pipe(
   always(
-    config.createDir(Constants.TEMPORARY_MODULES_PATH, { recursive: true }) |> mapRej(always(""))
+    mapRej(always(""), config.createDir(Constants.TEMPORARY_MODULES_PATH, { recursive: true }))
   ),
   andDo(of(packageDotJsonPath)),
   chain(
@@ -474,11 +536,13 @@ restorePackageDotJson = (config, content) => pipe(
 
 
 writeLockFile :: Config -> Context -> Wish {} {}
-writeLockFile = (config, context) => MadlibLock.write(
+writeLockFile = (config, context) => pipe(
+  mapRej((err) => IO.putLineAndPass(`Failed to write lock file: ${show(err)}`, {}))
+)(MadlibLock.write(
   config,
   Constants.LOCK_FILE_PATH,
   { lockfileVersion: 1, packages: context.lockEntries }
-) |> discardError(always({}))
+))
 
 
 // Build a minimal Dependency for prefetch-only use (versionRange is unused by download logic).
@@ -499,26 +563,27 @@ makePrefetchDep = (url) => ({
 prefetchFromLock :: Config -> MadlibLock.MadlibLock -> Wish {} {}
 prefetchFromLock = (config, lock) => pipe(
   Dictionary.keys,
-  map((url) => downloadIfNotCached(config, (_, _) => {}, makePrefetchDep(url)) |> andDo(of({}))),
+  map((url) => andDo(of({}), downloadIfNotCached(config, (_, _) => {}, makePrefetchDep(url)))),
   parallelN(16),
   map(always({}))
 )(lock.packages)
 
 
-// Build a starting Context from the previous lock file.  For each locked
+// Build a starting Context from the previous lock file. For each locked
 // package, we check whether it is already present in madlib_modules/.
 // Packages found on disk are marked as installed so the main loop skips
-// them (delta install).  All lock entries are pre-loaded into lockEntries
-// so the final lock file is the union of old and new packages.
+// them (delta install). The previous lock is kept as the source graph so
+// already-installed packages can still contribute their transitive deps.
 buildDeltaContext :: Config -> MadlibLock.MadlibLock -> Wish {} Context
 buildDeltaContext = (config, lock) => pipe(
   Dictionary.toList,
   map(
     (pair) => where(pair) {
       #[url, entry] =>
-        config.exists(`${Constants.MADLIB_MODULES_PATH}${entry.name}/madlib.json`)
-          |> map((_) => Just(sanitizeUrl(url)))
-          |> discardError(always(Nothing))
+        pipe(
+          map((_) => Just(sanitizeUrl(url))),
+          discardError(always(Nothing))
+        )(config.exists(`${Constants.MADLIB_MODULES_PATH}${entry.name}/madlib.json`))
     }
   ),
   parallelN(16),
@@ -526,7 +591,8 @@ buildDeltaContext = (config, lock) => pipe(
     (results) => ({
       versions: Dictionary.empty,
       installedPackages: List.mapMaybe(identity, results),
-      lockEntries: lock.packages,
+      lockEntries: Dictionary.empty,
+      sourceLockEntries: lock.packages,
     })
   )
 )(lock.packages)
@@ -537,13 +603,15 @@ export run = (config) => {
   reporter = Reporter.make(config.isTTY({}), config.now({}))
   reporter.start({})
 
-  return MadlibLock.load(config, Constants.LOCK_FILE_PATH)
-    |> discardError(always(MadlibLock.empty))
-    |> chain(
-      (lock) => prefetchFromLock(config, lock)
-        |> chain((_) => buildDeltaContext(config, lock))
-    )
-    |> chain(
+  return pipe(
+    discardError(always(MadlibLock.empty)),
+    chain(
+      (lock) => chain(
+        (_) => buildDeltaContext(config, lock),
+        prefetchFromLock(config, lock)
+      )
+    ),
+    chain(
       (ctx) => pipe(
         prepare(config),
         bichain(
@@ -554,8 +622,8 @@ export run = (config) => {
           ),
           (packageDotJsonContent) => pipe(
             installPackages(config, reporter, ctx),
-            chain((finalCtx) => restorePackageDotJson(config, packageDotJsonContent) |> andDo(of(finalCtx))),
-            chainRej((x) => restorePackageDotJson(config, packageDotJsonContent) |> andDo(bad(x)))
+            chain((finalCtx) => andDo(of(finalCtx), restorePackageDotJson(config, packageDotJsonContent))),
+            chainRej((x) => andDo(bad(x), restorePackageDotJson(config, packageDotJsonContent)))
           )("madlib.json")
         ),
         chain((finalCtx) => {
@@ -569,4 +637,5 @@ export run = (config) => {
         andDo(of({}))
       )("package.json")
     )
+  )(MadlibLock.load(config, Constants.LOCK_FILE_PATH))
 }

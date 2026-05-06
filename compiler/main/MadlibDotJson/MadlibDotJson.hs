@@ -17,7 +17,7 @@ import           System.FilePath                ( joinPath )
 
 data Dependency
   = Dependency
-  { description :: String
+  { description :: Maybe String
   , url :: String
   , minVersion :: Maybe String
   , maxVersion :: Maybe String

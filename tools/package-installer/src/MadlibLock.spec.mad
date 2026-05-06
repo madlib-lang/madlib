@@ -56,39 +56,43 @@ test("empty - packages dictionary is empty", (_) =>
 
 test("load - parses lockfileVersion from valid JSON", (_) => {
   config = { ...baseConfig, readFile: (_) => good(VALID_LOCK_JSON) }
-  return load(config, "./madlib.lock")
-    |> mapRej(always(ErrorWithMessage("load failed")))
-    |> chain((lock) => assertEquals(lock.lockfileVersion, 1))
+  return pipe(
+    mapRej(always(ErrorWithMessage("load failed"))),
+    chain((lock) => assertEquals(lock.lockfileVersion, 1))
+  )(load(config, "./madlib.lock"))
 })
 
 test("load - parses package entry from valid JSON", (_) => {
   config = { ...baseConfig, readFile: (_) => good(VALID_LOCK_JSON) }
-  return load(config, "./madlib.lock")
-    |> mapRej(always(ErrorWithMessage("load failed")))
-    |> chain((lock) =>
+  return pipe(
+    mapRej(always(ErrorWithMessage("load failed"))),
+    chain((lock) =>
         assertEquals(
           Dictionary.get("https://example.com/foo.zip", lock.packages),
           Just({ name: "foo", version: "1.2.3", buildHash: "abc", versionHash: "def", dependencies: [] })
         )
        )
+  )(load(config, "./madlib.lock"))
 })
 
 test("load - fails when file is not found", (_) => {
   config = { ...baseConfig, readFile: (_) => bad(IO.UnknownError) }
-  return load(config, "./madlib.lock")
-    |> bichain(
-        (err) => assertEquals(String.contains("not found", err), true),
-        (_) => bad(ErrorWithMessage("expected load to fail but it succeeded"))
-       )
+  return pipe(
+    bichain(
+      (err) => assertEquals(String.contains("not found", err), true),
+      (_) => bad(ErrorWithMessage("expected load to fail but it succeeded"))
+    )
+  )(load(config, "./madlib.lock"))
 })
 
 test("load - fails with diagnostic for malformed JSON", (_) => {
   config = { ...baseConfig, readFile: (_) => good("not valid json at all") }
-  return load(config, "./madlib.lock")
-    |> bichain(
-        (err) => assertEquals(String.contains("malformed", err), true),
-        (_) => bad(ErrorWithMessage("expected load to fail but it succeeded"))
-       )
+  return pipe(
+    bichain(
+      (err) => assertEquals(String.contains("malformed", err), true),
+      (_) => bad(ErrorWithMessage("expected load to fail but it succeeded"))
+    )
+  )(load(config, "./madlib.lock"))
 })
 
 test("write - invokes writeFile with content containing the package name", (_) => {
@@ -112,9 +116,10 @@ test("write - invokes writeFile with content containing the package name", (_) =
       return good({})
     },
   }
-  return write(config, "./madlib.lock", lock)
-    |> mapRej(always(ErrorWithMessage("write failed")))
-    |> chain((_) => assertEquals(String.contains(`"mypkg"`, written), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("write failed"))),
+    chain((_) => assertEquals(String.contains(`"mypkg"`, written), true))
+  )(write(config, "./madlib.lock", lock))
 })
 
 test("write - serialized content includes lockfileVersion", (_) => {
@@ -126,9 +131,10 @@ test("write - serialized content includes lockfileVersion", (_) => {
       return good({})
     },
   }
-  return write(config, "./madlib.lock", empty)
-    |> mapRej(always(ErrorWithMessage("write failed")))
-    |> chain((_) => assertEquals(String.contains(`"lockfileVersion"`, written), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("write failed"))),
+    chain((_) => assertEquals(String.contains(`"lockfileVersion"`, written), true))
+  )(write(config, "./madlib.lock", empty))
 })
 
 test("round-trip: write then load recovers lockfileVersion", (_) => {
@@ -153,11 +159,12 @@ test("round-trip: write then load recovers lockfileVersion", (_) => {
       return good({})
     },
   }
-  return write(config, "./madlib.lock", lock)
-    |> mapRej(always("write failed"))
-    |> chain((_) => load(config, "./madlib.lock"))
-    |> mapRej(always(ErrorWithMessage("round-trip failed")))
-    |> chain((reloaded) => assertEquals(reloaded.lockfileVersion, 1))
+  return pipe(
+    mapRej(always("write failed")),
+    chain((_) => load(config, "./madlib.lock")),
+    mapRej(always(ErrorWithMessage("round-trip failed"))),
+    chain((reloaded) => assertEquals(reloaded.lockfileVersion, 1))
+  )(write(config, "./madlib.lock", lock))
 })
 
 // ---- normalizeDependencies ---------------------------------------------------
@@ -251,14 +258,15 @@ test("round-trip: write then load recovers package entry", (_) => {
       return good({})
     },
   }
-  return write(config, "./madlib.lock", lock)
-    |> mapRej(always("write failed"))
-    |> chain((_) => load(config, "./madlib.lock"))
-    |> mapRej(always(ErrorWithMessage("round-trip failed")))
-    |> chain((reloaded) =>
+  return pipe(
+    mapRej(always("write failed")),
+    chain((_) => load(config, "./madlib.lock")),
+    mapRej(always(ErrorWithMessage("round-trip failed"))),
+    chain((reloaded) =>
         assertEquals(
           Dictionary.get("https://example.com/roundtrip.zip", reloaded.packages),
           Just(originalEntry)
         )
        )
+  )(write(config, "./madlib.lock", lock))
 })

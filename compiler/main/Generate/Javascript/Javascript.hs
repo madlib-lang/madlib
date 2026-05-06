@@ -716,13 +716,14 @@ emitExp env config (Typed qt area metadata exp) =
           compileAbs _ params body =
             let safeParams = generateSafeName <$> params
                 safeParamNames = S.fromList safeParams
-                -- Nested lambdas inside this body must stay curried —
-                -- consume the UncurriedNext flag here.
+                -- Nested lambdas inside this body must stay curried and must
+                -- not inherit the caller's tail-call rewrite state.
                 innerEnv = env
                   { varsInScope = varsInScope env <> S.fromList params
                   , varsRewritten = M.filterWithKey (\k _ -> k `S.notMember` safeParamNames) (varsRewritten env)
                   , inBody = True
                   , definitionStyle = Curried
+                  , recursionData = Nothing
                   }
                 bodyDoc = compileBody innerEnv body
                 lambdaDoc = case definitionStyle env of

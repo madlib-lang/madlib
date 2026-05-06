@@ -1,10 +1,9 @@
 import { ErrorWithMessage, assertEquals, test } from "Test"
-import { good, bad, mapRej } from "Wish"
+import { good, mapRej } from "Wish"
 import { always } from "Function"
 import { Just, Nothing } from "Maybe"
 import ByteArray from "ByteArray"
 import Dictionary from "Dictionary"
-import IO from "IO"
 import String from "String"
 import { OK } from "Http"
 
@@ -85,7 +84,13 @@ UPGRADE_CANDIDATE = {
   latestTag: "v2.0.0",
 }
 
-MADLIB_JSON_WITH_DEP = "{ \"dependencies\": [{ \"url\": \"" ++ CURRENT_URL ++ "\" }] }"
+// Full valid madlib.json with a dependency
+MADLIB_JSON_WITH_DEP = `{
+  "name": "my-app",
+  "version": "1.0.0",
+  "main": "src/Main.mad",
+  "dependencies": [{ "url": "` ++ CURRENT_URL ++ `" }]
+}`
 
 LOCK_JSON = "{\"lockfileVersion\":1,\"packages\":{\"" ++ CURRENT_URL ++ "\":{\"name\":\"pkg\",\"version\":\"1.0.0\",\"buildHash\":\"aaa\",\"versionHash\":\"bbb\",\"dependencies\":[]}}}"
 
@@ -103,9 +108,10 @@ test("applyUpgrades - replaces old URL with new URL in madlib.json", (_) => {
       return good({})
     },
   }
-  return applyUpgrades(config, [UPGRADE_CANDIDATE])
-    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
-    |> chain((_) => assertEquals(String.contains(NEW_URL, written), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("applyUpgrades failed"))),
+    chain((_) => assertEquals(String.contains(NEW_URL, written), true))
+  )(applyUpgrades(config, [UPGRADE_CANDIDATE]))
 })
 
 test("applyUpgrades - old URL is no longer present in updated madlib.json", (_) => {
@@ -121,9 +127,10 @@ test("applyUpgrades - old URL is no longer present in updated madlib.json", (_) 
       return good({})
     },
   }
-  return applyUpgrades(config, [UPGRADE_CANDIDATE])
-    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
-    |> chain((_) => assertEquals(String.contains(CURRENT_URL, written), false))
+  return pipe(
+    mapRej(always(ErrorWithMessage("applyUpgrades failed"))),
+    chain((_) => assertEquals(String.contains(CURRENT_URL, written), false))
+  )(applyUpgrades(config, [UPGRADE_CANDIDATE]))
 })
 
 test("applyUpgrades - removes old URL key from lock file", (_) => {
@@ -139,12 +146,13 @@ test("applyUpgrades - removes old URL key from lock file", (_) => {
       return good({})
     },
   }
-  return applyUpgrades(config, [UPGRADE_CANDIDATE])
-    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
-    |> chain((_) => assertEquals(String.contains(CURRENT_URL, writtenLock), false))
+  return pipe(
+    mapRej(always(ErrorWithMessage("applyUpgrades failed"))),
+    chain((_) => assertEquals(String.contains(CURRENT_URL, writtenLock), false))
+  )(applyUpgrades(config, [UPGRADE_CANDIDATE]))
 })
 
-test("applyUpgrades - empty selection leaves madlib.json content unchanged", (_) => {
+test("applyUpgrades - empty selection still writes madlib.json with same dep URL", (_) => {
   written = ""
   config = {
     ...baseConfig,
@@ -157,9 +165,10 @@ test("applyUpgrades - empty selection leaves madlib.json content unchanged", (_)
       return good({})
     },
   }
-  return applyUpgrades(config, [])
-    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
-    |> chain((_) => assertEquals(written, MADLIB_JSON_WITH_DEP))
+  return pipe(
+    mapRej(always(ErrorWithMessage("applyUpgrades failed"))),
+    chain((_) => assertEquals(String.contains(CURRENT_URL, written), true))
+  )(applyUpgrades(config, []))
 })
 
 test("applyUpgrades - multiple candidates all get applied", (_) => {
@@ -171,7 +180,15 @@ test("applyUpgrades - multiple candidates all get applied", (_) => {
     newUrl: "https://github.com/example/other/archive/refs/tags/v0.2.0.zip",
     latestTag: "v0.2.0",
   }
-  jsonWithTwo = MADLIB_JSON_WITH_DEP ++ ", { \"url\": \"https://github.com/example/other/archive/refs/tags/v0.1.0.zip\" }"
+  jsonWithTwo = `{
+  "name": "my-app",
+  "version": "1.0.0",
+  "main": "src/Main.mad",
+  "dependencies": [
+    { "url": "` ++ CURRENT_URL ++ `" },
+    { "url": "https://github.com/example/other/archive/refs/tags/v0.1.0.zip" }
+  ]
+}`
   config = {
     ...baseConfig,
     readFile: (path) => path == "madlib.json" ? good(jsonWithTwo) : good("{}"),
@@ -183,7 +200,8 @@ test("applyUpgrades - multiple candidates all get applied", (_) => {
       return good({})
     },
   }
-  return applyUpgrades(config, [UPGRADE_CANDIDATE, candidate2])
-    |> mapRej(always(ErrorWithMessage("applyUpgrades failed")))
-    |> chain((_) => assertEquals(String.contains(NEW_URL, written) && String.contains("v0.2.0", written), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("applyUpgrades failed"))),
+    chain((_) => assertEquals(String.contains(NEW_URL, written) && String.contains("v0.2.0", written), true))
+  )(applyUpgrades(config, [UPGRADE_CANDIDATE, candidate2]))
 })

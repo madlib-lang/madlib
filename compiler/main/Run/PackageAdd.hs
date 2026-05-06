@@ -31,7 +31,7 @@ addPackage url maybeName = do
     Right madlibJson -> do
       let name       = maybe (nameFromUrl url) id maybeName
           newDep     = MadlibDotJson.Dependency
-                         { MadlibDotJson.description = name
+                         { MadlibDotJson.description = Just name
                          , MadlibDotJson.url         = url
                          , MadlibDotJson.minVersion  = Nothing
                          , MadlibDotJson.maxVersion  = Nothing
@@ -56,7 +56,7 @@ removePackage name = do
 
     Right madlibJson -> do
       let existingDeps  = maybe [] id (MadlibDotJson.dependencies madlibJson)
-          filteredDeps  = filter (\d -> MadlibDotJson.description d /= name) existingDeps
+          filteredDeps  = filter (\d -> MadlibDotJson.description d /= Just name) existingDeps
       if length filteredDeps == length existingDeps then
         putStrLn $ "Package '" <> name <> "' not found in madlib.json"
       else do

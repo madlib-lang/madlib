@@ -121,7 +121,7 @@ printAllConflicts = (rootLabel, packages, rootDeps, conflictedNames) => {
 analyze :: MadlibDotJson -> MadlibLock -> {}
 export analyze = (mdj, lock) => {
   rootLabel = `${Color.bold(mdj.name)}@${Version.showVersion(mdj.version)}`
-  rootDeps = mdj.dependencies |> fromMaybe([]) |> map(.url)
+  rootDeps = pipe(fromMaybe([]), map(.url))(mdj.dependencies)
   packages = lock.packages
   conflictedNames = findConflictedNames(packages)
 

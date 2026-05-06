@@ -1,20 +1,22 @@
 import { ErrorWithMessage, assertEquals, test } from "Test"
-import { good, bad, mapRej } from "Wish"
+import { good, bad, mapRej, bichain } from "Wish"
 import { always } from "Function"
 import ByteArray from "ByteArray"
 import Dictionary from "Dictionary"
 import IO from "IO"
 import String from "String"
 import { OK } from "Http"
+import { ClientError, Timeout } from "Http"
 
 import type { Config } from "./Config"
 import { run } from "./Run"
+import { sanitizeUrl } from "./URL"
 
 
 // ---- Fixtures ----------------------------------------------------------------
 
 DEP_URL = "http://repo.com/test-pkg.zip"
-DEP_CACHE_MANIFEST = ".module_cache/http___repo_com_test_pkg_zip/madlib.json"
+DEP_CACHE_MANIFEST = `.module_cache/${sanitizeUrl(DEP_URL)}/madlib.json`
 MODULES_MANIFEST = "./madlib_modules/TestPkg/madlib.json"
 LOCK_FILE_PATH = "./madlib.lock"
 
@@ -52,6 +54,28 @@ DEP_LOCK_JSON = `{
   }
 }`
 
+CHILD_URL = "http://repo.com/child-pkg.zip"
+CHILD_CACHE_MANIFEST = `.module_cache/${sanitizeUrl(CHILD_URL)}/madlib.json`
+CHILD_LOCK_JSON = `{
+  "lockfileVersion": 1,
+  "packages": {
+    "http://repo.com/test-pkg.zip": {
+      "name": "TestPkg",
+      "version": "0.1.0",
+      "buildHash": "abc123",
+      "versionHash": "def456",
+      "dependencies": ["${CHILD_URL}"]
+    },
+    "${CHILD_URL}": {
+      "name": "ChildPkg",
+      "version": "0.2.0",
+      "buildHash": "ghi789",
+      "versionHash": "jkl012",
+      "dependencies": []
+    }
+  }
+}`
+
 
 baseConfig :: Config
 baseConfig = {
@@ -76,8 +100,9 @@ baseConfig = {
 // ---- run - basic behavior ----------------------------------------------------
 
 test("run - succeeds when no madlib.json exists", (_) =>
-  run(baseConfig)
-    |> mapRej(always(ErrorWithMessage("run should not fail when madlib.json is absent")))
+  pipe(
+    mapRej(always(ErrorWithMessage("run should not fail when madlib.json is absent")))
+  )(run(baseConfig))
 )
 
 test("run - writes lock file after install with no dependencies", (_) => {
@@ -95,9 +120,10 @@ test("run - writes lock file after install with no dependencies", (_) => {
       return good({})
     },
   }
-  return run(config)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((_) => assertEquals(String.contains(`"lockfileVersion"`, lockContent), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((_) => assertEquals(String.contains(`"lockfileVersion"`, lockContent), true))
+  )(run(config))
 })
 
 test("run - lock file written contains packages field when no dependencies", (_) => {
@@ -115,9 +141,10 @@ test("run - lock file written contains packages field when no dependencies", (_)
       return good({})
     },
   }
-  return run(config)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((_) => assertEquals(String.contains(`"packages"`, lockContent), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((_) => assertEquals(String.contains(`"packages"`, lockContent), true))
+  )(run(config))
 })
 
 
@@ -142,9 +169,10 @@ test("run - copies package to madlib_modules when cache is warm", (_) => {
       return good({})
     },
   }
-  return run(config)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((_) => assertEquals(copyCalled, true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((_) => assertEquals(copyCalled, true))
+  )(run(config))
 })
 
 test("run - writes package name into lock file after fresh install", (_) => {
@@ -168,9 +196,10 @@ test("run - writes package name into lock file after fresh install", (_) => {
       : good({ exitCode: 0, stdout: "", stderr: "" }),
     readDir: (_) => good(["TestPkg"]),
   }
-  return run(config)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((_) => assertEquals(String.contains(`"TestPkg"`, lockContent), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((_) => assertEquals(String.contains(`"TestPkg"`, lockContent), true))
+  )(run(config))
 })
 
 test("run - writes dep URL as key in lock file after fresh install", (_) => {
@@ -194,9 +223,10 @@ test("run - writes dep URL as key in lock file after fresh install", (_) => {
       : good({ exitCode: 0, stdout: "", stderr: "" }),
     readDir: (_) => good(["TestPkg"]),
   }
-  return run(config)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((_) => assertEquals(String.contains(DEP_URL, lockContent), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((_) => assertEquals(String.contains(DEP_URL, lockContent), true))
+  )(run(config))
 })
 
 
@@ -216,9 +246,10 @@ test("run - does not copy package that is already on disk (delta install)", (_) 
       return good({})
     },
   }
-  return run(config)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((_) => assertEquals(copyCalled, false))
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((_) => assertEquals(copyCalled, false))
+  )(run(config))
 })
 
 test("run - lock file still contains existing entry after delta install", (_) => {
@@ -238,9 +269,10 @@ test("run - lock file still contains existing entry after delta install", (_) =>
     },
     exists: (path) => path == MODULES_MANIFEST ? good(true) : bad({}),
   }
-  return run(config)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((_) => assertEquals(String.contains(`"TestPkg"`, lockContent), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((_) => assertEquals(String.contains(`"TestPkg"`, lockContent), true))
+  )(run(config))
 })
 
 test("run - lock file preserves dep URL key after delta install", (_) => {
@@ -260,7 +292,125 @@ test("run - lock file preserves dep URL key after delta install", (_) => {
     },
     exists: (path) => path == MODULES_MANIFEST ? good(true) : bad({}),
   }
-  return run(config)
-    |> mapRej(always(ErrorWithMessage("run failed")))
-    |> chain((_) => assertEquals(String.contains(DEP_URL, lockContent), true))
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((_) => assertEquals(String.contains(DEP_URL, lockContent), true))
+  )(run(config))
+})
+
+
+// ---- run - negative-path tests -----------------------------------------------
+
+test("run - lock write failure propagates as a failure", (_) => {
+  config = {
+    ...baseConfig,
+    readFile: (path) => path == "madlib.json"
+      ? good(EMPTY_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    writeFile: (_, _) => bad(IO.UnknownError),
+  }
+  return pipe(
+    bichain(
+      (_) => good({}),
+      (_) => bad(ErrorWithMessage("expected run to fail when lock write fails"))
+    )
+  )(run(config))
+})
+
+test("run - npm install failure propagates as a failure", (_) => {
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : path == DEP_CACHE_MANIFEST ? good(DEP_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    exists: (path) => path == DEP_CACHE_MANIFEST || path == "./madlib_modules/TestPkg/package.json"
+      ? good(true)
+      : bad({}),
+    exec: (cmd, _, _) =>
+      cmd == "madlib"
+        ? good({ exitCode: 0, stdout: "abc123", stderr: "" })
+        : bad({ exitCode: 1, stdout: "", stderr: "npm error" }),
+    readDir: (_) => good(["TestPkg"]),
+  }
+  return pipe(
+    bichain(
+      (_) => good({}),
+      (_) => bad(ErrorWithMessage("expected run to fail when npm install fails"))
+    )
+  )(run(config))
+})
+
+test("run - download failure propagates as a failure", (_) => {
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    getBytesWithProgress: (_, _) => bad(ClientError(Timeout)),
+  }
+  return pipe(
+    bichain(
+      (_) => good({}),
+      (_) => bad(ErrorWithMessage("expected run to fail when download fails"))
+    )
+  )(run(config))
+})
+
+test("run - copy failure propagates as a failure", (_) => {
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : path == DEP_CACHE_MANIFEST ? good(DEP_MADLIB_DOT_JSON)
+      : bad(IO.UnknownError),
+    exists: (path) => path == DEP_CACHE_MANIFEST ? good(true) : bad({}),
+    copy: (_, _, _) => bad(IO.UnknownError),
+    exec: (cmd, _, _) => cmd == "madlib"
+      ? good({ exitCode: 0, stdout: "abc123", stderr: "" })
+      : good({ exitCode: 0, stdout: "", stderr: "" }),
+    readDir: (_) => good(["TestPkg"]),
+  }
+  return pipe(
+    bichain(
+      (_) => good({}),
+      (_) => bad(ErrorWithMessage("expected run to fail when copy fails"))
+    )
+  )(run(config))
+})
+
+test("run - delta install still restores missing transitive deps", (_) => {
+  childCopied = false
+  config = {
+    ...baseConfig,
+    readFile: (path) =>
+      path == "./madlib.lock" ? good(CHILD_LOCK_JSON)
+      : path == "madlib.json" ? good(LOCAL_MADLIB_DOT_JSON)
+      : path == CHILD_CACHE_MANIFEST ? good(`{
+        "name": "ChildPkg",
+        "version": "0.2.0",
+        "main": "src/Main.mad"
+      }`)
+      : bad(IO.UnknownError),
+    exists: (path) =>
+      path == MODULES_MANIFEST ? good(true)
+      : path == CHILD_CACHE_MANIFEST ? good(true)
+      : bad({}),
+    exec: (cmd, _, _) => cmd == "madlib"
+      ? good({ exitCode: 0, stdout: "abc123", stderr: "" })
+      : good({ exitCode: 0, stdout: "", stderr: "" }),
+    readDir: (_) => good(["TestPkg"]),
+    copy: (source, _, _) => {
+      if (String.contains(sanitizeUrl(CHILD_URL), source)) do {
+        childCopied := true
+      } else do {
+        {}
+      }
+      return good({})
+    },
+  }
+  return pipe(
+    mapRej(always(ErrorWithMessage("run failed"))),
+    chain((_) => assertEquals(childCopied, true))
+  )(run(config))
 })
