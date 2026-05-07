@@ -1,0 +1,10 @@
+import { assertEquals, ErrorWithMessage, test } from "Test"
+import { always } from "Function"
+import { mapRej } from "Wish"
+import File from "./File"
+
+
+test("exists - known file", () => pipe(
+  mapRej(always(ErrorWithMessage("File should exist"))),
+  chain(assertEquals($, true)),
+)(File.exists("./File.mad")))

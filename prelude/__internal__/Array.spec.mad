@@ -1,5 +1,6 @@
 import Array from "Array"
 import { assertEquals, test } from "Test"
+import { Nothing } from "Maybe"
 
 
 
@@ -117,4 +118,37 @@ test("range - start > end", () => assertEquals(Array.range(3, 2), Array.fromList
 test(
   "toList",
   () => assertEquals(Array.toList(Array.fromList([1, 2, 3, 4, 5, 6])), [1, 2, 3, 4, 5, 6]),
+)
+
+test(
+  "unsafeAt",
+  () => assertEquals(
+    pipe(
+      Array.fromList,
+      Array.unsafeAt(1),
+    )([1, 2, 3]),
+    2,
+  ),
+)
+
+test(
+  "at",
+  () => assertEquals(
+    pipe(
+      Array.fromList,
+      Array.at(3),
+    )([1, 2, 3]),
+    Nothing,
+  ),
+)
+
+test(
+  "set",
+  () => assertEquals(
+    pipe(
+      Array.fromList,
+      Array.set(3, 33),
+    )([1, 2, 3]),
+    Array.fromList([1, 2, 3]),
+  ),
 )

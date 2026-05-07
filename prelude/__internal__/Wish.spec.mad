@@ -35,6 +35,22 @@ test("mapRej should be identity if it's a good Wish", () => pipe(
   )
 )(good(3)))
 
+test("mapFirst should map over the rejected value", () => pipe(
+  mapFirst((x) => x + 1),
+  bichain(
+    assertEquals($, 4),
+    always(bad(ErrorWithMessage("Wish should be bad")))
+  )
+)(bad(3)))
+
+test("mapSecond should map over the resolved value", () => pipe(
+  mapSecond((x) => x + 1),
+  bichain(
+    always(bad(ErrorWithMessage("Wish should be bad"))),
+    assertEquals($, 4)
+  )
+)(good(3)))
+
 test("ap should apply a function wrapped in a good Wish to a good Wish", () => pipe(
   ap(good((x) => x + 1)),
   chain(assertEquals($, 4))
@@ -76,6 +92,21 @@ test("parallel should return a bad Wish if one of the given wishes is bad", () =
     always(bad(ErrorWithMessage("Wish should be bad")))
   )
 )([good(1), bad(2), good(3), bad(4)]))
+
+test("parallel should handle an empty list", () => pipe(
+  parallel,
+  chain(assertEquals($, []))
+)([]))
+
+test("assoc should prefer the first successful wish", () => do {
+  result <- assoc(good(3), good(4))
+  return assertEquals(result, 3)
+})
+
+test("assoc should fall back to the second wish when the first fails", () => bichain(
+  always(bad(ErrorWithMessage("Wish should be good"))),
+  assertEquals($, 4),
+)(assoc(bad(3), good(4))))
 
 test("parallel - lots of items", () => pipe(
   map(of),
@@ -126,4 +157,10 @@ test("tailRecM", () => do {
   million <- millionWish(0)
 
   return assertEquals(million, 5000)
+})
+
+test("tailRecM - immediate Done", () => do {
+  finished <- tailRecM((x) => good(Done(x + 1)), 3)
+
+  return assertEquals(finished, 4)
 })

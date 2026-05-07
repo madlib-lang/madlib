@@ -1,0 +1,29 @@
+import { assertEquals, test } from "Test"
+import { CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE, Header, getHeader, methodStr } from "./Http"
+
+
+test("methodStr - GET", () => assertEquals(methodStr(GET), "GET"))
+
+test("methodStr - POST", () => assertEquals(methodStr(POST), "POST"))
+
+test("methodStr - CONNECT", () => assertEquals(methodStr(CONNECT), "CONNECT"))
+
+test("methodStr - DELETE", () => assertEquals(methodStr(DELETE), "DELETE"))
+
+test("methodStr - HEAD", () => assertEquals(methodStr(HEAD), "HEAD"))
+
+test("methodStr - OPTIONS", () => assertEquals(methodStr(OPTIONS), "OPTIONS"))
+
+test("methodStr - PATCH", () => assertEquals(methodStr(PATCH), "PATCH"))
+
+test("methodStr - PUT", () => assertEquals(methodStr(PUT), "PUT"))
+
+test("methodStr - TRACE", () => assertEquals(methodStr(TRACE), "TRACE"))
+
+test("getHeader filters case-insensitively", () => assertEquals(
+  getHeader(
+    "content-type",
+    { body: "ok", headers: [Header("Content-Type", "text/plain"), Header("X-Test", "1")], status: 200 },
+  ),
+  [Header("Content-Type", "text/plain")],
+))
