@@ -2,7 +2,8 @@
 module Run.Compile where
 
 import           System.Directory               ( canonicalizePath, doesFileExist )
-import           Control.Exception              ( try )
+import           Control.Exception              ( try, finally )
+import           Control.Concurrent             ( threadDelay, killThread )
 import           System.Environment             ( getEnv )
 import           Control.Monad                  ( forever
                                                 , when
@@ -80,12 +81,11 @@ runCompilation (Compile entrypoint outputPath _ verbose debug bundle optimized t
       putStrLn $ "target: " <> show target
 
 
-    if watchMode then
-      when watchMode $ do
-        state <- Driver.initialState
-        runCompilationTask True state options [canonicalEntrypoint]
-        Driver.watch rootPath (runCompilationTask True state options)
-        return ()
+    if watchMode then do
+      state <- Driver.initialState
+      runCompilationTask True state options [canonicalEntrypoint]
+      tid <- Driver.watch rootPath (runCompilationTask True state options)
+      forever (threadDelay 1000000) `finally` killThread tid
     else do
       state <- Driver.initialState
       runCompilationTask False state options [canonicalEntrypoint]

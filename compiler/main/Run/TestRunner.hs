@@ -1,9 +1,10 @@
 module Run.TestRunner where
 
 import           System.FilePath
-import           Control.Monad                  ( when )
+import           Control.Monad                  ( when, forever )
 import           System.Process
-import           Control.Exception              ( try )
+import           Control.Exception              ( try, finally )
+import           Control.Concurrent             ( threadDelay, killThread )
 import           System.Environment             ( setEnv
                                                 , getEnv
                                                 )
@@ -102,8 +103,8 @@ runTests entrypoint target debug watchMode coverage optLevel suiteFilter testInd
   runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint []
 
   when watchMode $ do
-    Driver.watch rootPath (runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint)
-    return ()
+    tid <- Driver.watch rootPath (runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint)
+    forever (threadDelay 1000000) `finally` killThread tid
 
 
 runTestTask :: Bool -> Maybe String -> Maybe Int -> Driver.State CompilationError -> Options -> FilePath -> [FilePath] -> IO ()

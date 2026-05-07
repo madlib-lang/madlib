@@ -46,7 +46,8 @@ import           System.Exit (exitFailure)
 import           System.IO (hPutStr, stderr)
 import           Driver (Prune(Don'tPrune))
 import           Utils.List
-import           Control.Exception              ( try )
+import           Control.Exception              ( try, finally )
+import           Control.Concurrent             ( threadDelay, killThread )
 import           System.Console.ANSI
 import GHC.IO (unsafePerformIO)
 
@@ -122,8 +123,11 @@ runModule target input args watchMode exePath = do
   runRunTask watchMode state options runner []
 
   when watchMode $ do
-    Driver.watch rootPath (runRunTask watchMode state options runner)
-    return ()
+    tid <- Driver.watch rootPath (runRunTask watchMode state options runner)
+    forever (threadDelay 1000000) `finally` do
+      killThread tid
+      mp <- readIORef runningProcess
+      maybe (return ()) terminateProcess mp
 
 
 runningProcess :: IORef (Maybe ProcessHandle)

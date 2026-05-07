@@ -287,8 +287,8 @@ recordAndPrintDuration title action = do
 -- Watch
 
 watch :: FilePath -> ([FilePath] -> IO ()) -> IO ThreadId
-watch root action = do
-  withManager $ \mgr -> do
+watch root action =
+  forkIO $ withManager $ \mgr -> do
     trigger <-
       Debounce.new
         Debounce.Args
@@ -328,5 +328,5 @@ watch root action = do
         when shouldTrigger $ Debounce.send trigger f
       )
 
-    -- sleep forever (until interrupted)
+    -- sleep forever (until interrupted via killThread)
     forever $ threadDelay 1000000
