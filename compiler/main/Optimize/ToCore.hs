@@ -215,6 +215,9 @@ instance Processable Slv.Exp Core.Exp where
     Slv.NameExport name ->
       return $ Core.Typed qt area [] (Core.NameExport name)
 
+    Slv.TypeOf{} ->
+      error "TypeOf should have been lowered in Infer.Placeholder.updateExpTypes"
+
     Slv.Var name isConstructor ->
       case name of
         '.' : fieldName -> do

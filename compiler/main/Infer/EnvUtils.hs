@@ -177,6 +177,7 @@ mergeEnv initial env = Env { envVars                 = envVars initial <> envVar
                            , envPatternBoundNames    = mempty
                            , envFreeTVars            = envFreeTVars initial <> envFreeTVars env
                            , envOpenVarNames         = envOpenVarNames initial <> envOpenVarNames env
+                           , envBuiltinsModulePath   = envBuiltinsModulePath initial
                            }
 
 mkTupleInstance :: String -> Int -> Instance
@@ -320,4 +321,5 @@ initialEnv = do
     -- the cached union is empty and there are no open names.
     , envFreeTVars = mempty
     , envOpenVarNames = mempty
+    , envBuiltinsModulePath = builtinsModulePath
     }

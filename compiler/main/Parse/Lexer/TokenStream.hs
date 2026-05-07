@@ -98,6 +98,7 @@ instance VisualStream TokenStream where
       showToken TkWhen                    = "when"
       showToken TkIs                      = "is"
       showToken TkNot                     = "not"
+      showToken TkTypeOf                  = "typeof"
       showToken TkTrue                    = "true"
       showToken TkFalse                   = "false"
       showToken TkEq                      = "="

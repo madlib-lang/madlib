@@ -55,6 +55,20 @@ spec = describe "Megaparsec parser" $ do
   it "parses keyword fields in record access, patterns, and typing" $
     parse keywordRecordSuite `shouldSatisfy` isRight
 
+  it "parses typeof as a reserved keyword form" $
+    case parse "x = typeof y" of
+      Right ast ->
+        case Src.aexps ast of
+          [Src.Source _ _ (Src.Assignment "x" (Src.Source _ _ (Src.TypeOf _)))] ->
+            return ()
+          other ->
+            expectationFailure $ "unexpected AST: " ++ show other
+      Left err ->
+        expectationFailure err
+
+  it "rejects typeof as an identifier" $
+    parse "typeof = 1" `shouldSatisfy` isLeft
+
   it "parses inline a+!b" $
     parse "x = a + !b" `shouldSatisfy` isRight
 
@@ -586,6 +600,10 @@ brekk = unlines
 isRight :: Either a b -> Bool
 isRight (Right _) = True
 isRight _         = False
+
+isLeft :: Either a b -> Bool
+isLeft (Left _) = True
+isLeft _        = False
 
 fieldName :: Src.Field -> String
 fieldName (Src.Source _ _ (Src.Field (name, _))) = name

@@ -403,6 +403,7 @@ pTerm = do
     Just TkTrue                -> pLiteral
     Just TkFalse               -> pLiteral
     Just TkIf                  -> pIf'
+    Just TkTypeOf              -> pTypeOf'
     Just TkWhile               -> pWhile'
     Just TkWhere               -> pWhere'
     Just TkDo                  -> pDo'
@@ -517,6 +518,16 @@ pTypedHoleExpr = do
   (area, _) <- withArea pTypedHole
   target <- pSourceTarget
   return $ Src.Source area target Src.TypedHole
+
+
+-- | Parse `typeof expr`
+pTypeOf' :: Parser Src.Exp
+pTypeOf' = do
+  (startArea, _) <- withArea pTypeOf
+  target <- pSourceTarget
+  maybeRet
+  expr <- pExp
+  return $ Src.Source (mergeAreas startArea (Src.getArea expr)) target (Src.TypeOf expr)
 
 
 -- | Parse a JS block expression

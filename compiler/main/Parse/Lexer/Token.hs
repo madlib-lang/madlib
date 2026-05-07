@@ -58,6 +58,7 @@ data Token
   | TkWhen
   | TkIs
   | TkNot
+  | TkTypeOf
   -- Symbols
   | TkEq               -- =  (not == or =>)
   | TkMutateEq         -- :=

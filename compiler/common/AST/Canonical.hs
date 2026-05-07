@@ -159,6 +159,7 @@ data Exp_ = LNum String
           | If Exp Exp Exp
           | Do [Exp]
           | Where Exp [Is]
+          | TypeOf Exp
           | Export Exp
           | NameExport Name
           | TypeExport Name

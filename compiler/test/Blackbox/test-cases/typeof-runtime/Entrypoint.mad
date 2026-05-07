@@ -1,0 +1,14 @@
+import IO from "IO"
+import Madlib from "Madlib"
+
+identity = (x) => x
+recordValue = { name: "Ada", active: true }
+
+main = () => {
+  IO.putLine(Madlib.printType(typeof identity))
+  IO.putLine(Madlib.printType(typeof recordValue))
+  IO.putLine(Madlib.printType(typeof "hello"))
+  IO.putLine(Madlib.printType(typeof [1, 2, 3]))
+  IO.putLine(Madlib.printType(typeof #[1, "a"]))
+  IO.putLine(Madlib.printType(typeof #[1, "a", true]))
+}

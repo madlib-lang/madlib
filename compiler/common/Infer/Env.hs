@@ -70,5 +70,9 @@ data Env
     -- skipping the typically-large set of closed (TGen) schemes from
     -- imports and post-generalization bindings. Maintained by
     -- `extendVars` / `mergeVars` / etc.
+    , envBuiltinsModulePath :: FilePath
+    -- ^ Absolute path to the builtins module. Used for runtime Type values
+    -- synthesized by `typeof` so they share the same origin as the source
+    -- level `Type` declaration.
     }
     deriving(Eq, Show, Generic, Hashable)

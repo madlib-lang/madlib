@@ -311,6 +311,9 @@ checkExp ast env (Slv.Typed _ area expression) =
     Slv.TypedHole ->
       return ()
 
+    Slv.TypeOf exp ->
+      checkExp ast env exp
+
     Slv.TemplateString exps ->
       mapM_ (checkExp ast env) exps
 

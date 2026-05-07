@@ -164,7 +164,6 @@ buildAST options path code = case parseWithStructuredError code of
         let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
         let builtinsImport = Source emptyArea TargetAll $ DefaultImport (Source emptyArea TargetAll "__BUILTINS__") "__BUILTINS__" "__BUILTINS__"
         let builtinsDictTypeImport = Source emptyArea TargetAll $ TypeImport [Source emptyArea TargetAll "Dictionary"] "__BUILTINS__" "__BUILTINS__"
-        let maybeTypeImport = Source emptyArea TargetAll $ TypeImport [Source emptyArea TargetAll "Maybe"] "Maybe" "Maybe"
         let maybeNameImport = Source emptyArea TargetAll $ NamedImport [Source emptyArea TargetAll "Just", Source emptyArea TargetAll "Nothing"] "Maybe" "Maybe"
         let isBuiltinsFile = "__BUILTINS__.mad" `isSuffixOf` path
         let isPreludeFile = "/__internal__/" `isInfixOf` path
@@ -179,7 +178,7 @@ buildAST options path code = case parseWithStructuredError code of
                 astWithProcessedMacros
               else
                 astWithProcessedMacros { aimports = builtinsDictTypeImport : builtinsImport : aimports astWithProcessedMacros }
-        -- Auto-import Maybe type only when ?? or ?. operators are used
+        -- Auto-import Maybe when the source uses Maybe-aware operators.
         let needsMaybeImport = not isPreludeFile && not hasJustImport && usesMaybeOperators withBuiltins
         let astWithAllImports =
               if needsMaybeImport then
@@ -212,7 +211,6 @@ buildASTFromBS options path bs = case parseWithStructuredErrorBS bs of
         let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
         let builtinsImport = Source emptyArea TargetAll $ DefaultImport (Source emptyArea TargetAll "__BUILTINS__") "__BUILTINS__" "__BUILTINS__"
         let builtinsDictTypeImport = Source emptyArea TargetAll $ TypeImport [Source emptyArea TargetAll "Dictionary"] "__BUILTINS__" "__BUILTINS__"
-        let maybeTypeImport = Source emptyArea TargetAll $ TypeImport [Source emptyArea TargetAll "Maybe"] "Maybe" "Maybe"
         let maybeNameImport = Source emptyArea TargetAll $ NamedImport [Source emptyArea TargetAll "Just", Source emptyArea TargetAll "Nothing"] "Maybe" "Maybe"
         let isBuiltinsFile = "__BUILTINS__.mad" `isSuffixOf` path
         let isPreludeFile = "/__internal__/" `isInfixOf` path
@@ -227,7 +225,7 @@ buildASTFromBS options path bs = case parseWithStructuredErrorBS bs of
                 astWithProcessedMacros
               else
                 astWithProcessedMacros { aimports = builtinsDictTypeImport : builtinsImport : aimports astWithProcessedMacros }
-        -- Auto-import Maybe type only when ?? or ?. operators are used
+        -- Auto-import Maybe when the source uses Maybe-aware operators.
         let needsMaybeImport = not isPreludeFile && not hasJustImport && usesMaybeOperators withBuiltins
         let astWithAllImports =
               if needsMaybeImport then
@@ -276,12 +274,20 @@ postProcessParsedAST options path ast = do
       let astWithProcessedMacros = resolveMacros (optTarget options) astWithPath
       let builtinsImport = Source emptyArea TargetAll $ DefaultImport (Source emptyArea TargetAll "__BUILTINS__") "__BUILTINS__" "__BUILTINS__"
       let builtinsDictTypeImport = Source emptyArea TargetAll $ TypeImport [Source emptyArea TargetAll "Dictionary"] "__BUILTINS__" "__BUILTINS__"
+      let maybeNameImport = Source emptyArea TargetAll $ NamedImport [Source emptyArea TargetAll "Just", Source emptyArea TargetAll "Nothing"] "Maybe" "Maybe"
       let astWithBuiltinsImport =
             if "__BUILTINS__.mad" `isSuffixOf` path || any ((== "__BUILTINS__") . snd . getImportPath) (aimports astWithProcessedMacros) then
               astWithProcessedMacros
             else
               astWithProcessedMacros { aimports = builtinsDictTypeImport : builtinsImport : aimports astWithProcessedMacros }
-      astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithBuiltinsImport
+      let astWithMaybeTypeImport = astWithBuiltinsImport
+      let needsMaybeImport = usesMaybeOperators astWithMaybeTypeImport
+      let astWithMaybeImport =
+            if needsMaybeImport then
+              astWithMaybeTypeImport { aimports = maybeNameImport : aimports astWithMaybeTypeImport }
+            else
+              astWithMaybeTypeImport
+      astWithAbsoluteImportPaths <- computeAbsoluteImportPathsForAST (optPathUtils options) (not $ optParseOnly options) (optRootPath options) astWithMaybeImport
       case astWithAbsoluteImportPaths of
         Right astWithAbsoluteImportPaths' -> do
           astWithJsonAssignments <- processJsonImports options astWithAbsoluteImportPaths'

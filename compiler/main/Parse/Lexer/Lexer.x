@@ -71,6 +71,7 @@ tokens :-
 <0,interp> "when"      { kwOrIdent TkWhen }
 <0,interp> "is"        { kwOrIdent TkIs }
 <0,interp> "not"       { kwOrIdent TkNot }
+<0,interp> "typeof"    { kwOrIdent TkTypeOf }
 <0,interp> "true"      { \inp _ -> do { recordStart inp; return TkTrue } }
 <0,interp> "false"     { \inp _ -> do { recordStart inp; return TkFalse } }
 

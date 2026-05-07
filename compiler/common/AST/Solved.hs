@@ -152,6 +152,7 @@ data Exp_ = LNum String
           | While Exp Exp
           | Do [Exp]
           | Where Exp [Is]
+          | TypeOf Exp
           | Extern (Ty.Qual Ty.Type) Name Name
           | TypedHole
           deriving(Eq, Show, Ord, Generic, Hashable)

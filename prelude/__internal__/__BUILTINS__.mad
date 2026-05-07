@@ -21,6 +21,24 @@ export type Dictionary k v
   | DictRBNode(NodeColor, k, v, Dictionary k v, Dictionary k v)
 
 
+export type RecordBase
+  = NoBase
+  | Base(Type)
+
+export type Type
+  = TVar(String)
+  | TCon(String)
+  | TApp(Type, Type)
+  | TRecord(List #[String, Type], RecordBase, List #[String, Type])
+
+export typeTVar = TVar
+export typeTCon = TCon
+export typeTApp = TApp
+export typeTRecord = TRecord
+export typeNoBase = NoBase
+export typeBase = Base
+
+
 dictFromList :: Comparable k => List #[k, v] -> Dictionary k v
 export dictFromList = (items) =>
   reduceLeft(

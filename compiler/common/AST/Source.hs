@@ -200,6 +200,7 @@ data Exp_
   | JsxTag Name [JsxProp] [JsxChild]
   | JsxAutoClosedTag Name [JsxProp]
   | Parenthesized Area Exp Area
+  | TypeOf Exp
   | Extern Typing Name Name
   | IfTarget SourceTarget
   | ElseIfTarget SourceTarget

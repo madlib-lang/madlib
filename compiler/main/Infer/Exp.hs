@@ -128,6 +128,7 @@ infer options env lexp = do
     Can.TupleConstructor _    -> inferTupleConstructor options env lexp
     Can.Export           _    -> inferExport options env lexp
     Can.NameExport       _    -> inferNameExport env lexp
+    Can.TypeOf           _    -> inferTypeOf options env lexp
     Can.If{}                  -> inferIf options env lexp
     Can.While{}               -> inferWhile options env lexp
     Can.Extern{}              -> inferExtern env lexp
@@ -238,6 +239,16 @@ inferNameExport env exp@(Can.Canonical area (Can.NameExport name)) = do
   let e = Slv.Typed (ps :=> t) area $ Slv.NameExport name
 
   return (ps, t, e)
+
+
+-- INFER TYPEOF
+
+inferTypeOf :: Options -> Env -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
+inferTypeOf options env exp@(Can.Canonical area (Can.TypeOf inner)) = do
+  (_ps, _t, e) <- infer options env inner
+  let runtimeType = runtimeTypeAt (envBuiltinsModulePath env)
+  let e' = Slv.Typed ([] :=> runtimeType) area (Slv.TypeOf e)
+  return ([], runtimeType, e')
 
 
 

@@ -143,6 +143,10 @@ instance Canonicalizable Src.Exp Can.Exp where
             _ ->
               Just exp
 
+    Src.TypeOf exp -> do
+      exp' <- canonicalize env target exp
+      return $ Can.Canonical area (Can.TypeOf exp')
+
     Src.JSExp js -> do
       pushJS js
       return $ Can.Canonical area (Can.JSExp $ filterJSExp target js)
@@ -209,7 +213,7 @@ instance Canonicalizable Src.Exp Can.Exp where
 
     -- PatternAssignment should be pre-expanded by expandPatternAssignments in all
     -- body/top-level contexts. This fallback handles any remaining cases.
-    Src.PatternAssignment pat rhs -> do
+    Src.PatternAssignment pat _ -> do
       validateIrrefutablePattern env pat
       let expanded = expandPatternAssignments [Src.Source area sourceTarget e]
       exps' <- mapM (canonicalize env target) expanded

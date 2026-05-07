@@ -18,6 +18,7 @@ import qualified Data.Set                      as S
 import           Control.Monad.Except
 import           Error.Error
 import           Error.Context
+import           Explain.Location               ( Area )
 import           Infer.Instantiate
 import           Run.Options
 import           Error.Warning
@@ -74,6 +75,116 @@ verifyMethodAccess env s ph@(Slv.Typed (ps :=> t) a (Slv.Var methodName _)) = do
       Nothing -> return mempty
 
   return ph
+
+
+renderTypeVarName :: Int -> String
+renderTypeVarName n = go n
+  where
+    alphabet = ['a' .. 'z']
+
+    go x
+      | x < 26 = [alphabet !! x]
+      | otherwise = go ((x `div` 26) - 1) ++ [alphabet !! (x `mod` 26)]
+
+
+normalizeTypeConstructorName :: String -> String
+normalizeTypeConstructorName name = case name of
+  "(->)" ->
+    "->"
+
+  other ->
+    other
+
+
+lowerTypeToRuntimeValue :: FilePath -> Area -> Type -> Slv.Exp
+lowerTypeToRuntimeValue builtinsPath area ty =
+  let (exp_, _, _) = go M.empty 0 ty
+  in exp_
+  where
+    typed :: Slv.Exp_ -> Slv.Exp
+    typed e = Slv.Typed ([] :=> runtimeTypeAt builtinsPath) area e
+
+    -- We emit calls to wrappers exported from `__BUILTINS__` (e.g.
+    -- `__BUILTINS__.typeTVar`) instead of named-importing the wrappers into
+    -- every module. Namespaced access via the `__BUILTINS__` default-import
+    -- (already injected into every non-prelude file) avoids needing to
+    -- maintain an unused-import suppression list for these names and
+    -- mirrors the existing pattern used by `__BUILTINS__.gt` etc. in
+    -- `Infer/Monomorphize.hs`.
+    ctor :: String -> [Slv.Exp] -> Slv.Exp
+    ctor name args =
+      let ctorName = case name of
+            "TVar"    -> "__BUILTINS__.typeTVar"
+            "TCon"    -> "__BUILTINS__.typeTCon"
+            "TApp"    -> "__BUILTINS__.typeTApp"
+            "TRecord" -> "__BUILTINS__.typeTRecord"
+            "NoBase"  -> "__BUILTINS__.typeNoBase"
+            "Base"    -> "__BUILTINS__.typeBase"
+            other     -> other
+      in  buildCtorApp (typed $ Slv.Var ctorName False) args
+
+    buildCtorApp :: Slv.Exp -> [Slv.Exp] -> Slv.Exp
+    buildCtorApp fn [] = fn
+    buildCtorApp fn [arg] = typed $ Slv.App fn arg True
+    buildCtorApp fn (arg : rest) = buildCtorApp (typed $ Slv.App fn arg False) rest
+
+    str :: String -> Slv.Exp
+    str = typed . Slv.LStr
+
+    tuple2 :: Slv.Exp -> Slv.Exp -> Slv.Exp
+    tuple2 left right = typed $ Slv.TupleConstructor [left, right]
+
+    list :: [Slv.Exp] -> Slv.Exp
+    list items = typed $ Slv.ListConstructor (listItem <$> items)
+      where
+        listItem item = Slv.Typed ([] :=> runtimeTypeAt builtinsPath) area (Slv.ListItem item)
+
+    tailValue :: Maybe Type -> M.Map Int String -> Int -> (Slv.Exp, M.Map Int String, Int)
+    tailValue Nothing names next =
+      (ctor "NoBase" [], names, next)
+
+    tailValue (Just value) names next =
+      let (inner, names', next') = go names next value
+      in  (ctor "Base" [inner], names', next')
+
+    lowerFieldList :: [(String, Type)] -> M.Map Int String -> Int -> ([Slv.Exp], M.Map Int String, Int)
+    lowerFieldList [] names next = ([], names, next)
+    lowerFieldList ((fieldName, fieldType) : rest) names next =
+      let (typeDoc, names', next') = go names next fieldType
+          (docs, names'', next'') = lowerFieldList rest names' next'
+      in  (tuple2 (str fieldName) typeDoc : docs, names'', next'')
+
+    go :: M.Map Int String -> Int -> Type -> (Slv.Exp, M.Map Int String, Int)
+    go names next t = case t of
+      TVar tv ->
+        let tvId = getTVarId tv
+        in case M.lookup tvId names of
+          Just name ->
+            (ctor "TVar" [str name], names, next)
+
+          Nothing ->
+            let name = renderTypeVarName next
+            in  (ctor "TVar" [str name], M.insert tvId name names, next + 1)
+
+      TCon (TC name _) _ _ ->
+        (ctor "TCon" [str (normalizeTypeConstructorName name)], names, next)
+
+      TApp left right ->
+        let (left', names', next')   = go names next left
+            (right', names'', next'') = go names' next' right
+        in  (ctor "TApp" [left', right'], names'', next'')
+
+      TRecord fields base optionalFields ->
+        let (fieldDocs, names', next') = lowerFieldList (M.toAscList fields) names next
+            (optionalDocs, names'', next'') = lowerFieldList (M.toAscList optionalFields) names' next'
+            (baseDoc, names''', next''') = tailValue base names'' next''
+        in  (ctor "TRecord" [list fieldDocs, baseDoc, list optionalDocs], names''', next''')
+
+      TAlias _ _ _ inner ->
+        go names next inner
+
+      TGen n ->
+        (ctor "TVar" [str ("t" <> show n)], names, next)
 
 
 updateExpTypesForExpList :: Options -> Env -> Bool -> Substitution -> [Slv.Exp] -> Infer [Slv.Exp]
@@ -176,6 +287,12 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     suggestions <- collectHoleSuggestions env s t
     pushWarning $ CompilationWarning (TypedHoleFound t suggestions) (Context (envCurrentPath env) a)
     return $ Slv.Typed qt' a Slv.TypedHole
+
+  Slv.TypeOf inner -> do
+    inner' <- updateExpTypes options env push s inner
+    let loweredType = Slv.getType inner'
+        loweredExp  = lowerTypeToRuntimeValue (envBuiltinsModulePath env) a loweredType
+    return $ Slv.Typed (apply s qt) a (Slv.extractExp loweredExp)
 
   _ ->
     return $ Slv.Typed (apply s qt) a e

@@ -180,6 +180,9 @@ qNumber = [IsIn "Number" [TVar (TV 0 Star)] Nothing] :=> TVar (TV 0 Star)
 tBool :: Type
 tBool = mkTCon (TC "Boolean" Star) "prelude"
 
+runtimeTypeAt :: FilePath -> Type
+runtimeTypeAt builtinsPath = mkTCon (TC "Type" Star) builtinsPath
+
 
 tStr :: Type
 tStr = mkTCon (TC "String" Star) "prelude"

@@ -22,6 +22,7 @@ module Parse.Megaparsec.Lexeme
   , pInstance
   , pDerive
   , pPipe
+  , pTypeOf
     -- Identifiers
   , pName
   , pNameStr
@@ -121,7 +122,7 @@ keywords :: [BS.ByteString]
 keywords =
   [ "if", "else", "while", "where", "do", "return", "pipe"
   , "import", "export", "from", "type", "alias", "extern"
-  , "interface", "instance", "derive", "true", "false"
+  , "interface", "instance", "derive", "true", "false", "typeof"
   ]
 
 
@@ -165,6 +166,7 @@ pKeyword kw = case kw of
   "interface" -> BS.pack [105,110,116,101,114,102,97,99,101] <$ tok TkInterface
   "instance"  -> BS.pack [105,110,115,116,97,110,99,101] <$ tok TkInstance
   "derive"    -> BS.pack [100,101,114,105,118,101] <$ tok TkDerive
+  "typeof"    -> BS.pack [116,121,112,101,111,102]      <$ tok TkTypeOf
   "true"      -> BS.pack [116,114,117,101]         <$ tok TkTrue
   "false"     -> BS.pack [102,97,108,115,101]      <$ tok TkFalse
   _           -> fail $ "unknown keyword: " ++ show kw
@@ -190,6 +192,7 @@ pInterface = kw "interface" <$ tok TkInterface
 pInstance  = kw "instance"  <$ tok TkInstance
 pDerive    = kw "derive"    <$ tok TkDerive
 pPipe      = kw "pipe"      <$ tok TkPipe
+pTypeOf    = kw "typeof"     <$ tok TkTypeOf
 
 -- Helper: convert String keyword to ByteString
 {-# INLINE kw #-}

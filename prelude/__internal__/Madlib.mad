@@ -1,0 +1,279 @@
+// `Madlib` exposes runtime reflection helpers that operate on the `Type`
+// ADT defined in `__BUILTINS__`. The pretty-printer lives here (rather than
+// in `__BUILTINS__.mad`) to keep `__BUILTINS__` minimal and to render types
+// in the *concrete* surface syntax of the Madlib language: e.g.
+//
+//     a -> a -> #[a, a]
+//     { name :: String, ?nickname :: String }
+//
+// rather than the show-style structural form.
+
+import type { Type, RecordBase } from "__BUILTINS__"
+import { TVar, TCon, TApp, TRecord, NoBase, Base } from "__BUILTINS__"
+
+
+
+// -----------------------------------------------------------
+// Local helpers (kept private to Madlib so they don't leak as
+// general-purpose utilities — `List.map` / `String.join` exist
+// for that, but pulling them in here would create import cycles
+// because `List` itself depends on `Show` machinery).
+// -----------------------------------------------------------
+
+mapList :: (a -> b) -> List a -> List b
+mapList = (f, list) => where(list) {
+  [a, ...xs] =>
+    [f(a), ...mapList(f, xs)]
+
+  [] =>
+    []
+}
+
+
+joinStrings :: String -> List String -> String
+joinStrings = (separator, items) => where(items) {
+  [] =>
+    ""
+
+  [a] =>
+    a
+
+  [a, ...xs] =>
+    a <> separator <> joinStrings(separator, xs)
+}
+
+
+// -----------------------------------------------------------
+// Tuple-constructor recognition.
+// The compiler tags tuples as `TCon("(,)")`, `TCon("(,,)")`, …
+// up to 12-tuples. We match by name. `tupleArity` returns the
+// arity if `name` is a tuple constructor, otherwise -1 (we don't
+// have access to `Maybe` here without auto-import of Maybe, and
+// we deliberately stay out of that path).
+// -----------------------------------------------------------
+
+isTupleConName :: String -> Boolean
+isTupleConName = (name) => where(name) {
+  "(,)"          => true
+  "(,,)"         => true
+  "(,,,)"        => true
+  "(,,,,)"       => true
+  "(,,,,,)"      => true
+  "(,,,,,,)"     => true
+  "(,,,,,,,)"    => true
+  "(,,,,,,,,)"   => true
+  "(,,,,,,,,,)"  => true
+  "(,,,,,,,,,,)" => true
+  "(,,,,,,,,,,,)" => true
+  _              => false
+}
+
+
+// Flatten a left-associated `TApp` chain into the head plus its arg list.
+// `TApp (TApp (TApp (TCon "(,,)") a) b) c` becomes `#[TCon "(,,)", [a, b, c]]`.
+flattenTApp :: Type -> #[Type, List Type]
+flattenTApp = (t) => where(t) {
+  TApp(left, right) =>
+    where(flattenTApp(left)) {
+      #[head, args] =>
+        #[head, [...args, right]]
+    }
+
+  _ =>
+    #[t, []]
+}
+
+
+// -----------------------------------------------------------
+// Pretty printer
+// -----------------------------------------------------------
+
+// True if the type, when rendered, IS a function type (i.e. the outermost
+// constructor is `->`).  Used to decide whether to wrap the LHS of `->` in
+// parens: in `(a -> b) -> c` the LHS needs them, in `a -> b` (where the LHS
+// is `a`) it doesn't, and in `Maybe Int -> b` the LHS is a non-function
+// application that doesn't need them either.
+isFunctionType :: Type -> Boolean
+isFunctionType = (t) => where(t) {
+  TApp(TApp(TCon("->"), _), _) =>
+    true
+
+  _ =>
+    false
+}
+
+
+// True if the type, rendered as a term, would need parentheses when
+// substituted into an argument position of a *type application* (like
+// `List <here>` or `f <here>`).
+//
+// Self-contained tokens never need parens: type variables, atomic type
+// constructors, records (`{ ... }`), and tuples (`#[...]`). Anything that
+// renders as a juxtaposition (`List a`, `Maybe Int`, `a -> b`, `f a`) does.
+needsTypeParens :: Type -> Boolean
+needsTypeParens = (t) => where(t) {
+  TVar(_) =>
+    false
+
+  TCon(_) =>
+    false
+
+  TRecord(_, _, _) =>
+    false
+
+  TApp(_, _) =>
+    where(flattenTApp(t)) {
+      #[TCon(name), _] =>
+        // tuple constructors render with self-contained `#[...]`, so no
+        // parens needed; everything else (List a, Maybe a, Either a b,
+        // a -> b, ...) is a juxtaposition and needs parens.
+        !isTupleConName(name)
+
+      _ =>
+        // non-TCon head (e.g. type variable applied to something like
+        // `f a`): also a juxtaposition, parens needed.
+        true
+    }
+}
+
+
+renderFieldString :: String -> #[String, Type] -> String
+renderFieldString = (prefix, field) => where(field) {
+  #[fieldName, fieldType] =>
+    prefix <> fieldName <> " :: " <> renderType(fieldType)
+}
+
+
+renderRecordString :: RecordBase -> List #[String, Type] -> List #[String, Type] -> String
+renderRecordString = (base, fields, optionalFields) => {
+  basePart = where(base) {
+    NoBase =>
+      ""
+
+    Base(openType) =>
+      "..." <> renderType(openType)
+  }
+
+  fieldsPart = joinStrings(", ", mapList((field) => renderFieldString("", field), fields))
+  optionalFieldsPart = joinStrings(", ", mapList((field) => renderFieldString("?", field), optionalFields))
+
+  return where(#[basePart, fieldsPart, optionalFieldsPart]) {
+    #[ "", "", "" ] =>
+      "{}"
+
+    #[ baseOnly, "", "" ] =>
+      "{ " <> baseOnly <> " }"
+
+    #[ "", fieldsOnly, "" ] =>
+      "{ " <> fieldsOnly <> " }"
+
+    #[ "", "", optionalOnly ] =>
+      "{ " <> optionalOnly <> " }"
+
+    #[ baseOnly, fieldsOnly, "" ] =>
+      "{ " <> baseOnly <> ", " <> fieldsOnly <> " }"
+
+    #[ baseOnly, "", optionalOnly ] =>
+      "{ " <> baseOnly <> ", " <> optionalOnly <> " }"
+
+    #[ "", fieldsOnly, optionalOnly ] =>
+      "{ " <> fieldsOnly <> ", " <> optionalOnly <> " }"
+
+    #[ baseOnly, fieldsOnly, optionalOnly ] =>
+      "{ " <> baseOnly <> ", " <> fieldsOnly <> ", " <> optionalOnly <> " }"
+  }
+}
+
+
+renderTuple :: List Type -> String
+renderTuple = (parts) =>
+  "#[" <> joinStrings(", ", mapList(renderType, parts)) <> "]"
+
+
+// Render the type `t` as the LEFT operand of `->`. Because `->` is
+// right-associative in Madlib's surface syntax, the LHS is the
+// most-tightly-bound thing so parens are only needed when the LHS is
+// *itself* a function type — `(a -> b) -> c`. For non-function LHS the
+// concrete-syntax rendering (`Maybe Int -> b`, `List a -> b`) is
+// unambiguous because `->` has lower precedence than juxtaposition.
+renderArrowLeft :: Type -> String
+renderArrowLeft = (t) =>
+  isFunctionType(t)
+    ? "(" <> renderType(t) <> ")"
+    : renderType(t)
+
+
+// Render `Head arg1 arg2 ... argN` flat, parenthesising each arg as
+// needed via `renderTypeArg`. This avoids the wrong nesting that we'd get
+// by recursing structurally on `TApp(left, right)` (which would produce
+// `(Either (Maybe a)) Boolean` instead of `Either (Maybe a) Boolean`).
+renderHeadApp :: String -> List Type -> String
+renderHeadApp = (head, parts) => where(parts) {
+  [] =>
+    head
+
+  _ =>
+    head <> " " <> joinStrings(" ", mapList(renderTypeArg, parts))
+}
+
+
+renderType :: Type -> String
+renderType = (t) => where(t) {
+  TVar(name) =>
+    name
+
+  TCon(name) =>
+    name
+
+  TRecord(fields, base, optionalFields) =>
+    renderRecordString(base, fields, optionalFields)
+
+  // Arrow case is handled directly (rather than via `flattenTApp`)
+  // because Madlib's pattern compiler currently miscompiles
+  // `#[TCon("->"), [arg, ret]]` — the nested `[arg, ret]` inside a tuple
+  // pattern binds `ret` to the cons-tail instead of the second element.
+  // Recursing on `ret` keeps curried chains flat: `a -> b -> c` renders
+  // as `a -> b -> c` (right-associative) rather than `a -> (b -> c)`.
+  TApp(TApp(TCon("->"), arg), ret) =>
+    renderArrowLeft(arg) <> " -> " <> renderType(ret)
+
+  // Non-arrow `TApp`s go through `flattenTApp` so we render the
+  // application chain flat (`F a b c`) rather than nested
+  // (`((F a) b) c`).  We dispatch on the head:
+  //   - tuple   : render with `#[...]` brackets (self-contained).
+  //   - TCon    : `Head arg arg ...` with each arg parenthesised iff
+  //               it is itself a juxtaposition.
+  //   - other   : non-`TCon` head (e.g. higher-kinded `f a`), recurse
+  //               structurally on `left`/`right`.
+  TApp(left, right) =>
+    where(flattenTApp(t)) {
+      #[TCon(name), parts] =>
+        isTupleConName(name)
+          ? renderTuple(parts)
+          : renderHeadApp(name, parts)
+
+      _ =>
+        renderTypeArg(left) <> " " <> renderTypeArg(right)
+    }
+}
+
+
+renderTypeArg :: Type -> String
+renderTypeArg = (t) =>
+  needsTypeParens(t)
+    ? "(" <> renderType(t) <> ")"
+    : renderType(t)
+
+
+prettyPrintType :: Type -> String
+export prettyPrintType = renderType
+
+
+// Public API used by `typeof`-using code: `Madlib.printType(typeof x)`.
+printType :: Type -> String
+export printType = renderType
+
+
+instance Show Type {
+  show = renderType
+}

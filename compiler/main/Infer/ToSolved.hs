@@ -31,6 +31,7 @@ toSolved (Can.Canonical area exp) = case exp of
     Slv.Typed ([] :=> tSubst) area (Slv.Abs (Slv.Typed ([] :=> tSubst) paramArea param) (toSolved <$> body))
 
   Can.TemplateString exps    -> Slv.Typed ([] :=> tSubst) area (Slv.TemplateString (toSolved <$> exps))
+  Can.TypeOf exp             -> Slv.Typed ([] :=> tSubst) area (Slv.TypeOf (toSolved exp))
 
   Can.Access     (Can.Canonical _ (Can.Var namespace))  (Can.Canonical _ (Can.Var fieldName))  ->
     Slv.Typed ([] :=> tSubst) area (Slv.Var (namespace <> fieldName) False)

@@ -1,0 +1,250 @@
+import { assertEquals, test } from "Test"
+
+import type { Type, RecordBase } from "__BUILTINS__"
+import { TVar, TCon, TApp, TRecord, NoBase, Base } from "__BUILTINS__"
+import Madlib from "./Madlib"
+
+
+// Build helpers — we work directly on the `Type` ADT so we can assert
+// the renderer's behaviour on shapes that may not be reachable via
+// `typeof` from a small program (e.g. higher-kinded constructors,
+// many-argument tuples, nested records with optional fields).
+
+a = TVar("a")
+b = TVar("b")
+c = TVar("c")
+d = TVar("d")
+
+tCon :: String -> Type
+tCon = TCon
+
+intT = tCon("Integer")
+boolT = tCon("Boolean")
+strT = tCon("String")
+
+arr :: Type -> Type -> Type
+arr = (l, r) => TApp(TApp(tCon("->"), l), r)
+
+app :: Type -> Type -> Type
+app = (f, x) => TApp(f, x)
+
+list :: Type -> Type
+list = (x) => app(tCon("List"), x)
+
+array :: Type -> Type
+array = (x) => app(tCon("Array"), x)
+
+maybe :: Type -> Type
+maybe = (x) => app(tCon("Maybe"), x)
+
+either :: Type -> Type -> Type
+either = (l, r) => app(app(tCon("Either"), l), r)
+
+tup2 :: Type -> Type -> Type
+tup2 = (x, y) => app(app(tCon("(,)"), x), y)
+
+tup3 :: Type -> Type -> Type -> Type
+tup3 = (x, y, z) => app(app(app(tCon("(,,)"), x), y), z)
+
+closedRec :: List #[String, Type] -> Type
+closedRec = (fields) => TRecord(fields, NoBase, [])
+
+openRec :: List #[String, Type] -> Type -> Type
+openRec = (fields, baseT) => TRecord(fields, Base(baseT), [])
+
+recWithOpt :: List #[String, Type] -> List #[String, Type] -> Type
+recWithOpt = (fields, opts) => TRecord(fields, NoBase, opts)
+
+
+// -------------------- atoms --------------------
+
+test(
+  "renders type variables",
+  () => assertEquals(Madlib.printType(a), "a"),
+)
+
+test(
+  "renders nullary type constructors",
+  () => assertEquals(Madlib.printType(intT), "Integer"),
+)
+
+
+// -------------------- arrows / right-assoc --------------------
+
+test(
+  "renders simple arrows",
+  () => assertEquals(Madlib.printType(arr(a, a)), "a -> a"),
+)
+
+test(
+  "right-associates arrow chains without parens",
+  () => assertEquals(
+    Madlib.printType(arr(a, arr(b, arr(c, d)))),
+    "a -> b -> c -> d",
+  ),
+)
+
+test(
+  "wraps function-typed argument on the LHS of `->` in parens",
+  () => assertEquals(
+    Madlib.printType(arr(arr(a, b), c)),
+    "(a -> b) -> c",
+  ),
+)
+
+test(
+  "leaves an applied non-function LHS without parens",
+  () => assertEquals(
+    Madlib.printType(arr(maybe(boolT), intT)),
+    "Maybe Boolean -> Integer",
+  ),
+)
+
+
+// -------------------- type application & parens --------------------
+
+test(
+  "renders unary type constructor application without parens",
+  () => assertEquals(Madlib.printType(list(a)), "List a"),
+)
+
+test(
+  "renders binary type constructor application flat (no nested parens around the head)",
+  () => assertEquals(
+    Madlib.printType(either(strT, boolT)),
+    "Either String Boolean",
+  ),
+)
+
+test(
+  "wraps applied arguments in parens (List (Maybe Boolean))",
+  () => assertEquals(
+    Madlib.printType(list(maybe(boolT))),
+    "List (Maybe Boolean)",
+  ),
+)
+
+test(
+  "wraps inner Maybe in Either's first arg only (Either (Maybe a) String)",
+  () => assertEquals(
+    Madlib.printType(either(maybe(a), strT)),
+    "Either (Maybe a) String",
+  ),
+)
+
+test(
+  "wraps function-typed argument in parens (List (a -> a))",
+  () => assertEquals(
+    Madlib.printType(list(arr(a, a))),
+    "List (a -> a)",
+  ),
+)
+
+test(
+  "renders Array similarly to List",
+  () => assertEquals(Madlib.printType(array(maybe(boolT))), "Array (Maybe Boolean)"),
+)
+
+
+// -------------------- the original user-reported case --------------------
+
+test(
+  "renders `List (Maybe Boolean) -> Something` correctly",
+  () => assertEquals(
+    Madlib.printType(arr(list(maybe(boolT)), tCon("Something"))),
+    "List (Maybe Boolean) -> Something",
+  ),
+)
+
+
+// -------------------- function-arg in middle of an arrow chain --------------------
+
+test(
+  "renders function-arg in middle of curried arrow chain",
+  () => assertEquals(
+    Madlib.printType(arr(a, arr(arr(a, b), b))),
+    "a -> (a -> b) -> b",
+  ),
+)
+
+
+// -------------------- tuples --------------------
+
+test(
+  "renders 2-tuples with #[...] syntax",
+  () => assertEquals(Madlib.printType(tup2(intT, strT)), "#[Integer, String]"),
+)
+
+test(
+  "renders 3-tuples with #[...] syntax",
+  () => assertEquals(
+    Madlib.printType(tup3(intT, strT, boolT)),
+    "#[Integer, String, Boolean]",
+  ),
+)
+
+test(
+  "tuple as List element does not get extra parens",
+  () => assertEquals(
+    Madlib.printType(list(tup2(intT, strT))),
+    "List #[Integer, String]",
+  ),
+)
+
+test(
+  "applied types inside a tuple get parens as needed",
+  () => assertEquals(
+    Madlib.printType(tup2(maybe(intT), list(boolT))),
+    "#[Maybe Integer, List Boolean]",
+  ),
+)
+
+
+// -------------------- records --------------------
+
+test(
+  "renders empty closed record",
+  () => assertEquals(Madlib.printType(closedRec([])), "{}"),
+)
+
+test(
+  "renders closed record with required fields using `key :: Type`",
+  () => assertEquals(
+    Madlib.printType(closedRec([#["name", strT], #["age", intT]])),
+    "{ name :: String, age :: Integer }",
+  ),
+)
+
+test(
+  "renders open (extensible) record with `... base`",
+  () => assertEquals(
+    Madlib.printType(openRec([#["name", strT]], a)),
+    "{ ...a, name :: String }",
+  ),
+)
+
+test(
+  "renders record with optional fields prefixed by `?`",
+  () => assertEquals(
+    Madlib.printType(recWithOpt([#["name", strT]], [#["nickname", strT]])),
+    "{ name :: String, ?nickname :: String }",
+  ),
+)
+
+test(
+  "renders a record field whose type is a function (no parens around the function)",
+  () => assertEquals(
+    Madlib.printType(closedRec([#["fn", arr(a, b)]])),
+    "{ fn :: a -> b }",
+  ),
+)
+
+test(
+  "renders nested record types",
+  () => assertEquals(
+    Madlib.printType(
+      closedRec([#["outer", closedRec([#["inner", intT]])]]),
+    ),
+    "{ outer :: { inner :: Integer } }",
+  ),
+)
