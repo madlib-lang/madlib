@@ -315,6 +315,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/inline-nested-capture"
         , "compiler/test/Blackbox/test-cases/inline-where-pattern-capture"
         , "compiler/test/Blackbox/test-cases/tco-reserved-param"
+        , "compiler/test/Blackbox/test-cases/js-reserved-binding-name"
         , "compiler/test/Blackbox/test-cases/inline-lambda-param-capture"
         , "compiler/test/Blackbox/test-cases/allocation-sinking"
         , "compiler/test/Blackbox/test-cases/tco-param-rebind-shadow"

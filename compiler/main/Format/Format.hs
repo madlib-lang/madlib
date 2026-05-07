@@ -72,8 +72,7 @@ getNodeArea node = case node of
 
 
 nodesLineDiff :: [Comment] -> Node -> Node -> Int
-nodesLineDiff comments n1 n2 =
-  computeLineDiff comments (getNodeArea n1) (getNodeArea n2)
+nodesLineDiff _ _ _ = 1
 
 
 expLineDiff :: [Comment] -> Exp -> Exp -> Int

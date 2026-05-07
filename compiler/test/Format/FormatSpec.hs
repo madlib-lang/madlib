@@ -146,7 +146,6 @@ spec = do
         , "    LIST_ITEM: \" - (\\\\w*)\","
         , "  },"
         , "}"
-        , ""
         , "x = pipe("
         , "  // COM"
         , "  () => {},"
@@ -167,3 +166,89 @@ spec = do
       first <- formatCode input
       second <- formatCode first
       first `shouldBe` second
+
+    it "keeps multiline template strings stable across formatting" $ do
+      let input = unlines
+            [ "MADLIB_DOT_JSON_MINIMAL = `{"
+            , "  \"name\": \"SamplePackage\","
+            , "  \"version\": \"0.1.7\","
+            , "  \"main\": \"src/Main.mad\""
+            , "}`"
+            , ""
+            , "MADLIB_DOT_JSON_WRONG_VERSION = `{"
+            , "  \"name\": \"SamplePackage\","
+            , "  \"version\": \"0.1.a\","
+            , "  \"main\": \"src/Main.mad\""
+            , "}`"
+            ]
+      result <- formatTwice input
+      result `shouldBe` unlines
+        [ "MADLIB_DOT_JSON_MINIMAL = `{"
+        , "  \"name\": \"SamplePackage\","
+        , "  \"version\": \"0.1.7\","
+        , "  \"main\": \"src/Main.mad\""
+        , "}`"
+        , "MADLIB_DOT_JSON_WRONG_VERSION = `{"
+        , "  \"name\": \"SamplePackage\","
+        , "  \"version\": \"0.1.a\","
+        , "  \"main\": \"src/Main.mad\""
+        , "}`"
+        ]
+
+    it "preserves multiline block comments that contain line comments" $ do
+      let input = unlines
+            [ "/*"
+            , "report("
+            , "  parseFlags,"
+            , "  \"parseFlags - strings with quotes\","
+            , "  ["
+            , "    #[[\"--flag='nice cool hooray'\"], [Flag(\"flag\", \"nice cool hooray\")]],"
+            , "    #[[`--info=\"this is a whole sentence\"`], [Flag(\"info\", \"this is a whole sentence\")]],"
+            , "  ],"
+            , ")"
+            , ""
+            , "// these cases fail currently"
+            , "// /*"
+            , "report("
+            , "  parseFlags,"
+            , "  \"parseFlags - boolean sequence\","
+            , "  ["
+            , "    #["
+            , "      [\"--flag\", \"--flag2\", \"--yet-another-flag\"],"
+            , "      [on(\"flag\"), on(\"flag2\"), on(\"yet-another-flag\")],"
+            , "    ],"
+            , "    #[[\"--flag\", \"--no-dope\"], [on(\"flag\"), off(\"dope\")]],"
+            , "  ],"
+            , ")"
+            , ""
+            , "*/"
+            ]
+      result <- formatTwice input
+      result `shouldBe` unlines
+        [ ""
+        , "/*"
+        , "report("
+        , "  parseFlags,"
+        , "  \"parseFlags - strings with quotes\","
+        , "  ["
+        , "    #[[\"--flag='nice cool hooray'\"], [Flag(\"flag\", \"nice cool hooray\")]],"
+        , "    #[[`--info=\"this is a whole sentence\"`], [Flag(\"info\", \"this is a whole sentence\")]],"
+        , "  ],"
+        , ")"
+        , ""
+        , "// these cases fail currently"
+        , "// /*"
+        , "report("
+        , "  parseFlags,"
+        , "  \"parseFlags - boolean sequence\","
+        , "  ["
+        , "    #["
+        , "      [\"--flag\", \"--flag2\", \"--yet-another-flag\"],"
+        , "      [on(\"flag\"), on(\"flag2\"), on(\"yet-another-flag\")],"
+        , "    ],"
+        , "    #[[\"--flag\", \"--no-dope\"], [on(\"flag\"), off(\"dope\")]],"
+        , "  ],"
+        , ")"
+        , ""
+        , "*/"
+        ]

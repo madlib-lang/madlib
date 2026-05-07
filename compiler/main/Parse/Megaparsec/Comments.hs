@@ -87,15 +87,8 @@ pMultilineComment = do
 pBlockComment :: CommentParser String
 pBlockComment = do
   void $ C.string "/*"
-  content <- manyTill pBlockCommentContent (C.string "*/")
-  return $ "/*" ++ concat content ++ "*/"
-  where
-    pBlockCommentContent = choice
-      [ -- Nested block comment
-        pBlockComment
-      , -- Any single character
-        (:[]) <$> anySingle
-      ]
+  content <- manyTill anySingle (void $ C.string "*/")
+  return $ "/*" ++ content ++ "*/"
 
 
 -- | Skip a double-quoted string literal to avoid finding "comments" inside strings
