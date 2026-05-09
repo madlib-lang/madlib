@@ -74,10 +74,22 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
   Can.PList pats -> do
     tv <- newTVar Star
 
+    let isSpreadPat (Can.Canonical _ (Can.PSpread _)) = True
+        isSpreadPat _                                  = False
+
+    case [ i | (i, p) <- zip [0..] pats, isSpreadPat p, i < length pats - 1 ] of
+      (i : _) ->
+        throwError $ CompilationError (WrongSpreadType "List rest patterns must be the last element") (Context (envCurrentPath env) (Can.getArea (pats !! i)))
+      [] -> return ()
+
     (patsRev, psAcc, vars, t) <- foldlM
       (\(patsRev, ps, vars, t) pat -> do
         (pat', ps', vars', t') <- inferPListItem env t pat
         s                      <- contextualUnify Strict env pat t t'
+        let dupes = M.keys $ M.intersection vars vars'
+        case dupes of
+          (dupName : _) -> throwError $ CompilationError (NameAlreadyDefined dupName) (Context (envCurrentPath env) (Can.getArea pat))
+          []            -> return ()
         return (pat' : patsRev, ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
       )
       ([], [], mempty, tv)

@@ -1194,6 +1194,18 @@ spec = do
           actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should fail to infer applications when a variable is used with different types" actual
 
+    it "should reject type signatures that leave a concrete return type polymorphic" $ do
+      let code = unlines
+            [ "make :: Integer -> a"
+            , "make = (n) => ({ value: n })"
+            , ""
+            , "main = () => {"
+            , "  r = make(41)"
+            , "  r.value"
+            , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModule code
+      length errors `shouldBe` 1
 
 
     ---------------------------------------------------------------------------
@@ -1382,6 +1394,30 @@ spec = do
             ]
           actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should resolve basic patterns for lists" actual
+
+    it "should reject duplicate variable bindings inside a single list pattern" $ do
+      let code = unlines
+            [ "samePair = (pair) => where(pair) {"
+            , "  [x, x] => x"
+            , "  _ => 0"
+            , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      length errors `shouldBe` 1
+
+    it "should reject list rest patterns before later items" $ do
+      let code = unlines
+            [ "tailThenLast = (list) => where(list) {"
+            , "  [...rest, last] => last"
+            , "  _ => 0"
+            , "}"
+            , ""
+            , "main = () => {"
+            , "  tailThenLast([1, 2, 3])"
+            , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModule code
+      length errors `shouldBe` 1
 
     it "should fail to resolve patterns of different types for list items" $ do
       let code   = unlines ["x = where([1, 2, 3, 5, 8]) {", "  [1, 2, 3] => 1", "  [\"1\", n] => n", "}"]

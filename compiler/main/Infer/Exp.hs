@@ -72,14 +72,17 @@ isMaybeType (TApp (TCon (TC "Maybe" _) _ _) _) = True
 isMaybeType _ = False
 
 
--- | Collect type variables that appear directly as function parameter types.
+-- | Collect type variables that appear at top-level positions in a function type:
+-- both parameter positions and the final return position.
 -- For `String -> a -> b -> Element`, returns {a, b} (not String or Element which are TCon).
 -- For `{ ...r } -> Element`, returns {} (the record is compound, not a plain TVar).
+-- For `Integer -> a`, returns {a} so that binding a to a compound type is caught.
 collectTopLevelParamVars :: Type -> S.Set TVar
 collectTopLevelParamVars (TApp (TApp _ paramType) returnType) =
   case paramType of
     TVar tv -> S.insert tv (collectTopLevelParamVars returnType)
     _       -> collectTopLevelParamVars returnType
+collectTopLevelParamVars (TVar tv) = S.singleton tv
 collectTopLevelParamVars _ = S.empty
 
 -- | Check if a type is compound (record or type application, not a plain variable or constructor).
