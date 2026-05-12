@@ -34,7 +34,7 @@ data Interface_
 
 type Instance = Canonical Instance_
 data Instance_
-  = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp)
+  = Instance Name [Ty.Pred] Ty.Pred (M.Map Name Exp) Bool  -- Bool: isDerived
   deriving(Eq, Show, Ord, Generic, Hashable)
 
 type Import = Canonical Import_

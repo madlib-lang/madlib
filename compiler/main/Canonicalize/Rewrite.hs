@@ -16,8 +16,8 @@ to:
 
 rewriteInstance :: Instance -> Instance
 rewriteInstance inst = case inst of
-  Canonical area (Instance n ps p methods) ->
-    Canonical area (Instance n ps p (Map.map (rewrite 0) methods))
+  Canonical area (Instance n ps p methods isDerived) ->
+    Canonical area (Instance n ps p (Map.map (rewrite 0) methods) isDerived)
 
 
 rewriteAST :: AST -> AST

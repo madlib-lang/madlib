@@ -272,8 +272,3 @@ export prettyPrintType = renderType
 // Public API used by `typeof`-using code: `Madlib.printType(typeof x)`.
 printType :: Type -> String
 export printType = renderType
-
-
-instance Show Type {
-  show = renderType
-}

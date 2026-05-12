@@ -4,6 +4,7 @@ import qualified Data.Map                      as M
 import           Test.Hspec                     ( describe
                                                 , it
                                                 , Spec
+                                                , expectationFailure
                                                 , shouldBe
                                                 )
 import           Test.Hspec.Golden              ( Golden(..) )
@@ -35,6 +36,7 @@ import           Utils.PathUtils
 import           Driver (Prune(Don'tPrune))
 import qualified Data.List                     as List
 import qualified System.Directory              as Dir
+import           System.Timeout                 ( timeout )
 import qualified Rock
 import qualified Driver.Query as Query
 import           GHC.IO (unsafePerformIO)
@@ -278,17 +280,7 @@ spec = do
 
     it "should infer adts with record constructors" $ do
       let code = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "type Result = Success({ value :: String }) | Error({ message :: String })"
+            [ "type Result = Success({ value :: String }) | Error({ message :: String })"
             , "main = () => {"
             , "  result1 = Success({ value: `42` })"
             , "  result2 = Error({ message: \"Err\" })"
@@ -300,17 +292,7 @@ spec = do
 
     it "should infer params for adts" $ do
       let code = unlines
-                  [ "instance Semigroup String {"
-                  , "  assoc = #--#"
-                  , "}"
-                  , ""
-                  , "instance Monoid String {"
-                  , "  mempty = \"\""
-                  , "  mappend = assoc"
-                  , "  mconcat = #--#"
-                  , "}"
-                  , ""
-                  , "type Result = Success({ value :: String })"
+                  [ "type Result = Success({ value :: String })"
                   , "main = () => {"
                   , "  r = Success({ value: \"42\" })"
                   , "  ((a) => a)(r)"
@@ -579,19 +561,67 @@ spec = do
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should resolve ambiguity with type annotations" actual
 
+    it "should reject overlapping interface instances" $ do
+      let code = unlines
+            [ "interface Label a {"
+            , "  label :: a -> String"
+            , "}"
+            , ""
+            , "instance Label a {"
+            , "  label = (_) => \"generic\""
+            , "}"
+            , ""
+            , "instance Label Integer {"
+            , "  label = (_) => \"integer\""
+            , "}"
+            , ""
+            , "main = () => { label(1) }"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModule code
+      length errors `shouldBe` 1
+
+    it "should reject duplicate interface instances with the same head" $ do
+      let code = unlines
+            [ "interface Label a {"
+            , "  label :: a -> String"
+            , "}"
+            , ""
+            , "instance Label Integer {"
+            , "  label = (_) => \"one\""
+            , "}"
+            , ""
+            , "instance Label Integer {"
+            , "  label = (_) => \"two\""
+            , "}"
+            , ""
+            , "main = () => { label(1) }"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModule code
+      length errors `shouldBe` 1
+
+    it "should reject self-referential interface instances without looping" $ do
+      let code = unlines
+            [ "interface Label a {"
+            , "  label :: a -> String"
+            , "}"
+            , ""
+            , "instance Label a => Label a {"
+            , "  label = (_) => \"loop\""
+            , "}"
+            , ""
+            , "main = () => { label(1) }"
+            ]
+      result <- timeout 2000000 (inferModule code)
+      case result of
+        Nothing ->
+          expectationFailure "typechecker did not terminate for a self-referential instance"
+
+        Just (_, _, errors) ->
+          length errors `shouldBe` 1
+
     it "should resolve constrained instances" $ do
       let code = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "interface Inspect a {"
+            [ "interface Inspect a {"
             , "  inspect :: a -> String"
             , "}"
             , ""
@@ -616,17 +646,7 @@ spec = do
 
     it "should fail for instances missing constraints" $ do
       let code = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "interface Inspect a {"
+            [ "interface Inspect a {"
             , "  inspect :: a -> String"
             , "}"
             , ""
@@ -651,17 +671,7 @@ spec = do
 
     it "should fail when no instance is found" $ do
       let code = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "interface Inspect a {"
+            [ "interface Inspect a {"
             , "  inspect :: a -> String"
             , "}"
             , ""
@@ -690,17 +700,7 @@ spec = do
 
     it "should infer a record field access" $ do
       let code   = unlines
-                    [ "instance Semigroup String {"
-                    , "  assoc = #--#"
-                    , "}"
-                    , ""
-                    , "instance Monoid String {"
-                    , "  mempty = \"\""
-                    , "  mappend = assoc"
-                    , "  mconcat = #--#"
-                    , "}"
-                    , ""
-                    , "main = () => {"
+                    [ "main = () => {"
                     , "  a = { x: 3.1415, y: -500 }"
                     , "  a.x"
                     , "}"
@@ -710,17 +710,7 @@ spec = do
 
     it "should infer an App with a record" $ do
       let code   = unlines
-                    [ "instance Semigroup String {"
-                    , "  assoc = #--#"
-                    , "}"
-                    , ""
-                    , "instance Monoid String {"
-                    , "  mempty = \"\""
-                    , "  mappend = assoc"
-                    , "  mconcat = #--#"
-                    , "}"
-                    , ""
-                    , "main = () => {"
+                    [ "main = () => {"
                     , "  a = { x: 3, y: 5 }"
                     , "  xPlusY = (r) => (r.x + r.y)"
                     , "  xPlusY(a)"
@@ -731,34 +721,14 @@ spec = do
 
     it "should fail to infer record if their fields do not match" $ do
       let code   = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "main = () => { { x: 3, y: 5 } == { name: \"John\" } }"
+            [ "main = () => { { x: 3, y: 5 } == { name: \"John\" } }"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should fail to infer record if their fields do not match" actual
 
     it "should infer a record with a type annotation" $ do
       let code   = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "main = () => { ({ x: 3, y: 7 } :: { x :: Integer, y :: Integer }) }"
+            [ "main = () => { ({ x: 3, y: 7 } :: { x :: Integer, y :: Integer }) }"
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer a record with a type annotation" actual
@@ -770,17 +740,7 @@ spec = do
 
     it "should infer abstraction param that have a record exp as body" $ do
       let code   = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "addTodo = (state) => ({ ...state, x: \"3\", y: state.y })"
+            [ "addTodo = (state) => ({ ...state, x: \"3\", y: state.y })"
             ]
           actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer abstraction param that have a record exp as body" actual
@@ -792,17 +752,7 @@ spec = do
 
     it "correctly infer various record transformations" $ do
       let code = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "main = () => {"
+            [ "main = () => {"
             , "  ff = (record) => (["
             , "    record.x,"
             , "    record.z,"
@@ -855,16 +805,6 @@ spec = do
             , "  | EQ"
             , "  | GT"
             , ""
-            , "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
             , "interface Functor m {"
             , "  map :: (a -> b) -> m a -> m b"
             , "}"
@@ -900,17 +840,7 @@ spec = do
 
     it "should infer record params that are partially used in abstractions" $ do
       let code = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "type Maybe a = Just(a) | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , "find :: (a -> Boolean) -> List a -> Maybe a"
             , "export find = (predicate, xs) => (#- {"
             , "  const found = xs.find(predicate);"
@@ -993,17 +923,7 @@ spec = do
 
     it "should infer extensible records with typed holes" $ do
       let code   = unlines
-                    [ "instance Semigroup String {"
-                    , "  assoc = #--#"
-                    , "}"
-                    , ""
-                    , "instance Monoid String {"
-                    , "  mempty = \"\""
-                    , "  mappend = assoc"
-                    , "  mconcat = #--#"
-                    , "}"
-                    , ""
-                    , "type DateTime = DateTime"
+                    [ "type DateTime = DateTime"
                     , ""
                     , "now :: a -> DateTime"
                     , "now = #--#"
@@ -1093,17 +1013,7 @@ spec = do
 
     it "should infer applications where the abstraction results from an application" $ do
       let code = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "type Maybe a = Just(a) | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , "flip :: (a -> b -> c) -> (b -> a -> c)"
             , "export flip = (fn) => ("
             , "  (b, a) => fn(a, b)"
@@ -1138,17 +1048,7 @@ spec = do
 
     it "should fail to infer applications when a variable is used with different types" $ do
       let code = unlines
-            [ "instance Semigroup String {"
-            , "  assoc = #--#"
-            , "}"
-            , ""
-            , "instance Monoid String {"
-            , "  mempty = \"\""
-            , "  mappend = assoc"
-            , "  mconcat = #--#"
-            , "}"
-            , ""
-            , "type Maybe a = Just(a) | Nothing"
+            [ "type Maybe a = Just(a) | Nothing"
             , ""
             , "fromMaybe :: a -> Maybe a -> a"
             , "fromMaybe = (a, maybe) => #- -#"
@@ -1401,6 +1301,51 @@ spec = do
             , "  [x, x] => x"
             , "  _ => 0"
             , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      length errors `shouldBe` 1
+
+    it "should reject duplicate variable bindings inside a single tuple pattern" $ do
+      let code = unlines
+            [ "sameTuple = (pair) => where(pair) {"
+            , "  #[x, x] => x"
+            , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      length errors `shouldBe` 1
+
+    it "should reject duplicate variable bindings inside a single record pattern" $ do
+      let code = unlines
+            [ "sameRecord = (record) => where(record) {"
+            , "  { left: x, right: x } => x"
+            , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      length errors `shouldBe` 1
+
+    it "should reject duplicate field names inside a single record pattern" $ do
+      let code = unlines
+            [ "duplicateField = (record) => where(record) {"
+            , "  { x: left, x: right } => left"
+            , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      length errors `shouldBe` 1
+
+    it "should reject duplicate variable bindings inside a single constructor pattern" $ do
+      let code = unlines
+            [ "type Pair a = Pair(a, a)"
+            , ""
+            , "sameConstructor = (pair) => where(pair) {"
+            , "  Pair(x, x) => x"
+            , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      length errors `shouldBe` 1
+
+    it "should reject duplicate variable bindings inside a function parameter pattern" $ do
+      let code = unlines
+            [ "sameParam = (#[x, x]) => x"
             ]
           (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
       length errors `shouldBe` 1

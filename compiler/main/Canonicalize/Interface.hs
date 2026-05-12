@@ -182,4 +182,4 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
           else
             methods'
 
-    return $ Can.Canonical area $ Can.Instance n ps' p methods''
+    return $ Can.Canonical area $ Can.Instance n ps' p methods'' False

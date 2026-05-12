@@ -159,6 +159,7 @@ deriveEqInstance astPath toDerive = case toDerive of
                 ]]))
               )
             )
+            True
           )
     in  Just inst
 
@@ -172,7 +173,7 @@ deriveEqInstance astPath toDerive = case toDerive of
               buildFieldConditions (Set.toList fieldNames)
             ]]))
           )
-        ))
+        ) True)
 
 
   _ ->
@@ -238,6 +239,7 @@ deriveShowInstance astPath toDerive = case toDerive of
                 ]))
               )
             )
+            True
           )
     in  Just inst
 
@@ -251,7 +253,7 @@ deriveShowInstance astPath toDerive = case toDerive of
               showFields (Set.toList fieldNames)
             ]))
           )
-        ))
+        ) True)
 
 
   _ ->
@@ -469,7 +471,7 @@ deriveJsonADTInstance adt = case adt of
             (Map.fromList
               [ ("toJson",   ec $ Assignment "toJson"   toJsonImpl)
               , ("fromJson", ec $ Assignment "fromJson" fromJsonImpl)
-              ])
+              ]) True
     in  Just inst
 
   _ ->
@@ -521,7 +523,7 @@ deriveJsonRecordInstance astPath fieldNames =
         (Map.fromList
           [ ("toJson",   ec $ Assignment "toJson"   toJsonImpl)
           , ("fromJson", ec $ Assignment "fromJson" fromJsonImpl)
-          ])
+          ]) True
 
 
 deriveComparableADTInstance :: TypeDecl -> Maybe Instance
@@ -551,6 +553,7 @@ deriveComparableADTInstance adt = case adt of
                 ])))
               )
             )
+            True
           )
     in  Just inst
 
@@ -617,7 +620,7 @@ deriveInstances env localTypeDecls derived = case derived of
                         buildFieldComparisons 0 fieldNames
                       ]]))
                     )
-                  ))
+                  ) True)
 
     nextInstances <- deriveInstances env localTypeDecls next
     return $ derivedInstance : nextInstances

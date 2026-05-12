@@ -1000,6 +1000,16 @@ createSimpleErrorDiagnostic color _ typeError = case typeError of
     <> "The interface '" <> interfaceName <> "' is already defined.\n\n"
     <> "Hint: Choose a different name, or remove the duplicate definition."
 
+  OverlappingInstances (IsIn cls _ _) (IsIn _ _ _) ->
+    "Overlapping instances\n\n"
+    <> "An instance of '" <> cls <> "' already exists that overlaps with this one.\n\n"
+    <> "Hint: Remove the duplicate or overlapping instance, or make instances non-overlapping."
+
+  SelfReferentialInstance (IsIn cls _ _) ->
+    "Self-referential instance\n\n"
+    <> "The instance of '" <> cls <> "' contains itself in its own constraints, causing infinite recursion.\n\n"
+    <> "Hint: Remove the recursive constraint, or restructure the instance hierarchy."
+
   ADTAlreadyDefined adtType ->
     let adtName = renderType adtType
     in  "Type already defined\n\n"
@@ -1811,6 +1821,18 @@ createErrorDiagnostic color context typeError = case typeError of
     mkError "Interface already defined" context
       ("You defined the interface '" <> interfaceName <> "',\nbut it already exists")
       [Diagnose.Hint "Verify that you don't have a typo."]
+
+  OverlappingInstances (IsIn cls _ _) (IsIn _ _ _) ->
+    mkError "Overlapping instances" context
+      ("This instance of '" <> cls <> "' overlaps with an existing one.")
+      [ Diagnose.Hint "Remove the duplicate or overlapping instance, or make instances non-overlapping." ]
+
+  SelfReferentialInstance (IsIn cls _ _) ->
+    mkError "Self-referential instance" context
+      ("The instance of '" <> cls <> "' contains itself in its own constraints.")
+      [ Diagnose.Note "This would cause infinite recursion during type checking."
+      , Diagnose.Hint "Remove the recursive constraint from the instance declaration."
+      ]
 
   InvalidLhs ->
     mkError "Invalid left hand side" context "It is not a valid left hand side expression."

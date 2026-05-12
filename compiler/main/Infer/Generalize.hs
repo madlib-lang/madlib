@@ -131,7 +131,7 @@ tryDefaults env ps = tryDefaults' env ps ps
           -- Get vars from type AFTER substitution to see what's left
           let substitutedVars = getTypeVarsInType (apply nextSubst t)
 
-          if null substitutedVars || isTVar t then
+          if null substitutedVars then
             return (nextSubst, nextPS)
           else do
             let tvs = getTV <$> substitutedVars

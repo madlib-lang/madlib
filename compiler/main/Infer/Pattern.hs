@@ -26,13 +26,22 @@ import Explain.Location (Area)
 
 
 inferPatterns :: Env -> [Can.Pattern] -> Infer ([Slv.Pattern], [Pred], Vars, [Type])
-inferPatterns env pats = do
-  psasts <- mapM (inferPattern env) pats
+inferPatterns env origPats = do
+  psasts <- mapM (inferPattern env) origPats
   let ps   = concat [ ps' | (_, ps', _, _) <- psasts ]
-      as   = foldr M.union M.empty [ vars | (_, _, vars, _) <- psasts ]
       ts   = [ t | (_, _, _, t) <- psasts ]
-      pats = [ pats' | (pats', _, _, _) <- psasts ]
-  return (pats, ps, as, ts)
+      pats = [ p | (p, _, _, _) <- psasts ]
+  vars <- foldM
+    (\accVars (origPat, (_, _, vars', _)) -> do
+      let dupes = M.keys $ M.intersection accVars vars'
+      case dupes of
+        (dupName : _) ->
+          throwError $ CompilationError (NameAlreadyDefined dupName) (Context (envCurrentPath env) (Can.getArea origPat))
+        [] -> return (accVars <> vars')
+    )
+    M.empty
+    (zip origPats psasts)
+  return (pats, ps, vars, ts)
 
 inferPattern :: Env -> Can.Pattern -> Infer (Slv.Pattern, [Pred], Vars, Type)
 inferPattern env p@(Can.Canonical area pat) = case pat of
@@ -61,10 +70,20 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
 
   Can.PTuple pats -> do
     ti <- mapM (inferPattern env) pats
-    let ts     = (\(_, _, _, a) -> a) <$> ti
-    let ps     = foldr (<>) [] ((\(_, a, _, _) -> a) <$> ti)
-    let vars   = foldr (<>) M.empty ((\(_, _, a, _) -> a) <$> ti)
-    let pats'  = (\(a, _, _, _) -> a) <$> ti
+    let ts    = (\(_, _, _, a) -> a) <$> ti
+    let ps    = foldr (<>) [] ((\(_, a, _, _) -> a) <$> ti)
+    let pats' = (\(a, _, _, _) -> a) <$> ti
+
+    vars <- foldM
+      (\accVars (origPat, (_, _, vars', _)) -> do
+        let dupes = M.keys $ M.intersection accVars vars'
+        case dupes of
+          (dupName : _) ->
+            throwError $ CompilationError (NameAlreadyDefined dupName) (Context (envCurrentPath env) (Can.getArea origPat))
+          [] -> return (accVars <> vars')
+      )
+      M.empty
+      (zip pats ti)
 
     let tupleT = getTupleCtor (length ts)
     let t      = foldl' TApp tupleT ts
@@ -117,14 +136,25 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
 
   Can.PRecord pats restName -> do
     -- Infer types for matched fields
-    fields <- mapM (inferPattern env) (M.elems pats)
+    let fieldPatterns = M.elems pats
+    fields <- mapM (inferPattern env) fieldPatterns
     let fieldNames = M.keys pats
     let ts     = (\(_, _, _, a) -> a) <$> fields
     let tsMap  = M.fromList $ zip fieldNames ts
     let ps     = foldr (<>) [] ((\(_, a, _, _) -> a) <$> fields)
-    let vars   = foldr (<>) M.empty ((\(_, _, a, _) -> a) <$> fields)
     let pats'  = (\(a, _, _, _) -> a) <$> fields
     let patsMap = M.fromList $ zip fieldNames pats'
+
+    vars <- foldM
+      (\accVars (fieldPat, (_, _, vars', _)) -> do
+        let dupes = M.keys $ M.intersection accVars vars'
+        case dupes of
+          (dupName : _) ->
+            throwError $ CompilationError (NameAlreadyDefined dupName) (Context (envCurrentPath env) (Can.getArea fieldPat))
+          [] -> return (accVars <> vars')
+      )
+      M.empty
+      (zip fieldPatterns fields)
 
     -- Create row variable for extensibility
     baseRowVar <- newTVar Star

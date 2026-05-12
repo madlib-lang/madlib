@@ -54,9 +54,34 @@ verifyInstancePredicates env p' p@(IsIn cls ts _) = do
     (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs) Nothing)) NoContext)
 
 -- Add test for overlap that should also test for kind of the given type !!
-addInstance :: Env -> [Pred] -> Pred -> Infer Env
-addInstance env ps p@(IsIn cls ts _) = do
+addInstance :: Env -> [Pred] -> Pred -> Bool -> Infer Env
+addInstance env ps p@(IsIn cls ts _) isDerived = do
   (Interface tvs ps' is) <- lookupInterface env cls
+
+  unless isDerived $ do
+    -- Reject self-referential instances: instance C a => C a
+    -- Use asymmetric `match ts ts'` (head types onto constraint types).
+    -- quickMatch is symmetric so it gives false positives for e.g. Show a => Show (List a).
+    -- `match ts ts'` succeeds only when head can be specialized to the constraint, indicating a loop.
+    selfRef <- filterM
+      (\(IsIn cls' ts' _) ->
+        if cls' /= cls
+          then return False
+          else catchError (match ts ts' >> return True) (\_ -> return False)
+      )
+      ps
+    case selfRef of
+      (_ : _) ->
+        throwError $ CompilationError (SelfReferentialInstance p) NoContext
+      [] -> return ()
+
+    -- Reject overlap with fully-resolved (non-stub) instances from other modules.
+    -- Stubs from initialEnv have empty method maps; real imported instances have non-empty ones.
+    let overlapping = filter (\(Instance (_ :=> h) methods) -> quickMatchPred h p && not (M.null methods)) is
+    case overlapping of
+      (Instance (_ :=> h) _ : _) ->
+        throwError $ CompilationError (OverlappingInstances p h) NoContext
+      [] -> return ()
 
   mapM_ (verifyInstancePredicates env p) ps
 
@@ -66,6 +91,24 @@ addInstance env ps p@(IsIn cls ts _) = do
               (\e@(CompilationError (NoInstanceFound _ ts) _) -> when (all isConcrete ts) (throwError e))
   return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance (ps :=> p) mempty : is)) (envInterfaces env)
               }
+
+-- | Check pairwise overlaps among the user-written (non-derived) instances within a single module.
+-- This is called from buildInitialEnv after all instances have been added; it detects duplicates
+-- and overlaps that `addInstance` can't see because same-module instances start with empty methods.
+checkIntraModuleOverlaps :: Env -> [Can.Instance] -> Infer ()
+checkIntraModuleOverlaps env instances = do
+  let userPreds = [(p, inst) | inst@(Can.Canonical _ (Can.Instance _ _ p _ False)) <- instances]
+  foldM_
+    (\seen (p, inst) -> do
+      case find (`quickMatchPred` p) seen of
+        Just p' ->
+          throwError $ CompilationError (OverlappingInstances p p') (Context (envCurrentPath env) (Can.getArea inst))
+        Nothing -> return ()
+      return (p : seen)
+    )
+    []
+    userPreds
+
 
 addInstanceMethod :: Env -> [Pred] -> Pred -> (String, Scheme) -> Infer Env
 addInstanceMethod env _ p@(IsIn cls _ _) (methodName, methodScheme) = do
@@ -128,7 +171,7 @@ resolveInstances options env (i : is) = do
 
 
 resolveInstance :: Options -> Env -> Can.Instance -> Infer (Env, Slv.Instance)
-resolveInstance options env inst@(Can.Canonical area (Can.Instance name constraintPreds pred methods)) = do
+resolveInstance options env inst@(Can.Canonical area (Can.Instance name constraintPreds pred methods _)) = do
   let instanceTypes = predTypes pred
   let subst = foldr (\t s -> s `compose` buildVarSubsts t) mempty instanceTypes
   (Interface _ ps _) <- catchError (lookupInterface env name) (addContext env inst)

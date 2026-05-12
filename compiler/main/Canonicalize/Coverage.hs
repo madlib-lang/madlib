@@ -60,12 +60,12 @@ addTrackers options ast@AST{ apath = Just path } = do
         return updatedImports
 
     updatedExps      <- fmap concat $ mapM (addTrackersToTopLevelExp options path) $ aexps ast
-    updatedInstances <- forM (ainstances ast) $ \(Canonical area (Instance n ps p methods)) -> do
+    updatedInstances <- forM (ainstances ast) $ \(Canonical area (Instance n ps p methods isDerived)) -> do
       if n == "Eq" || n == "Show" then
-        return $ Canonical area (Instance n ps p methods)
+        return $ Canonical area (Instance n ps p methods isDerived)
       else do
         methods' <- mapM (addTrackersToExp options path) methods
-        return $ Canonical area (Instance n ps p methods')
+        return $ Canonical area (Instance n ps p methods' isDerived)
     trackers         <- generateTrackerFunctions
     return ast { aexps = trackers ++ updatedExps, ainstances = updatedInstances, aimports = updatedImports' }
 

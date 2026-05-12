@@ -64,6 +64,8 @@ data TypeError
   | NoInstanceFound String [Type]
   | InterfaceAlreadyDefined String
   | InterfaceNotExisting String
+  | OverlappingInstances Pred Pred
+  | SelfReferentialInstance Pred
   | AmbiguousType (TVar, [Pred])
   | ADTAlreadyDefined Type
   | CapitalizedADTTVar String String

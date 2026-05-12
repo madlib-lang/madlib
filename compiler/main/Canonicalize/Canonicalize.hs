@@ -852,6 +852,12 @@ instance Canonicalizable Src.Pattern Can.Pattern where
     Src.PBool boo -> return $ Can.Canonical area (Can.PBool boo)
 
     Src.PRecord pats -> do
+      let nonRestFieldNames =
+            [ name | Src.PatternField (Src.Source _ _ name) _ <- pats ]
+            ++ [ name | Src.PatternFieldShorthand (Src.Source _ _ name) <- pats ]
+          dupeFieldNames = List.nub $ nonRestFieldNames List.\\ List.nub nonRestFieldNames
+      unless (null dupeFieldNames) $
+        throwError $ CompilationError (RecordDuplicateFields dupeFieldNames) (Context (Env.envCurrentPath env) area)
       let (fields, restName) = extractPatternFields pats
       -- Validate: only one rest pattern allowed
       when (Maybe.isJust restName && length (filter isPatternFieldRest pats) > 1) $

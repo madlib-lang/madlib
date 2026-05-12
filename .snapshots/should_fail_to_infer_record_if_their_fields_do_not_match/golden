@@ -17,7 +17,7 @@
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TCon (TC "String" Star) "prelude")))
                  (TCon (TC "{}" Star) "prelude"))
-            (Area (Loc 123 11 1) (Loc 174 11 52))
+            (Area (Loc 0 1 1) (Loc 51 1 52))
             (TypedExp
                (Typed
                   ([] :=>
@@ -28,7 +28,7 @@
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TCon (TC "String" Star) "prelude")))
                        (TCon (TC "{}" Star) "prelude"))
-                  (Area (Loc 123 11 1) (Loc 174 11 52))
+                  (Area (Loc 0 1 1) (Loc 51 1 52))
                   (Assignment
                      "main"
                      (Typed
@@ -40,18 +40,18 @@
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude")))
                              (TCon (TC "{}" Star) "prelude"))
-                        (Area (Loc 130 11 8) (Loc 174 11 52))
+                        (Area (Loc 7 1 8) (Loc 51 1 52))
                         (Abs
                            (Typed
                               ([] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude"))
-                              (Area (Loc 173 11 51) (Loc 173 11 51))
+                              (Area (Loc 50 1 51) (Loc 50 1 51))
                               "_")
                            [ Typed
                                ([] :=> TCon (TC "Boolean" Star) "prelude")
-                               (Area (Loc 138 11 16) (Loc 172 11 50))
+                               (Area (Loc 15 1 16) (Loc 49 1 50))
                                (App
                                   (Typed
                                      ([ IsIn
@@ -64,7 +64,7 @@
                                               Nothing
                                               (fromList [])
                                           ]
-                                          (Just (Area (Loc 153 11 31) (Loc 155 11 33)))
+                                          (Just (Area (Loc 30 1 31) (Loc 32 1 33)))
                                       , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       ] :=>
@@ -80,7 +80,7 @@
                                                 Nothing
                                                 (fromList [])))
                                           (TCon (TC "Boolean" Star) "prelude"))
-                                     (Area (Loc 138 11 16) (Loc 172 11 50))
+                                     (Area (Loc 15 1 16) (Loc 49 1 50))
                                      (App
                                         (Typed
                                            ([ IsIn
@@ -132,7 +132,7 @@
                                                          Nothing
                                                          (fromList [])))
                                                    (TCon (TC "Boolean" Star) "prelude")))
-                                           (Area (Loc 153 11 31) (Loc 155 11 33))
+                                           (Area (Loc 30 1 31) (Loc 32 1 33))
                                            (Var "==" False))
                                         (Typed
                                            ([ IsIn
@@ -149,7 +149,7 @@
                                                     Nothing
                                                     (fromList [])
                                                 ]
-                                                (Just (Area (Loc 153 11 31) (Loc 155 11 33)))
+                                                (Just (Area (Loc 30 1 31) (Loc 32 1 33)))
                                             , IsIn
                                                 "Number"
                                                 [ TCon (TC "Integer" Star) "prelude" ]
@@ -166,7 +166,7 @@
                                                    ])
                                                 Nothing
                                                 (fromList []))
-                                           (Area (Loc 138 11 16) (Loc 152 11 30))
+                                           (Area (Loc 15 1 16) (Loc 29 1 30))
                                            (Record
                                               [ Typed
                                                   ([ IsIn
@@ -175,7 +175,7 @@
                                                        Nothing
                                                    ] :=>
                                                      TCon (TC "Integer" Star) "prelude")
-                                                  (Area (Loc 140 11 18) (Loc 144 11 22))
+                                                  (Area (Loc 17 1 18) (Loc 21 1 22))
                                                   (Field
                                                      ( "x"
                                                      , Typed
@@ -185,7 +185,7 @@
                                                               Nothing
                                                           ] :=>
                                                             TCon (TC "Integer" Star) "prelude")
-                                                         (Area (Loc 143 11 21) (Loc 144 11 22))
+                                                         (Area (Loc 20 1 21) (Loc 21 1 22))
                                                          (LNum "3")
                                                      ))
                                               , Typed
@@ -195,7 +195,7 @@
                                                        Nothing
                                                    ] :=>
                                                      TCon (TC "Integer" Star) "prelude")
-                                                  (Area (Loc 146 11 24) (Loc 150 11 28))
+                                                  (Area (Loc 23 1 24) (Loc 27 1 28))
                                                   (Field
                                                      ( "y"
                                                      , Typed
@@ -205,7 +205,7 @@
                                                               Nothing
                                                           ] :=>
                                                             TCon (TC "Integer" Star) "prelude")
-                                                         (Area (Loc 149 11 27) (Loc 150 11 28))
+                                                         (Area (Loc 26 1 27) (Loc 27 1 28))
                                                          (LNum "5")
                                                      ))
                                               ]))
@@ -221,7 +221,7 @@
                                               Nothing
                                               (fromList [])
                                           ]
-                                          (Just (Area (Loc 153 11 31) (Loc 155 11 33)))
+                                          (Just (Area (Loc 30 1 31) (Loc 32 1 33)))
                                       , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
                                       ] :=>
@@ -230,16 +230,16 @@
                                              [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
                                           Nothing
                                           (fromList []))
-                                     (Area (Loc 156 11 34) (Loc 172 11 50))
+                                     (Area (Loc 33 1 34) (Loc 49 1 50))
                                      (Record
                                         [ Typed
                                             ([] :=> TCon (TC "String" Star) "prelude")
-                                            (Area (Loc 158 11 36) (Loc 170 11 48))
+                                            (Area (Loc 35 1 36) (Loc 47 1 48))
                                             (Field
                                                ( "name"
                                                , Typed
                                                    ([] :=> TCon (TC "String" Star) "prelude")
-                                                   (Area (Loc 164 11 42) (Loc 170 11 48))
+                                                   (Area (Loc 41 1 42) (Loc 47 1 48))
                                                    (LStr "John")
                                                ))
                                         ]))
@@ -2087,155 +2087,6 @@
                       )
                     )
                   ]))
-        , Untyped
-            (Area (Loc 0 1 1) (Loc 44 3 2))
-            (Instance
-               "Semigroup"
-               []
-               (IsIn "Semigroup" [ TCon (TC "String" Star) "prelude" ] Nothing)
-               (fromList
-                  [ ( "assoc"
-                    , ( Typed
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "String" Star) "prelude"))
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "String" Star) "prelude"))
-                                  (TCon (TC "String" Star) "prelude")))
-                          (Area (Loc 30 2 3) (Loc 42 2 15))
-                          (Assignment
-                             "assoc"
-                             (Typed
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TCon (TC "String" Star) "prelude"))
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TCon (TC "String" Star) "prelude"))
-                                        (TCon (TC "String" Star) "prelude")))
-                                (Area (Loc 38 2 11) (Loc 42 2 15))
-                                (JSExp "")))
-                      , Forall
-                          []
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "String" Star) "prelude"))
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "String" Star) "prelude"))
-                                  (TCon (TC "String" Star) "prelude")))
-                      )
-                    )
-                  ]))
-        , Untyped
-            (Area (Loc 46 5 1) (Loc 121 9 2))
-            (Instance
-               "Monoid"
-               []
-               (IsIn "Monoid" [ TCon (TC "String" Star) "prelude" ] Nothing)
-               (fromList
-                  [ ( "mappend"
-                    , ( Typed
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "String" Star) "prelude"))
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "String" Star) "prelude"))
-                                  (TCon (TC "String" Star) "prelude")))
-                          (Area (Loc 87 7 3) (Loc 102 7 18))
-                          (Assignment
-                             "mappend"
-                             (Typed
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TCon (TC "String" Star) "prelude"))
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TCon (TC "String" Star) "prelude"))
-                                        (TCon (TC "String" Star) "prelude")))
-                                (Area (Loc 97 7 13) (Loc 102 7 18))
-                                (Var "assoc" False)))
-                      , Forall
-                          []
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "String" Star) "prelude"))
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "String" Star) "prelude"))
-                                  (TCon (TC "String" Star) "prelude")))
-                      )
-                    )
-                  , ( "mconcat"
-                    , ( Typed
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "String" Star) "prelude")))
-                               (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 105 8 3) (Loc 119 8 17))
-                          (Assignment
-                             "mconcat"
-                             (Typed
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TApp
-                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                           (TCon (TC "String" Star) "prelude")))
-                                     (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 115 8 13) (Loc 119 8 17))
-                                (JSExp "")))
-                      , Forall
-                          []
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "String" Star) "prelude")))
-                               (TCon (TC "String" Star) "prelude"))
-                      )
-                    )
-                  , ( "mempty"
-                    , ( Typed
-                          ([] :=> TCon (TC "String" Star) "prelude")
-                          (Area (Loc 73 6 3) (Loc 84 6 14))
-                          (Assignment
-                             "mempty"
-                             (Typed
-                                ([] :=> TCon (TC "String" Star) "prelude")
-                                (Area (Loc 82 6 12) (Loc 84 6 14))
-                                (LStr "")))
-                      , Forall [] ([] :=> TCon (TC "String" Star) "prelude")
-                      )
-                    )
-                  ]))
         ]
     , apath = Just "Module.mad"
     }
@@ -2244,7 +2095,7 @@
       (RecordExtraFields [ "name" ] [ "x" , "y" ])
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 156 11 34) (Loc 172 11 50)
+        , ctxArea = Area (Loc 33 1 34) (Loc 49 1 50)
         }
   ]
 )

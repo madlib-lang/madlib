@@ -27,7 +27,7 @@ import           Error.Error (CompilationError (CompilationError), TypeError (Im
 import           Driver.Query (Query)
 import           Rock (Cyclic)
 import           Driver (Prune(..))
-import           Error.Context (Context(ctxAstPath))
+import           Error.Context (Context(..), Context(ctxAstPath))
 import Debug.Trace
 import Data.List (isInfixOf)
 import System.Environment (setEnv)
@@ -202,6 +202,9 @@ sanitizeError err = case err of
   CompilationError (ImportCycle paths) ctx ->
     let updatedPaths = takeFileName <$> paths
     in  CompilationError (ImportCycle updatedPaths) ctx { ctxAstPath = stripAbsPrefix (ctxAstPath ctx) }
+
+  CompilationError _ NoContext ->
+    err
 
   CompilationError e ctx ->
     CompilationError e ctx { ctxAstPath = stripAbsPrefix (ctxAstPath ctx) }

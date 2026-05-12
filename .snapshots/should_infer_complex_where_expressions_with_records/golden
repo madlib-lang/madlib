@@ -19,7 +19,7 @@
                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                        (TVar (TV 7 Star)))
                     (TCon (TC "Comparison" Star) "Module.mad")))
-            (Area (Loc 289 23 1) (Loc 347 24 21))
+            (Area (Loc 166 13 1) (Loc 224 14 21))
             (TypedExp
                (Typed
                   ([] :=>
@@ -32,7 +32,7 @@
                              (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                              (TVar (TV 7 Star)))
                           (TCon (TC "Comparison" Star) "Module.mad")))
-                  (Area (Loc 289 23 1) (Loc 347 24 21))
+                  (Area (Loc 166 13 1) (Loc 224 14 21))
                   (Assignment
                      "customCompare"
                      (Typed
@@ -46,18 +46,18 @@
                                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                    (TVar (TV 7 Star)))
                                 (TCon (TC "Comparison" Star) "Module.mad")))
-                        (Area (Loc 343 24 17) (Loc 347 24 21))
+                        (Area (Loc 220 14 17) (Loc 224 14 21))
                         (JSExp ""))))
                (Untyped
-                  (Area (Loc 306 23 18) (Loc 326 23 38))
+                  (Area (Loc 183 13 18) (Loc 203 13 38))
                   (TRArr
-                     (Untyped (Area (Loc 306 23 18) (Loc 307 23 19)) (TRSingle "a"))
+                     (Untyped (Area (Loc 183 13 18) (Loc 184 13 19)) (TRSingle "a"))
                      (Untyped
-                        (Area (Loc 311 23 23) (Loc 326 23 38))
+                        (Area (Loc 188 13 23) (Loc 203 13 38))
                         (TRArr
-                           (Untyped (Area (Loc 311 23 23) (Loc 312 23 24)) (TRSingle "a"))
+                           (Untyped (Area (Loc 188 13 23) (Loc 189 13 24)) (TRSingle "a"))
                            (Untyped
-                              (Area (Loc 316 23 28) (Loc 326 23 38)) (TRSingle "Comparison"))))))
+                              (Area (Loc 193 13 28) (Loc 203 13 38)) (TRSingle "Comparison"))))))
                (Forall
                   [ Star ]
                   ([] :=>
@@ -90,7 +90,7 @@
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TVar (TV 10 Star)))))
-            (Area (Loc 349 26 1) (Loc 463 27 62))
+            (Area (Loc 226 16 1) (Loc 340 17 62))
             (TypedExp
                (Typed
                   ([] :=>
@@ -114,7 +114,7 @@
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TVar (TV 10 Star)))))
-                  (Area (Loc 349 26 1) (Loc 463 27 62))
+                  (Area (Loc 226 16 1) (Loc 340 17 62))
                   (Export
                      (Typed
                         ([] :=>
@@ -139,7 +139,7 @@
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TVar (TV 10 Star)))))
-                        (Area (Loc 349 26 1) (Loc 463 27 62))
+                        (Area (Loc 226 16 1) (Loc 340 17 62))
                         (Assignment
                            "sortBy"
                            (Typed
@@ -168,7 +168,7 @@
                                       (TApp
                                          (TCon (TC "List" (Kfun Star Star)) "prelude")
                                          (TVar (TV 10 Star)))))
-                              (Area (Loc 418 27 17) (Loc 463 27 62))
+                              (Area (Loc 295 17 17) (Loc 340 17 62))
                               (Abs
                                  (Typed
                                     ([] :=>
@@ -184,7 +184,7 @@
                                                   "prelude")
                                                (TVar (TV 10 Star)))
                                             (TCon (TC "Comparison" Star) "Module.mad")))
-                                    (Area (Loc 419 27 18) (Loc 421 27 20))
+                                    (Area (Loc 296 17 18) (Loc 298 17 20))
                                     "fn")
                                  [ Typed
                                      ([] :=>
@@ -198,51 +198,51 @@
                                           (TApp
                                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                                              (TVar (TV 10 Star))))
-                                     (Area (Loc 418 27 17) (Loc 463 27 62))
+                                     (Area (Loc 295 17 17) (Loc 340 17 62))
                                      (Abs
                                         (Typed
                                            ([] :=>
                                               TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                 (TVar (TV 10 Star)))
-                                           (Area (Loc 423 27 22) (Loc 425 27 24))
+                                           (Area (Loc 300 17 22) (Loc 302 17 24))
                                            "xs")
                                         [ Typed
                                             ([] :=>
                                                TApp
                                                  (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                  (TVar (TV 10 Star)))
-                                            (Area (Loc 430 27 29) (Loc 463 27 62))
+                                            (Area (Loc 307 17 29) (Loc 340 17 62))
                                             (JSExp " xs.sort((a, b) => fn(a)(b)) ")
                                         ])
                                  ]))))))
                (Untyped
-                  (Area (Loc 360 26 12) (Loc 401 26 53))
+                  (Area (Loc 237 16 12) (Loc 278 16 53))
                   (TRArr
                      (Untyped
-                        (Area (Loc 360 26 12) (Loc 380 26 32))
+                        (Area (Loc 237 16 12) (Loc 257 16 32))
                         (TRArr
-                           (Untyped (Area (Loc 360 26 12) (Loc 361 26 13)) (TRSingle "a"))
+                           (Untyped (Area (Loc 237 16 12) (Loc 238 16 13)) (TRSingle "a"))
                            (Untyped
-                              (Area (Loc 365 26 17) (Loc 380 26 32))
+                              (Area (Loc 242 16 17) (Loc 257 16 32))
                               (TRArr
-                                 (Untyped (Area (Loc 365 26 17) (Loc 366 26 18)) (TRSingle "a"))
+                                 (Untyped (Area (Loc 242 16 17) (Loc 243 16 18)) (TRSingle "a"))
                                  (Untyped
-                                    (Area (Loc 370 26 22) (Loc 380 26 32))
+                                    (Area (Loc 247 16 22) (Loc 257 16 32))
                                     (TRSingle "Comparison"))))))
                      (Untyped
-                        (Area (Loc 385 26 37) (Loc 401 26 53))
+                        (Area (Loc 262 16 37) (Loc 278 16 53))
                         (TRArr
                            (Untyped
-                              (Area (Loc 385 26 37) (Loc 391 26 43))
+                              (Area (Loc 262 16 37) (Loc 268 16 43))
                               (TRComp
                                  "List"
-                                 [ Untyped (Area (Loc 390 26 42) (Loc 391 26 43)) (TRSingle "a") ]))
+                                 [ Untyped (Area (Loc 267 16 42) (Loc 268 16 43)) (TRSingle "a") ]))
                            (Untyped
-                              (Area (Loc 395 26 47) (Loc 401 26 53))
+                              (Area (Loc 272 16 47) (Loc 278 16 53))
                               (TRComp
                                  "List"
-                                 [ Untyped (Area (Loc 400 26 52) (Loc 401 26 53)) (TRSingle "a")
+                                 [ Untyped (Area (Loc 277 16 52) (Loc 278 16 53)) (TRSingle "a")
                                  ]))))))
                (Forall
                   [ Star ]
@@ -283,7 +283,7 @@
                     (TApp
                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                        (TVar (TV 17 Star)))))
-            (Area (Loc 465 29 1) (Loc 520 30 13))
+            (Area (Loc 342 19 1) (Loc 397 20 13))
             (TypedExp
                (Typed
                   ([] :=>
@@ -305,7 +305,7 @@
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TVar (TV 17 Star)))))
-                  (Area (Loc 465 29 1) (Loc 520 30 13))
+                  (Area (Loc 342 19 1) (Loc 397 20 13))
                   (Assignment
                      "chain"
                      (Typed
@@ -329,34 +329,34 @@
                                 (TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TVar (TV 17 Star)))))
-                        (Area (Loc 516 30 9) (Loc 520 30 13))
+                        (Area (Loc 393 20 9) (Loc 397 20 13))
                         (JSExp ""))))
                (Untyped
-                  (Area (Loc 475 29 11) (Loc 507 29 43))
+                  (Area (Loc 352 19 11) (Loc 384 19 43))
                   (TRArr
                      (Untyped
-                        (Area (Loc 475 29 11) (Loc 486 29 22))
+                        (Area (Loc 352 19 11) (Loc 363 19 22))
                         (TRArr
-                           (Untyped (Area (Loc 475 29 11) (Loc 476 29 12)) (TRSingle "a"))
+                           (Untyped (Area (Loc 352 19 11) (Loc 353 19 12)) (TRSingle "a"))
                            (Untyped
-                              (Area (Loc 480 29 16) (Loc 486 29 22))
+                              (Area (Loc 357 19 16) (Loc 363 19 22))
                               (TRComp
                                  "List"
-                                 [ Untyped (Area (Loc 485 29 21) (Loc 486 29 22)) (TRSingle "b")
+                                 [ Untyped (Area (Loc 362 19 21) (Loc 363 19 22)) (TRSingle "b")
                                  ]))))
                      (Untyped
-                        (Area (Loc 491 29 27) (Loc 507 29 43))
+                        (Area (Loc 368 19 27) (Loc 384 19 43))
                         (TRArr
                            (Untyped
-                              (Area (Loc 491 29 27) (Loc 497 29 33))
+                              (Area (Loc 368 19 27) (Loc 374 19 33))
                               (TRComp
                                  "List"
-                                 [ Untyped (Area (Loc 496 29 32) (Loc 497 29 33)) (TRSingle "a") ]))
+                                 [ Untyped (Area (Loc 373 19 32) (Loc 374 19 33)) (TRSingle "a") ]))
                            (Untyped
-                              (Area (Loc 501 29 37) (Loc 507 29 43))
+                              (Area (Loc 378 19 37) (Loc 384 19 43))
                               (TRComp
                                  "List"
-                                 [ Untyped (Area (Loc 506 29 42) (Loc 507 29 43)) (TRSingle "b")
+                                 [ Untyped (Area (Loc 383 19 42) (Loc 384 19 43)) (TRSingle "b")
                                  ]))))))
                (Forall
                   [ Star , Star ]
@@ -383,14 +383,14 @@
                        (Just (TVar (TV 28 Star)))
                        (fromList [])))
                  (TCon (TC "String" Star) "prelude"))
-            (Area (Loc 522 32 1) (Loc 574 32 53))
+            (Area (Loc 399 22 1) (Loc 451 22 53))
             (Assignment
                "FunctionLink"
                (Typed
                   ([ IsIn
                        "Semigroup"
                        [ TCon (TC "String" Star) "prelude" ]
-                       (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                       (Just (Area (Loc 440 22 42) (Loc 442 22 44)))
                    ] :=>
                      TApp
                        (TApp
@@ -400,13 +400,13 @@
                              (Just (TVar (TV 28 Star)))
                              (fromList [])))
                        (TCon (TC "String" Star) "prelude"))
-                  (Area (Loc 537 32 16) (Loc 574 32 53))
+                  (Area (Loc 414 22 16) (Loc 451 22 53))
                   (Abs
                      (Typed
                         ([ IsIn
                              "Semigroup"
                              [ TCon (TC "String" Star) "prelude" ]
-                             (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                             (Just (Area (Loc 440 22 42) (Loc 442 22 44)))
                          ] :=>
                            TRecord
                              (fromList [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
@@ -418,10 +418,10 @@
                          ([ IsIn
                               "Semigroup"
                               [ TCon (TC "String" Star) "prelude" ]
-                              (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                              (Just (Area (Loc 440 22 42) (Loc 442 22 44)))
                           ] :=>
                             TCon (TC "String" Star) "prelude")
-                         (Area (Loc 537 32 16) (Loc 574 32 53))
+                         (Area (Loc 414 22 16) (Loc 451 22 53))
                          (Where
                             (Typed
                                ([] :=>
@@ -435,7 +435,7 @@
                                 ([ IsIn
                                      "Semigroup"
                                      [ TCon (TC "String" Star) "prelude" ]
-                                     (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                                     (Just (Area (Loc 440 22 42) (Loc 442 22 44)))
                                  ] :=>
                                    TApp
                                      (TApp
@@ -446,7 +446,7 @@
                                            (Just (TVar (TV 28 Star)))
                                            (fromList [])))
                                      (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 545 32 24) (Loc 572 32 51))
+                                (Area (Loc 422 22 24) (Loc 449 22 51))
                                 (Is
                                    (Typed
                                       ([] :=>
@@ -455,22 +455,22 @@
                                               [ ( "name" , TCon (TC "String" Star) "prelude" ) ])
                                            (Just (TVar (TV 28 Star)))
                                            (fromList []))
-                                      (Area (Loc 545 32 24) (Loc 546 32 25))
+                                      (Area (Loc 422 22 24) (Loc 423 22 25))
                                       (PVar "f"))
                                    (Typed
                                       ([ IsIn
                                            "Semigroup"
                                            [ TCon (TC "String" Star) "prelude" ]
-                                           (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                                           (Just (Area (Loc 440 22 42) (Loc 442 22 44)))
                                        ] :=>
                                          TCon (TC "String" Star) "prelude")
-                                      (Area (Loc 563 32 42) (Loc 572 32 51))
+                                      (Area (Loc 440 22 42) (Loc 449 22 51))
                                       (App
                                          (Typed
                                             ([ IsIn
                                                  "Semigroup"
                                                  [ TCon (TC "String" Star) "prelude" ]
-                                                 (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                                                 (Just (Area (Loc 440 22 42) (Loc 442 22 44)))
                                              ] :=>
                                                TApp
                                                  (TApp
@@ -479,7 +479,7 @@
                                                        "prelude")
                                                     (TCon (TC "String" Star) "prelude"))
                                                  (TCon (TC "String" Star) "prelude"))
-                                            (Area (Loc 563 32 42) (Loc 565 32 44))
+                                            (Area (Loc 440 22 42) (Loc 442 22 44))
                                             (App
                                                (Typed
                                                   ([ IsIn
@@ -503,26 +503,26 @@
                                                                 "prelude")
                                                              (TCon (TC "String" Star) "prelude"))
                                                           (TCon (TC "String" Star) "prelude")))
-                                                  (Area (Loc 563 32 42) (Loc 565 32 44))
+                                                  (Area (Loc 440 22 42) (Loc 442 22 44))
                                                   (Var "assoc" False))
                                                (Typed
                                                   ([ IsIn
                                                        "Semigroup"
                                                        [ TCon (TC "String" Star) "prelude" ]
-                                                       (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                                                       (Just (Area (Loc 440 22 42) (Loc 442 22 44)))
                                                    ] :=>
                                                      TCon (TC "String" Star) "prelude")
-                                                  (Area (Loc 550 32 29) (Loc 562 32 41))
+                                                  (Area (Loc 427 22 29) (Loc 439 22 41))
                                                   (LStr "moduleName"))
                                                False))
                                          (Typed
                                             ([ IsIn
                                                  "Semigroup"
                                                  [ TCon (TC "String" Star) "prelude" ]
-                                                 (Just (Area (Loc 563 32 42) (Loc 565 32 44)))
+                                                 (Just (Area (Loc 440 22 42) (Loc 442 22 44)))
                                              ] :=>
                                                TCon (TC "String" Star) "prelude")
-                                            (Area (Loc 566 32 45) (Loc 572 32 51))
+                                            (Area (Loc 443 22 45) (Loc 449 22 51))
                                             (Access
                                                (Typed
                                                   ([] :=>
@@ -534,7 +534,7 @@
                                                           ])
                                                        (Just (TVar (TV 28 Star)))
                                                        (fromList []))
-                                                  (Area (Loc 566 32 45) (Loc 567 32 46))
+                                                  (Area (Loc 443 22 45) (Loc 444 22 46))
                                                   (Var "f" False))
                                                (Typed
                                                   ([] :=>
@@ -554,7 +554,7 @@
                                                              (Just (TVar (TV 28 Star)))
                                                              (fromList [])))
                                                        (TCon (TC "String" Star) "prelude"))
-                                                  (Area (Loc 568 32 47) (Loc 572 32 51))
+                                                  (Area (Loc 445 22 47) (Loc 449 22 51))
                                                   (Var ".name" False))))
                                          True)))
                             ])
@@ -607,14 +607,14 @@
                  (TApp
                     (TCon (TC "List" (Kfun Star Star)) "prelude")
                     (TCon (TC "String" Star) "prelude")))
-            (Area (Loc 575 33 1) (Loc 1132 44 2))
+            (Area (Loc 452 23 1) (Loc 1009 34 2))
             (Assignment
                "generateFunctionLinks"
                (Typed
                   ([ IsIn
                        "Functor"
                        [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                       (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
+                       (Just (Area (Loc 990 33 3) (Loc 993 33 6)))
                    ] :=>
                      TApp
                        (TApp
@@ -664,13 +664,13 @@
                        (TApp
                           (TCon (TC "List" (Kfun Star Star)) "prelude")
                           (TCon (TC "String" Star) "prelude")))
-                  (Area (Loc 599 33 25) (Loc 1132 44 2))
+                  (Area (Loc 476 23 25) (Loc 1009 34 2))
                   (Abs
                      (Typed
                         ([ IsIn
                              "Functor"
                              [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                             (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
+                             (Just (Area (Loc 990 33 3) (Loc 993 33 6)))
                          ] :=>
                            TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
@@ -714,24 +714,24 @@
                                    ])
                                 (Just (TVar (TV 138 Star)))
                                 (fromList [])))
-                        (Area (Loc 599 33 25) (Loc 602 33 28))
+                        (Area (Loc 476 23 25) (Loc 479 23 28))
                         "__P__2")
                      [ Typed
                          ([ IsIn
                               "Functor"
                               [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                              (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
+                              (Just (Area (Loc 990 33 3) (Loc 993 33 6)))
                           ] :=>
                             TApp
                               (TCon (TC "List" (Kfun Star Star)) "prelude")
                               (TCon (TC "String" Star) "prelude"))
-                         (Area (Loc 599 33 25) (Loc 1130 43 20))
+                         (Area (Loc 476 23 25) (Loc 1007 33 20))
                          (App
                             (Typed
                                ([ IsIn
                                     "Functor"
                                     [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                                    (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
+                                    (Just (Area (Loc 990 33 3) (Loc 993 33 6)))
                                 ] :=>
                                   TApp
                                     (TApp
@@ -772,7 +772,7 @@
                                     (TApp
                                        (TCon (TC "List" (Kfun Star Star)) "prelude")
                                        (TCon (TC "String" Star) "prelude")))
-                               (Area (Loc 1113 43 3) (Loc 1130 43 20))
+                               (Area (Loc 990 33 3) (Loc 1007 33 20))
                                (App
                                   (Typed
                                      ([ IsIn
@@ -882,13 +882,13 @@
                                              (TApp
                                                 (TCon (TC "List" (Kfun Star Star)) "prelude")
                                                 (TCon (TC "String" Star) "prelude"))))
-                                     (Area (Loc 1113 43 3) (Loc 1116 43 6))
+                                     (Area (Loc 990 33 3) (Loc 993 33 6))
                                      (Var "map" False))
                                   (Typed
                                      ([ IsIn
                                           "Functor"
                                           [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                                          (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
+                                          (Just (Area (Loc 990 33 3) (Loc 993 33 6)))
                                       ] :=>
                                         TApp
                                           (TApp
@@ -930,14 +930,14 @@
                                                 (Just (TVar (TV 139 Star)))
                                                 (fromList [])))
                                           (TCon (TC "String" Star) "prelude"))
-                                     (Area (Loc 1117 43 7) (Loc 1129 43 19))
+                                     (Area (Loc 994 33 7) (Loc 1006 33 19))
                                      (Var "FunctionLink" False))
                                   True))
                             (Typed
                                ([ IsIn
                                     "Functor"
                                     [ TCon (TC "List" (Kfun Star Star)) "prelude" ]
-                                    (Just (Area (Loc 1113 43 3) (Loc 1116 43 6)))
+                                    (Just (Area (Loc 990 33 3) (Loc 993 33 6)))
                                 ] :=>
                                   TApp
                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
@@ -970,7 +970,7 @@
                                           ])
                                        (Just (TVar (TV 139 Star)))
                                        (fromList [])))
-                               (Area (Loc 599 33 25) (Loc 1109 42 5))
+                               (Area (Loc 476 23 25) (Loc 986 32 5))
                                (App
                                   (Typed
                                      ([] :=>
@@ -1056,7 +1056,7 @@
                                                    ])
                                                 (Just (TVar (TV 139 Star)))
                                                 (fromList []))))
-                                     (Area (Loc 630 35 3) (Loc 1109 42 5))
+                                     (Area (Loc 507 25 3) (Loc 986 32 5))
                                      (App
                                         (Typed
                                            ([] :=>
@@ -1282,7 +1282,7 @@
                                                             ])
                                                          (Just (TVar (TV 139 Star)))
                                                          (fromList [])))))
-                                           (Area (Loc 630 35 3) (Loc 636 35 9))
+                                           (Area (Loc 507 25 3) (Loc 513 25 9))
                                            (Var "sortBy" False))
                                         (Typed
                                            ([] :=>
@@ -1384,7 +1384,7 @@
                                                          (Just (TVar (TV 139 Star)))
                                                          (fromList [])))
                                                    (TCon (TC "Comparison" Star) "Module.mad")))
-                                           (Area (Loc 637 35 10) (Loc 1108 42 4))
+                                           (Area (Loc 514 25 10) (Loc 985 32 4))
                                            (Abs
                                               (Typed
                                                  ([] :=>
@@ -1429,7 +1429,7 @@
                                                          ])
                                                       (Just (TVar (TV 139 Star)))
                                                       (fromList []))
-                                                 (Area (Loc 638 35 11) (Loc 639 35 12))
+                                                 (Area (Loc 515 25 11) (Loc 516 25 12))
                                                  "a")
                                               [ Typed
                                                   ([] :=>
@@ -1491,7 +1491,7 @@
                                                              (Just (TVar (TV 139 Star)))
                                                              (fromList [])))
                                                        (TCon (TC "Comparison" Star) "Module.mad"))
-                                                  (Area (Loc 637 35 10) (Loc 1108 42 4))
+                                                  (Area (Loc 514 25 10) (Loc 985 32 4))
                                                   (Abs
                                                      (Typed
                                                         ([] :=>
@@ -1546,13 +1546,13 @@
                                                                 ])
                                                              (Just (TVar (TV 139 Star)))
                                                              (fromList []))
-                                                        (Area (Loc 641 35 14) (Loc 642 35 15))
+                                                        (Area (Loc 518 25 14) (Loc 519 25 15))
                                                         "b")
                                                      [ Typed
                                                          ([] :=>
                                                             TCon
                                                               (TC "Comparison" Star) "Module.mad")
-                                                         (Area (Loc 647 35 20) (Loc 1108 42 4))
+                                                         (Area (Loc 524 25 20) (Loc 985 32 4))
                                                          (Where
                                                             (Typed
                                                                ([] :=>
@@ -1694,7 +1694,7 @@
                                                                        (Just (TVar (TV 139 Star)))
                                                                        (fromList [])))
                                                                (Area
-                                                                  (Loc 653 35 26) (Loc 660 35 33))
+                                                                  (Loc 530 25 26) (Loc 537 25 33))
                                                                (TupleConstructor
                                                                   [ Typed
                                                                       ([] :=>
@@ -1770,8 +1770,8 @@
                                                                               (TVar (TV 139 Star)))
                                                                            (fromList []))
                                                                       (Area
-                                                                         (Loc 655 35 28)
-                                                                         (Loc 656 35 29))
+                                                                         (Loc 532 25 28)
+                                                                         (Loc 533 25 29))
                                                                       (Var "a" False)
                                                                   , Typed
                                                                       ([] :=>
@@ -1847,8 +1847,8 @@
                                                                               (TVar (TV 139 Star)))
                                                                            (fromList []))
                                                                       (Area
-                                                                         (Loc 658 35 31)
-                                                                         (Loc 659 35 32))
+                                                                         (Loc 535 25 31)
+                                                                         (Loc 536 25 32))
                                                                       (Var "b" False)
                                                                   ]))
                                                             [ Typed
@@ -2024,7 +2024,7 @@
                                                                         (TC "Comparison" Star)
                                                                         "Module.mad"))
                                                                 (Area
-                                                                   (Loc 668 36 5) (Loc 734 36 71))
+                                                                   (Loc 545 26 5) (Loc 611 26 71))
                                                                 (Is
                                                                    (Typed
                                                                       ([] :=>
@@ -2187,8 +2187,8 @@
                                                                                     (TV 139 Star)))
                                                                               (fromList [])))
                                                                       (Area
-                                                                         (Loc 668 36 5)
-                                                                         (Loc 703 36 40))
+                                                                         (Loc 545 26 5)
+                                                                         (Loc 580 26 40))
                                                                       (PTuple
                                                                          [ Typed
                                                                              ([] :=>
@@ -2268,8 +2268,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 670 36 7)
-                                                                                (Loc 685 36 22))
+                                                                                (Loc 547 26 7)
+                                                                                (Loc 562 26 22))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -2282,12 +2282,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               678
-                                                                                               36
+                                                                                               555
+                                                                                               26
                                                                                                15)
                                                                                             (Loc
-                                                                                               683
-                                                                                               36
+                                                                                               560
+                                                                                               26
                                                                                                20))
                                                                                          (PVar
                                                                                             "nameA")
@@ -2372,8 +2372,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 687 36 24)
-                                                                                (Loc 702 36 39))
+                                                                                (Loc 564 26 24)
+                                                                                (Loc 579 26 39))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -2386,12 +2386,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               695
-                                                                                               36
+                                                                                               572
+                                                                                               26
                                                                                                32)
                                                                                             (Loc
-                                                                                               700
-                                                                                               36
+                                                                                               577
+                                                                                               26
                                                                                                37))
                                                                                          (PVar
                                                                                             "nameB")
@@ -2405,8 +2405,8 @@
                                                                            (TC "Comparison" Star)
                                                                            "Module.mad")
                                                                       (Area
-                                                                         (Loc 707 36 44)
-                                                                         (Loc 733 36 70))
+                                                                         (Loc 584 26 44)
+                                                                         (Loc 610 26 70))
                                                                       (App
                                                                          (Typed
                                                                             ([] :=>
@@ -2432,8 +2432,8 @@
                                                                                        Star)
                                                                                     "Module.mad"))
                                                                             (Area
-                                                                               (Loc 707 36 44)
-                                                                               (Loc 734 36 71))
+                                                                               (Loc 584 26 44)
+                                                                               (Loc 611 26 71))
                                                                             (App
                                                                                (Typed
                                                                                   ([] :=>
@@ -2475,9 +2475,9 @@
                                                                                                 Star)
                                                                                              "Module.mad")))
                                                                                   (Area
-                                                                                     (Loc 707 36 44)
+                                                                                     (Loc 584 26 44)
                                                                                      (Loc
-                                                                                        720 36 57))
+                                                                                        597 26 57))
                                                                                   (Var
                                                                                      "customCompare"
                                                                                      False))
@@ -2489,9 +2489,9 @@
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
-                                                                                     (Loc 721 36 58)
+                                                                                     (Loc 598 26 58)
                                                                                      (Loc
-                                                                                        726 36 63))
+                                                                                        603 26 63))
                                                                                   (Var
                                                                                      "nameA" False))
                                                                                False))
@@ -2501,8 +2501,8 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 728 36 65)
-                                                                               (Loc 733 36 70))
+                                                                               (Loc 605 26 65)
+                                                                               (Loc 610 26 70))
                                                                             (Var "nameB" False))
                                                                          True)))
                                                             , Typed
@@ -2678,7 +2678,7 @@
                                                                         (TC "Comparison" Star)
                                                                         "Module.mad"))
                                                                 (Area
-                                                                   (Loc 739 37 5) (Loc 803 37 69))
+                                                                   (Loc 616 27 5) (Loc 680 27 69))
                                                                 (Is
                                                                    (Typed
                                                                       ([] :=>
@@ -2841,8 +2841,8 @@
                                                                                     (TV 139 Star)))
                                                                               (fromList [])))
                                                                       (Area
-                                                                         (Loc 739 37 5)
-                                                                         (Loc 772 37 38))
+                                                                         (Loc 616 27 5)
+                                                                         (Loc 649 27 38))
                                                                       (PTuple
                                                                          [ Typed
                                                                              ([] :=>
@@ -2922,8 +2922,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 741 37 7)
-                                                                                (Loc 756 37 22))
+                                                                                (Loc 618 27 7)
+                                                                                (Loc 633 27 22))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -2936,12 +2936,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               749
-                                                                                               37
+                                                                                               626
+                                                                                               27
                                                                                                15)
                                                                                             (Loc
-                                                                                               754
-                                                                                               37
+                                                                                               631
+                                                                                               27
                                                                                                20))
                                                                                          (PVar
                                                                                             "nameC")
@@ -3026,8 +3026,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 758 37 24)
-                                                                                (Loc 771 37 37))
+                                                                                (Loc 635 27 24)
+                                                                                (Loc 648 27 37))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "ik"
@@ -3040,12 +3040,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               764
-                                                                                               37
+                                                                                               641
+                                                                                               27
                                                                                                30)
                                                                                             (Loc
-                                                                                               769
-                                                                                               37
+                                                                                               646
+                                                                                               27
                                                                                                35))
                                                                                          (PVar
                                                                                             "nameD")
@@ -3059,8 +3059,8 @@
                                                                            (TC "Comparison" Star)
                                                                            "Module.mad")
                                                                       (Area
-                                                                         (Loc 776 37 42)
-                                                                         (Loc 802 37 68))
+                                                                         (Loc 653 27 42)
+                                                                         (Loc 679 27 68))
                                                                       (App
                                                                          (Typed
                                                                             ([] :=>
@@ -3086,8 +3086,8 @@
                                                                                        Star)
                                                                                     "Module.mad"))
                                                                             (Area
-                                                                               (Loc 776 37 42)
-                                                                               (Loc 803 37 69))
+                                                                               (Loc 653 27 42)
+                                                                               (Loc 680 27 69))
                                                                             (App
                                                                                (Typed
                                                                                   ([] :=>
@@ -3129,9 +3129,9 @@
                                                                                                 Star)
                                                                                              "Module.mad")))
                                                                                   (Area
-                                                                                     (Loc 776 37 42)
+                                                                                     (Loc 653 27 42)
                                                                                      (Loc
-                                                                                        789 37 55))
+                                                                                        666 27 55))
                                                                                   (Var
                                                                                      "customCompare"
                                                                                      False))
@@ -3143,9 +3143,9 @@
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
-                                                                                     (Loc 790 37 56)
+                                                                                     (Loc 667 27 56)
                                                                                      (Loc
-                                                                                        795 37 61))
+                                                                                        672 27 61))
                                                                                   (Var
                                                                                      "nameC" False))
                                                                                False))
@@ -3155,8 +3155,8 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 797 37 63)
-                                                                               (Loc 802 37 68))
+                                                                               (Loc 674 27 63)
+                                                                               (Loc 679 27 68))
                                                                             (Var "nameD" False))
                                                                          True)))
                                                             , Typed
@@ -3332,7 +3332,7 @@
                                                                         (TC "Comparison" Star)
                                                                         "Module.mad"))
                                                                 (Area
-                                                                   (Loc 808 38 5) (Loc 876 38 73))
+                                                                   (Loc 685 28 5) (Loc 753 28 73))
                                                                 (Is
                                                                    (Typed
                                                                       ([] :=>
@@ -3495,8 +3495,8 @@
                                                                                     (TV 139 Star)))
                                                                               (fromList [])))
                                                                       (Area
-                                                                         (Loc 808 38 5)
-                                                                         (Loc 845 38 42))
+                                                                         (Loc 685 28 5)
+                                                                         (Loc 722 28 42))
                                                                       (PTuple
                                                                          [ Typed
                                                                              ([] :=>
@@ -3576,8 +3576,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 810 38 7)
-                                                                                (Loc 827 38 24))
+                                                                                (Loc 687 28 7)
+                                                                                (Loc 704 28 24))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "tchouk"
@@ -3590,12 +3590,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               820
-                                                                                               38
+                                                                                               697
+                                                                                               28
                                                                                                17)
                                                                                             (Loc
-                                                                                               825
-                                                                                               38
+                                                                                               702
+                                                                                               28
                                                                                                22))
                                                                                          (PVar
                                                                                             "nameD")
@@ -3680,8 +3680,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 829 38 26)
-                                                                                (Loc 844 38 41))
+                                                                                (Loc 706 28 26)
+                                                                                (Loc 721 28 41))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -3694,12 +3694,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               837
-                                                                                               38
+                                                                                               714
+                                                                                               28
                                                                                                34)
                                                                                             (Loc
-                                                                                               842
-                                                                                               38
+                                                                                               719
+                                                                                               28
                                                                                                39))
                                                                                          (PVar
                                                                                             "nameC")
@@ -3713,8 +3713,8 @@
                                                                            (TC "Comparison" Star)
                                                                            "Module.mad")
                                                                       (Area
-                                                                         (Loc 849 38 46)
-                                                                         (Loc 875 38 72))
+                                                                         (Loc 726 28 46)
+                                                                         (Loc 752 28 72))
                                                                       (App
                                                                          (Typed
                                                                             ([] :=>
@@ -3740,8 +3740,8 @@
                                                                                        Star)
                                                                                     "Module.mad"))
                                                                             (Area
-                                                                               (Loc 849 38 46)
-                                                                               (Loc 876 38 73))
+                                                                               (Loc 726 28 46)
+                                                                               (Loc 753 28 73))
                                                                             (App
                                                                                (Typed
                                                                                   ([] :=>
@@ -3783,9 +3783,9 @@
                                                                                                 Star)
                                                                                              "Module.mad")))
                                                                                   (Area
-                                                                                     (Loc 849 38 46)
+                                                                                     (Loc 726 28 46)
                                                                                      (Loc
-                                                                                        862 38 59))
+                                                                                        739 28 59))
                                                                                   (Var
                                                                                      "customCompare"
                                                                                      False))
@@ -3797,9 +3797,9 @@
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
-                                                                                     (Loc 863 38 60)
+                                                                                     (Loc 740 28 60)
                                                                                      (Loc
-                                                                                        868 38 65))
+                                                                                        745 28 65))
                                                                                   (Var
                                                                                      "nameC" False))
                                                                                False))
@@ -3809,8 +3809,8 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 870 38 67)
-                                                                               (Loc 875 38 72))
+                                                                               (Loc 747 28 67)
+                                                                               (Loc 752 28 72))
                                                                             (Var "nameD" False))
                                                                          True)))
                                                             , Typed
@@ -3986,7 +3986,7 @@
                                                                         (TC "Comparison" Star)
                                                                         "Module.mad"))
                                                                 (Area
-                                                                   (Loc 881 39 5) (Loc 946 39 70))
+                                                                   (Loc 758 29 5) (Loc 823 29 70))
                                                                 (Is
                                                                    (Typed
                                                                       ([] :=>
@@ -4149,8 +4149,8 @@
                                                                                     (TV 139 Star)))
                                                                               (fromList [])))
                                                                       (Area
-                                                                         (Loc 881 39 5)
-                                                                         (Loc 915 39 39))
+                                                                         (Loc 758 29 5)
+                                                                         (Loc 792 29 39))
                                                                       (PTuple
                                                                          [ Typed
                                                                              ([] :=>
@@ -4230,8 +4230,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 883 39 7)
-                                                                                (Loc 898 39 22))
+                                                                                (Loc 760 29 7)
+                                                                                (Loc 775 29 22))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -4244,12 +4244,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               891
-                                                                                               39
+                                                                                               768
+                                                                                               29
                                                                                                15)
                                                                                             (Loc
-                                                                                               896
-                                                                                               39
+                                                                                               773
+                                                                                               29
                                                                                                20))
                                                                                          (PVar
                                                                                             "nameC")
@@ -4334,8 +4334,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 900 39 24)
-                                                                                (Loc 914 39 38))
+                                                                                (Loc 777 29 24)
+                                                                                (Loc 791 29 38))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "lui"
@@ -4348,12 +4348,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               907
-                                                                                               39
+                                                                                               784
+                                                                                               29
                                                                                                31)
                                                                                             (Loc
-                                                                                               912
-                                                                                               39
+                                                                                               789
+                                                                                               29
                                                                                                36))
                                                                                          (PVar
                                                                                             "nameD")
@@ -4367,8 +4367,8 @@
                                                                            (TC "Comparison" Star)
                                                                            "Module.mad")
                                                                       (Area
-                                                                         (Loc 919 39 43)
-                                                                         (Loc 945 39 69))
+                                                                         (Loc 796 29 43)
+                                                                         (Loc 822 29 69))
                                                                       (App
                                                                          (Typed
                                                                             ([] :=>
@@ -4394,8 +4394,8 @@
                                                                                        Star)
                                                                                     "Module.mad"))
                                                                             (Area
-                                                                               (Loc 919 39 43)
-                                                                               (Loc 946 39 70))
+                                                                               (Loc 796 29 43)
+                                                                               (Loc 823 29 70))
                                                                             (App
                                                                                (Typed
                                                                                   ([] :=>
@@ -4437,9 +4437,9 @@
                                                                                                 Star)
                                                                                              "Module.mad")))
                                                                                   (Area
-                                                                                     (Loc 919 39 43)
+                                                                                     (Loc 796 29 43)
                                                                                      (Loc
-                                                                                        932 39 56))
+                                                                                        809 29 56))
                                                                                   (Var
                                                                                      "customCompare"
                                                                                      False))
@@ -4451,9 +4451,9 @@
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
-                                                                                     (Loc 933 39 57)
+                                                                                     (Loc 810 29 57)
                                                                                      (Loc
-                                                                                        938 39 62))
+                                                                                        815 29 62))
                                                                                   (Var
                                                                                      "nameC" False))
                                                                                False))
@@ -4463,8 +4463,8 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 940 39 64)
-                                                                               (Loc 945 39 69))
+                                                                               (Loc 817 29 64)
+                                                                               (Loc 822 29 69))
                                                                             (Var "nameD" False))
                                                                          True)))
                                                             , Typed
@@ -4640,7 +4640,7 @@
                                                                         (TC "Comparison" Star)
                                                                         "Module.mad"))
                                                                 (Area
-                                                                   (Loc 951 40 5) (Loc 1025 40 79))
+                                                                   (Loc 828 30 5) (Loc 902 30 79))
                                                                 (Is
                                                                    (Typed
                                                                       ([] :=>
@@ -4803,8 +4803,8 @@
                                                                                     (TV 139 Star)))
                                                                               (fromList [])))
                                                                       (Area
-                                                                         (Loc 951 40 5)
-                                                                         (Loc 994 40 48))
+                                                                         (Loc 828 30 5)
+                                                                         (Loc 871 30 48))
                                                                       (PTuple
                                                                          [ Typed
                                                                              ([] :=>
@@ -4884,8 +4884,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 953 40 7)
-                                                                                (Loc 968 40 22))
+                                                                                (Loc 830 30 7)
+                                                                                (Loc 845 30 22))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -4898,12 +4898,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               961
-                                                                                               40
+                                                                                               838
+                                                                                               30
                                                                                                15)
                                                                                             (Loc
-                                                                                               966
-                                                                                               40
+                                                                                               843
+                                                                                               30
                                                                                                20))
                                                                                          (PVar
                                                                                             "nameC")
@@ -4988,8 +4988,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 970 40 24)
-                                                                                (Loc 993 40 47))
+                                                                                (Loc 847 30 24)
+                                                                                (Loc 870 30 47))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "po"
@@ -5033,12 +5033,12 @@
                                                                                                  []))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               976
-                                                                                               40
+                                                                                               853
+                                                                                               30
                                                                                                30)
                                                                                             (Loc
-                                                                                               992
-                                                                                               40
+                                                                                               869
+                                                                                               30
                                                                                                46))
                                                                                          (PRecord
                                                                                             (fromList
@@ -5071,12 +5071,12 @@
                                                                                                              []))
                                                                                                      (Area
                                                                                                         (Loc
-                                                                                                           982
-                                                                                                           40
+                                                                                                           859
+                                                                                                           30
                                                                                                            36)
                                                                                                         (Loc
-                                                                                                           991
-                                                                                                           40
+                                                                                                           868
+                                                                                                           30
                                                                                                            45))
                                                                                                      (PRecord
                                                                                                         (fromList
@@ -5090,12 +5090,12 @@
                                                                                                                       "prelude")
                                                                                                                  (Area
                                                                                                                     (Loc
-                                                                                                                       984
-                                                                                                                       40
+                                                                                                                       861
+                                                                                                                       30
                                                                                                                        38)
                                                                                                                     (Loc
-                                                                                                                       989
-                                                                                                                       40
+                                                                                                                       866
+                                                                                                                       30
                                                                                                                        43))
                                                                                                                  (PVar
                                                                                                                     "nameD")
@@ -5115,8 +5115,8 @@
                                                                            (TC "Comparison" Star)
                                                                            "Module.mad")
                                                                       (Area
-                                                                         (Loc 998 40 52)
-                                                                         (Loc 1024 40 78))
+                                                                         (Loc 875 30 52)
+                                                                         (Loc 901 30 78))
                                                                       (App
                                                                          (Typed
                                                                             ([] :=>
@@ -5142,8 +5142,8 @@
                                                                                        Star)
                                                                                     "Module.mad"))
                                                                             (Area
-                                                                               (Loc 998 40 52)
-                                                                               (Loc 1025 40 79))
+                                                                               (Loc 875 30 52)
+                                                                               (Loc 902 30 79))
                                                                             (App
                                                                                (Typed
                                                                                   ([] :=>
@@ -5185,9 +5185,9 @@
                                                                                                 Star)
                                                                                              "Module.mad")))
                                                                                   (Area
-                                                                                     (Loc 998 40 52)
+                                                                                     (Loc 875 30 52)
                                                                                      (Loc
-                                                                                        1011 40 65))
+                                                                                        888 30 65))
                                                                                   (Var
                                                                                      "customCompare"
                                                                                      False))
@@ -5199,10 +5199,9 @@
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
+                                                                                     (Loc 889 30 66)
                                                                                      (Loc
-                                                                                        1012 40 66)
-                                                                                     (Loc
-                                                                                        1017 40 71))
+                                                                                        894 30 71))
                                                                                   (Var
                                                                                      "nameC" False))
                                                                                False))
@@ -5212,8 +5211,8 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 1019 40 73)
-                                                                               (Loc 1024 40 78))
+                                                                               (Loc 896 30 73)
+                                                                               (Loc 901 30 78))
                                                                             (Var "nameD" False))
                                                                          True)))
                                                             , Typed
@@ -5389,7 +5388,7 @@
                                                                         (TC "Comparison" Star)
                                                                         "Module.mad"))
                                                                 (Area
-                                                                   (Loc 1030 41 5) (Loc 1104 41 79))
+                                                                   (Loc 907 31 5) (Loc 981 31 79))
                                                                 (Is
                                                                    (Typed
                                                                       ([] :=>
@@ -5552,8 +5551,8 @@
                                                                                     (TV 139 Star)))
                                                                               (fromList [])))
                                                                       (Area
-                                                                         (Loc 1030 41 5)
-                                                                         (Loc 1073 41 48))
+                                                                         (Loc 907 31 5)
+                                                                         (Loc 950 31 48))
                                                                       (PTuple
                                                                          [ Typed
                                                                              ([] :=>
@@ -5633,8 +5632,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 1032 41 7)
-                                                                                (Loc 1055 41 30))
+                                                                                (Loc 909 31 7)
+                                                                                (Loc 932 31 30))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "po"
@@ -5678,12 +5677,12 @@
                                                                                                  []))
                                                                                          (Area
                                                                                             (Loc
-                                                                                               1038
-                                                                                               41
+                                                                                               915
+                                                                                               31
                                                                                                13)
                                                                                             (Loc
-                                                                                               1054
-                                                                                               41
+                                                                                               931
+                                                                                               31
                                                                                                29))
                                                                                          (PRecord
                                                                                             (fromList
@@ -5716,12 +5715,12 @@
                                                                                                              []))
                                                                                                      (Area
                                                                                                         (Loc
-                                                                                                           1044
-                                                                                                           41
+                                                                                                           921
+                                                                                                           31
                                                                                                            19)
                                                                                                         (Loc
-                                                                                                           1053
-                                                                                                           41
+                                                                                                           930
+                                                                                                           31
                                                                                                            28))
                                                                                                      (PRecord
                                                                                                         (fromList
@@ -5735,12 +5734,12 @@
                                                                                                                       "prelude")
                                                                                                                  (Area
                                                                                                                     (Loc
-                                                                                                                       1046
-                                                                                                                       41
+                                                                                                                       923
+                                                                                                                       31
                                                                                                                        21)
                                                                                                                     (Loc
-                                                                                                                       1051
-                                                                                                                       41
+                                                                                                                       928
+                                                                                                                       31
                                                                                                                        26))
                                                                                                                  (PVar
                                                                                                                     "nameC")
@@ -5831,8 +5830,8 @@
                                                                                            Star)))
                                                                                   (fromList []))
                                                                              (Area
-                                                                                (Loc 1057 41 32)
-                                                                                (Loc 1072 41 47))
+                                                                                (Loc 934 31 32)
+                                                                                (Loc 949 31 47))
                                                                              (PRecord
                                                                                 (fromList
                                                                                    [ ( "name"
@@ -5845,12 +5844,12 @@
                                                                                               "prelude")
                                                                                          (Area
                                                                                             (Loc
-                                                                                               1065
-                                                                                               41
+                                                                                               942
+                                                                                               31
                                                                                                40)
                                                                                             (Loc
-                                                                                               1070
-                                                                                               41
+                                                                                               947
+                                                                                               31
                                                                                                45))
                                                                                          (PVar
                                                                                             "nameD")
@@ -5864,8 +5863,8 @@
                                                                            (TC "Comparison" Star)
                                                                            "Module.mad")
                                                                       (Area
-                                                                         (Loc 1077 41 52)
-                                                                         (Loc 1103 41 78))
+                                                                         (Loc 954 31 52)
+                                                                         (Loc 980 31 78))
                                                                       (App
                                                                          (Typed
                                                                             ([] :=>
@@ -5891,8 +5890,8 @@
                                                                                        Star)
                                                                                     "Module.mad"))
                                                                             (Area
-                                                                               (Loc 1077 41 52)
-                                                                               (Loc 1104 41 79))
+                                                                               (Loc 954 31 52)
+                                                                               (Loc 981 31 79))
                                                                             (App
                                                                                (Typed
                                                                                   ([] :=>
@@ -5934,10 +5933,9 @@
                                                                                                 Star)
                                                                                              "Module.mad")))
                                                                                   (Area
+                                                                                     (Loc 954 31 52)
                                                                                      (Loc
-                                                                                        1077 41 52)
-                                                                                     (Loc
-                                                                                        1090 41 65))
+                                                                                        967 31 65))
                                                                                   (Var
                                                                                      "customCompare"
                                                                                      False))
@@ -5949,10 +5947,9 @@
                                                                                           Star)
                                                                                        "prelude")
                                                                                   (Area
+                                                                                     (Loc 968 31 66)
                                                                                      (Loc
-                                                                                        1091 41 66)
-                                                                                     (Loc
-                                                                                        1096 41 71))
+                                                                                        973 31 71))
                                                                                   (Var
                                                                                      "nameC" False))
                                                                                False))
@@ -5962,8 +5959,8 @@
                                                                                  (TC "String" Star)
                                                                                  "prelude")
                                                                             (Area
-                                                                               (Loc 1098 41 73)
-                                                                               (Loc 1103 41 78))
+                                                                               (Loc 975 31 73)
+                                                                               (Loc 980 31 78))
                                                                             (Var "nameD" False))
                                                                          True)))
                                                             ])
@@ -6005,7 +6002,7 @@
                                                 ])
                                              (Just (TVar (TV 139 Star)))
                                              (fromList [])))
-                                     (Area (Loc 599 33 25) (Loc 626 34 22))
+                                     (Area (Loc 476 23 25) (Loc 503 24 22))
                                      (App
                                         (Typed
                                            ([] :=>
@@ -6129,7 +6126,7 @@
                                                          ])
                                                       (Just (TVar (TV 139 Star)))
                                                       (fromList []))))
-                                           (Area (Loc 607 34 3) (Loc 626 34 22))
+                                           (Area (Loc 484 24 3) (Loc 503 24 22))
                                            (App
                                               (Typed
                                                  ([] :=>
@@ -6445,7 +6442,7 @@
                                                                   ])
                                                                (Just (TVar (TV 139 Star)))
                                                                (fromList [])))))
-                                                 (Area (Loc 607 34 3) (Loc 612 34 8))
+                                                 (Area (Loc 484 24 3) (Loc 489 24 8))
                                                  (Var "chain" False))
                                               (Typed
                                                  ([] :=>
@@ -6577,7 +6574,7 @@
                                                                ])
                                                             (Just (TVar (TV 139 Star)))
                                                             (fromList []))))
-                                                 (Area (Loc 613 34 9) (Loc 625 34 21))
+                                                 (Area (Loc 490 24 9) (Loc 502 24 21))
                                                  (Var ".expressions" False))
                                               True))
                                         (Typed
@@ -6648,7 +6645,7 @@
                                                       ])
                                                    (Just (TVar (TV 138 Star)))
                                                    (fromList [])))
-                                           (Area (Loc 599 33 25) (Loc 602 33 28))
+                                           (Area (Loc 476 23 25) (Loc 479 23 28))
                                            (Var "__P__2" False))
                                         True))
                                   True))
@@ -6678,7 +6675,7 @@
         ]
     , ainterfaces =
         [ Untyped
-            (Area (Loc 161 16 1) (Loc 216 18 2))
+            (Area (Loc 38 6 1) (Loc 93 8 2))
             (Interface
                "Functor"
                []
@@ -6706,29 +6703,27 @@
                (fromList
                   [ ( "map"
                     , Untyped
-                        (Area (Loc 193 17 11) (Loc 214 17 32))
+                        (Area (Loc 70 7 11) (Loc 91 7 32))
                         (TRArr
                            (Untyped
-                              (Area (Loc 193 17 11) (Loc 199 17 17))
+                              (Area (Loc 70 7 11) (Loc 76 7 17))
                               (TRArr
-                                 (Untyped (Area (Loc 193 17 11) (Loc 194 17 12)) (TRSingle "a"))
-                                 (Untyped (Area (Loc 198 17 16) (Loc 199 17 17)) (TRSingle "b"))))
+                                 (Untyped (Area (Loc 70 7 11) (Loc 71 7 12)) (TRSingle "a"))
+                                 (Untyped (Area (Loc 75 7 16) (Loc 76 7 17)) (TRSingle "b"))))
                            (Untyped
-                              (Area (Loc 204 17 22) (Loc 214 17 32))
+                              (Area (Loc 81 7 22) (Loc 91 7 32))
                               (TRArr
                                  (Untyped
-                                    (Area (Loc 204 17 22) (Loc 207 17 25))
+                                    (Area (Loc 81 7 22) (Loc 84 7 25))
                                     (TRComp
                                        "m"
-                                       [ Untyped
-                                           (Area (Loc 206 17 24) (Loc 207 17 25)) (TRSingle "a")
+                                       [ Untyped (Area (Loc 83 7 24) (Loc 84 7 25)) (TRSingle "a")
                                        ]))
                                  (Untyped
-                                    (Area (Loc 211 17 29) (Loc 214 17 32))
+                                    (Area (Loc 88 7 29) (Loc 91 7 32))
                                     (TRComp
                                        "m"
-                                       [ Untyped
-                                           (Area (Loc 213 17 31) (Loc 214 17 32)) (TRSingle "b")
+                                       [ Untyped (Area (Loc 90 7 31) (Loc 91 7 32)) (TRSingle "b")
                                        ])))))
                     )
                   ]))
@@ -7211,156 +7206,7 @@
                     )
                   ]))
         , Untyped
-            (Area (Loc 38 6 1) (Loc 82 8 2))
-            (Instance
-               "Semigroup"
-               []
-               (IsIn "Semigroup" [ TCon (TC "String" Star) "prelude" ] Nothing)
-               (fromList
-                  [ ( "assoc"
-                    , ( Typed
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "String" Star) "prelude"))
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "String" Star) "prelude"))
-                                  (TCon (TC "String" Star) "prelude")))
-                          (Area (Loc 68 7 3) (Loc 80 7 15))
-                          (Assignment
-                             "assoc"
-                             (Typed
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TCon (TC "String" Star) "prelude"))
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TCon (TC "String" Star) "prelude"))
-                                        (TCon (TC "String" Star) "prelude")))
-                                (Area (Loc 76 7 11) (Loc 80 7 15))
-                                (JSExp "")))
-                      , Forall
-                          []
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "String" Star) "prelude"))
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "String" Star) "prelude"))
-                                  (TCon (TC "String" Star) "prelude")))
-                      )
-                    )
-                  ]))
-        , Untyped
-            (Area (Loc 84 10 1) (Loc 159 14 2))
-            (Instance
-               "Monoid"
-               []
-               (IsIn "Monoid" [ TCon (TC "String" Star) "prelude" ] Nothing)
-               (fromList
-                  [ ( "mappend"
-                    , ( Typed
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "String" Star) "prelude"))
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "String" Star) "prelude"))
-                                  (TCon (TC "String" Star) "prelude")))
-                          (Area (Loc 125 12 3) (Loc 140 12 18))
-                          (Assignment
-                             "mappend"
-                             (Typed
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TCon (TC "String" Star) "prelude"))
-                                     (TApp
-                                        (TApp
-                                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TCon (TC "String" Star) "prelude"))
-                                        (TCon (TC "String" Star) "prelude")))
-                                (Area (Loc 135 12 13) (Loc 140 12 18))
-                                (Var "assoc" False)))
-                      , Forall
-                          []
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TCon (TC "String" Star) "prelude"))
-                               (TApp
-                                  (TApp
-                                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TCon (TC "String" Star) "prelude"))
-                                  (TCon (TC "String" Star) "prelude")))
-                      )
-                    )
-                  , ( "mconcat"
-                    , ( Typed
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "String" Star) "prelude")))
-                               (TCon (TC "String" Star) "prelude"))
-                          (Area (Loc 143 13 3) (Loc 157 13 17))
-                          (Assignment
-                             "mconcat"
-                             (Typed
-                                ([] :=>
-                                   TApp
-                                     (TApp
-                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TApp
-                                           (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                           (TCon (TC "String" Star) "prelude")))
-                                     (TCon (TC "String" Star) "prelude"))
-                                (Area (Loc 153 13 13) (Loc 157 13 17))
-                                (JSExp "")))
-                      , Forall
-                          []
-                          ([] :=>
-                             TApp
-                               (TApp
-                                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TApp
-                                     (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TCon (TC "String" Star) "prelude")))
-                               (TCon (TC "String" Star) "prelude"))
-                      )
-                    )
-                  , ( "mempty"
-                    , ( Typed
-                          ([] :=> TCon (TC "String" Star) "prelude")
-                          (Area (Loc 111 11 3) (Loc 122 11 14))
-                          (Assignment
-                             "mempty"
-                             (Typed
-                                ([] :=> TCon (TC "String" Star) "prelude")
-                                (Area (Loc 120 11 12) (Loc 122 11 14))
-                                (LStr "")))
-                      , Forall [] ([] :=> TCon (TC "String" Star) "prelude")
-                      )
-                    )
-                  ]))
-        , Untyped
-            (Area (Loc 217 19 1) (Loc 287 21 2))
+            (Area (Loc 94 9 1) (Loc 164 11 2))
             (Instance
                "Functor"
                []
@@ -7376,18 +7222,18 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TVar (TV 173 Star)))
-                                     (TVar (TV 174 Star))))
+                                        (TVar (TV 166 Star)))
+                                     (TVar (TV 167 Star))))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                      (TApp
                                         (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                        (TVar (TV 173 Star))))
+                                        (TVar (TV 166 Star))))
                                   (TApp
                                      (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                     (TVar (TV 174 Star)))))
-                          (Area (Loc 243 20 3) (Loc 285 20 45))
+                                     (TVar (TV 167 Star)))))
+                          (Area (Loc 120 10 3) (Loc 162 10 45))
                           (Assignment
                              "map"
                              (Typed
@@ -7399,18 +7245,18 @@
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV 173 Star)))
-                                           (TVar (TV 174 Star))))
+                                              (TVar (TV 166 Star)))
+                                           (TVar (TV 167 Star))))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                            (TApp
                                               (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                              (TVar (TV 173 Star))))
+                                              (TVar (TV 166 Star))))
                                         (TApp
                                            (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                           (TVar (TV 174 Star)))))
-                                (Area (Loc 249 20 9) (Loc 285 20 45))
+                                           (TVar (TV 167 Star)))))
+                                (Area (Loc 126 10 9) (Loc 162 10 45))
                                 (Abs
                                    (Typed
                                       ([] :=>
@@ -7418,9 +7264,9 @@
                                            (TApp
                                               (TCon
                                                  (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV 173 Star)))
-                                           (TVar (TV 174 Star)))
-                                      (Area (Loc 250 20 10) (Loc 251 20 11))
+                                              (TVar (TV 166 Star)))
+                                           (TVar (TV 167 Star)))
+                                      (Area (Loc 127 10 10) (Loc 128 10 11))
                                       "f")
                                    [ Typed
                                        ([] :=>
@@ -7431,25 +7277,25 @@
                                                   "prelude")
                                                (TApp
                                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                  (TVar (TV 173 Star))))
+                                                  (TVar (TV 166 Star))))
                                             (TApp
                                                (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                               (TVar (TV 174 Star))))
-                                       (Area (Loc 249 20 9) (Loc 285 20 45))
+                                               (TVar (TV 167 Star))))
+                                       (Area (Loc 126 10 9) (Loc 162 10 45))
                                        (Abs
                                           (Typed
                                              ([] :=>
                                                 TApp
                                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                  (TVar (TV 173 Star)))
-                                             (Area (Loc 253 20 13) (Loc 255 20 15))
+                                                  (TVar (TV 166 Star)))
+                                             (Area (Loc 130 10 13) (Loc 132 10 15))
                                              "xs")
                                           [ Typed
                                               ([] :=>
                                                  TApp
                                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
-                                                   (TVar (TV 174 Star)))
-                                              (Area (Loc 260 20 20) (Loc 285 20 45))
+                                                   (TVar (TV 167 Star)))
+                                              (Area (Loc 137 10 20) (Loc 162 10 45))
                                               (JSExp " xs.map((x) => f(x)) ")
                                           ])
                                    ])))
@@ -7479,37 +7325,37 @@
       RedundantPattern
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 739 37 5) (Loc 772 37 38)
+        , ctxArea = Area (Loc 616 27 5) (Loc 649 27 38)
         }
   , CompilationWarning
       RedundantPattern
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 808 38 5) (Loc 845 38 42)
+        , ctxArea = Area (Loc 685 28 5) (Loc 722 28 42)
         }
   , CompilationWarning
       RedundantPattern
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 881 39 5) (Loc 915 39 39)
+        , ctxArea = Area (Loc 758 29 5) (Loc 792 29 39)
         }
   , CompilationWarning
       RedundantPattern
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 951 40 5) (Loc 994 40 48)
+        , ctxArea = Area (Loc 828 30 5) (Loc 871 30 48)
         }
   , CompilationWarning
       RedundantPattern
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 1030 41 5) (Loc 1073 41 48)
+        , ctxArea = Area (Loc 907 31 5) (Loc 950 31 48)
         }
   , CompilationWarning
       (UnusedTopLevelDeclaration "generateFunctionLinks")
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 575 33 1) (Loc 596 33 22)
+        , ctxArea = Area (Loc 452 23 1) (Loc 473 23 22)
         }
   , CompilationWarning
       (UnusedConstructor "LT")

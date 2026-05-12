@@ -125,11 +125,13 @@ buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstanc
       env
       ainterfaces
     env'' <- foldM
-      (\env inst@(Can.Canonical _ (Can.Instance _ preds p _)) ->
-        catchError (addInstance env preds p) (addContext env' inst)
+      (\env inst@(Can.Canonical _ (Can.Instance _ preds p _ isDerived)) ->
+        catchError (addInstance env preds p isDerived) (addContext env' inst)
       )
       env'
       ainstances
+
+    checkIntraModuleOverlaps env'' ainstances
 
     let constructors = concat $ mapMaybe
           (\case
