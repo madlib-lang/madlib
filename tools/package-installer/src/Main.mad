@@ -54,10 +54,7 @@ main = () => {
     _ =>
       where(mode) {
         ShowWhy(pkg) =>
-          pipe(
-            Why.render(config, pkg),
-            fulfill(IO.trace("error"), identity)
-          )
+          fulfill(IO.trace("error"), identity, Why.render(config, pkg))
 
         _ =>
           pipe(
