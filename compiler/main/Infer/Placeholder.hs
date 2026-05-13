@@ -120,6 +120,8 @@ lowerTypeToRuntimeValue builtinsPath area ty =
             "TRecord" -> "__BUILTINS__.typeTRecord"
             "NoBase"  -> "__BUILTINS__.typeNoBase"
             "Base"    -> "__BUILTINS__.typeBase"
+            "Star"    -> "__BUILTINS__.typeStar"
+            "Kfun"    -> "__BUILTINS__.typeKfun"
             other     -> other
       in  buildCtorApp (typed $ Slv.Var ctorName False) args
 
@@ -130,6 +132,13 @@ lowerTypeToRuntimeValue builtinsPath area ty =
 
     str :: String -> Slv.Exp
     str = typed . Slv.LStr
+
+    kindValue :: Kind -> Slv.Exp
+    kindValue Star =
+      ctor "Star" []
+
+    kindValue (Kfun left right) =
+      ctor "Kfun" [kindValue left, kindValue right]
 
     tuple2 :: Slv.Exp -> Slv.Exp -> Slv.Exp
     tuple2 left right = typed $ Slv.TupleConstructor [left, right]
@@ -158,16 +167,17 @@ lowerTypeToRuntimeValue builtinsPath area ty =
     go names next t = case t of
       TVar tv ->
         let tvId = getTVarId tv
+            tvKind = kind tv
         in case M.lookup tvId names of
           Just name ->
-            (ctor "TVar" [str name], names, next)
+            (ctor "TVar" [str name, kindValue tvKind], names, next)
 
           Nothing ->
             let name = renderTypeVarName next
-            in  (ctor "TVar" [str name], M.insert tvId name names, next + 1)
+            in  (ctor "TVar" [str name, kindValue tvKind], M.insert tvId name names, next + 1)
 
-      TCon (TC name _) _ _ ->
-        (ctor "TCon" [str (normalizeTypeConstructorName name)], names, next)
+      TCon (TC name conKind) path _ ->
+        (ctor "TCon" [str (normalizeTypeConstructorName name), kindValue conKind, str path], names, next)
 
       TApp left right ->
         let (left', names', next')   = go names next left
@@ -184,7 +194,7 @@ lowerTypeToRuntimeValue builtinsPath area ty =
         go names next inner
 
       TGen n ->
-        (ctor "TVar" [str ("t" <> show n)], names, next)
+        (ctor "TVar" [str ("t" <> show n), kindValue Star], names, next)
 
 
 updateExpTypesForExpList :: Options -> Env -> Bool -> Substitution -> [Slv.Exp] -> Infer [Slv.Exp]

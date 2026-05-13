@@ -25,9 +25,13 @@ export type RecordBase
   = NoBase
   | Base(Type)
 
+export type Kind
+  = Star
+  | Kfun(Kind, Kind)
+
 export type Type
-  = TVar(String)
-  | TCon(String)
+  = TVar(String, Kind)
+  | TCon(String, Kind, String)
   | TApp(Type, Type)
   | TRecord(List #[String, Type], RecordBase, List #[String, Type])
 
@@ -37,6 +41,8 @@ export typeTApp = TApp
 export typeTRecord = TRecord
 export typeNoBase = NoBase
 export typeBase = Base
+export typeStar = Star
+export typeKfun = Kfun
 
 
 dictFromList :: Comparable k => List #[k, v] -> Dictionary k v

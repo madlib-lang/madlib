@@ -8,8 +8,8 @@
 //
 // rather than the show-style structural form.
 
-import type { Type, RecordBase } from "__BUILTINS__"
-import { TVar, TCon, TApp, TRecord, NoBase, Base } from "__BUILTINS__"
+import type { Type, RecordBase, Kind } from "__BUILTINS__"
+import { TVar, TCon, TApp, TRecord, NoBase, Base, Star, Kfun } from "__BUILTINS__"
 
 
 
@@ -45,7 +45,7 @@ joinStrings = (separator, items) => where(items) {
 
 // -----------------------------------------------------------
 // Tuple-constructor recognition.
-// The compiler tags tuples as `TCon("(,)")`, `TCon("(,,)")`, …
+// The compiler tags tuples as `TCon("(,)", _, _)`, `TCon("(,,)", _, _)`, …
 // up to 12-tuples. We match by name. `tupleArity` returns the
 // arity if `name` is a tuple constructor, otherwise -1 (we don't
 // have access to `Maybe` here without auto-import of Maybe, and
@@ -95,7 +95,7 @@ flattenTApp = (t) => where(t) {
 // application that doesn't need them either.
 isFunctionType :: Type -> Boolean
 isFunctionType = (t) => where(t) {
-  TApp(TApp(TCon("->"), _), _) =>
+  TApp(TApp(TCon("->", _, _), _), _) =>
     true
 
   _ =>
@@ -112,10 +112,10 @@ isFunctionType = (t) => where(t) {
 // renders as a juxtaposition (`List a`, `Maybe Int`, `a -> b`, `f a`) does.
 needsTypeParens :: Type -> Boolean
 needsTypeParens = (t) => where(t) {
-  TVar(_) =>
+  TVar(_, _) =>
     false
 
-  TCon(_) =>
+  TCon(_, _, _) =>
     false
 
   TRecord(_, _, _) =>
@@ -123,7 +123,7 @@ needsTypeParens = (t) => where(t) {
 
   TApp(_, _) =>
     where(flattenTApp(t)) {
-      #[TCon(name), _] =>
+      #[TCon(name, _, _), _] =>
         // tuple constructors render with self-contained `#[...]`, so no
         // parens needed; everything else (List a, Maybe a, Either a b,
         // a -> b, ...) is a juxtaposition and needs parens.
@@ -219,10 +219,10 @@ renderHeadApp = (head, parts) => where(parts) {
 
 renderType :: Type -> String
 renderType = (t) => where(t) {
-  TVar(name) =>
+  TVar(name, _) =>
     name
 
-  TCon(name) =>
+  TCon(name, _, _) =>
     name
 
   TRecord(fields, base, optionalFields) =>
@@ -230,11 +230,11 @@ renderType = (t) => where(t) {
 
   // Arrow case is handled directly (rather than via `flattenTApp`)
   // because Madlib's pattern compiler currently miscompiles
-  // `#[TCon("->"), [arg, ret]]` — the nested `[arg, ret]` inside a tuple
+  // `#[TCon("->", _, _), [arg, ret]]` — the nested `[arg, ret]` inside a tuple
   // pattern binds `ret` to the cons-tail instead of the second element.
   // Recursing on `ret` keeps curried chains flat: `a -> b -> c` renders
   // as `a -> b -> c` (right-associative) rather than `a -> (b -> c)`.
-  TApp(TApp(TCon("->"), arg), ret) =>
+  TApp(TApp(TCon("->", _, _), arg), ret) =>
     renderArrowLeft(arg) <> " -> " <> renderType(ret)
 
   // Non-arrow `TApp`s go through `flattenTApp` so we render the
@@ -247,7 +247,7 @@ renderType = (t) => where(t) {
   //               structurally on `left`/`right`.
   TApp(left, right) =>
     where(flattenTApp(t)) {
-      #[TCon(name), parts] =>
+      #[TCon(name, _, _), parts] =>
         isTupleConName(name)
           ? renderTuple(parts)
           : renderHeadApp(name, parts)
@@ -275,9 +275,12 @@ export printType = renderType
 
 export type Type
 export type RecordBase
+export type Kind
 export TVar
 export TCon
 export TApp
 export TRecord
 export NoBase
 export Base
+export Star
+export Kfun

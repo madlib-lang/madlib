@@ -1,7 +1,7 @@
 import { assertEquals, test } from "Test"
 
-import type { Type } from "__BUILTINS__"
-import { TVar, TCon, TApp, TRecord, NoBase, Base } from "__BUILTINS__"
+import type { Type, Kind } from "__BUILTINS__"
+import { TVar, TCon, TApp, TRecord, NoBase, Base, Star, Kfun } from "__BUILTINS__"
 import Madlib from "./Madlib"
 
 
@@ -10,41 +10,55 @@ import Madlib from "./Madlib"
 // `typeof` from a small program (e.g. higher-kinded constructors,
 // many-argument tuples, nested records with optional fields).
 
-a = TVar("a")
-b = TVar("b")
-c = TVar("c")
-d = TVar("d")
+preludePath = "prelude"
+testPath = "test/Madlib.spec.mad"
+
+star :: Kind
+star = Star
+
+typeToType :: Kind
+typeToType = Kfun(Star, Star)
+
+a = TVar("a", star)
+b = TVar("b", star)
+c = TVar("c", star)
+d = TVar("d", star)
+
+higherKindedVar = TVar("f", typeToType)
 
 tCon :: String -> Type
-tCon = TCon
+tCon = (name) => TCon(name, star, preludePath)
+
+tConAt :: String -> String -> Kind -> Type
+tConAt = (name, path, kind) => TCon(name, kind, path)
 
 intT = tCon("Integer")
 boolT = tCon("Boolean")
 strT = tCon("String")
 
 arr :: Type -> Type -> Type
-arr = (l, r) => TApp(TApp(tCon("->"), l), r)
+arr = (l, r) => TApp(TApp(tConAt("->", preludePath, Kfun(Star, Kfun(Star, Star))), l), r)
 
 app :: Type -> Type -> Type
 app = (f, x) => TApp(f, x)
 
 list :: Type -> Type
-list = (x) => app(tCon("List"), x)
+list = (x) => app(tConAt("List", preludePath, typeToType), x)
 
 array :: Type -> Type
-array = (x) => app(tCon("Array"), x)
+array = (x) => app(tConAt("Array", preludePath, typeToType), x)
 
 maybe :: Type -> Type
-maybe = (x) => app(tCon("Maybe"), x)
+maybe = (x) => app(tConAt("Maybe", testPath, typeToType), x)
 
 either :: Type -> Type -> Type
-either = (l, r) => app(app(tCon("Either"), l), r)
+either = (l, r) => app(app(tConAt("Either", testPath, Kfun(Star, Kfun(Star, Star))), l), r)
 
 tup2 :: Type -> Type -> Type
-tup2 = (x, y) => app(app(tCon("(,)"), x), y)
+tup2 = (x, y) => app(app(tConAt("(,)", preludePath, Kfun(Star, Kfun(Star, Star))), x), y)
 
 tup3 :: Type -> Type -> Type -> Type
-tup3 = (x, y, z) => app(app(app(tCon("(,,)"), x), y), z)
+tup3 = (x, y, z) => app(app(app(tConAt("(,,)", preludePath, Kfun(Star, Kfun(Star, Kfun(Star, Star)))), x), y), z)
 
 closedRec :: List #[String, Type] -> Type
 closedRec = (fields) => TRecord(fields, NoBase, [])
@@ -64,8 +78,21 @@ test(
 )
 
 test(
+  "renders type variables without their kind",
+  () => assertEquals(Madlib.printType(higherKindedVar), "f"),
+)
+
+test(
   "renders nullary type constructors",
   () => assertEquals(Madlib.printType(intT), "Integer"),
+)
+
+test(
+  "renders type constructors without their origin path or kind",
+  () => assertEquals(
+    Madlib.printType(tConAt("Maybe", "some/private/path/Maybe.mad", typeToType)),
+    "Maybe",
+  ),
 )
 
 
