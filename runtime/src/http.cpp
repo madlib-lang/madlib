@@ -107,33 +107,35 @@ int64_t mapCurlErrorToClientErrorIndex(CURLcode errorCode) {
   return index;
 }
 
-const char *methodToString(madlib__http__Method_t *method) {
-  switch (method->methodIndex) {
-    case 0:
+const char *methodToString(void *method) {
+  intptr_t methodIndex = reinterpret_cast<intptr_t>(method);
+
+  switch (methodIndex) {
+    case madlib__http__Method_CONNECT_INDEX:
       return "CONNECT";
       break;
-    case 1:
+    case madlib__http__Method_DELETE_INDEX:
       return "DELETE";
       break;
-    case 2:
+    case madlib__http__Method_GET_INDEX:
       return "GET";
       break;
-    case 3:
+    case madlib__http__Method_HEAD_INDEX:
       return "HEAD";
       break;
-    case 4:
+    case madlib__http__Method_OPTIONS_INDEX:
       return "OPTIONS";
       break;
-    case 5:
+    case madlib__http__Method_PATCH_INDEX:
       return "PATCH";
       break;
-    case 6:
+    case madlib__http__Method_POST_INDEX:
       return "POST";
       break;
-    case 7:
+    case madlib__http__Method_PUT_INDEX:
       return "PUT";
       break;
-    case 8:
+    case madlib__http__Method_TRACE_INDEX:
       return "TRACE";
       break;
   }
@@ -367,7 +369,6 @@ static size_t onHeaderWrite(void *data, size_t size, size_t nmemb, void *userp) 
   }
 
   madlib__http__Header_t *header = (madlib__http__Header_t *)GC_MALLOC(sizeof(madlib__http__Header_t));
-  header->index = 0;
 
   size_t extraValueOffset = 0;
   size_t nameLength = startOfValue - strData;
@@ -428,9 +429,7 @@ curl_slist *buildLibCurlHeaders(madlib__list__Node_t *headers) {
 RequestData_t *makeRequest(madlib__http__Request_t *request, PAP_t *progressCallback, PAP_t *badCallback, PAP_t *goodCallback, bool asBytes) {
   char *url = (char *)request->url;
 
-  madlib__http__Method_t *boxedMethod =
-      (madlib__http__Method_t *)request->method;
-  const char *methodString = methodToString(boxedMethod);
+  const char *methodString = methodToString(request->method);
 
   madlib__list__Node_t *requestHeaders =
       (madlib__list__Node_t *)request->headers;

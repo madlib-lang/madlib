@@ -95,9 +95,11 @@ typedef struct madlib__http__Error_ClientError {
 
 /**
  * type Header = Header(String, String)
+ *
+ * Header is a single-constructor ADT. The LLVM backend lowers those without a
+ * constructor tag, so the C layout is exactly the two constructor fields.
  */
 typedef struct madlib__http__Header {
-  int64_t index;
   char *name;
   char *value;
 } madlib__http__Header_t;
@@ -125,10 +127,20 @@ typedef struct madlib__http__Body {
  *   | POST
  *   | PUT
  *   | TRACE
+ *
+ * Method is an enum ADT: every constructor has arity 0. The LLVM backend
+ * represents enum values as the tag encoded directly in the boxed value
+ * pointer, e.g. GET is (void*)2.
  */
-typedef struct madlib__http__Method {
-  int64_t methodIndex;
-} madlib__http__Method_t;
+const int64_t madlib__http__Method_CONNECT_INDEX = 0;
+const int64_t madlib__http__Method_DELETE_INDEX = 1;
+const int64_t madlib__http__Method_GET_INDEX = 2;
+const int64_t madlib__http__Method_HEAD_INDEX = 3;
+const int64_t madlib__http__Method_OPTIONS_INDEX = 4;
+const int64_t madlib__http__Method_PATCH_INDEX = 5;
+const int64_t madlib__http__Method_POST_INDEX = 6;
+const int64_t madlib__http__Method_PUT_INDEX = 7;
+const int64_t madlib__http__Method_TRACE_INDEX = 8;
 
 // Flattened LLVM record for Http.Request a
 // Field order follows record-field alphabetical ordering in LLVM lowering:

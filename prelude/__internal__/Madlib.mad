@@ -272,3 +272,12 @@ export prettyPrintType = renderType
 // Public API used by `typeof`-using code: `Madlib.printType(typeof x)`.
 printType :: Type -> String
 export printType = renderType
+
+export type Type
+export type RecordBase
+export TVar
+export TCon
+export TApp
+export TRecord
+export NoBase
+export Base
