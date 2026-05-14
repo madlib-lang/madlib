@@ -1,0 +1,18 @@
+import { env } from "tap-bus"
+
+
+tap :: (String -> b -> b) -> String -> (a -> b) -> a -> a
+export tap = (spout, msg, taproot, x) => {
+  spout(msg, taproot(x))
+  return x
+}
+
+export log = {
+  cli: env,
+  main: env,
+}
+
+export tapped = {
+  cli: tap(log.cli),
+  main: tap(log.main),
+}

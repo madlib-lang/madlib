@@ -330,8 +330,8 @@ postProcessBody options env s expType es = do
 
         -- Short-circuit: ambiguities is only non-empty if unsolvedPs is non-empty
         if not (null unsolvedPs) && ambiguities fs unsolvedPs /= [] then do
-          (sDef, unsolvedPs')   <- tryDefaults env unsolvedPs
-          (sDef', unsolvedPs'') <- tryDefaults env (apply sDef unsolvedPs')
+          (sDef, unsolvedPs')   <- tryDefaultingAmbiguities env fs unsolvedPs
+          (sDef', unsolvedPs'') <- tryDefaultingAmbiguities env fs (apply sDef unsolvedPs')
           let subst = sDef' `compose` sDef
 
           if unsolvedPs'' /= [] then do

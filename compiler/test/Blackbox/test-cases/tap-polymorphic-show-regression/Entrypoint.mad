@@ -1,0 +1,25 @@
+import IO from "IO"
+import { log, tapped } from "./Log"
+
+loadDirect = (x) => {
+  { name, version } = x
+  IO.trace("direct", name ++ "@" ++ version)
+  return x
+}
+
+loadTapped = tapped.cli(
+  "tapped",
+  ({ name, version }) => name ++ "@" ++ version,
+)
+
+main = () => {
+  packages = [
+    { name: "party-bus", version: "0.0.8" },
+  ]
+
+  log.main("main", true)
+  map(loadDirect, packages)
+  map(loadTapped, packages)
+
+  return {}
+}

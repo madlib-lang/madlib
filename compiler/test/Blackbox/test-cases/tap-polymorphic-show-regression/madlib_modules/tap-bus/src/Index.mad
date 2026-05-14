@@ -1,0 +1,26 @@
+import { identity } from "Function"
+import IO from "IO"
+
+
+alias SideEffect b = String -> b -> b
+
+alias Config = {
+  change :: a -> b,
+  effect :: SideEffect b,
+}
+
+signalWithConfig :: Config -> String -> a -> a
+signalWithConfig = (conf, msg, x) => where(conf) {
+  { effect, change } => do {
+    effect(msg, change(x))
+    return x
+  }
+}
+
+config = {
+  change: identity,
+  effect: IO.pTrace,
+}
+
+env :: Show a => String -> a -> a
+export env = signalWithConfig(config)

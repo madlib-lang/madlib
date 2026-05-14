@@ -6,6 +6,7 @@ module Infer.Generalize
   , ambiguities
   , split
   , tryDefaults
+  , tryDefaultingAmbiguities
   , dedupePreds
   , ftvForLetGenSet
   , ftvForLetGen
@@ -43,6 +44,12 @@ ambiguities vs ps =
   let vsSet = S.fromList vs
       ambigVars = ftv ps `S.difference` vsSet
   in  [ (v, filter (S.member v . ftv) ps) | v <- S.toList ambigVars ]
+
+
+tryDefaultingAmbiguities :: Env -> [TVar] -> [Pred] -> Infer (Substitution, [Pred])
+tryDefaultingAmbiguities env vs ps = do
+  let ambiguousVars = S.fromList $ fst <$> ambiguities vs ps
+  tryDefaultsWith env (`S.member` ambiguousVars) ps
 
 
 hasPredForType :: String -> Type -> [Pred] -> Bool
@@ -91,9 +98,10 @@ split mustCheck env fs gs ps = do
 
   if mustCheck && not (null as) then do
     -- if we have ambiguities we try to resolve them with default instances
-    (s, rs')      <- tryDefaults env rs
-    (sDef', rs'') <- tryDefaults env (apply s rs')
-    let (ds', rs''') = partition ((`S.isSubsetOf` fsSet) . ftv) (apply sDef' ds ++ rs'')
+    (s, rs')      <- tryDefaultingAmbiguities env (fs ++ gs) rs
+    (sDef', rs'') <- tryDefaultingAmbiguities env (fs ++ gs) (apply s rs')
+    let subst = sDef' `compose` s
+    let (ds', rs''') = partition ((`S.isSubsetOf` fsSet) . ftv) (apply subst ds ++ rs'')
 
     let as' = ambiguities (fs ++ gs) rs'''
     if not (null as') then
@@ -104,13 +112,17 @@ split mustCheck env fs gs ps = do
         _ ->
           throwError $ CompilationError (AmbiguousType (head as)) NoContext
     else do
-      return (ds', rs''', s)
+      return (ds', rs''', subst)
   else
     return (ds, rs, mempty)
 
 
 tryDefaults :: Env -> [Pred] -> Infer (Substitution, [Pred])
-tryDefaults env ps = tryDefaults' env ps ps
+tryDefaults env ps = tryDefaultsWith env (const True) ps
+
+
+tryDefaultsWith :: Env -> (TVar -> Bool) -> [Pred] -> Infer (Substitution, [Pred])
+tryDefaultsWith env canDefaultEqShowToUnit ps = tryDefaults' env ps ps
   where
     tryDefaults' :: Env -> [Pred] -> [Pred] -> Infer (Substitution, [Pred])
     tryDefaults' env originalPs remainingPs = case remainingPs of
@@ -161,7 +173,11 @@ tryDefaults env ps = tryDefaults' env ps ps
             -- Don't default variables in complex types to Unit - they might get Number constraints
             -- through instance resolution. Only default simple type variables.
             let isSimpleTypeVar = isTVar t
-            let shouldDefaultToUnit tv = isSimpleTypeVar && not (hasNumberOrBitsConstraint tv) && not (isAlreadyInteger tv)
+            let shouldDefaultToUnit tv =
+                  isSimpleTypeVar
+                  && canDefaultEqShowToUnit tv
+                  && not (hasNumberOrBitsConstraint tv)
+                  && not (isAlreadyInteger tv)
 
             sList <- mapM (\tv ->
                 if hasNumberOrBitsConstraint tv || isAlreadyInteger tv
@@ -173,7 +189,10 @@ tryDefaults env ps = tryDefaults' env ps ps
               ) (tvs' ++ tvsWithoutNumberOrBits)
             let s = M.fromList $ catMaybes sList
 
-            return (s `compose` nextSubst, nextPS)
+            if M.null s && isSimpleTypeVar then
+              return (nextSubst, p : nextPS)
+            else
+              return (s `compose` nextSubst, nextPS)
 
         _ -> do
           maybeFound <- findInst env p
