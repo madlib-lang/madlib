@@ -71,8 +71,8 @@ getNodeArea node = case node of
     getArea decl
 
 
-nodesLineDiff :: [Comment] -> Node -> Node -> Int
-nodesLineDiff _ _ _ = 1
+topLevelSeparator :: Pretty.Doc ann
+topLevelSeparator = Pretty.hardline <> Pretty.hardline <> Pretty.hardline
 
 
 expLineDiff :: [Comment] -> Exp -> Exp -> Int
@@ -1813,11 +1813,7 @@ nodesToDocs comments nodes = case nodes of
           case node of
             ExpNode exp ->
               let (exp', comments'') = expToDoc comments' exp
-                  emptyLinesToAdd    =
-                    if null more then
-                      Pretty.hardline
-                    else
-                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
+                  emptyLinesToAdd    = if null more then Pretty.hardline else topLevelSeparator
               in  (exp' <> emptyLinesToAdd, comments'', more)
 
             ImportNode _ ->
@@ -1827,42 +1823,26 @@ nodesToDocs comments nodes = case nodes of
                   sorter = \(_, ordA) (_, ordB) -> compare ordA ordB
                   grouper = \(_, (importTypeA, _)) (_, (importTypeB, _)) -> importTypeA == importTypeB
                   sorted = intercalate [Pretty.hardline] $ map (fst <$>) $ groupBy grouper $ sortBy sorter (zip imports' importInfo)
-              in  (Pretty.hcat sorted <> Pretty.hardline <> Pretty.hardline <> Pretty.hardline, comments'', more')
+              in  (Pretty.hcat sorted <> topLevelSeparator, comments'', more')
 
             DerivedDecl decl ->
               let (exp', comments'') = derivedToDoc comments' decl
-                  emptyLinesToAdd    =
-                    if null more then
-                      Pretty.hardline
-                    else
-                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
+                  emptyLinesToAdd    = if null more then Pretty.hardline else topLevelSeparator
               in  (exp' <> emptyLinesToAdd, comments'', more)
 
             TypeDeclNode td ->
               let (td', comments'') = typeDeclToDoc comments' td
-                  emptyLinesToAdd   =
-                    if null more then
-                      Pretty.hardline
-                    else
-                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
+                  emptyLinesToAdd   = if null more then Pretty.hardline else topLevelSeparator
               in  (td' <> emptyLinesToAdd, comments'', more)
 
             InterfaceNode interface ->
               let (interface', comments'') = interfaceToDoc comments' interface
-                  emptyLinesToAdd          =
-                    if null more then
-                      Pretty.hardline
-                    else
-                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
+                  emptyLinesToAdd          = if null more then Pretty.hardline else topLevelSeparator
               in  (interface' <> emptyLinesToAdd, comments'', more)
 
             InstanceNode inst ->
               let (inst', comments'') = instanceToDoc comments' inst
-                  emptyLinesToAdd     =
-                    if null more then
-                      Pretty.hardline
-                    else
-                      Pretty.hcat $ replicate (max 1 $ nodesLineDiff comments'' node (head more)) Pretty.hardline
+                  emptyLinesToAdd     = if null more then Pretty.hardline else topLevelSeparator
               in  (inst' <> emptyLinesToAdd, comments'', more)
         (more', comments''') = nodesToDocs comments'' newMore
     in  (commentsDoc <> node' <> more', comments''')
