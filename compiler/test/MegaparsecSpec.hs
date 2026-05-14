@@ -497,6 +497,93 @@ spec = describe "Megaparsec parser" $ do
       , "g = (x) => x"
       ]) `shouldSatisfy` isRight
 
+  it "parses JSX text children from MadReact-style components" $
+    parse (unlines
+      [ "Counter = component("
+      , "  () => {"
+      , "    return <div style={cardStyle}>"
+      , "      Counter"
+      , "      <span>"
+      , "        MadReact"
+      , "      </span>"
+      , "    </div>"
+      , "  },"
+      , ")"
+      ]) `shouldSatisfy` isRight
+
+  it "parses JSX object-literal props in nested MadReact tags" $
+    parse (unlines
+      [ "Counter = component("
+      , "  () => {"
+      , "    return <div style={cardStyle}>"
+      , "      <h3 style={{ margin: \"0 0 16px 0\", color: \"#38bdf8\" }}>"
+      , "        Counter"
+      , "      </h3>"
+      , "    </div>"
+      , "  },"
+      , ")"
+      ]) `shouldSatisfy` isRight
+
+  it "parses MadReact counter JSX with sibling tags and punctuation text" $
+    parse (unlines
+      [ "Counter = component("
+      , "  () => {"
+      , "    state = useState(0)"
+      , ""
+      , "    useEffect1(() => { #- document.title = `Count: ${state.value}` -# }, state.value)"
+      , ""
+      , "    return <div style={cardStyle}>"
+      , "      <h3 style={{ margin: \"0 0 16px 0\", color: \"#38bdf8\" }}>"
+      , "        Counter"
+      , "      </h3>"
+      , "      <div style={mergeStyles(flexRow, { alignItems: \"center\", gap: \"16px\" })}>"
+      , "        <button style={secondaryBtnStyle} onClick={() => { state.set(state.value - 1) }}>"
+      , "          -"
+      , "        </button>"
+      , "        <span"
+      , "          style={{ fontSize: \"32px\", fontWeight: \"700\", minWidth: \"80px\", textAlign: \"center\" }}"
+      , "        >"
+      , "          {show(state.value)}"
+      , "        </span>"
+      , "        <button style={primaryBtnStyle} onClick={() => { state.set(state.value + 1) }}>"
+      , "          +"
+      , "        </button>"
+      , "        <button style={dangerBtnStyle} onClick={() => { state.set(0) }}>"
+      , "          Reset"
+      , "        </button>"
+      , "      </div>"
+      , "    </div>"
+      , "  },"
+      , ")"
+      ]) `shouldSatisfy` isRight
+
+  it "parses MadReact clock JSX with multiline props and multi-word text" $
+    parse (unlines
+      [ "Clock = component("
+      , "  () => {"
+      , "    state = useState(\"\")"
+      , ""
+      , "    return <div style={cardStyle}>"
+      , "      <h3 style={{ margin: \"0 0 16px 0\", color: \"#38bdf8\" }}>"
+      , "        Live Clock"
+      , "      </h3>"
+      , "      <div style={mergeStyles(flexCenter, { gap: \"12px\" })}>"
+      , "        <span"
+      , "          style={{"
+      , "            fontSize: \"48px\","
+      , "            fontWeight: \"300\","
+      , "            fontFamily: \"'Courier New', monospace\","
+      , "            letterSpacing: \"2px\","
+      , "          }}"
+      , "        >"
+      , "          {state.value}"
+      , "        </span>"
+      , "      </div>"
+      , "    </div>"
+      , "  },"
+      , ")"
+      ]) `shouldSatisfy` isRight
+
   it "parses runAllTestSuites full body" $
     parse (unlines
       [ "runAllTestSuites :: ("

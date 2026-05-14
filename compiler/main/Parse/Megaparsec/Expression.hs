@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict #-}
+{-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC -O3 #-}
 module Parse.Megaparsec.Expression
   ( pExp
@@ -1157,10 +1158,24 @@ pJsxProps = many (try (scn *> pJsxProp))
           (nameArea, name) <- withArea pNameStr
           target <- pSourceTarget
           pEq
-          void pLeftCurly
-          expr <- pExp
-          (endArea, _) <- withArea (void pRightCurly)
-          return $ Src.Source (mergeAreas nameArea endArea) target (Src.JsxProp name expr)
+          mt <- peekTok
+          expr <- case mt of
+            Just TkLeftDoubleCurly -> do
+              (startArea, _) <- withArea pLeftDoubleCurly
+              target' <- pSourceTarget
+              rets
+              fields <- option [] pRecordFields
+              _ <- optional pComma
+              rets
+              void pRightCurly
+              (outerEndArea, _) <- withArea (void pRightCurly)
+              return $ Src.Source (mergeAreas startArea outerEndArea) target' (Src.Record fields)
+            _ -> do
+              void pLeftCurly
+              inner <- pExp
+              void pRightCurly
+              return inner
+          return $ Src.Source (mergeAreas nameArea (Src.getArea expr)) target (Src.JsxProp name expr)
       , -- name (boolean shorthand)
         do
           (nameArea, name) <- withArea pNameStr
@@ -1193,9 +1208,144 @@ pJsxChildren = scn *> many (pJsxChild <* scn)
       , -- Nested JSX tag
         try pJsxTag >>= \tag -> return (Src.JsxChild tag)
       -- Note: text content between JSX tags is not handled here since the tokenizer
-      -- doesn't produce text tokens between tags. JSX text content would require
-      -- special lexer support or a different approach.
+      -- doesn't produce dedicated text tokens between tags. We recover raw text by
+      -- consuming the underlying token spellings until the next JSX boundary.
+      , try pJsxTextChild
       ]
+
+    pJsxTextChild :: Parser Src.JsxChild
+    pJsxTextChild = do
+      mt <- peekTok
+      case mt of
+        Just TkLeftCurly  -> empty
+        Just TkLeftChevron -> empty
+        Just TkRightChevron -> empty
+        Just TkEOF        -> empty
+        Just _            -> do
+          (area, txt) <- withArea pJsxText
+          target <- pSourceTarget
+          return $ Src.JsxChild (Src.Source area target (Src.LStr txt))
+
+    pJsxText :: Parser String
+    pJsxText = renderJsxTextTokens <$> some pJsxTextToken
+
+    pJsxTextToken :: Parser RangedToken
+    pJsxTextToken = satisfyTok $ \rt -> case rtToken rt of
+      TkLeftCurly    -> False
+      TkLeftChevron  -> False
+      TkRightChevron -> False
+      TkNewline      -> False
+      TkEOF          -> False
+      _              -> True
+
+    renderJsxTextTokens :: [RangedToken] -> String
+    renderJsxTextTokens [] = ""
+    renderJsxTextTokens (first : rest) =
+      jsxTokenText (rtToken first) ++ go (rtEnd first) rest
+      where
+        go _ [] = ""
+        go prevEnd (rt : rts) =
+          jsxGap prevEnd (rtStart rt) ++ jsxTokenText (rtToken rt) ++ go (rtEnd rt) rts
+
+    jsxGap :: Loc -> Loc -> String
+    jsxGap (Loc endOffset endLine _) (Loc startOffset startLine _)
+      | startLine == endLine && startOffset > endOffset = replicate (startOffset - endOffset) ' '
+      | otherwise = ""
+
+    jsxTokenText :: Token -> String
+    jsxTokenText = \case
+      TkInt s                  -> s
+      TkFloat s                -> s
+      TkByte s                 -> s ++ "b"
+      TkShort s                -> s ++ "s"
+      TkHexInt s               -> s
+      TkHexByte s              -> s
+      TkHexShort s             -> s
+      TkHexNumber s            -> s
+      TkString s               -> show s
+      TkChar s                 -> show s
+      TkTrue                   -> "true"
+      TkFalse                  -> "false"
+      TkName s                 -> s
+      TkTypeName s             -> s
+      TkTemplateStringStart s  -> "`" ++ s ++ "${"
+      TkTemplateStringMid s    -> "}" ++ s ++ "${"
+      TkTemplateStringEnd s    -> "}" ++ s ++ "`"
+      TkTemplateStringFull s   -> "`" ++ s ++ "`"
+      TkTemplateInterpolClose  -> "}"
+      TkJSBlock s              -> s
+      TkIf                     -> "if"
+      TkElse                   -> "else"
+      TkWhile                  -> "while"
+      TkWhere                  -> "where"
+      TkDo                     -> "do"
+      TkReturn                 -> "return"
+      TkPipe                   -> "pipe"
+      TkImport                 -> "import"
+      TkExport                 -> "export"
+      TkFrom                   -> "from"
+      TkType                   -> "type"
+      TkAlias                  -> "alias"
+      TkExtern                 -> "extern"
+      TkInterface              -> "interface"
+      TkInstance               -> "instance"
+      TkDerive                 -> "derive"
+      TkWhen                   -> "when"
+      TkIs                     -> "is"
+      TkNot                    -> "not"
+      TkTypeOf                 -> "typeof"
+      TkEq                     -> "="
+      TkMutateEq               -> ":="
+      TkDoubleColon            -> "::"
+      TkColon                  -> ":"
+      TkComma                  -> ","
+      TkSpread                 -> "..."
+      TkDot                    -> "."
+      TkLeftParen              -> "("
+      TkRightParen             -> ")"
+      TkLeftCurly              -> "{"
+      TkRightCurly             -> "}"
+      TkLeftDoubleCurly        -> "{{"
+      TkLeftSquare             -> "["
+      TkRightSquare            -> "]"
+      TkTupleStart             -> "#["
+      TkLeftArrow              -> "<-"
+      TkRightArrow             -> "->"
+      TkFatArrow               -> "=>"
+      TkPipeOp                 -> "|>"
+      TkPipeChar               -> "|"
+      TkSemicolon              -> ";"
+      TkSharp                  -> "#"
+      TkDollar                 -> "$"
+      TkQuestionMark           -> "?"
+      TkDoubleQuestionMark     -> "??"
+      TkQuestionDot            -> "?."
+      TkTypedHole              -> "???"
+      TkPlus                   -> "+"
+      TkDoublePlus             -> "++"
+      TkDash                   -> "-"
+      TkStar                   -> "*"
+      TkSlash                  -> "/"
+      TkPercent                -> "%"
+      TkDoubleEq               -> "=="
+      TkNotEq                  -> "!="
+      TkLeftChevron            -> "<"
+      TkRightChevron           -> ">"
+      TkLeftChevronEq          -> "<="
+      TkRightChevronEq         -> ">="
+      TkDoubleAmpersand        -> "&&"
+      TkDoublePipe             -> "||"
+      TkExclamation            -> "!"
+      TkAmpersand              -> "&"
+      TkXor                    -> "^"
+      TkTilde                  -> "~"
+      TkDoubleLeftChevron      -> "<<"
+      TkDoubleRightChevron     -> ">>"
+      TkTripleRightChevron     -> ">>>"
+      TkAlternativeOp          -> "<|>"
+      TkMappend                -> "<>"
+      TkNewline                -> "\n"
+      TkEOF                    -> ""
 
 
 -- Arguments --
