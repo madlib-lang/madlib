@@ -1,0 +1,10 @@
+import IO from "IO"
+
+// This should fail: annotation claims to accept any `a` but the implementation
+// requires a String
+f :: a -> String
+f = (s) => s ++ "!"
+
+main = () => {
+  IO.log(f("hello"))
+}

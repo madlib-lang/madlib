@@ -1,0 +1,17 @@
+     ╭──▶ compiler/test/Blackbox/test-cases/signature-too-general-concrete-var/Entrypoint.mad@5:1-6:20
+     │
+   5 │ ╭┤ f :: a -> String
+   6 │ ├┤ f = (s) => s ++ \"!\"
+     • │ 
+     • ╰╸ Type signature given:
+     •        a -> String
+     •    
+     •    Type inferred:
+     •        String -> String
+     •    
+     •
+     │ Note: The annotation claims the function is more polymorphic than the implementation allows.
+     │       The inferred type is more specific — it uses concrete types or fewer type variables.
+     │ Hint: Update the type annotation to match the inferred type shown above.
+─────╯
+

@@ -1,0 +1,9 @@
+import IO from "IO"
+
+// This should fail: the implementation forces `a` and `b` to be the same type
+f :: m a -> m b
+f = (x) => x
+
+main = () => {
+  IO.log(f(["hello"]))
+}

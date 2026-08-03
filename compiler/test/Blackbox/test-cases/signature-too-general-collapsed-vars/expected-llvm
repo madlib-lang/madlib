@@ -1,0 +1,17 @@
+     ╭──▶ compiler/test/Blackbox/test-cases/signature-too-general-collapsed-vars/Entrypoint.mad@4:1-5:13
+     │
+   4 │ ╭┤ f :: m a -> m b
+   5 │ ├┤ f = (x) => x
+     • │ 
+     • ╰╸ Type signature given:
+     •        a b -> a c
+     •    
+     •    Type inferred:
+     •        a b -> a b
+     •    
+     •
+     │ Note: The annotation claims the function is more polymorphic than the implementation allows.
+     │       The inferred type is more specific — it uses concrete types or fewer type variables.
+     │ Hint: Update the type annotation to match the inferred type shown above.
+─────╯
+

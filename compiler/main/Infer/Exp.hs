@@ -72,24 +72,52 @@ isMaybeType (TApp (TCon (TC "Maybe" _) _ _) _) = True
 isMaybeType _ = False
 
 
--- | Collect type variables that appear at top-level positions in a function type:
--- both parameter positions and the final return position.
--- For `String -> a -> b -> Element`, returns {a, b} (not String or Element which are TCon).
--- For `{ ...r } -> Element`, returns {} (the record is compound, not a plain TVar).
--- For `Integer -> a`, returns {a} so that binding a to a compound type is caught.
-collectTopLevelParamVars :: Type -> S.Set TVar
-collectTopLevelParamVars (TApp (TApp _ paramType) returnType) =
-  case paramType of
-    TVar tv -> S.insert tv (collectTopLevelParamVars returnType)
-    _       -> collectTopLevelParamVars returnType
-collectTopLevelParamVars (TVar tv) = S.singleton tv
-collectTopLevelParamVars _ = S.empty
+-- | Collect type variables that appear as the base (row) of a record type.
+-- These are the only annotation variables allowed to absorb structure during
+-- the signature check in inferExplicitlyTyped: record-spread inference
+-- over-constrains rows (e.g. `{ ...input, time: now() }` forces
+-- `input :: { time :: ..., ...base }` even when the annotation correctly
+-- claims `input :: { ...base }`), so a row variable may legitimately end up
+-- bound to a record carrying the extra fields.
+collectRowVars :: Type -> S.Set TVar
+collectRowVars t = case t of
+  TRecord fields base optionalFields ->
+    let baseVars = case base of
+          Just (TVar tv) -> S.singleton tv
+          Just other     -> collectRowVars other
+          Nothing        -> S.empty
+    in  baseVars <> foldMap collectRowVars (M.elems fields) <> foldMap collectRowVars (M.elems optionalFields)
 
--- | Check if a type is compound (record or type application, not a plain variable or constructor).
-isCompoundBinding :: Type -> Bool
-isCompoundBinding (TRecord _ _ _) = True
-isCompoundBinding (TApp _ _) = True
-isCompoundBinding _ = False
+  TApp l r ->
+    collectRowVars l <> collectRowVars r
+
+  _ ->
+    S.empty
+
+-- | Given the instantiated annotation type and the substitution obtained by
+-- unifying it with the inferred type, decide whether the annotation is as
+-- polymorphic as it claims. That is the case exactly when the substitution
+-- restricted to the annotation's variables is an injective renaming: every
+-- annotation variable maps to a distinct type variable. An annotation
+-- variable bound to anything concrete (`a -> String` implemented with
+-- `(x) => x ++ "!"`) or two annotation variables collapsed into one
+-- (`m a -> m b` implemented as identity) mean the signature is too general.
+-- Row variables are exempt and may also bind to a record (see collectRowVars).
+isInjectiveRenaming :: Type -> Substitution -> Bool
+isInjectiveRenaming tAnnotation s =
+  let rowVars   = collectRowVars tAnnotation
+      plainVars = S.toList (ftv tAnnotation S.\\ rowVars)
+      imageVars = [tv | TVar tv <- map (\tv -> apply s (TVar tv)) plainVars]
+      rowVarsOk = all
+        (\tv -> case apply s (TVar tv) of
+          TVar _    -> True
+          TRecord{} -> True
+          _         -> False
+        )
+        (S.toList rowVars)
+  in  length imageVars == length plainVars
+        && S.size (S.fromList imageVars) == length imageVars
+        && rowVarsOk
 
 
 -- | All inference is state-based. Substitutions accumulate into
@@ -1237,24 +1265,16 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
       gs = filter (not . (`S.member` fsSet)) (ftvList (apply s' t'))
       scCheck  = quantify (ftvList (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
   sigCheckResult <- if sc /= scCheck then
-    -- The inferred scheme differs from the declared scheme.
-    -- Check if the declared type subsumes the inferred type.
-    -- This handles cases like record spreads where the inference over-constrains
-    -- the input type (e.g., { ...input, time: now() } makes input :: { time: ..., ...r }
-    -- but the declared type correctly says input :: { ...r }).
-    -- However, we reject annotations where a plain type variable is bound to a
-    -- compound type (record, applied type), indicating the annotation is too general.
+    -- The inferred scheme differs from the declared scheme. Unify a fresh
+    -- instance of each and inspect how the annotation's variables were bound:
+    -- only an injective renaming — with row variables allowed to absorb extra
+    -- record fields (see collectRowVars) — means the annotation matches the
+    -- implementation's generality. Anything else means it is too general.
     catchError (do
-      (ps1 :=> t1) <- instantiate sc
-      let annotationVars = ftv t1
-      (ps2 :=> t2) <- instantiate scCheck
+      (_ :=> t1) <- instantiate sc
+      (_ :=> t2) <- instantiate scCheck
       s <- unify t1 t2
-      -- Check that no top-level annotation type variable was bound to a compound type.
-      -- This catches e.g. `f :: a -> b` where the inferred type is `{ name :: String } -> String`.
-      -- But allows row variables in records (e.g. `{ ...r }` annotation where r absorbs extra fields).
-      let topLevelVars = collectTopLevelParamVars t1
-      let tooGeneral = any (\tv -> isCompoundBinding (apply s (TVar tv))) (S.toList topLevelVars)
-      return (not tooGeneral)
+      return (isInjectiveRenaming t1 s)
     ) (const $ return False)
   else
     return True
