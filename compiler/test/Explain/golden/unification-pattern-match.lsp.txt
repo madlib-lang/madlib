@@ -1,8 +1,6 @@
 The 2nd branch of 'where' returns a different type
-The 2nd branch returns a different type than the other branches.
-expected:
-    Float
-but found:
-    String
-Hint: The 2nd branch returns a different type than the other branches.
-Note: All branches of 'where' must return the same type.
+the 2nd branch returns
+  String
+but the previous branches return
+  Float
+Note: All branches of a 'where' must return the same type.

@@ -3,12 +3,10 @@
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ The expression does not match its type annotation.
-     •    expected:
-     •        Integer -> Integer
-     •    but found:
-     •        Integer -> String
+     • ╰╸ the annotation says
+     •      Integer -> Integer
+     •    but the implementation produces
+     •      Integer -> String
      •
-     │ Hint: The expression's type doesn't match its annotation.
-     │ Note: Check whether the annotation is too specific, or the expression is wrong.
+     │ Note: Specifically, the return type differs.
 ─────╯

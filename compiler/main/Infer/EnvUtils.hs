@@ -92,6 +92,21 @@ lookupVar env name = do
       in  throwError $ CompilationError (UnboundVariable name suggestions) NoContext
 
 
+-- | All names exported by the module imported under the given namespace
+-- (e.g. "List" for `import List from "List"`), for building
+-- did-you-mean suggestions on `Namespace.name` lookups. Returns an empty
+-- list if the namespace isn't a recognized import.
+namespaceExportNames :: Env -> String -> Infer [String]
+namespaceExportNames env ns =
+  case List.find (\ii -> iiType ii == NamespaceImport && iiName ii == ns) (envImportInfo env) of
+    Just (ImportInfo path _ _) -> do
+      (ast, _) <- Rock.fetch $ Query.SolvedASTWithEnv path
+      return $ Maybe.mapMaybe (\e -> if Slv.isExport e then Slv.getExpName e else Nothing) (Slv.aexps ast)
+
+    Nothing ->
+      return []
+
+
 extendVars :: Env -> (String, Scheme) -> Env
 extendVars env (x, s) =
   let scFtv = ftv s

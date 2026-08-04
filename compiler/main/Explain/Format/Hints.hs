@@ -9,7 +9,10 @@ module Explain.Format.Hints
   , describeType
   , inlineOrDescribe
   , arityMismatch
+  , countArguments
   , toOrdinal
+  , SpecialCase(..)
+  , detectSpecialCase
   ) where
 
 import           Error.Error (ErrorOrigin(..), BranchSide(..))
@@ -81,6 +84,8 @@ mkUnificationTitle found expected origin =
       "Branches of 'where' return different types"
     FromAssignment name ->
       "Cannot assign " <> inlineOrDescribe found <> " to '" <> name <> "'"
+    TooManyArguments fn n ->
+      "'" <> fn <> "' takes " <> countArguments n <> ", but more were given"
     NoOrigin ->
       typeMismatchTitle found expected
 
@@ -343,3 +348,100 @@ operatorHints op found _expected = case op of
         [ hint $ "'" <> opName <> "' requires Boolean on both sides, but got " <> tname <> "." ]
       _ ->
         [ hint $ "Both sides of '" <> opName <> "' must be Boolean." ]
+
+
+-- | Special-case classifications of a type mismatch that warrant a specific,
+-- actionable hint beyond the generic expected/found display. Detection is
+-- purely structural (never calls unify, which can throw) so it is safe to
+-- run unconditionally in the renderer.
+data SpecialCase
+  = MaybeVsInner        -- ^ expected is `Maybe a`, found looks like `a`
+  | InnerVsMaybe         -- ^ found is `Maybe a`, expected looks like `a`
+  | StringVsChar Bool    -- ^ True when found is String and expected is Char
+  | MissingApplication   -- ^ found is a function whose return matches expected
+  | FunctionVsCall       -- ^ expected is a function, found is a partial application's result
+  | ListVsElement        -- ^ expected is `List a`, found looks like `a`
+  | ElementVsList        -- ^ found is `List a`, expected looks like `a`
+  | NumericMismatch String String  -- ^ two distinct numeric constructor names
+  deriving (Eq, Show)
+
+
+-- | A cheap structural approximation of "could these two types unify" that
+-- never fails: two types roughly match when they have the same shape modulo
+-- type variables, which stand for anything.
+typesRoughlyMatch :: Type -> Type -> Bool
+typesRoughlyMatch t1 t2 = case (t1, t2) of
+  (TVar _, _) -> True
+  (_, TVar _) -> True
+  (TApp l1 r1, TApp l2 r2) -> typesRoughlyMatch l1 l2 && typesRoughlyMatch r1 r2
+  (TCon (TC n1 _) _ _, TCon (TC n2 _) _ _) -> n1 == n2
+  (TRecord f1 _ o1, TRecord f2 _ o2) ->
+    let a1 = f1 <> o1
+        a2 = f2 <> o2
+    in  M.keys a1 == M.keys a2 && and (M.intersectionWith typesRoughlyMatch a1 a2)
+  _ -> False
+
+
+isMaybeOf :: Type -> Type -> Bool
+isMaybeOf (TApp (TCon (TC "Maybe" _) _ _) inner) t = typesRoughlyMatch inner t
+isMaybeOf _ _ = False
+
+
+isListOf :: Type -> Type -> Bool
+isListOf (TApp (TCon (TC "List" _) _ _) inner) t = typesRoughlyMatch inner t
+isListOf _ _ = False
+
+
+numericConstructors :: [String]
+numericConstructors = ["Integer", "Float", "Short", "Byte", "Number"]
+
+
+-- | Classify a unification failure into a higher-value special case, if any.
+-- Ordered by how actionable/common the mistake is.
+detectSpecialCase :: Type -> Type -> ErrorOrigin -> Maybe SpecialCase
+detectSpecialCase found expected origin
+  | TooManyArguments{} <- origin
+  = Nothing  -- the title and body already explain the over-application
+
+  | arityFound /= arityExpected, isFunctionType found, isFunctionType expected
+  = Nothing  -- the title itself already names the arity mismatch
+
+  | isMaybeOf expected found
+  = Just MaybeVsInner
+
+  | isMaybeOf found expected
+  = Just InnerVsMaybe
+
+  | isCharType found, isStringType expected
+  = Just (StringVsChar False)
+
+  | isStringType found, isCharType expected
+  = Just (StringVsChar True)
+
+  | isFunctionType found, typesRoughlyMatch (getReturnType found) expected
+  = Just MissingApplication
+
+  | isFunctionType expected, not (isFunctionType found), typesRoughlyMatch found (getReturnType expected)
+  = Just FunctionVsCall
+
+  | isListOf expected found
+  = Just ListVsElement
+
+  | isListOf found expected
+  = Just ElementVsList
+
+  | Just n1 <- numericName found, Just n2 <- numericName expected, n1 /= n2
+  = Just (NumericMismatch n1 n2)
+
+  | otherwise
+  = Nothing
+  where
+    arityFound    = length (getParamTypes found)
+    arityExpected = length (getParamTypes expected)
+
+    isCharType t = case t of { TCon (TC "Char" _) _ _ -> True; _ -> False }
+    isStringType t = case t of { TCon (TC "String" _) _ _ -> True; _ -> False }
+
+    numericName t = case t of
+      TCon (TC name _) _ _ | name `elem` numericConstructors -> Just name
+      _ -> Nothing

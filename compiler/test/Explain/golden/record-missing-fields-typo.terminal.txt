@@ -1,0 +1,11 @@
+[error]: Record missing fields
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The record is missing the field: 'nmae'
+     •
+     │ Hint: Did you mean 'name' instead of 'nmae'?
+     │ Hint: Add it to the record literal, for example: { nmae: <value> }
+     │ Note: Fields of the expected record: name, age.
+─────╯

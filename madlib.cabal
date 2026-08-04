@@ -251,6 +251,7 @@ library common
       Driver.Query
       Error.Context
       Error.Error
+      Error.Filter
       Error.Warning
       Explain.Location
       Generate.LLVM.Env
@@ -474,6 +475,7 @@ test-suite madlib-test
   other-modules:
       Blackbox.RunnerSpec
       DocStringSpec
+      Error.FilterSpec
       Explain.ContextEnforcementSpec
       Explain.FormatSpec
       Explain.GoldenSpec
@@ -483,6 +485,7 @@ test-suite madlib-test
       Infer.PlaceholderSpec
       Infer.SolveSpec
       MegaparsecSpec
+      Run.LanguageServer.DiagnosticsSpec
       Run.PackageSpec
       TestUtils
       TestUtils.Golden

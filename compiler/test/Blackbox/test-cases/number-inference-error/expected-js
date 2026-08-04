@@ -2,12 +2,10 @@
      │
    9 │   Fn.when((v) => v + size > max, Fn.always(Integer.toFloat(Math.max(1, max - size - 1)))),
      •                                  ┬────────────────────────────────────────────────────── 
-     •                                  ╰╸ The 2nd argument to 'Fn.when' has the wrong type.
-     •                                     Expected: Integer -> Integer
-     •                                     expected:
-     •                                         Integer -> Integer
-     •                                     but found:
-     •                                         a -> Float
+     •                                  ╰╸ this argument is
+     •                                       a -> Float
+     •                                     but 'Fn.when' expects its 2nd argument to be
+     •                                       Integer -> Integer
      •
 ─────┼──▶ compiler/test/Blackbox/test-cases/number-inference-error/Entrypoint.mad@9:3-9:90
      │
@@ -16,6 +14,6 @@
      • ╰╸ 'Fn.when' is applied here
      •
      │ Hint: 'Fn.when' expects Integer -> Integer as its 2nd argument.
-     │ Note: Full signature: Fn.when :: (Integer -> Integer) -> Integer -> Integer
+     │ Note: Signature: Fn.when :: (Integer -> Integer) -> Integer -> Integer
 ─────╯
 

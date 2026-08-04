@@ -770,7 +770,7 @@
     }
 , []
 , [ CompilationError
-      (RecordMissingFields [ "y" ])
+      (RecordMissingFields [ "y" ] [ "x" ])
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 39 3 10) (Loc 42 3 13)

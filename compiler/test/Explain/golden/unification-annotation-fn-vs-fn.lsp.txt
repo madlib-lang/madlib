@@ -1,8 +1,6 @@
 Type mismatch: expected Integer -> Integer but found Integer -> String
-The expression does not match its type annotation.
-expected:
-    Integer -> Integer
-but found:
-    Integer -> String
-Hint: The expression's type doesn't match its annotation.
-Note: Check whether the annotation is too specific, or the expression is wrong.
+the annotation says
+  Integer -> Integer
+but the implementation produces
+  Integer -> String
+Note: Specifically, the return type differs.

@@ -387,6 +387,40 @@ spec = do
       jsonOutput `shouldBe` take (length jsonOutput) jsonOutput  -- always passes (structural check below)
       "{\"type\":\"error\"" `List.isInfixOf` jsonOutput `shouldBe` True
 
+  describe "cascade suppression" $ do
+    it "reports exactly one error for a binding used by three downstream bindings" $ do
+      let casePath = "compiler/test/Blackbox/test-cases/cascade-single-error"
+      rootPath   <- canonicalizePath casePath
+      let entrypoint = joinPath [rootPath, "Entrypoint.mad"]
+      let options = Options
+            { optPathUtils = Path.defaultPathUtils
+            , optEntrypoint = entrypoint
+            , optRootPath = rootPath
+            , optOutputPath = joinPath [rootPath, ".tests/run"]
+            , optTarget = TNode
+            , optOptimized = False
+            , optBundle = False
+            , optDebug = False
+            , optCoverage = False
+            , optGenerateDerivedInstances = True
+            , optInsertInstancePlaholders = True
+            , optParseOnly = False
+            , optMustHaveMain = True
+            , optOptimizationLevel = O3
+            , optLspMode = False
+            , optEmitLLVM = False
+            , optSourceMaps = NoSourceMap
+            , optErrorFormat = TextFormat
+            , optPGOMode = NoPGO
+            , optInlineThreshold = Nothing
+            }
+      state <- Driver.initialState
+      output <- compile state options [entrypoint]
+      -- Each rendered diagnostic starts a fresh report box; counting them
+      -- counts the number of distinct errors shown to the user.
+      let errorCount = length (filter ("\9581\9472\9472\9654" `List.isInfixOf`) (lines output))
+      errorCount `shouldBe` 1
+
 
 compile :: Driver.State CompilationError -> Options -> [FilePath] -> IO String
 compile state options invalidatedPaths = do

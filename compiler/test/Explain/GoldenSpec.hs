@@ -96,7 +96,8 @@ goldenCases =
   , ("unbound-type", UnboundType "MyType" [], makeCtx)
   , ("unbound-type-suggestion", UnboundType "Mabye" ["Maybe"], makeCtx)
   , ("unbound-unknown-type-variable", UnboundUnknownTypeVariable, makeCtx)
-  , ("unbound-variable-from-namespace", UnboundVariableFromNamespace "List" "fliter", makeCtx)
+  , ("unbound-variable-from-namespace", UnboundVariableFromNamespace "List" "fliter" [], makeCtx)
+  , ("unbound-variable-from-namespace-suggestion", UnboundVariableFromNamespace "List" "fliter" ["filter"], makeCtx)
   , ("name-already-defined", NameAlreadyDefined "x", makeCtx)
   , ("type-already-defined", TypeAlreadyDefined "User", makeCtx)
   , ("name-already-exported", NameAlreadyExported "greet", makeCtx)
@@ -145,7 +146,8 @@ goldenCases =
 
   -- Record errors
   , ("record-duplicate-fields", RecordDuplicateFields ["name", "age"], makeCtx)
-  , ("record-missing-fields", RecordMissingFields ["email", "phone"], makeCtx)
+  , ("record-missing-fields", RecordMissingFields ["email", "phone"] ["name", "age"], makeCtx)
+  , ("record-missing-fields-typo", RecordMissingFields ["nmae"] ["name", "age"], makeCtx)
   , ("record-extra-fields", RecordExtraFields ["extra"] ["name", "age"], makeCtx)
   , ("record-duplicate-rest-pattern", RecordDuplicateRestPattern, makeCtx)
   , ("invalid-lhs", InvalidLhs, makeCtx)

@@ -1,6 +1,4 @@
-Illegal shadowing
-The variable 'x' is already defined
-Hint: Change the name of the variable
-Note: The variable might be defined further down. All top level
-assignments share the scope and using a local name that is
-defined in the global scope of a module is not allowed.
+'x' is defined twice
+'x' is declared again here.
+Hint: Rename this binding, or remove the earlier 'x'.
+Note: All top-level assignments in a module share one scope, so a name can only be bound once — even if the other definition appears later in the file.

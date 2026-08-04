@@ -37,6 +37,7 @@ import           Run.Options
 import           Utils.PathUtils (defaultPathUtils)
 import qualified AST.Source as Src
 import           Error.Error
+import           Error.Filter                   ( filterErrors )
 import qualified MadlibDotJson.MadlibDotJson as MadlibDotJson
 import           Rock (Cyclic)
 import           Error.Warning
@@ -210,7 +211,7 @@ runTestTask watchMode suiteFilter testIndex state options canonicalEntrypoint in
         Right _ ->
           return ()
     else do
-      formattedErrors <- mapM (Explain.formatError rf False) $ removeDuplicates errors
+      formattedErrors <- mapM (Explain.formatError rf False) $ filterErrors errors
       hPutStrLn stderr $ List.intercalate "\n\n\n" formattedErrors
       unless watchMode Exit.exitFailure
 

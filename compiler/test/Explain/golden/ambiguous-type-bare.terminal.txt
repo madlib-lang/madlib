@@ -1,9 +1,9 @@
-[error]: Ambiguous type
+[error]: I can't infer a concrete type here
      ╭──▶ test/Module.mad@1:1-1:20
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ An ambiguity for the type variable 'f5' could not be resolved
+     • ╰╸ nothing determines a concrete type for 'f5' here
      •
-     │ Hint: You can add a type annotation to make it resolvable.
+     │ Hint: Add a type annotation to make it resolvable.
 ─────╯

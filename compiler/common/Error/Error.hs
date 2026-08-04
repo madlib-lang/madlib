@@ -53,6 +53,7 @@ data ErrorOrigin
   | FromPatternMatch Int               -- ^ 1-based branch index (0 = unknown)
   | FromWhileCondition                 -- ^ while condition must be Boolean
   | FromAssignment String              -- ^ assigning to a typed variable
+  | TooManyArguments String Int        -- ^ function name, number of parameters it actually takes
   | NoOrigin
   deriving (Show, Eq, Ord)
 
@@ -61,7 +62,7 @@ data TypeError
   = InfiniteType TVar Type
   | UnboundVariable String [String]
   | UnboundUnknownTypeVariable
-  | UnboundVariableFromNamespace String String
+  | UnboundVariableFromNamespace String String [String]  -- ^ namespace, name, similar exported names
   | UnboundType String [String]
   | UnificationError TypeMismatch
   | BadEscapeSequence
@@ -125,7 +126,7 @@ data TypeError
   | NotAConstructor String
   | RecordDuplicateFields [String]
   | RecordDuplicateRestPattern
-  | RecordMissingFields [String]
+  | RecordMissingFields [String] [String]  -- ^ missing fields, fields the record actually has
   | RecordExtraFields [String] [String]  -- ^ extra fields, available fields in expected record
   | TestNotValid Type
   | ByteOutOfBounds String

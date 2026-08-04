@@ -3,12 +3,10 @@
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ The 'then' branch has a different type than the 'else' branch.
-     •    expected:
-     •        Float
-     •    but found:
-     •        String
+     • ╰╸ this branch is
+     •      String
+     •    but the other branch is
+     •      Float
      •
-     │ Hint: The 'then' branch has a different type than the 'else' branch.
-     │ Note: Both branches of an 'if' must return the same type.
+     │ Note: An 'if' used as an expression must produce the same type from both branches.
 ─────╯

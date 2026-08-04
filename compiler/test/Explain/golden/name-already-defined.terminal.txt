@@ -1,12 +1,10 @@
-[error]: Illegal shadowing
+[error]: 'x' is defined twice
      ╭──▶ test/Module.mad@1:1-1:20
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ The variable 'x' is already defined
+     • ╰╸ 'x' is declared again here.
      •
-     │ Hint: Change the name of the variable
-     │ Note: The variable might be defined further down. All top level
-     │       assignments share the scope and using a local name that is
-     │       defined in the global scope of a module is not allowed.
+     │ Hint: Rename this binding, or remove the earlier 'x'.
+     │ Note: All top-level assignments in a module share one scope, so a name can only be bound once — even if the other definition appears later in the file.
 ─────╯

@@ -36,6 +36,7 @@ import qualified Driver.Query as Query
 import           Error.Warning
 import           Rock (Cyclic)
 import           Error.Error
+import           Error.Filter                   ( filterErrors )
 import           Run.Options
 import Data.IORef
 import           Control.Monad                  ( forever
@@ -184,7 +185,7 @@ runRunTask watchMode state options runner invalidatedPaths = do
         return (warnings, errors)
 
   formattedWarnings <- mapM (Explain.formatWarning readFile False) $ removeDuplicates warnings
-  formattedErrors   <- mapM (Explain.formatError readFile False) $ removeDuplicates errors
+  formattedErrors   <- mapM (Explain.formatError readFile False) $ filterErrors errors
 
   unless (null formattedWarnings && null formattedErrors) $ do
     unless watchMode $ putStrLn $ List.intercalate "\n" formattedWarnings

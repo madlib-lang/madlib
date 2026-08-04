@@ -3,12 +3,10 @@
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ The 2nd branch returns a different type than the other branches.
-     •    expected:
-     •        Float
-     •    but found:
-     •        String
+     • ╰╸ the 2nd branch returns
+     •      String
+     •    but the previous branches return
+     •      Float
      •
-     │ Hint: The 2nd branch returns a different type than the other branches.
-     │ Note: All branches of 'where' must return the same type.
+     │ Note: All branches of a 'where' must return the same type.
 ─────╯

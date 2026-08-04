@@ -1,10 +1,9 @@
-[error]: Type already defined
+[error]: 'String' is defined twice
      ╭──▶ test/Module.mad@1:1-1:20
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ You defined the type 'String',
-     •    but it already exists
+     • ╰╸ The type 'String' is declared again here.
      •
-     │ Hint: Verify that you don't have a typo.
+     │ Hint: Rename this type, or remove the earlier 'String'.
 ─────╯

@@ -21,6 +21,7 @@ import           Explain.Format.TypeDiff        ( prettyPrintType
                                                 , renderTVar
                                                 , renderSchemesWithDiff
                                                 , renderSchemeOneLine
+                                                , firstDifference
                                                 )
 import           Error.Error
 import           Error.Warning
@@ -218,89 +219,139 @@ errorDiagnostic context typeError = case typeError of
           [ Marker (Span path area) Secondary [P msg]
           | SecondaryLocation path area msg <- secondaries
           ]
-        originNotes = case origin of
+        detector = detectSpecialCase t1 t2 origin
+        title = mkUnificationTitle t1 t2 origin
+
+        -- Concrete, imperative next steps — go in Hints, one idea each.
+        detectorHints = case detector of
+          Just MaybeVsInner ->
+            [hint "Wrap the value: Just(x). Use Nothing where no value exists."]
+
+          Just InnerVsMaybe ->
+            [hint "This value is a Maybe. Unwrap it with 'where(x) { Just(v) => ... }' or Maybe.fromMaybe."]
+
+          Just (StringVsChar _) ->
+            [hint "Double quotes create a String (\"a\"); single quotes create a Char ('a')."]
+
+          Just MissingApplication ->
+            [hint "Is this a function you forgot to call? Try calling it with its arguments."]
+
+          Just FunctionVsCall ->
+            [hint "This function needs more arguments before it produces this type."]
+
+          Just ListVsElement ->
+            [hint "Wrap it in a list: [x]."]
+
+          Just ElementVsList ->
+            [hint "This is a List — did you mean 'List.head' to take one element, or 'map' to transform each one?"]
+
+          Just (NumericMismatch _ _) ->
+            [hint "Numbers are never converted implicitly. Convert explicitly, e.g. with 'Integer.toFloat' or 'Number.fromString'."]
+
+          _ ->
+            []
+
+        originHints = case origin of
           FromFunctionArgument fn n (Just (FunctionContext expectedType fullSig _)) ->
             [ hint $ "'" <> fn <> "' expects " <> prettyPrintType True expectedType <> " as its " <> toOrdinal n <> " argument."
-            , note $ "Full signature: " <> fn <> " :: " <> prettyPrintType True fullSig
+            , note $ "Signature: " <> fn <> " :: " <> prettyPrintType True fullSig
             ]
-          FromFunctionArgument fn n Nothing ->
-            [ hint $ "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type." ]
+
+          FromFunctionArgument{} ->
+            []
+
           FromFunctionReturn fn ->
-            [ hint $ "The return value of '" <> fn <> "' doesn't match its type annotation."
-            , note "Check that all branches of the function body return the same type."
-            ]
-          FromOperator op -> operatorHints op t1 t2
-          FromIfCondition ->
-            [ hint "The condition of an 'if' expression must be Boolean."
-            , note "Boolean values are 'true' and 'false'. Did you forget a comparison?"
-            ]
-          FromIfBranches ThenBranch ->
-            [ hint "The 'then' branch has a different type than the 'else' branch."
-            , note "Both branches of an 'if' must return the same type."
-            ]
-          FromIfBranches ElseBranch ->
-            [ hint "The 'else' branch has a different type than the 'then' branch."
-            , note "Both branches of an 'if' must return the same type."
-            ]
-          FromWhileCondition ->
-            [ hint "The condition of a 'while' loop must be Boolean." ]
-          FromListElement n | n > 0 ->
-            [ hint $ "The " <> toOrdinal n <> " element has a different type than the previous elements."
-            , note "All elements in a list must have the same type."
-            ]
-          FromListElement _ ->
-            [ hint "All elements in a list literal must have the same type."
-            , note "If you need a heterogeneous collection, consider a custom type or a tuple."
-            ]
-          FromTypeAnnotation ->
-            [ hint "The expression's type doesn't match its annotation."
-            , note "Check whether the annotation is too specific, or the expression is wrong."
-            ]
-          FromPatternMatch n | n > 0 ->
-            [ hint $ "The " <> toOrdinal n <> " branch returns a different type than the other branches."
-            , note "All branches of 'where' must return the same type."
-            ]
-          FromPatternMatch _ ->
-            [ hint "All branches of a 'where' expression must return the same type."
-            , note "Make sure every branch has the same return type."
-            ]
-          FromAssignment name ->
-            [ hint $ "The right-hand side doesn't match the declared type of '" <> name <> "'." ]
-          NoOrigin -> []
-        title = mkUnificationTitle t1 t2 origin
-        originPrefix = case origin of
-          FromFunctionArgument fn n (Just (FunctionContext expectedType _ _)) ->
-            "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type.\n"
-            <> "Expected: " <> prettyPrintType True expectedType <> "\n"
-          FromFunctionArgument fn n Nothing ->
-            "The " <> toOrdinal n <> " argument to '" <> fn <> "' has the wrong type.\n"
-          FromFunctionReturn fn ->
-            "The return value of '" <> fn <> "' does not match its annotation.\n"
+            [ note $ "Check that every branch of '" <> fn <> "'s body returns the same type." ]
+
           FromOperator op ->
-            "The operands of '" <> op <> "' have incompatible types.\n"
+            operatorHints op t1 t2
+
           FromIfCondition ->
-            "The condition of an 'if' must be Boolean.\n"
-          FromIfBranches ThenBranch ->
-            "The 'then' branch has a different type than the 'else' branch.\n"
-          FromIfBranches ElseBranch ->
-            "The 'else' branch has a different type than the 'then' branch.\n"
+            []
+
           FromWhileCondition ->
-            "The condition of a 'while' must be Boolean.\n"
-          FromListElement n | n > 0 ->
-            "The " <> toOrdinal n <> " element has a different type than the previous elements.\n"
-          FromListElement _ ->
-            "All list elements must have the same type.\n"
+            []
+
+          FromIfBranches{} ->
+            [ note "An 'if' used as an expression must produce the same type from both branches." ]
+
+          FromListElement{} ->
+            [ note "All elements of a list must share one type. For mixed data, define a union type: type Item = A(...) | B(...)." ]
+
           FromTypeAnnotation ->
-            "The expression does not match its type annotation.\n"
-          FromPatternMatch n | n > 0 ->
-            "The " <> toOrdinal n <> " branch returns a different type than the other branches.\n"
-          FromPatternMatch _ ->
-            "All branches of a 'where' must return the same type.\n"
+            case firstDifference t1 t2 of
+              Just place ->
+                [note $ "Specifically, " <> place <> " differs."]
+
+              Nothing ->
+                []
+
+          FromPatternMatch{} ->
+            [ note "All branches of a 'where' must return the same type." ]
+
           FromAssignment name ->
-            "The value does not match the declared type of '" <> name <> "'.\n"
-          NoOrigin -> ""
-        -- expected is t2, found is t1
-        body = [P originPrefix, ExpectedFound t2 t1]
+            [ note $ "':=' cannot change the type of '" <> name <> "'." ]
+
+          TooManyArguments{} ->
+            []
+
+          NoOrigin ->
+            []
+
+        -- The primary label: what the reader is looking at, and what it should
+        -- have been instead. Each origin phrases the two sides in terms of the
+        -- construct it belongs to instead of a bare "expected:/but found:".
+        body = case origin of
+          FromFunctionArgument fn n _ ->
+            [ P $ "this argument is" ] ++ [ShowType t1]
+              ++ [ P $ "but '" <> fn <> "' expects its " <> toOrdinal n <> " argument to be" ] ++ [ShowType t2]
+
+          FromFunctionReturn fn ->
+            [ P "the body produces" ] ++ [ShowType t1]
+              ++ [ P $ "but the annotation says '" <> fn <> "' returns" ] ++ [ShowType t2]
+
+          FromIfCondition ->
+            [ P "this has type" ] ++ [ShowType t1] ++ [ P "but an 'if' condition must be Boolean" ]
+
+          FromWhileCondition ->
+            [ P "this has type" ] ++ [ShowType t1] ++ [ P "but a 'while' condition must be Boolean" ]
+
+          FromIfBranches ThenBranch ->
+            [ P "this branch is" ] ++ [ShowType t1] ++ [ P "but the other branch is" ] ++ [ShowType t2]
+
+          FromIfBranches ElseBranch ->
+            [ P "this branch is" ] ++ [ShowType t1] ++ [ P "but the other branch is" ] ++ [ShowType t2]
+
+          FromListElement n | n > 0 ->
+            [ P $ "the " <> toOrdinal n <> " element is" ] ++ [ShowType t1]
+              ++ [ P "but the elements before it are" ] ++ [ShowType t2]
+
+          FromListElement _ ->
+            [ExpectedFound t2 t1]
+
+          FromTypeAnnotation ->
+            [ P "the annotation says" ] ++ [ShowType t2] ++ [ P "but the implementation produces" ] ++ [ShowType t1]
+
+          FromPatternMatch n | n > 0 ->
+            [ P $ "the " <> toOrdinal n <> " branch returns" ] ++ [ShowType t1]
+              ++ [ P "but the previous branches return" ] ++ [ShowType t2]
+
+          FromPatternMatch _ ->
+            [ExpectedFound t2 t1]
+
+          FromAssignment name ->
+            [ P "this value is" ] ++ [ShowType t1]
+              ++ [ P $ "but '" <> name <> "' was declared with type" ] ++ [ShowType t2]
+
+          FromOperator _ ->
+            [ExpectedFound t2 t1]
+
+          TooManyArguments fn n ->
+            [ P $ "this is the " <> toOrdinal (n + 1) <> " argument, but '" <> fn <> "' only accepts " <> countArguments n ]
+
+          NoOrigin ->
+            [ExpectedFound t2 t1]
+
     in  case context of
       Context modulePath area ->
         Diagnostic
@@ -309,7 +360,7 @@ errorDiagnostic context typeError = case typeError of
           , dTitle    = title
           , dMarkers  = Marker (Span modulePath area) Primary body : secondaryMarkers
           , dBody     = []
-          , dNotes    = originNotes
+          , dNotes    = detectorHints ++ originHints
           }
 
       NoContext ->
@@ -318,8 +369,8 @@ errorDiagnostic context typeError = case typeError of
           , dCode     = Nothing
           , dTitle    = title
           , dMarkers  = []
-          , dBody     = body
-          , dNotes    = originNotes
+          , dBody     = [ExpectedFound t2 t1]
+          , dNotes    = detectorHints ++ originHints
           }
 
   TestNotValid t ->
@@ -467,15 +518,21 @@ errorDiagnostic context typeError = case typeError of
           (typoHint ++ stdlibHint)
 
   UnboundUnknownTypeVariable ->
-    mkErr "Unbound type variable" context [P "A type variable has not been declared"]
-      [hint "Verify that you don't have a typo"]
-
-  UnboundVariableFromNamespace namespace name ->
-    mkErr "Name not in module" context
-      [P $ "'" <> name <> "' was not found in '" <> namespace <> "'."]
-      [ hint $ "Check that '" <> name <> "' is exported from the module you imported as '" <> namespace <> "'."
-      , note $ "With a default import 'import List from \"List\"', use 'List.map', 'List.length', etc."
+    mkErr "This type variable isn't declared" context
+      [P "I don't recognize this type variable here."]
+      [ hint "Type variables in a constructor must also appear in the type's own parameter list."
+      , note "Type variables are lowercase; a capitalized name here is treated as a concrete type instead, which is a common source of this error."
       ]
+
+  UnboundVariableFromNamespace namespace name suggestions ->
+    let suggestionHint = case suggestions of
+          []    -> [hint $ "Check that '" <> name <> "' is exported from the module you imported as '" <> namespace <> "'."]
+          s : _ -> [hint $ "Did you mean '" <> namespace <> "." <> s <> "'?"]
+    in  mkErr "Name not in module" context
+          [P $ "'" <> name <> "' was not found in '" <> namespace <> "'."]
+          ( suggestionHint ++
+            [ note "With a default import 'import List from \"List\"', use 'List.filter', 'List.length', etc." ]
+          )
 
   CapitalizedADTTVar adtname param ->
     let lowered = if null param then param else map toLower param
@@ -576,44 +633,48 @@ errorDiagnostic context typeError = case typeError of
         Diagnostic
           { dSeverity = SevError
           , dCode     = Nothing
-          , dTitle    = "Ambiguous type"
+          , dTitle    = "I can't infer a concrete type here"
           , dMarkers  =
               Marker (Span modulePath area) Primary
-                [P $ "An instance of '" <> cls <> "' could not be found"]
+                [P $ "this needs a '" <> cls <> "' instance, but nothing here tells me which type to pick"]
               : case maybeArea of
                   Just area' ->
-                    [Marker (Span modulePath area') Secondary [P "The constraint originates from here"]]
+                    [Marker (Span modulePath area') Secondary [P "the constraint comes from here"]]
 
                   Nothing ->
                     []
           , dBody     = []
-          , dNotes    = [hint "You can add a type annotation to make it resolvable."]
+          , dNotes    = [hint $ "Add a type annotation, e.g. a signature that fixes the type implementing '" <> cls <> "'."]
           }
 
       NoContext ->
-        errorNowhere "Ambiguous type" []
-          [hint "You can add a type annotation to make it resolvable."]
+        errorNowhere "I can't infer a concrete type here" []
+          [hint "Add a type annotation to make it resolvable."]
 
   AmbiguousType (TV n _, []) ->
-    mkErr "Ambiguous type" context
-      [P $ "An ambiguity for the type variable '" <> renderTVar n <> "' could not be resolved"]
-      [hint "You can add a type annotation to make it resolvable."]
+    mkErr "I can't infer a concrete type here" context
+      [P $ "nothing determines a concrete type for '" <> renderTVar n <> "' here"]
+      [hint "Add a type annotation to make it resolvable."]
 
   InterfaceNotExisting cls ->
     mkErr "Interface not found" context [P $ "The interface '" <> cls <> "' is not defined.\n"]
       [hint "Make sure you imported the module defining it,\nor a module that imports it."]
 
   KindError (t, k) (t', k') ->
-    mkErr "Kind mismatch" context
-      [ P $ "'" <> prettyPrintType True t <> "' has kind " <> kindToStr k
-         <> ",\nbut '" <> prettyPrintType True t' <> "' has kind " <> kindToStr k' <> "."
-      ]
-      [ note $
-          "Kinds describe how many type arguments a type constructor takes.\n"
-          <> "'*' means a fully-applied type (like 'Int' or 'String').\n"
-          <> "'* -> *' means a type that takes one argument (like 'List' or 'Maybe')."
-      , hint "Check whether you applied too many or too few type arguments."
-      ]
+    let arity k0 = case k0 of { Kfun _ rest -> 1 + arity rest; _ -> 0 :: Int }
+        headName = prettyPrintType True t'
+        neededMore = arity k > arity k'
+    in  mkErr ("'" <> headName <> "' needs " <> (if neededMore then "more" else "fewer") <> " type arguments") context
+          [ P $ "'" <> prettyPrintType True t <> "' has kind " <> kindToStr k
+             <> ", but '" <> headName <> "' has kind " <> kindToStr k' <> " here."
+          ]
+          [ hint $ "'" <> headName <> "' takes " <> show (arity k') <> " type argument" <> (if arity k' == 1 then "" else "s")
+              <> "; this usage gives it " <> show (arity k) <> "."
+          , note $
+              "Kinds describe how many type arguments a type constructor takes.\n"
+              <> "'*' means a fully-applied type (like 'Integer' or 'String').\n"
+              <> "'* -> *' means a type that still takes one argument (like 'List' or 'Maybe')."
+          ]
 
   InstancePredicateError pInstance pWrong pCorrect ->
     let instStr    = lst (predToStr True (mempty, mempty) pInstance)
@@ -688,8 +749,9 @@ errorDiagnostic context typeError = case typeError of
       ]
 
   EmptyChar ->
-    mkErr "Empty Char" context [P "This character is empty"]
-      [ note "Characters can't be empty"
+    mkErr "This Char is empty" context
+      [P "There's no character between these quotes."]
+      [ hint "Use a String (\"\") for empty text, or put exactly one character between single quotes ('a')."
       ]
 
   UnknownType t suggestions ->
@@ -700,12 +762,10 @@ errorDiagnostic context typeError = case typeError of
     in  mkErr "Unknown type" context [P $ "The type '" <> t <> "' was not found"] notes'
 
   NameAlreadyDefined name ->
-    mkErr "Illegal shadowing" context [P $ "The variable '" <> name <> "' is already defined"]
-      [ hint "Change the name of the variable"
-      , note $
-          "The variable might be defined further down. All top level\n"
-          <> "assignments share the scope and using a local name that is\n"
-          <> "defined in the global scope of a module is not allowed."
+    mkErr ("'" <> name <> "' is defined twice") context
+      [P $ "'" <> name <> "' is declared again here."]
+      [ hint $ "Rename this binding, or remove the earlier '" <> name <> "'."
+      , note "All top-level assignments in a module share one scope, so a name can only be bound once — even if the other definition appears later in the file."
       ]
 
   ImportCollision name ->
@@ -714,8 +774,9 @@ errorDiagnostic context typeError = case typeError of
       [hint "Use a qualified import or rename one of the conflicting names."]
 
   TypeAlreadyDefined name ->
-    mkErr "Type already defined" context [P $ "The type '" <> name <> "' is already defined"]
-      [hint "Change the name of the type"]
+    mkErr ("'" <> name <> "' is defined twice") context
+      [P $ "The type '" <> name <> "' is declared again here."]
+      [hint $ "Rename this type, or remove the earlier '" <> name <> "'."]
 
   NameAlreadyExported name ->
     mkErr "Already exported" context
@@ -899,14 +960,16 @@ errorDiagnostic context typeError = case typeError of
           notes'
 
   InterfaceAlreadyDefined interfaceName ->
-    mkErr "Interface already defined" context
-      [P $ "You defined the interface '" <> interfaceName <> "',\nbut it already exists"]
-      [hint "Verify that you don't have a typo."]
+    mkErr ("'" <> interfaceName <> "' is defined twice") context
+      [P $ "The interface '" <> interfaceName <> "' is declared again here."]
+      [hint $ "Rename this interface, or remove the earlier '" <> interfaceName <> "'."]
 
-  OverlappingInstances (IsIn cls _ _) (IsIn _ _ _) ->
-    mkErr "Overlapping instances" context
-      [P $ "This instance of '" <> cls <> "' overlaps with an existing one."]
-      [ hint "Remove the duplicate or overlapping instance, or make instances non-overlapping." ]
+  OverlappingInstances (IsIn cls ts1 _) (IsIn _ ts2 _) ->
+    let headStr1 = lst (predToStr True (mempty, mempty) (IsIn cls ts1 Nothing))
+        headStr2 = lst (predToStr True (mempty, mempty) (IsIn cls ts2 Nothing))
+    in  mkErr ("Two instances overlap for '" <> cls <> "'") context
+          [ P $ "'" <> headStr1 <> "' overlaps with the existing instance '" <> headStr2 <> "'." ]
+          [ hint "Remove one of the two instances, or narrow their types so only one can ever apply to a given value." ]
 
   SelfReferentialInstance (IsIn cls _ _) ->
     mkErr "Self-referential instance" context
@@ -916,7 +979,8 @@ errorDiagnostic context typeError = case typeError of
       ]
 
   InvalidLhs ->
-    mkErr "Invalid left hand side" context [P "It is not a valid left hand side expression."]
+    mkErr "You can't assign to this expression" context
+      [P "This isn't a name or pattern that a value can be bound to."]
       [ note "The left-hand side of '=' must be a variable name, a record pattern, or a list pattern."
       , hint "Valid forms: x = expr, { field } = record, [first] = list"
       ]
@@ -949,9 +1013,9 @@ errorDiagnostic context typeError = case typeError of
 
   ADTAlreadyDefined adtType ->
     let adtName = renderType adtType
-    in  mkErr "Type already defined" context
-          [P $ "You defined the type '" <> adtName <> "',\nbut it already exists"]
-          [hint "Verify that you don't have a typo."]
+    in  mkErr ("'" <> adtName <> "' is defined twice") context
+          [P $ "The type '" <> adtName <> "' is declared again here."]
+          [hint $ "Rename this type, or remove the earlier '" <> adtName <> "'."]
 
   RecordDuplicateFields fs ->
     let fs' = concatMap ("\n - " ++) fs
@@ -959,13 +1023,24 @@ errorDiagnostic context typeError = case typeError of
           [P $ "The following fields appear more than once in the record constructor:" <> fs']
           [hint "Define each field only once."]
 
-  RecordMissingFields fs ->
+  RecordMissingFields fs available ->
     let fieldList  = intercalate ", " (map (\f -> "'" <> f <> "'") fs)
-        (one, were, them) = if length fs == 1 then ("field", "was", "it") else ("fields", "were", "them")
-    in  mkErr "Record missing fields" context
-          [P $ "The record " <> were <> " missing the " <> one <> ": " <> fieldList]
-          [ hint $ "Add " <> them <> " to the record literal, for example: { " <> List.intercalate ", " (map (\f -> f <> ": <value>") fs) <> " }"
+        (one, them) = if length fs == 1 then ("field", "it") else ("fields", "them")
+        -- A missing field is sometimes a misspelling of a field the record
+        -- does have (e.g. { nmae: "x" } instead of { name: "x" }) rather than
+        -- a genuinely absent one; suggest the closest actual field name.
+        typoHints =
+          [ hint $ "Did you mean '" <> suggestion <> "' instead of '" <> f <> "'?"
+          | f <- fs
+          , suggestion : _ <- [findSimilar f available]
           ]
+    in  mkErr "Record missing fields" context
+          [P $ "The record is missing the " <> one <> ": " <> fieldList]
+          ( typoHints ++
+            [ hint $ "Add " <> them <> " to the record literal, for example: { " <> List.intercalate ", " (map (\f -> f <> ": <value>") fs) <> " }"
+            , note $ "Fields of the expected record: " <> intercalate ", " available <> "."
+            ]
+          )
 
   RecordExtraFields fs availableFields ->
     let fieldList = intercalate ", " (map (\f -> "'" <> f <> "'") fs)
@@ -991,21 +1066,22 @@ errorDiagnostic context typeError = case typeError of
       ]
 
   WrongSpreadType t ->
-    mkErr "Type error" context [P t]
-      [ note "The spread operator '...' is only valid on record types."
+    mkErr "I can't spread this value" context [P t]
+      [ note "The spread operator '...' only works on records and on lists in a rest pattern."
       , hint "Check that the value you are spreading is a record, or remove the spread."
       ]
 
   FatalError ->
     mkErr "Internal compiler error" context
-      [P "The compiler encountered an unexpected internal state and could not continue."]
-      [ hint "This is likely a compiler bug. Please report it with the code that triggered it."
-      , note "You can try reorganizing the problematic expression or adding a type annotation."
+      [P "I hit an internal state I don't know how to handle, and had to stop."]
+      [ hint "This is likely a compiler bug — please report it along with the code that triggered it."
+      , note "As a workaround, try adding a type annotation or restructuring the expression at this location."
       ]
 
   Error ->
-    mkErr "Error" context [P "An error occurred during compilation."]
-      [ hint "Check the surrounding code for type mismatches or missing imports." ]
+    mkErr "Internal compiler error" context
+      [P "Something went wrong that I can't describe more precisely."]
+      [ hint "This is likely a compiler bug — please report it along with the code that triggered it." ]
 
   ASTHasNoPath ->
     mkErr "Module not found" context

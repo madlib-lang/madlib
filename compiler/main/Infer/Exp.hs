@@ -38,6 +38,7 @@ import           Infer.Generalize
 import           Infer.Placeholder
 import           Infer.ToSolved
 import qualified Utils.Tuple                   as T
+import           Utils.EditDistance              ( findSimilar )
 import qualified Control.Monad                 as CM
 import           AST.Solved (getType)
 import qualified Data.Set as Set
@@ -456,6 +457,15 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
   s3 <- catchError
     (contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) origin secondaryLoc env expForContext t1Applied (t2Applied `fn` tv))
     (\err -> case err of
+      -- funcType (t1) is no longer a function at this application depth: the
+      -- caller supplied more arguments than the function accepts. Report the
+      -- over-application explicitly rather than letting it read as a mismatch
+      -- between the extra argument and whatever funcType happens to be.
+      CompilationError (UnificationError tm) ctx
+        | FromFunctionArgument fn idx _ <- baseOrigin
+        , not (isFunctionType funcType) ->
+          throwError $ CompilationError (UnificationError tm { tmOrigin = TooManyArguments fn (idx - 1) }) ctx
+
       -- The application-level unification pairs the function's remaining type
       -- with `argType -> ret`, but the reader cares about the operand: when
       -- the function type is known, report (arg, param) instead of two
@@ -957,7 +967,10 @@ inferNamespaceAccess _ env e@(Can.Canonical area (Can.Access (Can.Canonical _ (C
     sc <-
       catchError
         (lookupVar env (ns <> field))
-        (\_ -> enhanceVarError env e area (CompilationError (UnboundVariableFromNamespace ns (tail field)) NoContext))
+        (\_ -> do
+          exportNames <- namespaceExportNames env ns
+          let suggestions = findSimilar (tail field) exportNames
+          enhanceVarError env e area (CompilationError (UnboundVariableFromNamespace ns (tail field) suggestions) NoContext))
     (ps :=> t) <- instantiate sc
     let ps' = (\(IsIn c ts _) -> IsIn c ts (Just area)) <$> ps
 
@@ -1267,16 +1280,20 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   let tInferred = apply sNorm t
       -- When annotation and implementation are functions of equal arity that
       -- differ only in their return type, report just the two return types
-      -- under FromFunctionReturn instead of the whole function types.
+      -- under FromFunctionReturn instead of the whole function types. Uses
+      -- the types actually reported in the thrown error (already normalized
+      -- by contextualUnify), not the pre-unification annotation/inferred
+      -- pair, so partially-substituted type variables don't defeat the
+      -- structural comparison.
       retagReturnMismatch err = case (err, Can.getExpName exp) of
         (CompilationError (UnificationError tm) errCtx, Just name)
-          | isFunctionType tInferred
-          , isFunctionType t'
-          , getParamTypes tInferred == getParamTypes t'
-          , getReturnType tInferred /= getReturnType t' ->
+          | isFunctionType (tmFound tm)
+          , isFunctionType (tmExpected tm)
+          , getParamTypes (tmFound tm) == getParamTypes (tmExpected tm)
+          , getReturnType (tmFound tm) /= getReturnType (tmExpected tm) ->
             CompilationError
-              (UnificationError tm { tmFound    = getReturnType tInferred
-                                   , tmExpected = getReturnType t'
+              (UnificationError tm { tmFound    = getReturnType (tmFound tm)
+                                   , tmExpected = getReturnType (tmExpected tm)
                                    , tmOrigin   = FromFunctionReturn name
                                    })
               errCtx

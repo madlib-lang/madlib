@@ -52,8 +52,24 @@ getErrors :: Infer [CompilationError]
 getErrors = gets errors
 
 
+-- | Record an error for the final report. A no-op while best-effort
+-- (discardErrors) inference is running: errors discovered during a
+-- speculative retry are not real failures — either the retry succeeds and
+-- they never mattered, or it fails and the caller reports its own error for
+-- the whole binding. Pushing them anyway would surface cascading, spurious
+-- errors on top of the one that actually explains the problem. Call
+-- 'forcePushError' to bypass this when an error must be recorded regardless.
 pushError :: CompilationError -> Infer ()
 pushError err = do
+  discarding <- isDiscardingErrors
+  if discarding then return () else forcePushError err
+
+
+-- | Like 'pushError' but always records the error, even while discardErrors
+-- is set. Use only when the error is not speculative — e.g. one explicitly
+-- surfaced as the outcome of a best-effort attempt, not a byproduct of it.
+forcePushError :: CompilationError -> Infer ()
+forcePushError err = do
   err' <- stampContext err
   s <- get
   put s { errors = err' : errors s }

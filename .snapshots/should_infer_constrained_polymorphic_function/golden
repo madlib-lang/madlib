@@ -277,23 +277,9 @@
 , [ CompilationError
       (UnificationError
          TypeMismatch
-           { tmFound =
-               TApp
-                 (TApp
-                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TApp
-                       (TCon (TC "List" (Kfun Star Star)) "prelude")
-                       (TCon (TC "String" Star) "prelude")))
-                 (TCon (TC "Boolean" Star) "prelude")
-           , tmExpected =
-               TApp
-                 (TApp
-                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TApp
-                       (TCon (TC "List" (Kfun Star Star)) "prelude")
-                       (TCon (TC "String" Star) "prelude")))
-                 (TCon (TC "{}" Star) "prelude")
-           , tmOrigin = FromTypeAnnotation
+           { tmFound = TCon (TC "Boolean" Star) "prelude"
+           , tmExpected = TCon (TC "{}" Star) "prelude"
+           , tmOrigin = FromFunctionReturn "main"
            , tmSecondaries = []
            })
       Context

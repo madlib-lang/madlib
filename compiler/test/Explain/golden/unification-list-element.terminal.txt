@@ -3,12 +3,10 @@
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ The 3rd element has a different type than the previous elements.
-     •    expected:
-     •        Float
-     •    but found:
-     •        String
+     • ╰╸ the 3rd element is
+     •      String
+     •    but the elements before it are
+     •      Float
      •
-     │ Hint: The 3rd element has a different type than the previous elements.
-     │ Note: All elements in a list must have the same type.
+     │ Note: All elements of a list must share one type. For mixed data, define a union type: type Item = A(...) | B(...).
 ─────╯

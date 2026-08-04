@@ -21,10 +21,11 @@ import           Explain.Format.TypeDiff        ( renderTypesWithDiff
 
 
 -- | Renders the sections of a diagnostic body, marker label or note into a
--- single string. Sections are concatenated without separators: prose sections
--- carry their own spacing. The Bool enables ANSI colors for type diffs.
+-- single string. Sections are joined by blank-line-free newlines: prose
+-- sections carry their own spacing, indented type blocks get their own line.
+-- The Bool enables ANSI colors for type diffs.
 renderSections :: Bool -> [Section] -> String
-renderSections color = concatMap (renderSection color)
+renderSections color = intercalate "\n" . filter (not . null) . map (renderSection color)
 
 
 renderSection :: Bool -> Section -> String

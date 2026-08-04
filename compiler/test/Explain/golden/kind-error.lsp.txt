@@ -1,7 +1,6 @@
-Kind mismatch
-'String' has kind *,
-but 'List' has kind * -> *.
+'List' needs fewer type arguments
+'String' has kind *, but 'List' has kind * -> * here.
+Hint: 'List' takes 1 type argument; this usage gives it 0.
 Note: Kinds describe how many type arguments a type constructor takes.
-'*' means a fully-applied type (like 'Int' or 'String').
-'* -> *' means a type that takes one argument (like 'List' or 'Maybe').
-Hint: Check whether you applied too many or too few type arguments.
+'*' means a fully-applied type (like 'Integer' or 'String').
+'* -> *' means a type that still takes one argument (like 'List' or 'Maybe').

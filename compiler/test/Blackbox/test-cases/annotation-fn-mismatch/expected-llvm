@@ -15,13 +15,11 @@
    5 │ ╭┤ inc :: Integer -> Integer
    6 │ ├┤ inc = (x) => "hello"
      • │ 
-     • ╰╸ The expression does not match its type annotation.
-     •    expected:
-     •        Integer -> Integer
-     •    but found:
-     •        Integer -> String
+     • ╰╸ the body produces
+     •      String
+     •    but the annotation says 'inc' returns
+     •      Integer
      •
-     │ Hint: The expression's type doesn't match its annotation.
-     │ Note: Check whether the annotation is too specific, or the expression is wrong.
+     │ Note: Check that every branch of 'inc's body returns the same type.
 ─────╯
 

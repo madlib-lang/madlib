@@ -18,6 +18,10 @@ module Explain.Format
 
 import           Explain.Format.Hints
 import           Explain.Format.TypeDiff
+import           Explain.Diagnostic             ( Marker(..)
+                                                , MarkerStyle(..)
+                                                , dMarkers
+                                                )
 import           Explain.Diagnostic.Build       ( errorDiagnostic
                                                 , warningDiagnostic
                                                 )
@@ -27,6 +31,7 @@ import           Explain.Render.Json            ( renderJson
 import           Explain.Render.Terminal        ( renderDiagnostic )
 import           Explain.Render.Text            ( renderSimple
                                                 , renderLsp
+                                                , renderSections
                                                 )
 import           Error.Error
 import           Error.Warning
@@ -106,6 +111,20 @@ simpleFormatError json (CompilationError err ctx) = do
 simpleFormatErrorWithHints :: Bool -> CompilationError -> IO String
 simpleFormatErrorWithHints _ (CompilationError err ctx) =
   return $ renderLsp (errorDiagnostic ctx err)
+
+
+-- | The markers (primary and secondary) of an error's diagnostic. Used by
+-- the LSP layer to surface secondary markers (the other if-branch, an
+-- annotation's location, an instance-chain declaration site, ...) as
+-- relatedInformation entries pointing at their own span, instead of only
+-- as prose flattened into the message.
+diagnosticMarkers :: Context -> TypeError -> [Marker]
+diagnosticMarkers ctx err = dMarkers (errorDiagnostic ctx err)
+
+
+-- | Plain-text rendering of a single marker's label.
+renderMarkerLabel :: Marker -> String
+renderMarkerLabel = renderSections False . mLabel
 
 
 -- computeLinesToShow : returns the first line and the last line to show

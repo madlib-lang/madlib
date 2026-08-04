@@ -20,6 +20,7 @@ import qualified Driver
 import qualified Rock
 import           Driver.Query
 import           Error.Error
+import           Error.Filter                   ( filterErrors )
 import           Driver (Prune(Don'tPrune))
 import           System.Console.ANSI
 import           Rock (Cyclic)
@@ -138,7 +139,7 @@ runCompilationTask watchMode state options invalidatedPaths = do
 
     let isJson = optErrorFormat options == JsonFormat
     formattedWarnings <- mapM (Explain.formatWarning readFile isJson) $ removeDuplicates warnings
-    formattedErrors   <- mapM (Explain.formatError readFile isJson) $ removeDuplicates errors
+    formattedErrors   <- mapM (Explain.formatError readFile isJson) $ filterErrors errors
 
     putStrLn $ List.intercalate "\n" formattedWarnings
     hPutStr stderr $ List.intercalate "\n" formattedErrors

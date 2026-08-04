@@ -3,11 +3,10 @@
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ The value does not match the declared type of 'counter'.
-     •    expected:
-     •        Float
-     •    but found:
-     •        String
+     • ╰╸ this value is
+     •      String
+     •    but 'counter' was declared with type
+     •      Float
      •
-     │ Hint: The right-hand side doesn't match the declared type of 'counter'.
+     │ Note: ':=' cannot change the type of 'counter'.
 ─────╯

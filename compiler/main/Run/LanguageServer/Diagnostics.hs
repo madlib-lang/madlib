@@ -27,6 +27,9 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Error.Error
 import Error.Context
+import Error.Filter (filterErrors)
+import Explain.Diagnostic (Marker(..), MarkerStyle(..), Span(..))
+import Explain.Location (Area)
 import qualified Explain.Format as Explain
 import qualified Data.List as List
 import           Control.Monad (forM_, forM)
@@ -47,7 +50,7 @@ import qualified Run.Options as Options
 
 sendDiagnosticsForWarningsAndErrors :: [CompilationWarning] -> [CompilationError] -> LspM () ()
 sendDiagnosticsForWarningsAndErrors warnings errors = do
-  let errsByModule = groupErrsByModule errors
+  let errsByModule = groupErrsByModule (filterErrors errors)
   let warnsByModule = groupWarnsByModule warnings
 
   errorDiagnostics <- liftIO $ mapM
@@ -233,9 +236,26 @@ warningToDiagnostic warning = do
         Nothing
 
 
+-- | Secondary markers on the diagnostic IR (the other if-branch, an
+-- annotation's own location, an instance-chain declaration site, ...)
+-- become LSP relatedInformation entries instead of being flattened into the
+-- message string, so editors can jump to them directly.
+secondaryMarkersToRelatedInfo :: CompilationError -> [DiagnosticRelatedInformation]
+secondaryMarkersToRelatedInfo (CompilationError typeErr ctx) =
+  [ DiagnosticRelatedInformation
+      (Location (pathToUri (spanPath (mSpan m))) (areaToRange (spanArea (mSpan m))))
+      (T.pack (Explain.renderMarkerLabel m))
+  | m <- Explain.diagnosticMarkers ctx typeErr
+  , mStyle m == Secondary
+  ]
+
+
 errorToDiagnostic :: CompilationError -> IO Diagnostic
 errorToDiagnostic err = do
   formattedError <- Explain.simpleFormatErrorWithHints True err
+  let relatedInfo = case secondaryMarkersToRelatedInfo err of
+        [] -> Nothing
+        xs -> Just (List xs)
   case err of
     CompilationError _ (Context _ area) ->
       return $ Diagnostic
@@ -245,7 +265,7 @@ errorToDiagnostic err = do
         (Just "Madlib")           -- _source
         (T.pack formattedError)   -- _message
         Nothing                   -- _tags
-        Nothing                   -- _relatedInformation
+        relatedInfo               -- _relatedInformation
 
     _ ->
       return $ Diagnostic
@@ -255,4 +275,4 @@ errorToDiagnostic err = do
         (Just "Madlib")
         (T.pack formattedError)
         Nothing
-        Nothing
+        relatedInfo

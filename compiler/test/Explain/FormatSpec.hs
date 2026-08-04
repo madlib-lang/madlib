@@ -70,7 +70,7 @@ spec = do
 
     it "AmbiguousType with no constraints mentions type variable" $ do
       result <- fmt (AmbiguousType (TV 5 Star, [])) makeCtx
-      result `contains` "mbiguous"
+      result `contains` "infer"
 
     it "KindError shows kind symbols" $ do
       result <- fmt (KindError (tStr, Star) (mkTCon (TC "List" (Kfun Star Star)) "List.mad", Kfun Star Star)) makeCtx
@@ -103,9 +103,13 @@ spec = do
       result `contains` "type variable"
 
     it "UnboundVariableFromNamespace names namespace and function" $ do
-      result <- fmt (UnboundVariableFromNamespace "List" "fliter") makeCtx
+      result <- fmt (UnboundVariableFromNamespace "List" "fliter" []) makeCtx
       result `contains` "fliter"
       result `contains` "List"
+
+    it "UnboundVariableFromNamespace with suggestion shows it" $ do
+      result <- fmt (UnboundVariableFromNamespace "List" "fliter" ["filter"]) makeCtx
+      result `contains` "List.filter"
 
     it "NameAlreadyDefined identifies the variable" $ do
       result <- fmt (NameAlreadyDefined "x") makeCtx
@@ -154,9 +158,9 @@ spec = do
       result <- fmt (CapitalizedADTTVar "Maybe" "Val") makeCtx
       result `contains` "Val"
 
-    it "ADTAlreadyDefined says already" $ do
+    it "ADTAlreadyDefined says the type is defined twice" $ do
       result <- fmt (ADTAlreadyDefined tStr) makeCtx
-      result `contains` "already"
+      result `contains` "twice"
 
     it "WrongAliasArgCount shows alias name and counts" $ do
       result <- fmt (WrongAliasArgCount "Pair" 2 1) makeCtx
@@ -280,7 +284,7 @@ spec = do
       result `contains` "name"
 
     it "RecordMissingFields names the missing fields" $ do
-      result <- fmt (RecordMissingFields ["email", "phone"]) makeCtx
+      result <- fmt (RecordMissingFields ["email", "phone"] ["name", "age"]) makeCtx
       result `contains` "email"
 
     it "RecordExtraFields names the extra fields" $ do
@@ -487,7 +491,7 @@ spec = do
           stubReader _ = return "doStuff(x)\n"
       full <- formatError stubReader False (CompilationError (UnificationError (TypeMismatch tStr tFloat (FromFunctionArgument "doStuff" 1 (Just ctx)) [])) makeCtx)
       full `contains` "doStuff"
-      full `contains` "signature"
+      full `contains` "Signature"
 
     it "UnificationError with FromIfBranches ThenBranch identifies then" $ do
       result <- fmt (UnificationError (TypeMismatch tStr tFloat (FromIfBranches ThenBranch) [])) makeCtx

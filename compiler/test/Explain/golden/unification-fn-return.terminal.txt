@@ -3,12 +3,10 @@
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ The return value of 'doStuff' does not match its annotation.
-     •    expected:
-     •        Float
-     •    but found:
-     •        String
+     • ╰╸ the body produces
+     •      String
+     •    but the annotation says 'doStuff' returns
+     •      Float
      •
-     │ Hint: The return value of 'doStuff' doesn't match its type annotation.
-     │ Note: Check that all branches of the function body return the same type.
+     │ Note: Check that every branch of 'doStuff's body returns the same type.
 ─────╯

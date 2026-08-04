@@ -1,10 +1,9 @@
-[error]: Interface already defined
+[error]: 'Show' is defined twice
      ╭──▶ test/Module.mad@1:1-1:20
      │
    1 │ someValue = doStuff(1, 2)
      • ┬────────────────── 
-     • ╰╸ You defined the interface 'Show',
-     •    but it already exists
+     • ╰╸ The interface 'Show' is declared again here.
      •
-     │ Hint: Verify that you don't have a typo.
+     │ Hint: Rename this interface, or remove the earlier 'Show'.
 ─────╯

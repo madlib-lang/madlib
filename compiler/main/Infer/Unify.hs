@@ -78,7 +78,8 @@ instance Unify Type where
       s1 <- unify tBase (TRecord fieldsDiff Nothing mempty)
 
       let missingInConcrete = M.keys $ M.difference (fields <> optionalFields) (fields' <> optionalFields')
-      unless (null missingInConcrete) $ throwError (CompilationError (RecordMissingFields missingInConcrete) NoContext)
+          availableInConcrete = M.keys (fields' <> optionalFields')
+      unless (null missingInConcrete) $ throwError (CompilationError (RecordMissingFields missingInConcrete availableInConcrete) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -99,7 +100,8 @@ instance Unify Type where
       s1 <- unify tBase' (TRecord fieldsDiff Nothing mempty)
 
       let missingInPattern = M.keys $ M.difference (fields' <> optionalFields') (fields <> optionalFields)
-      unless (null missingInPattern) $ throwError (CompilationError (RecordMissingFields missingInPattern) NoContext)
+          availableInPattern = M.keys (fields <> optionalFields)
+      unless (null missingInPattern) $ throwError (CompilationError (RecordMissingFields missingInPattern availableInPattern) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -116,7 +118,7 @@ instance Unify Type where
       if not (null extraFields') then
         throwError $ CompilationError (RecordExtraFields extraFields' availableFields) NoContext
       else if not (null extraFields) then
-        throwError $ CompilationError (RecordMissingFields extraFields) NoContext
+        throwError $ CompilationError (RecordMissingFields extraFields availableFields) NoContext
       else
         unifyVars' M.empty (M.elems fields) (M.elems fields')
 
