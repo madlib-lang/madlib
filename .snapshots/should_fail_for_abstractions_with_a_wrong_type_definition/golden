@@ -247,35 +247,39 @@
 , []
 , [ CompilationError
       (UnificationError
-         (TApp
-            (TApp
-               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-               (TCon (TC "String" Star) "prelude"))
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TCon (TC "String" Star) "prelude"))
-               (TCon (TC "Boolean" Star) "prelude")))
-         (TApp
-            (TApp
-               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-               (TCon (TC "String" Star) "prelude"))
-            (TApp
-               (TApp
-                  (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                  (TCon (TC "Integer" Star) "prelude"))
-               (TCon (TC "Boolean" Star) "prelude")))
-         FromTypeAnnotation
-         Nothing)
+         TypeMismatch
+           { tmFound =
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TCon (TC "String" Star) "prelude"))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TCon (TC "String" Star) "prelude"))
+                    (TCon (TC "Boolean" Star) "prelude"))
+           , tmExpected =
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TCon (TC "String" Star) "prelude"))
+                 (TApp
+                    (TApp
+                       (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                       (TCon (TC "Integer" Star) "prelude"))
+                    (TCon (TC "Boolean" Star) "prelude"))
+           , tmOrigin = FromTypeAnnotation
+           , tmSecondaries = []
+           })
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 0 1 1) (Loc 58 2 24)
         }
   , CompilationError
-      (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
+      (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ] [])
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 74 3 16) (Loc 81 3 23)
+        , ctxArea = Area (Loc 66 3 8) (Loc 84 3 26)
         }
   ]
 )

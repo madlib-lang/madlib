@@ -1,0 +1,15 @@
+[error]: Recursive variable access
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ This variable refers to itself directly in its own definition
+     •    and cannot be initialized.
+     •
+     │ Note: A direct self-reference is not allowed. Wrap the recursive
+     │       access in a function to defer evaluation:
+     │         // Not allowed -- direct self-reference:
+     │         parser = J.map(Title, J.field("title", parser))
+     │         // Works -- recursive access is wrapped in a function:
+     │         parser = J.map(Title, J.field("title", J.lazy((_) => parser)))
+─────╯

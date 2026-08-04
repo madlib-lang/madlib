@@ -1,0 +1,12 @@
+[error]: Cannot mutate function
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ 'myFn' is a function and cannot be mutated with ':='.
+     •
+     │ Note: Functions are immutable values. You cannot reassign them.
+     │ Hint: To make 'myFn' swappable, wrap it in a mutable record:
+     │         ref = { fn: myFn }
+     │         ref.fn := newFunction    // mutate the record field
+─────╯

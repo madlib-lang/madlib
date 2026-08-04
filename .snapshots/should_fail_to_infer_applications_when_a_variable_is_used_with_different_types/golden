@@ -10784,41 +10784,48 @@
   ]
 , [ CompilationError
       (UnificationError
-         (TRecord
-            (fromList
-               [ ( "todos"
-                 , TApp
-                     (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 66 Star))
-                 )
-               ])
-            (Just (TVar (TV 69 Star)))
-            (fromList []))
-         (TApp
-            (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star)))
-         (FromFunctionArgument
-            "slice"
-            3
-            (Just
-               FunctionContext
-                 { fcExpectedType =
-                     TApp
-                       (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star))
-                 , fcFullSignature =
-                     TApp
-                       (TApp
-                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TApp
-                             (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star))))
-                       (TApp
-                          (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star)))
-                 , fcTotalParams = 1
-                 }))
-         (Just
-            SecondaryLocation
-              { slPath = "Module.mad"
-              , slArea = Area (Loc 905 39 14) (Loc 930 39 39)
-              , slMessage = "'slice' is applied here"
-              }))
+         TypeMismatch
+           { tmFound =
+               TRecord
+                 (fromList
+                    [ ( "todos"
+                      , TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 66 Star))
+                      )
+                    ])
+                 (Just (TVar (TV 69 Star)))
+                 (fromList [])
+           , tmExpected =
+               TApp
+                 (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star))
+           , tmOrigin =
+               FromFunctionArgument
+                 "slice"
+                 3
+                 (Just
+                    FunctionContext
+                      { fcExpectedType =
+                          TApp
+                            (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star))
+                      , fcFullSignature =
+                          TApp
+                            (TApp
+                               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                               (TApp
+                                  (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                  (TVar (TV 63 Star))))
+                            (TApp
+                               (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 63 Star)))
+                      , fcTotalParams = 1
+                      })
+           , tmSecondaries =
+               [ SecondaryLocation
+                   { slPath = "Module.mad"
+                   , slArea = Area (Loc 905 39 14) (Loc 930 39 39)
+                   , slMessage = "'slice' is applied here"
+                   }
+               ]
+           })
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 932 39 41) (Loc 937 39 46)

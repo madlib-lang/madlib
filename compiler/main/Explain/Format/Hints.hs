@@ -5,22 +5,32 @@ module Explain.Format.Hints
   , grammarSmartHints
   , stdlibMap
   , mkUnificationTitle
-  , shortTypeName
+  , typeMismatchTitle
+  , describeType
+  , inlineOrDescribe
+  , arityMismatch
   , toOrdinal
   ) where
 
 import           Error.Error (ErrorOrigin(..), BranchSide(..))
 import           Infer.Type
-import qualified Error.Diagnose                as Diagnose
+import           Explain.Diagnostic             ( Note
+                                                , hint
+                                                , note
+                                                )
+import           Explain.Format.TypeDiff        ( firstDifference
+                                                , isTuple
+                                                , prettyPrintType
+                                                , toOrdinal
+                                                )
 import qualified Data.List as List
+import qualified Data.Map as M
 
 
 -- | Generates a descriptive title for unification errors based on the origin context.
 mkUnificationTitle :: Type -> Type -> ErrorOrigin -> String
 mkUnificationTitle found expected origin =
-  let foundName  = shortTypeName found
-      expectName = shortTypeName expected
-  in  case origin of
+  case origin of
     FromOperator "+" ->
       case (found, expected) of
         (TCon (TC "String" _) _ _, _) -> "Cannot use '+' with String — did you mean '<>'?"
@@ -47,7 +57,9 @@ mkUnificationTitle found expected origin =
     FromFunctionReturn fn ->
       "Return type of '" <> fn <> "' doesn't match its annotation"
     FromIfCondition ->
-      "The 'if' condition must be Boolean, not " <> foundName
+      "The 'if' condition must be Boolean, not " <> inlineOrDescribe found
+    FromWhileCondition ->
+      "The 'while' condition must be Boolean, not " <> inlineOrDescribe found
     FromIfBranches ThenBranch ->
       "The 'then' branch returns a different type than 'else'"
     FromIfBranches ElseBranch ->
@@ -57,43 +69,104 @@ mkUnificationTitle found expected origin =
     FromListElement _ ->
       "All list elements must have the same type"
     FromTypeAnnotation ->
-      "Type mismatch: " <> foundName <> " is not " <> expectName
+      case arityMismatch found expected of
+        Just (nFound, nExpected) ->
+          "This function takes " <> countArguments nFound <> ", but its annotation says it takes " <> show nExpected
+
+        Nothing ->
+          typeMismatchTitle found expected
     FromPatternMatch n | n > 0 ->
       "The " <> toOrdinal n <> " branch of 'where' returns a different type"
     FromPatternMatch _ ->
       "Branches of 'where' return different types"
     FromAssignment name ->
-      "Cannot assign " <> foundName <> " to '" <> name <> "'"
+      "Cannot assign " <> inlineOrDescribe found <> " to '" <> name <> "'"
     NoOrigin ->
-      if foundName /= expectName
-        then "Type mismatch: " <> foundName <> " is not " <> expectName
-        else "Type mismatch"
+      typeMismatchTitle found expected
 
 
--- | Returns a short human-readable type name for use in error titles.
-shortTypeName :: Type -> String
-shortTypeName t = case t of
-  TCon (TC name _) _ _                              -> name
-  TApp (TCon (TC "List" _) _ _) inner               -> "List " <> shortTypeName inner
-  TApp (TApp (TCon (TC "(->)" _) _ _) _) _          -> "Function"
-  TApp (TCon (TC "(,)" _) _ _) _                    -> "Tuple"
-  TVar _                                            -> "a type variable"
-  _                                                 -> "a type"
+-- | Title for a unification failure that names the two types. Guarantees the
+-- two sides never render identically: when their short renderings collide,
+-- the title names the location of the first structural difference instead
+-- of naming any type.
+typeMismatchTitle :: Type -> Type -> String
+typeMismatchTitle found expected =
+  let foundStr    = inlineOrDescribe found
+      expectedStr = inlineOrDescribe expected
+  in  if foundStr /= expectedStr then
+        "Type mismatch: expected " <> expectedStr <> " but found " <> foundStr
+      else
+        case firstDifference found expected of
+          Just place ->
+            "Type mismatch in " <> place
+
+          Nothing ->
+            "Type mismatch"
 
 
--- | Format an integer as an English ordinal: 1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th" ...
-toOrdinal :: Int -> String
-toOrdinal n =
-  let suffix = case n `mod` 100 of
-        11 -> "th"  -- 11th, 111th, ...
-        12 -> "th"  -- 12th
-        13 -> "th"  -- 13th
-        _  -> case n `mod` 10 of
-                1 -> "st"
-                2 -> "nd"
-                3 -> "rd"
-                _ -> "th"
-  in  show n <> suffix
+-- | The full one-line rendering of a type if it is short enough for a title,
+-- otherwise a structural description via 'describeType'.
+inlineOrDescribe :: Type -> String
+inlineOrDescribe t =
+  let full = prettyPrintType True t
+  in  if length full <= 28 && '\n' `notElem` full then full else describeType t
+
+
+-- | A short structural description of a type. Unlike a bare constructor
+-- name it always carries a distinguishing detail (arity, field names,
+-- element count) so that two different types rarely describe identically.
+describeType :: Type -> String
+describeType t
+  | isFunctionType t
+  = "a function taking " <> countArguments (length (getParamTypes t))
+  | isTuple t
+  = "a tuple of " <> show (countTypeArgs t) <> " elements"
+  | otherwise
+  = case t of
+      TCon (TC name _) _ _ ->
+        name
+
+      TApp (TCon (TC "List" _) _ _) inner ->
+        "List " <> describeType inner
+
+      TRecord fields _ optionalFields ->
+        let names = M.keys (fields <> optionalFields)
+            shown = take 3 names
+            more  = length names - length shown
+        in  "a record with field" <> (if length names == 1 then " " else "s ")
+              <> List.intercalate ", " (("'" <>) . (<> "'") <$> shown)
+              <> (if more > 0 then " and " <> show more <> " more" else "")
+
+      TVar _ ->
+        "a polymorphic type variable"
+
+      _ ->
+        prettyPrintType True t
+  where
+    countTypeArgs ty = case ty of
+      TApp l _ ->
+        1 + countTypeArgs l
+
+      _ ->
+        0
+
+
+-- | Both types are functions with a different number of parameters.
+arityMismatch :: Type -> Type -> Maybe (Int, Int)
+arityMismatch found expected
+  | isFunctionType found
+  , isFunctionType expected
+  , let nFound    = length (getParamTypes found)
+  , let nExpected = length (getParamTypes expected)
+  , nFound /= nExpected
+  = Just (nFound, nExpected)
+  | otherwise
+  = Nothing
+
+
+countArguments :: Int -> String
+countArguments n =
+  show n <> " argument" <> (if n == 1 then "" else "s")
 
 
 -- | Maps commonly-used stdlib names to their module.
@@ -153,120 +226,120 @@ stdlibMap =
 
 -- | Generate context-aware hints for NoInstanceFound errors.
 -- These are shown in addition to the standard "implement the interface" hint.
-noInstanceSmartHints :: String -> [Type] -> [Diagnose.Note String]
+noInstanceSmartHints :: String -> [Type] -> [Note]
 noInstanceSmartHints cls ts = case (cls, ts) of
   -- Number interface — concrete actionable fixes
   ("Number", [TCon (TC "String" _) _ _]) ->
-    [ Diagnose.Hint "Strings are not numbers. Use '<>' to concatenate strings instead of '+'."
-    , Diagnose.Note "To parse a String as a number, use Number.fromString which returns a Maybe Number."
+    [ hint "Strings are not numbers. Use '<>' to concatenate strings instead of '+'."
+    , note "To parse a String as a number, use Number.fromString which returns a Maybe Number."
     ]
   ("Number", [TCon (TC "Boolean" _) _ _]) ->
-    [ Diagnose.Hint "Booleans are not numbers. Use '&&' or '||' for boolean logic."
-    , Diagnose.Note "To convert Boolean to Int, write: if condition then 1 else 0"
+    [ hint "Booleans are not numbers. Use '&&' or '||' for boolean logic."
+    , note "To convert Boolean to Int, write: if condition then 1 else 0"
     ]
   ("Number", [TCon (TC "Char" _) _ _]) ->
-    [ Diagnose.Hint "Characters are not numbers. Use 'Char.toInt' to get the Unicode code point."
-    , Diagnose.Note "Example: Char.toInt('A') == 65"
+    [ hint "Characters are not numbers. Use 'Char.toInt' to get the Unicode code point."
+    , note "Example: Char.toInt('A') == 65"
     ]
   ("Number", [TApp (TCon (TC "List" _) _ _) _]) ->
-    [ Diagnose.Hint "Lists are not numbers. Did you mean 'List.length' to count elements?"
-    , Diagnose.Note "Or 'List.sum' / 'List.product' if you want to reduce numeric elements."
+    [ hint "Lists are not numbers. Did you mean 'List.length' to count elements?"
+    , note "Or 'List.sum' / 'List.product' if you want to reduce numeric elements."
     ]
   ("Number", [TApp (TApp (TCon (TC "(->)" _) _ _) _) _]) ->
-    [ Diagnose.Hint "A function is not a number — you may have forgotten to apply it to its arguments."
-    , Diagnose.Note "Example: instead of 'compute + 1', write 'compute(input) + 1'"
+    [ hint "A function is not a number — you may have forgotten to apply it to its arguments."
+    , note "Example: instead of 'compute + 1', write 'compute(input) + 1'"
     ]
   -- Eq interface
   ("Eq", [TCon (TC name _) _ _]) ->
-    [ Diagnose.Hint $ "Add 'derive Eq' to the '" <> name <> "' type definition to get equality for free."
-    , Diagnose.Note $ "Example:  type " <> name <> " = " <> name <> " { ... } deriving Eq"
+    [ hint $ "Add 'derive Eq' to the '" <> name <> "' type definition to get equality for free."
+    , note $ "Example:  type " <> name <> " = " <> name <> " { ... } deriving Eq"
     ]
   ("Eq", _) ->
-    [ Diagnose.Hint "Add 'derive Eq' to your type definition to auto-generate equality."
-    , Diagnose.Note "All built-in types (Number, String, Boolean, Char) already implement Eq."
+    [ hint "Add 'derive Eq' to your type definition to auto-generate equality."
+    , note "All built-in types (Number, String, Boolean, Char) already implement Eq."
     ]
   -- Show interface
   ("Show", [TCon (TC name _) _ _]) ->
-    [ Diagnose.Hint $ "Add 'derive Show' to the '" <> name <> "' type definition to enable string conversion."
-    , Diagnose.Note $ "Example:  type " <> name <> " = " <> name <> " { ... } deriving Show"
+    [ hint $ "Add 'derive Show' to the '" <> name <> "' type definition to enable string conversion."
+    , note $ "Example:  type " <> name <> " = " <> name <> " { ... } deriving Show"
     ]
   ("Show", _) ->
-    [ Diagnose.Hint "Add 'derive Show' to your type definition to auto-generate Show."
-    , Diagnose.Note "All built-in types already implement Show."
+    [ hint "Add 'derive Show' to your type definition to auto-generate Show."
+    , note "All built-in types already implement Show."
     ]
   -- Comparable interface
   ("Comparable", [TCon (TC name _) _ _]) ->
-    [ Diagnose.Hint $ "Add 'derive Comparable' to '" <> name <> "' to enable sorting and ordering."
-    , Diagnose.Note $ "This allows using '" <> name <> "' with '<', '>', 'List.sortBy', 'List.minimum', etc."
+    [ hint $ "Add 'derive Comparable' to '" <> name <> "' to enable sorting and ordering."
+    , note $ "This allows using '" <> name <> "' with '<', '>', 'List.sortBy', 'List.minimum', etc."
     ]
   ("Comparable", _) ->
-    [ Diagnose.Hint "Add 'derive Comparable' to your type to enable ordering operators."
-    , Diagnose.Note "Comparable is needed for: '<', '>', '<=', '>=', 'List.sortBy', 'List.minimum', 'List.maximum'."
+    [ hint "Add 'derive Comparable' to your type to enable ordering operators."
+    , note "Comparable is needed for: '<', '>', '<=', '>=', 'List.sortBy', 'List.minimum', 'List.maximum'."
     ]
   -- Monad/Apply/Functor
   ("Functor", _) ->
-    [ Diagnose.Hint "Implement 'instance Functor YourType' with a 'map' method."
-    , Diagnose.Note "Functor is required for 'map', which applies a function to the value inside a container."
+    [ hint "Implement 'instance Functor YourType' with a 'map' method."
+    , note "Functor is required for 'map', which applies a function to the value inside a container."
     ]
   ("Monad", _) ->
-    [ Diagnose.Hint "Implement 'instance Monad YourType' with 'of' and 'chain' methods."
-    , Diagnose.Note "'chain' is equivalent to 'flatMap'/'bind'. 'of' wraps a value in the monad."
+    [ hint "Implement 'instance Monad YourType' with 'of' and 'chain' methods."
+    , note "'chain' is equivalent to 'flatMap'/'bind'. 'of' wraps a value in the monad."
     ]
   ("Apply", _) ->
-    [ Diagnose.Hint "Implement 'instance Apply YourType' with an 'ap' method."
-    , Diagnose.Note "'ap' applies a function inside a container to a value inside a container."
+    [ hint "Implement 'instance Apply YourType' with an 'ap' method."
+    , note "'ap' applies a function inside a container to a value inside a container."
     ]
   _ -> []
 
 
 -- | Generate extra hints based on the megaparsec error message text.
-grammarSmartHints :: String -> [Diagnose.Note String]
+grammarSmartHints :: String -> [Note]
 grammarSmartHints msg
   | "unexpected end of input" `List.isInfixOf` msg =
-      [Diagnose.Hint "Something is missing — a closing bracket, a missing expression, or an incomplete statement."]
+      [hint "Something is missing — a closing bracket, a missing expression, or an incomplete statement."]
   | "unexpected whitespace" `List.isInfixOf` msg =
-      [Diagnose.Note "The indentation or spacing here is unexpected."]
+      [note "The indentation or spacing here is unexpected."]
   | "unexpected =\n" `List.isInfixOf` msg || msg == "unexpected =\n         expecting end of input" || "unexpected =" `List.isPrefixOf` msg =
-      [ Diagnose.Hint "If you are trying to mutate a variable, use ':=' instead of '='."
-      , Diagnose.Note "Top-level bindings use '='. Inside a block, use ':=' to reassign."
+      [ hint "If you are trying to mutate a variable, use ':=' instead of '='."
+      , note "Top-level bindings use '='. Inside a block, use ':=' to reassign."
       ]
   | "unexpected :" `List.isPrefixOf` msg && not ("::" `List.isInfixOf` msg) =
-      [Diagnose.Hint "Did you mean '::' for a type annotation, or ':=' for mutation?"]
+      [hint "Did you mean '::' for a type annotation, or ':=' for mutation?"]
   | "unexpected identifier" `List.isInfixOf` msg =
-      [Diagnose.Note "An identifier appeared where it wasn't expected. Check for a missing operator or comma."]
+      [note "An identifier appeared where it wasn't expected. Check for a missing operator or comma."]
   | otherwise = []
 
 
 -- | Generate operator-specific hints for UnificationError.
-operatorHints :: String -> Type -> Type -> [Diagnose.Note String]
+operatorHints :: String -> Type -> Type -> [Note]
 operatorHints op found _expected = case op of
   "&&" -> boolOpHints "&&" found
   "||" -> boolOpHints "||" found
   "+"  ->
     case found of
       TCon (TC "String" _) _ _ ->
-        [ Diagnose.Hint "Use '<>' to concatenate strings: a <> b"
-        , Diagnose.Note "'+' only works on numeric types (Number, Integer, Float, Short, Byte)."
+        [ hint "Use '<>' to concatenate strings: a <> b"
+        , note "'+' only works on numeric types (Number, Integer, Float, Short, Byte)."
         ]
       _ ->
-        [ Diagnose.Hint "Both sides of '+' must have the same numeric type."
-        , Diagnose.Note "Use '<>' to concatenate strings."
+        [ hint "Both sides of '+' must have the same numeric type."
+        , note "Use '<>' to concatenate strings."
         ]
-  "++" -> [ Diagnose.Hint "Both sides of '++' must be lists of the same element type." ]
-  "<>" -> [ Diagnose.Hint "Both sides of '<>' must have the same type (e.g. both String, or both List)." ]
-  _    -> [ Diagnose.Hint $ "Both operands of '" <> op <> "' must be the same type." ]
+  "++" -> [ hint "Both sides of '++' must be lists of the same element type." ]
+  "<>" -> [ hint "Both sides of '<>' must have the same type (e.g. both String, or both List)." ]
+  _    -> [ hint $ "Both operands of '" <> op <> "' must be the same type." ]
   where
-    boolOpHints :: String -> Type -> [Diagnose.Note String]
+    boolOpHints :: String -> Type -> [Note]
     boolOpHints opName t = case t of
       TCon (TC "String" _) _ _ ->
-        [ Diagnose.Hint $ "'" <> opName <> "' requires Boolean, not String. Did you mean to compare with '=='?"
-        , Diagnose.Note "Example: instead of 'cond && str', write 'cond && str == expectedValue'"
+        [ hint $ "'" <> opName <> "' requires Boolean, not String. Did you mean to compare with '=='?"
+        , note "Example: instead of 'cond && str', write 'cond && str == expectedValue'"
         ]
       TCon (TC "Integer" _) _ _ ->
-        [ Diagnose.Hint $ "'" <> opName <> "' requires Boolean, not Integer. Did you mean to compare with '== 0'?"
-        , Diagnose.Note "Example: instead of 'cond && n', write 'cond && n != 0'"
+        [ hint $ "'" <> opName <> "' requires Boolean, not Integer. Did you mean to compare with '== 0'?"
+        , note "Example: instead of 'cond && n', write 'cond && n != 0'"
         ]
       TCon (TC tname _) _ _ ->
-        [ Diagnose.Hint $ "'" <> opName <> "' requires Boolean on both sides, but got " <> tname <> "." ]
+        [ hint $ "'" <> opName <> "' requires Boolean on both sides, but got " <> tname <> "." ]
       _ ->
-        [ Diagnose.Hint $ "Both sides of '" <> opName <> "' must be Boolean." ]
+        [ hint $ "Both sides of '" <> opName <> "' must be Boolean." ]

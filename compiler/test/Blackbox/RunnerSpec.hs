@@ -31,6 +31,7 @@ import           Error.Context (Context(..), Context(ctxAstPath))
 import Debug.Trace
 import Data.List (isInfixOf)
 import System.Environment (setEnv)
+import TestUtils.Golden (shouldMatchGolden)
 
 
 printInfo :: IO ()
@@ -39,16 +40,13 @@ printInfo = do
   putStrLn $ "DIR: " <> dir
 
 
-sanitizeExpected :: String -> String
-sanitizeExpected s = read $ "\"" <> s <> "\""
-
-
-
+-- Runners return (goldenPath, actualOutput); the specs compare via
+-- shouldMatchGolden so UPDATE_GOLDEN=1 regenerates the expected files.
 llvmCompileAndRun :: FilePath -> IO (String, String)
 llvmCompileAndRun casePath = do
   setEnv "NO_COLOR" "true"
   rootPath <- canonicalizePath casePath
-  expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected-llvm"])
+  let goldenPath = joinPath [casePath, "expected-llvm"]
   let entrypoint   = joinPath [rootPath, "Entrypoint.mad"]
   let outputPath   = joinPath [rootPath, ".tests/run"]
   let outputFolder = joinPath [rootPath, ".tests"]
@@ -84,19 +82,19 @@ llvmCompileAndRun casePath = do
     callCommand $ "rm -r " <> outputFolder
     case (runResult :: Either IOError (ExitCode, String, String)) of
         Right (_, result, _) ->
-          return (expected, result)
+          return (goldenPath, result)
 
         Left e ->
-          return (ppShow e, "")
+          return (goldenPath, ppShow e)
   else
-    return (expected, errorsAndWarnings)
+    return (goldenPath, errorsAndWarnings)
 
 
 llvmCompileAndRunWithCoverage :: FilePath -> IO (String, String)
 llvmCompileAndRunWithCoverage casePath = do
   setEnv "NO_COLOR" "true"
   rootPath <- canonicalizePath casePath
-  expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected-llvm"])
+  let goldenPath = joinPath [casePath, "expected-llvm"]
   let entrypoint   = joinPath [rootPath, "Entrypoint.mad"]
   let outputPath   = joinPath [rootPath, ".tests/run"]
   let outputFolder = joinPath [rootPath, ".tests"]
@@ -134,19 +132,19 @@ llvmCompileAndRunWithCoverage casePath = do
     callCommand $ "rm -r " <> outputFolder
     case (runResult :: Either IOError (ExitCode, String, String)) of
         Right (_, result, _) ->
-          return (expected, result)
+          return (goldenPath, result)
 
         Left e ->
-          return (ppShow e, "")
+          return (goldenPath, ppShow e)
   else
-    return (expected, errorsOnly)
+    return (goldenPath, errorsOnly)
 
 
 jsCompileAndRun :: FilePath -> IO (String, String)
 jsCompileAndRun casePath = do
   setEnv "NO_COLOR" "true"
   rootPath <- canonicalizePath casePath
-  expected <- sanitizeExpected <$> readFile (joinPath [casePath, "expected-js"])
+  let goldenPath = joinPath [casePath, "expected-js"]
   let entrypoint   = joinPath [rootPath, "Entrypoint.mad"]
   let outputPath   = joinPath [rootPath, ".tests/Entrypoint.mjs"]
   let outputFolder = joinPath [rootPath, ".tests"]
@@ -182,15 +180,15 @@ jsCompileAndRun casePath = do
     callCommand $ "rm -r " <> outputFolder
     case (runResult :: Either IOError (ExitCode, String, String)) of
         Right (ExitSuccess, result, _) ->
-          return (expected, result)
+          return (goldenPath, result)
 
         Right (_, _, stderr) ->
-          return (expected, stderr)
+          return (goldenPath, stderr)
 
         Left e ->
-          return (ppShow e, "")
+          return (goldenPath, ppShow e)
   else
-    return (expected, errorsAndWarnings)
+    return (goldenPath, errorsAndWarnings)
 
 
 -- Strip absolute path prefix, keeping from "compiler" segment onward
@@ -296,6 +294,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/signature-too-general-collapsed-vars"
         , "compiler/test/Blackbox/test-cases/signature-too-general-concrete-var"
         , "compiler/test/Blackbox/test-cases/record-spread-annotation"
+        , "compiler/test/Blackbox/test-cases/annotation-fn-mismatch"
         , "compiler/test/Blackbox/test-cases/inline-mutation-double"
         , "compiler/test/Blackbox/test-cases/inplace-dispatch-shared"
         , "compiler/test/Blackbox/test-cases/nested-lambda-shadow"
@@ -338,13 +337,13 @@ spec = do
 
   forM_ cases $ \casePath -> do
     before (llvmCompileAndRun casePath) $ describe "" $ do
-      it ("llvm case: " <> casePath) $ \(expected, result) -> do
-        result `shouldBe` expected
+      it ("llvm case: " <> casePath) $ \(goldenPath, result) -> do
+        shouldMatchGolden goldenPath result
 
   forM_ cases $ \casePath -> do
     before (jsCompileAndRun casePath) $ describe "" $ do
-      it ("js case: " <> casePath) $ \(expected, result) -> do
-        result `shouldBe` expected
+      it ("js case: " <> casePath) $ \(goldenPath, result) -> do
+        shouldMatchGolden goldenPath result
 
   let coverageCases =
         [ "compiler/test/Blackbox/test-cases/hocp-coverage-tce"
@@ -353,8 +352,8 @@ spec = do
 
   forM_ coverageCases $ \casePath -> do
     before (llvmCompileAndRunWithCoverage casePath) $ describe "" $ do
-      it ("llvm coverage case: " <> casePath) $ \(expected, result) -> do
-        result `shouldBe` expected
+      it ("llvm coverage case: " <> casePath) $ \(goldenPath, result) -> do
+        shouldMatchGolden goldenPath result
 
   describe "--error-format json" $ do
     it "emits JSON objects for type errors" $ do

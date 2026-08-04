@@ -1,0 +1,18 @@
+[error]: Circular import
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ This import creates a cycle:
+     •    
+     •      A.mad
+     •      ↓
+     •      B.mad
+     •      ↓
+     •      A.mad
+     •      ↓  (loops back to start)
+     •
+     │ Note: Circular imports are not allowed because there is no valid initialization order.
+     │ Hint: Extract the shared types or functions into a third module that both can import.
+     │ Hint: Alternatively, move the code that causes the cycle into one of the two modules.
+─────╯

@@ -1,0 +1,11 @@
+[error]: Not exported
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ 'filter' is not exported by the module at:
+     •    'List.mad'
+     •
+     │ Hint: Add 'export { filter }' to the module at 'List.mad' if you own it.
+     │ Note: Or check the module's documentation to find the correct exported name.
+─────╯

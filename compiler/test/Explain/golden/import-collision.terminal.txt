@@ -1,0 +1,9 @@
+[error]: Import collision
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The imported name 'map' is already used
+     •
+     │ Hint: Use a qualified import or rename one of the conflicting names.
+─────╯

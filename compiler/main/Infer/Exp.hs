@@ -48,20 +48,22 @@ import           Data.Char (isAlphaNum)
 
 -- | Extract an ErrorOrigin from a function application expression.
 -- For operators like +, &&, etc., returns FromOperator.
--- For named functions, returns FromFunctionArgument with name and arg index.
+-- For named functions, returns FromFunctionArgument with name and arg index —
+-- the index is the position of the argument being applied at the outermost
+-- App node, however deep the application spine goes.
 getAppOrigin :: Can.Exp -> ErrorOrigin
-getAppOrigin (Can.Canonical _ expr) = case expr of
-  Can.Var name
-    | isOperatorName name -> FromOperator name
-    | otherwise           -> FromFunctionArgument name 1 Nothing
-  Can.App (Can.Canonical _ (Can.Var name)) _ _
-    | isOperatorName name -> FromOperator name
-    | otherwise           -> FromFunctionArgument name 2 Nothing
-  Can.App (Can.Canonical _ (Can.App (Can.Canonical _ (Can.Var name)) _ _)) _ _
-    | isOperatorName name -> FromOperator name
-    | otherwise           -> FromFunctionArgument name 3 Nothing
-  _ -> NoOrigin
+getAppOrigin = go 1
   where
+    go argIndex (Can.Canonical _ expr) = case expr of
+      Can.Var name
+        | isOperatorName name -> FromOperator name
+        | otherwise           -> FromFunctionArgument name argIndex Nothing
+      Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var ('.' : field))) ->
+        FromFunctionArgument (ns <> "." <> field) argIndex Nothing
+      Can.App fn _ _ ->
+        go (argIndex + 1) fn
+      _ -> NoOrigin
+
     isOperatorName []    = False
     isOperatorName (c:_) = not (isAlphaNum c) && c /= '_' && c /= '.'
 
@@ -127,7 +129,10 @@ isInjectiveRenaming tAnnotation s =
 infer :: Options -> Env -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
 infer options env lexp = do
   let (Can.Canonical area exp) = lexp
-  case exp of
+  -- Track the nearest enclosing expression's span so that errors thrown deep
+  -- inside unification (which have no location of their own) can be stamped
+  -- with it instead of reaching the user locationless.
+  withCurrentSpan (envCurrentPath env) area $ case exp of
     Can.LNum  _               -> do
       t <- newTVar Star
       let ps = [IsIn "Number" [t] Nothing]
@@ -370,7 +375,7 @@ postProcessBody options env s expType es = do
                   _ | discardError ->
                     return []
 
-                  (CompilationError FatalError NoContext) ->
+                  (CompilationError FatalError _) ->
                     if ambiguities fs unsolvedPs'' /= [] then
                       case p of
                         IsIn _ (TVar tv : _) _ ->
@@ -448,7 +453,21 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
   -- based subst, both have already had their relevant prior substs applied.
   t1Applied <- applyCurrentSubst t1
   t2Applied <- applyCurrentSubst t2
-  s3 <- contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) origin secondaryLoc env expForContext t1Applied (t2Applied `fn` tv)
+  s3 <- catchError
+    (contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) origin secondaryLoc env expForContext t1Applied (t2Applied `fn` tv))
+    (\err -> case err of
+      -- The application-level unification pairs the function's remaining type
+      -- with `argType -> ret`, but the reader cares about the operand: when
+      -- the function type is known, report (arg, param) instead of two
+      -- partially applied function types.
+      CompilationError (UnificationError tm) ctx
+        | originWantsOperandPair (tmOrigin tm)
+        , (param : _) <- getParamTypes t1Applied ->
+          throwError $ CompilationError (UnificationError tm { tmFound = t2Applied, tmExpected = param }) ctx
+
+      _ ->
+        throwError err
+    )
   extSubst s3
 
   t <- applyCurrentSubst tv
@@ -481,6 +500,11 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
   let solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs (updateQualType earg' $ apply s (ps1 ++ ps2) :=> apply s t2) final
 
   return (ps1 ++ ps2, t, solved)
+  where
+    originWantsOperandPair o = case o of
+      FromFunctionArgument{} -> True
+      FromOperator{}         -> True
+      _                      -> False
 
 
 
@@ -573,8 +597,9 @@ inferMutate options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
   discardError <- isDiscardingErrors
   (s1, (ps1, t1, e1)) <- captureDelta (infer options env lhs)
   (s2, (ps2, t2, e2)) <- captureDelta (infer options (apply s1 env) exp)
+  let assignOrigin = maybe NoOrigin FromAssignment (Can.getExpName lhs)
   s3 <- catchError
-    (contextualUnify Strict env e t1 t2)
+    (contextualUnifyWithOrigin Strict assignOrigin env e t1 t2)
     (\err -> do
       if discardError then do
         return mempty
@@ -991,7 +1016,13 @@ inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
 
   tfalsy' <- applyCurrentSubst tfalsy
   ttruthy' <- applyCurrentSubst ttruthy
-  let unifyBranches = contextualUnifyWithOrigin (if discardError then Discard else Strict) (FromIfBranches ElseBranch) env falsy tfalsy' ttruthy'
+  -- The error anchors on the else branch; point at the then branch as a
+  -- secondary location so both disagreeing branches are visible.
+  let branchSecondary = Just $ SecondaryLocation
+        (envCurrentPath env)
+        (Can.getArea truthy)
+        "the other branch of this 'if' is here"
+      unifyBranches = contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) (FromIfBranches ElseBranch) branchSecondary env falsy tfalsy' ttruthy'
   s4 <- catchError unifyBranches (flipUnificationErrorWithBranch ThenBranch)
   extSubst s4
   tcond' <- applyCurrentSubst tcond
@@ -1233,7 +1264,26 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   (s, (ps, t, e)) <- captureDelta (infer options env' { envNamesInScope = envVars env } exp)
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
   let sNorm = s `compose` s -- resolve internal substitution chains
-  s'' <- catchError (contextualUnifyWithOrigin (if discardError then Discard else Strict) FromTypeAnnotation env canExp t' (apply sNorm t)) (throwError . limitContextArea 2)
+  let tInferred = apply sNorm t
+      -- When annotation and implementation are functions of equal arity that
+      -- differ only in their return type, report just the two return types
+      -- under FromFunctionReturn instead of the whole function types.
+      retagReturnMismatch err = case (err, Can.getExpName exp) of
+        (CompilationError (UnificationError tm) errCtx, Just name)
+          | isFunctionType tInferred
+          , isFunctionType t'
+          , getParamTypes tInferred == getParamTypes t'
+          , getReturnType tInferred /= getReturnType t' ->
+            CompilationError
+              (UnificationError tm { tmFound    = getReturnType tInferred
+                                   , tmExpected = getReturnType t'
+                                   , tmOrigin   = FromFunctionReturn name
+                                   })
+              errCtx
+
+        _ ->
+          err
+  s'' <- catchError (contextualUnifyWithOrigin (if discardError then Discard else Strict) FromTypeAnnotation env canExp t' tInferred) (throwError . limitContextArea 2 . retagReturnMismatch)
   let s' = s'' `compose` sNorm
 
   let envWithVarsExcluded =

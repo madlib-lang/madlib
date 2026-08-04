@@ -1,0 +1,13 @@
+[error]: No instance found
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ 'Eq String' is required here, but no instance was found for 'String'.
+     •
+     │ Hint: Add 'derive Eq' to the 'String' type definition to get equality for free.
+     │ Note: Example:  type String = String { ... } deriving Eq
+     │ Hint: Make sure 'String' implements the 'Eq' interface.
+     │ Note: Instance methods are automatically in scope when their module is imported,
+     │       directly or transitively.
+─────╯

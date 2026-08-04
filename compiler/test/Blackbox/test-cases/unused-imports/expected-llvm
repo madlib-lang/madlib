@@ -1,7 +1,7 @@
 [warning]: Unused import
      ╭──▶ compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad@3:10-3:17
      │
-   3 │ import { fulfill } from \"Wish\"
+   3 │ import { fulfill } from "Wish"
      •          ┬────── 
      •          ╰╸ You imported 'fulfill' from the module located at
      •             'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
@@ -15,7 +15,7 @@
 [warning]: Unused import
      ╭──▶ compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad@1:8-1:13
      │
-   1 │ import Maybe from \"Maybe\"
+   1 │ import Maybe from "Maybe"
      •        ┬──── 
      •        ╰╸ You imported 'Maybe' from the module located at
      •           'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'
@@ -29,7 +29,7 @@
 [warning]: Unused import
      ╭──▶ compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad@2:15-2:21
      │
-   2 │ import type { Either } from \"Either\"
+   2 │ import type { Either } from "Either"
      •               ┬───── 
      •               ╰╸ You imported 'Either' from the module located at
      •                  'compiler/test/Blackbox/test-cases/unused-imports/Entrypoint.mad'

@@ -1,0 +1,10 @@
+[error]: Already exported
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ 'greet' appears more than once in the export list.
+     •
+     │ Hint: Remove the duplicate export of 'greet'.
+     │ Note: Each name can only be exported once from a module.
+─────╯

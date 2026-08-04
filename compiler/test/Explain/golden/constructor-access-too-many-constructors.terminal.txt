@@ -1,0 +1,10 @@
+[error]: Ambiguous constructor access
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ Cannot access a constructor parameter of 'Shape' because it has more than one constructor.
+     •
+     │ Hint: Use pattern matching to safely handle each constructor case.
+     │ Note: Constructor parameter access only works on types with a single constructor.
+─────╯

@@ -199,10 +199,10 @@
     }
 , []
 , [ CompilationError
-      (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ])
+      (NoInstanceFound "Number" [ TCon (TC "String" Star) "prelude" ] [])
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 39 2 16) (Loc 48 2 25)
+        , ctxArea = Area (Loc 31 2 8) (Loc 51 2 28)
         }
   ]
 )

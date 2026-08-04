@@ -1,0 +1,10 @@
+[error]: Method name already defined
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ This method name is already used by another interface.
+     •
+     │ Note: Two interfaces cannot define methods with the same name.
+     │ Hint: Choose a different name, or prefix it with the interface name to avoid collisions.
+─────╯

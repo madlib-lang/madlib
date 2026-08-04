@@ -1,0 +1,14 @@
+[error]: The 3rd list element has a different type
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The 3rd element has a different type than the previous elements.
+     •    expected:
+     •        Float
+     •    but found:
+     •        String
+     •
+     │ Hint: The 3rd element has a different type than the previous elements.
+     │ Note: All elements in a list must have the same type.
+─────╯

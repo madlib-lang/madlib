@@ -1,0 +1,17 @@
+[error]: Wrong type for the 1st argument to 'f'
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The 1st argument to 'f' has the wrong type.
+     •    expected:
+     •        Float
+     •    but found:
+     •        String
+     •
+   5 │ f = (x) => x + 1
+     • ┬────────────── 
+     • ╰╸ 'f' is applied here
+     •
+     │ Hint: The 1st argument to 'f' has the wrong type.
+─────╯

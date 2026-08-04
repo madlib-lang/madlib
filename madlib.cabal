@@ -43,9 +43,14 @@ library
       Canonicalize.Typing
       Driver
       Driver.Rules
+      Explain.Diagnostic
+      Explain.Diagnostic.Build
       Explain.Format
       Explain.Format.Hints
       Explain.Format.TypeDiff
+      Explain.Render.Json
+      Explain.Render.Terminal
+      Explain.Render.Text
       Format.Format
       Fuzz.Engine
       Fuzz.Generator
@@ -469,7 +474,9 @@ test-suite madlib-test
   other-modules:
       Blackbox.RunnerSpec
       DocStringSpec
+      Explain.ContextEnforcementSpec
       Explain.FormatSpec
+      Explain.GoldenSpec
       Format.FormatSpec
       FuzzSpec
       Generate.JSInternalsSpec
@@ -478,6 +485,7 @@ test-suite madlib-test
       MegaparsecSpec
       Run.PackageSpec
       TestUtils
+      TestUtils.Golden
       Utils.PathSpec
       Paths_madlib
   hs-source-dirs:

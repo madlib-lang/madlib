@@ -1491,7 +1491,8 @@
     }
 , []
 , [ CompilationError
-      (NoInstanceFound "Inspect" [ TCon (TC "Integer" Star) "prelude" ])
+      (NoInstanceFound
+         "Inspect" [ TCon (TC "Integer" Star) "prelude" ] [])
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 274 14 3) (Loc 281 14 10)

@@ -1,0 +1,10 @@
+Kind mismatch in type annotation
+The type 'String' has kind *, but kind * -> * was expected.
+expected:
+  * -> *
+but found:
+  *
+Note: Kinds describe how many type arguments a type constructor takes.
+'*' means a concrete type (like 'Int').
+'* -> *' means it takes one argument (like 'List' or 'Maybe').
+Hint: 'String' needs no type arguments, but * -> * was expected here.

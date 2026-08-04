@@ -1,0 +1,13 @@
+[error]: The 'while' condition must be Boolean, not String
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The condition of a 'while' must be Boolean.
+     •    expected:
+     •        Boolean
+     •    but found:
+     •        String
+     •
+     │ Hint: The condition of a 'while' loop must be Boolean.
+─────╯

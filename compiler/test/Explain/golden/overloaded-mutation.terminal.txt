@@ -1,0 +1,11 @@
+[error]: Mutation in overloaded context
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ Cannot mutate 'x' because this function has type class constraints (Show).
+     •
+     │ Note: In an overloaded function, each specialisation creates a new closure copy,
+     │       so mutations to 'x' would be invisible to callers.
+     │ Hint: Add a concrete type annotation to remove the polymorphism, or refactor to avoid mutation here.
+─────╯

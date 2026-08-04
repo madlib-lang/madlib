@@ -1,0 +1,14 @@
+[error]: Return type of 'doStuff' doesn't match its annotation
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The return value of 'doStuff' does not match its annotation.
+     •    expected:
+     •        Float
+     •    but found:
+     •        String
+     •
+     │ Hint: The return value of 'doStuff' doesn't match its type annotation.
+     │ Note: Check that all branches of the function body return the same type.
+─────╯

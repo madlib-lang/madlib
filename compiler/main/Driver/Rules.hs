@@ -235,11 +235,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
       return (ast'', env)
 
     case res of
-      Right (astAndEnv, InferState _ _ [] warnings _ _ _) -> do
-        return (astAndEnv, (reverse warnings, mempty))
+      Right (astAndEnv, InferState { errors = [], Slv.warnings = ws }) -> do
+        return (astAndEnv, (reverse ws, mempty))
 
-      Right ((ast, env), InferState _ _ errors warnings _ _ _) ->
-        return ((ast { Slv.apath = Just path }, env), (reverse warnings, reverse errors))
+      Right ((ast, env), InferState { errors = errs, Slv.warnings = ws }) ->
+        return ((ast { Slv.apath = Just path }, env), (reverse ws, reverse errs))
 
       Left error ->
         return ((emptySlvAST { Slv.apath = Just path }, initialEnv'), (mempty, [error]))
@@ -705,7 +705,7 @@ emptySlvAST = Slv.AST { Slv.aimports = [], Slv.aexps = [], Slv.atypedecls = [], 
 
 runInfer :: StateT InferState (ExceptT e m) a -> m (Either e (a, InferState))
 runInfer a =
-  runExceptT (runStateT a InferState { extensibleRecordsToDerive = mempty, count = 0, errors = [], Slv.warnings = [], mutatedNames = mempty, currentSubst = mempty, discardErrors = False })
+  runExceptT (runStateT a InferState { extensibleRecordsToDerive = mempty, count = 0, errors = [], Slv.warnings = [], mutatedNames = mempty, currentSubst = mempty, discardErrors = False, currentSpan = Nothing })
 
 
 mergedMainAST :: Rock.MonadFetch Query m => FilePath -> m Core.AST

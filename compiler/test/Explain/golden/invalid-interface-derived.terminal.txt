@@ -1,0 +1,11 @@
+[error]: Cannot derive 'Functor'
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The interface 'Functor' does not support automatic derivation.
+     •
+     │ Note: Only these interfaces can be derived: Eq, Show, Comparable, Json.
+     │ Hint: Write a manual instance instead:
+     │         instance Functor YourType { ... }
+─────╯

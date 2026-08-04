@@ -1,0 +1,14 @@
+[error]: Invalid test type
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ This test expression has type:
+     •      String
+     •    but tests must return one of:
+     •      Wish TestResult TestResult
+     •      List (Wish TestResult TestResult)
+     •
+     │ Hint: A test must evaluate to a Wish that resolves to a TestResult.
+     │ Note: Use 'assertEqual' or 'test' from the Test module to build test values.
+─────╯

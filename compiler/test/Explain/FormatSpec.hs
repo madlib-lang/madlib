@@ -6,7 +6,9 @@ import           Test.Hspec                     ( describe
                                                 , shouldBe
                                                 , shouldSatisfy
                                                 )
-import           Data.List                      ( isInfixOf )
+import           Data.List                      ( isInfixOf
+                                                , stripPrefix
+                                                )
 import           Explain.Format
 import           Error.Error
 import           Explain.Location
@@ -45,7 +47,7 @@ spec = do
   -- -------------------------------------------------------------------------
   describe "Type errors" $ do
     it "UnificationError shows expected and found types" $ do
-      result <- fmt (UnificationError tStr tFloat NoOrigin Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat NoOrigin [])) makeCtx
       result `contains` "expected"
       result `contains` "found"
 
@@ -182,12 +184,12 @@ spec = do
   -- -------------------------------------------------------------------------
   describe "Interface errors" $ do
     it "NoInstanceFound names the interface and type" $ do
-      result <- fmt (NoInstanceFound "Eq" [tStr]) makeCtx
+      result <- fmt (NoInstanceFound "Eq" [tStr] []) makeCtx
       result `contains` "Eq"
       result `contains` "String"
 
     it "NoInstanceFound Number+String names the interface and type" $ do
-      result <- fmt (NoInstanceFound "Number" [tStr]) makeCtx
+      result <- fmt (NoInstanceFound "Number" [tStr] []) makeCtx
       result `contains` "Number"
       result `contains` "String"
 
@@ -385,80 +387,136 @@ spec = do
       full `contains` "unexpected"
 
   -- -------------------------------------------------------------------------
-  describe "Descriptive unification titles" $ do
+  describe "Unification title policy" $ do
+    let allOrigins =
+          [ NoOrigin
+          , FromTypeAnnotation
+          , FromIfCondition
+          , FromWhileCondition
+          , FromIfBranches ThenBranch
+          , FromIfBranches ElseBranch
+          , FromListElement 2
+          , FromPatternMatch 2
+          , FromFunctionArgument "f" 1 Nothing
+          , FromFunctionReturn "f"
+          , FromOperator "+"
+          , FromAssignment "x"
+          ]
+        typePairs =
+          [ (tInteger `fn` tStr, tInteger `fn` tInteger)
+          , (tStr `fn` tStr, tInteger `fn` tStr)
+          , (tInteger `fn` tInteger `fn` tStr, tInteger `fn` tStr)
+          , (tListOf tStr, tListOf tInteger)
+          , (tStr, tFloat)
+          , (TVar (TV 1 Star), TVar (TV 2 Star))
+          , (tTuple2Of tStr tInteger, tTuple2Of tStr tStr)
+          ]
+
+    it "never renders the same name on both sides of a mismatch" $ do
+      mapM_
+        (\((found, expected), origin) -> do
+          let title = mkUnificationTitle found expected origin
+          case words <$> stripPrefix "Type mismatch: expected " title of
+            Just ws -> case break (== "but") ws of
+              (expectedWs, "but" : "found" : foundWs) ->
+                unwords expectedWs == unwords foundWs `shouldBe` False
+              _ -> return ()
+            Nothing -> return ()
+        )
+        [ (pair, origin) | pair <- typePairs, origin <- allOrigins ]
+
+    it "annotated function mismatch names both function types precisely" $ do
+      let title = mkUnificationTitle (tInteger `fn` tStr) (tInteger `fn` tInteger) FromTypeAnnotation
+      title `shouldBe` "Type mismatch: expected Integer -> Integer but found Integer -> String"
+
+    it "equal-rendering functions point at the differing part instead" $ do
+      -- Both sides describe as "a function taking 2 arguments" when too long
+      -- to inline; the title must name the location of the difference.
+      let longT  = tListOf (tTuple2Of tStr tInteger)
+          found    = longT `fn` longT `fn` tStr
+          expected = longT `fn` longT `fn` tInteger
+          title = mkUnificationTitle found expected FromTypeAnnotation
+      title `shouldBe` "Type mismatch in the return type"
+
+    it "arity mismatches are called out explicitly" $ do
+      let found    = tInteger `fn` tInteger `fn` tInteger `fn` tStr
+          expected = tInteger `fn` tInteger `fn` tStr
+          title = mkUnificationTitle found expected FromTypeAnnotation
+      title `shouldBe` "This function takes 3 arguments, but its annotation says it takes 2"
+
     it "UnificationError with NoOrigin shows type names in title" $ do
-      result <- fmt (UnificationError tStr tFloat NoOrigin Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat NoOrigin [])) makeCtx
       result `contains` "String"
       result `contains` "Float"
 
     it "UnificationError with FromOperator && shows operator in title" $ do
-      result <- fmt (UnificationError tStr tBool (FromOperator "&&") Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tBool (FromOperator "&&") [])) makeCtx
       result `contains` "&&"
       result `contains` "Boolean"
 
     it "UnificationError with FromIfCondition shows 'if' in title" $ do
-      result <- fmt (UnificationError tStr tBool FromIfCondition Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tBool FromIfCondition [])) makeCtx
       result `contains` "if"
 
     it "UnificationError with FromIfBranches identifies the branch" $ do
-      result <- fmt (UnificationError tStr tFloat (FromIfBranches ElseBranch) Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat (FromIfBranches ElseBranch) [])) makeCtx
       result `contains` "else"
       result `contains` "then"
 
     it "UnificationError with FromListElement mentions list" $ do
-      result <- fmt (UnificationError tStr tFloat (FromListElement 0) Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat (FromListElement 0) [])) makeCtx
       result `contains` "list"
 
     it "UnificationError with FromFunctionArgument shows ordinal and function name" $ do
-      result <- fmt (UnificationError tStr tFloat (FromFunctionArgument "map" 2 Nothing) Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat (FromFunctionArgument "map" 2 Nothing) [])) makeCtx
       result `contains` "2nd"
       result `contains` "map"
 
     it "UnificationError with FromPatternMatch mentions where" $ do
-      result <- fmt (UnificationError tStr tFloat (FromPatternMatch 0) Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat (FromPatternMatch 0) [])) makeCtx
       result `contains` "where"
 
     it "UnificationError with FromFunctionArgument + FunctionContext shows expected type" $ do
       let ctx = FunctionContext { fcExpectedType = tFloat, fcFullSignature = tFloat `fn` tStr, fcTotalParams = 1 }
-      result <- fmt (UnificationError tStr tFloat (FromFunctionArgument "doStuff" 1 (Just ctx)) Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat (FromFunctionArgument "doStuff" 1 (Just ctx)) [])) makeCtx
       result `contains` "doStuff"
       result `contains` "1st"
 
     it "UnificationError with FunctionContext shows full signature in rich format" $ do
       let ctx = FunctionContext { fcExpectedType = tFloat, fcFullSignature = tFloat `fn` tStr, fcTotalParams = 1 }
           stubReader _ = return "doStuff(x)\n"
-      full <- formatError stubReader False (CompilationError (UnificationError tStr tFloat (FromFunctionArgument "doStuff" 1 (Just ctx)) Nothing) makeCtx)
+      full <- formatError stubReader False (CompilationError (UnificationError (TypeMismatch tStr tFloat (FromFunctionArgument "doStuff" 1 (Just ctx)) [])) makeCtx)
       full `contains` "doStuff"
       full `contains` "signature"
 
     it "UnificationError with FromIfBranches ThenBranch identifies then" $ do
-      result <- fmt (UnificationError tStr tFloat (FromIfBranches ThenBranch) Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat (FromIfBranches ThenBranch) [])) makeCtx
       result `contains` "then"
 
     it "UnificationError with FromListElement index shows ordinal" $ do
-      result <- fmt (UnificationError tStr tFloat (FromListElement 3) Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat (FromListElement 3) [])) makeCtx
       result `contains` "3rd"
 
     it "UnificationError with FromPatternMatch index shows ordinal" $ do
-      result <- fmt (UnificationError tStr tFloat (FromPatternMatch 2) Nothing) makeCtx
+      result <- fmt (UnificationError (TypeMismatch tStr tFloat (FromPatternMatch 2) [])) makeCtx
       result `contains` "2nd"
 
     it "UnificationError with SecondaryLocation includes secondary in rich format" $ do
       let secLoc = SecondaryLocation "test/Module.mad" (Area (Loc 0 5 1) (Loc 0 5 20)) "'f' is applied here"
           stubReader _ = return "line1\nline2\nline3\nline4\nf = (x) => x + 1\n"
-      full <- formatError stubReader False (CompilationError (UnificationError tStr tFloat (FromFunctionArgument "f" 1 Nothing) (Just secLoc)) makeCtx)
+      full <- formatError stubReader False (CompilationError (UnificationError (TypeMismatch tStr tFloat (FromFunctionArgument "f" 1 Nothing) [secLoc])) makeCtx)
       full `contains` "applied here"
 
   -- -------------------------------------------------------------------------
   describe "Smart operator hints" $ do
     it "Operator && with String suggests == comparison" $ do
       let stubReader _ = return "x = true && str\n"
-      full <- formatError stubReader False (CompilationError (UnificationError tStr tBool (FromOperator "&&") Nothing) makeCtx)
+      full <- formatError stubReader False (CompilationError (UnificationError (TypeMismatch tStr tBool (FromOperator "&&") [])) makeCtx)
       full `contains` "=="
 
     it "Operator + with String suggests <>" $ do
       let stubReader _ = return "x = 1 + str\n"
-      full <- formatError stubReader False (CompilationError (UnificationError tStr tFloat (FromOperator "+") Nothing) makeCtx)
+      full <- formatError stubReader False (CompilationError (UnificationError (TypeMismatch tStr tFloat (FromOperator "+") [])) makeCtx)
       full `contains` "<>"
 
   -- -------------------------------------------------------------------------

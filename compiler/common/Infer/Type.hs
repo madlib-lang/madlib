@@ -690,11 +690,6 @@ getTypeVarsInType t = case t of
 
 
 
-getParamTypeOrSame :: Type -> Type
-getParamTypeOrSame t = case t of
-  TApp (TApp (TCon (TC "(->)" _) _ _) p) _ -> p
-  _ -> t
-
 
 hasNumberPred :: [Pred] -> Bool
 hasNumberPred ps = case ps of

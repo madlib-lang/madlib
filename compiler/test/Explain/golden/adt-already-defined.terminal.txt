@@ -1,0 +1,10 @@
+[error]: Type already defined
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ You defined the type 'String',
+     •    but it already exists
+     •
+     │ Hint: Verify that you don't have a typo.
+─────╯

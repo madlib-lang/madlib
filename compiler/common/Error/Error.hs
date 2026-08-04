@@ -28,6 +28,18 @@ data SecondaryLocation = SecondaryLocation
   , slMessage :: String
   } deriving (Show, Eq, Ord)
 
+-- | The payload of a unification failure. The record names fix the
+-- found/expected orientation that positional arguments kept getting flipped:
+-- 'tmFound' is what the code actually produced, 'tmExpected' is what the
+-- surrounding context required.
+data TypeMismatch = TypeMismatch
+  { tmFound       :: Type
+  , tmExpected    :: Type
+  , tmOrigin      :: ErrorOrigin
+  , tmSecondaries :: [SecondaryLocation]
+  }
+  deriving (Show, Eq, Ord)
+
 -- | Describes where an expected type originated from, for richer error messages.
 data ErrorOrigin
   = FromFunctionArgument String Int (Maybe FunctionContext)
@@ -51,7 +63,7 @@ data TypeError
   | UnboundUnknownTypeVariable
   | UnboundVariableFromNamespace String String
   | UnboundType String [String]
-  | UnificationError Type Type ErrorOrigin (Maybe SecondaryLocation)
+  | UnificationError TypeMismatch
   | BadEscapeSequence
   | EmptyChar
   | TypeAlreadyDefined String
@@ -61,7 +73,7 @@ data TypeError
   -- Pred: The predicate from the interface declaration
   | InstancePredicateError Pred Pred Pred
   | KindError (Type, Kind) (Type, Kind)
-  | NoInstanceFound String [Type]
+  | NoInstanceFound String [Type] [Pred]  -- ^ interface, types, required-by chain (innermost first)
   | InterfaceAlreadyDefined String
   | InterfaceNotExisting String
   | OverlappingInstances Pred Pred

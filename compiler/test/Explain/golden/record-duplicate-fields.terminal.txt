@@ -1,0 +1,11 @@
+[error]: Record duplicate fields
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The following fields appear more than once in the record constructor:
+     •     - name
+     •     - age
+     •
+     │ Hint: Define each field only once.
+─────╯

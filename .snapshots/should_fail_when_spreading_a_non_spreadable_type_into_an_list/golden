@@ -82,10 +82,11 @@
          "Number"
          [ TApp
              (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 5 Star))
-         ])
+         ]
+         [])
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 15 1 16) (Loc 24 1 25)
+        , ctxArea = Area (Loc 7 1 8) (Loc 26 1 27)
         }
   ]
 )

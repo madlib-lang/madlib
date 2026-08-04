@@ -1,0 +1,10 @@
+[error]: Type error
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ Cannot spread Integer
+     •
+     │ Note: The spread operator '...' is only valid on record types.
+     │ Hint: Check that the value you are spreading is a record, or remove the spread.
+─────╯
