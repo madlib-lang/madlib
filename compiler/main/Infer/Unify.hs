@@ -411,8 +411,8 @@ quickMatch :: Type -> Type -> Bool
 quickMatch (l `TApp` r) (l' `TApp` r') =
   quickMatch l l' && quickMatch r r'
 
-quickMatch (TRecord fields _ _) (TRecord fields' _ _) =
-  quickMatchFields (M.toList fields) (M.toList fields')
+quickMatch (TRecord fields base _) (TRecord fields' base' _) =
+  quickMatchRecordFields fields base fields' base'
 
 quickMatch (TVar _) _ = True
 quickMatch _ (TVar _) = True
@@ -433,15 +433,17 @@ quickMatch (TApp (TCon (TC tNameB _) _ _) _) (TCon (TC tNameA _) _ _)
 quickMatch _ _ =
   False
 
-quickMatchFields :: [(String, Type)] -> [(String, Type)] -> Bool
-quickMatchFields fields1 fields2 = case fields1 of
-  (name1, t1) : next1 ->
-    case fields2 of
-      [] ->
-        False
-
-      (name2, t2) : next2 ->
-        name1 == name2 && quickMatch t1 t2 && quickMatchFields next1 next2
-
-  [] ->
-    null fields2
+quickMatchRecordFields :: M.Map String Type -> Maybe Type -> M.Map String Type -> Maybe Type -> Bool
+quickMatchRecordFields fields base fields' base' =
+  -- Extra fields are compatible only when the record on the other side has
+  -- an open row that can absorb them. Shared fields must still match.
+  let sharedFieldsMatch =
+        and $ M.elems $ M.intersectionWith quickMatch fields fields'
+      fieldsOnlyOnLeft  = M.difference fields fields'
+      fieldsOnlyOnRight = M.difference fields' fields
+  in  sharedFieldsMatch
+      && (M.null fieldsOnlyOnLeft || isOpenRecord base')
+      && (M.null fieldsOnlyOnRight || isOpenRecord base)
+  where
+    isOpenRecord Nothing  = False
+    isOpenRecord (Just _) = True

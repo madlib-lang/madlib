@@ -1,0 +1,22 @@
+import IO from "IO"
+
+alias Item = { label :: String, value :: Integer }
+
+sumItems :: List Item -> Integer
+sumItems = (items) => {
+  // `go` is inferred over an open record containing only `value`, then called
+  // with the wider, closed `Item` record.
+  go = (total, remaining) => where(remaining) {
+    [] =>
+      total
+
+    [item, ...rest] =>
+      go(total + item.value, rest)
+  }
+
+  return go(0, items)
+}
+
+main = () => {
+  IO.log(sumItems([{ label: "one", value: 1 }, { label: "two", value: 2 }]))
+}

@@ -223,6 +223,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/import-cycle"
         , "compiler/test/Blackbox/test-cases/operators"
         , "compiler/test/Blackbox/test-cases/recursion-from-closure"
+        , "compiler/test/Blackbox/test-cases/local-function-open-record"
         , "compiler/test/Blackbox/test-cases/record-instances"
         , "compiler/test/Blackbox/test-cases/record-instance-not-found"
         , "compiler/test/Blackbox/test-cases/string-and-char-literals"
