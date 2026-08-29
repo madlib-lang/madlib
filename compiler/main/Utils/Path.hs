@@ -140,16 +140,11 @@ resolveAbsoluteSrcPath' pathUtils rootPath path = do
         p -> return $ Just p
 
       case path' of
-        Just p@('.' : '/' : _) -> do
-          absPath <- normalisePath pathUtils <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
+        Just p -> do
+          let sourcePath = replaceExtension (joinPath [dropFileName rootPath, p]) ext
+          absPath <- normalisePath pathUtils <$> canonicalizePath pathUtils sourcePath
           exists <- doesFileExist pathUtils absPath
-          if exists then
-            return $ Just absPath
-          else
-            return Nothing
-
-        Just p ->
-          Just . normalisePath pathUtils <$> canonicalizePath pathUtils (replaceExtension (joinPath [dropFileName rootPath, p]) ext)
+          return $ if exists then Just absPath else Nothing
 
         Nothing ->
           return Nothing
