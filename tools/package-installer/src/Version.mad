@@ -52,13 +52,13 @@ export createRange = (maybeMin, maybeMax) => where(#[maybeMin, maybeMax]) {
 
 
 getMajor :: Version -> Integer
-getMajor = where { Version(major, _, _) => major }
+export getMajor = where { Version(major, _, _) => major }
 
 getMinor :: Version -> Integer
-getMinor = where { Version(_, minor, _) => minor }
+export getMinor = where { Version(_, minor, _) => minor }
 
 getPatch :: Version -> Integer
-getPatch = where { Version(_, _, patch) => patch }
+export getPatch = where { Version(_, _, patch) => patch }
 
 
 parse :: String -> Maybe Version

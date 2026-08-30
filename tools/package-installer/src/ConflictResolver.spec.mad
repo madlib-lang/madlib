@@ -12,6 +12,7 @@ import type { Config } from "./Config"
 import { versionChoices, pruneConflict } from "./ConflictResolver"
 import ConflictResolver from "./ConflictResolver"
 import { AnyVersion, Version } from "./Version"
+import { Exact, LatestPatch } from "./MadlibLock"
 
 
 // ---- Fixtures ----------------------------------------------------------------
@@ -58,6 +59,8 @@ baseConfig = {
   isTTY: (_) => false,
   now: (_) => 0,
 }
+
+DEFAULT_OPTIONS = { interactive: false, overrides: [] }
 
 
 // ---- versionChoices ----------------------------------------------------------
@@ -127,6 +130,7 @@ test("pruneConflict - no-op when conflictedName has a single entry", (_) => {
 
 FOO_LOCK = {
   lockfileVersion: 1,
+  resolutions: Dictionary.empty,
   packages: PACKAGES,
 }
 
@@ -159,11 +163,11 @@ test("run - non-TTY returns original lock when no conflicts", (_) => {
       dependencies: []
     }],
   ])
-  noConflictLock = { lockfileVersion: 1, packages: singlePackage }
+  noConflictLock = { lockfileVersion: 1, resolutions: Dictionary.empty, packages: singlePackage }
   return pipe(
     mapRej(always(ErrorWithMessage("run failed"))),
     chain((lock) => assertEquals(Dictionary.length(lock.packages), 1))
-  )(ConflictResolver.run(baseConfig, FOO_MADLIB_JSON, noConflictLock))
+  )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, noConflictLock))
 })
 
 test("run - non-TTY with conflicts fails with an error", (_) =>
@@ -172,7 +176,7 @@ test("run - non-TTY with conflicts fails with an error", (_) =>
       (_) => good({}),
       (_) => bad(ErrorWithMessage("expected run to fail for non-TTY with conflicts"))
     )
-  )(ConflictResolver.run(baseConfig, FOO_MADLIB_JSON, FOO_LOCK))
+  )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, FOO_LOCK))
 )
 
 test("run - non-TTY with conflicts error message mentions conflicts", (_) =>
@@ -181,5 +185,99 @@ test("run - non-TTY with conflicts error message mentions conflicts", (_) =>
       (msg) => assertEquals(String.contains("conflict", String.toLower(msg)), true),
       (_) => bad(ErrorWithMessage("expected run to fail for non-TTY with conflicts"))
     )
-  )(ConflictResolver.run(baseConfig, FOO_MADLIB_JSON, FOO_LOCK))
+  )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, FOO_LOCK))
 )
+
+
+// ---- persistent policy ------------------------------------------------------
+
+PATCH_V3_URL = "https://example.com/patch-v3.zip"
+PATCH_V6_URL = "https://example.com/patch-v6.zip"
+
+PATCH_PACKAGES = Dictionary.fromList([
+  #[PATCH_V3_URL, { name: "patchy", version: "1.2.3", buildHash: "a", versionHash: "b", dependencies: [] }],
+  #[PATCH_V6_URL, { name: "patchy", version: "1.2.6", buildHash: "c", versionHash: "d", dependencies: [] }],
+])
+
+PATCH_LOCK = {
+  lockfileVersion: 2,
+  resolutions: Dictionary.empty,
+  packages: PATCH_PACKAGES,
+}
+
+test("run - automatically selects the highest patch on first install", (_) => pipe(
+  mapRej(always(ErrorWithMessage("patch resolution failed"))),
+  chain((lock) => assertEquals(
+    Dictionary.get("patchy", lock.resolutions),
+    Just({ strategy: LatestPatch, version: "1.2.6", url: PATCH_V6_URL })
+  ))
+)(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, PATCH_LOCK)))
+
+test("run - explicit selection overrides automatic latest patch", (_) => pipe(
+  mapRej(always(ErrorWithMessage("explicit resolution failed"))),
+  chain((lock) => assertEquals(
+    Dictionary.get("patchy", lock.resolutions),
+    Just({ strategy: Exact, version: "1.2.3", url: PATCH_V3_URL })
+  ))
+)(ConflictResolver.run(
+  baseConfig,
+  { interactive: false, overrides: [{ name: "patchy", version: "1.2.3" }] },
+  FOO_MADLIB_JSON,
+  PATCH_LOCK
+)))
+
+test("run - saved exact selection remains sticky", (_) => {
+  pinned = {
+    ...PATCH_LOCK,
+    resolutions: Dictionary.fromList([
+      #["patchy", { strategy: Exact, version: "1.2.3", url: PATCH_V3_URL }],
+    ]),
+  }
+  return pipe(
+    mapRej(always(ErrorWithMessage("saved exact resolution failed"))),
+    chain((lock) => assertEquals(Dictionary.includes(PATCH_V6_URL, lock.packages), false))
+  )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, pinned))
+})
+
+test("run - latestPatch resolution advances when a newer patch appears", (_) => {
+  previous = {
+    ...PATCH_LOCK,
+    resolutions: Dictionary.fromList([
+      #["patchy", { strategy: LatestPatch, version: "1.2.3", url: PATCH_V3_URL }],
+    ]),
+  }
+  return pipe(
+    mapRej(always(ErrorWithMessage("latest patch did not advance"))),
+    chain((lock) => assertEquals(
+      Dictionary.get("patchy", lock.resolutions),
+      Just({ strategy: LatestPatch, version: "1.2.6", url: PATCH_V6_URL })
+    ))
+  )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, previous))
+})
+
+test("run - stale exact selection fails instead of silently changing versions", (_) => {
+  stale = {
+    ...FOO_LOCK,
+    resolutions: Dictionary.fromList([
+      #["foo", { strategy: Exact, version: "9.0.0", url: "https://example.com/gone.zip" }],
+    ]),
+  }
+  return pipe(
+    bichain(
+      (message) => assertEquals(String.contains("stale", String.toLower(message)), true),
+      (_) => bad(ErrorWithMessage("expected stale resolution to fail"))
+    )
+  )(ConflictResolver.run(baseConfig, DEFAULT_OPTIONS, FOO_MADLIB_JSON, stale))
+})
+
+test("run - interactive mode requires an actual TTY", (_) => pipe(
+  bichain(
+    (message) => assertEquals(String.contains("TTY", message), true),
+    (_) => bad(ErrorWithMessage("expected interactive non-TTY run to fail"))
+  )
+)(ConflictResolver.run(
+  baseConfig,
+  { interactive: true, overrides: [] },
+  FOO_MADLIB_JSON,
+  FOO_LOCK
+)))

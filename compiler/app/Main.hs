@@ -41,8 +41,14 @@ run cmd = do
     Test entrypoint target debug watch coverage optLevel suiteFilter testIndex emitLLVM errorFmt ->
       runTests entrypoint target debug watch coverage optLevel suiteFilter testIndex emitLLVM errorFmt
 
-    Install { installGraph = g, installUpgrade = u, installWhy = w } ->
-      runPackageInstaller g u w
+    Install
+      { installGraph = g
+      , installUpgrade = u
+      , installWhy = w
+      , installInteractive = i
+      , installResolutions = r
+      } ->
+      runPackageInstaller g u w i r
 
     Add { addUrl, addName } ->
       addPackage addUrl addName

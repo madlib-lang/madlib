@@ -1,85 +1,154 @@
 import type { Wish } from "Wish"
 import type { Config } from "./Config"
-import type { LockEntry } from "./MadlibLock"
+import type { LockEntry, MadlibLock, Resolution } from "./MadlibLock"
 import type { MadlibDotJson } from "./MadlibDotJson"
-import type { MadlibLock } from "./MadlibLock"
 
 import Dictionary from "Dictionary"
 import IO from "IO"
 import List from "List"
-import String from "String"
 import Terminal from "Terminal"
 import type { Maybe } from "Maybe"
 import { Just, Nothing, fromMaybe } from "Maybe"
 import { always } from "Function"
-import { Wish } from "Wish"
-import { andDo } from "Monad"
-import { bad, discardError, mapRej } from "Wish"
+import { Wish, bad, mapRej } from "Wish"
+import { ge } from "Compare"
 
 import Color from "./Color"
 import ConflictAnalysis from "./ConflictAnalysis"
-import Constants from "./Constants"
+import MadlibLock from "./MadlibLock"
+import { Exact, LatestPatch } from "./MadlibLock"
 import Version from "./Version"
-import { sanitizeUrl } from "./URL"
 
 
-// (version, url) — one candidate per distinct version of a conflicted package
-type VersionChoice = VersionChoice(String, String)
+export alias ResolutionOverride = {
+  name :: String,
+  version :: String,
+}
 
-// Build one VersionChoice per distinct version of `name` found in lock packages.
+export alias Options = {
+  interactive :: Boolean,
+  overrides :: List ResolutionOverride,
+}
+
+
+// (version, url) — candidates are ordered by URL so duplicate versions always
+// resolve to the same source.
+export type VersionChoice = VersionChoice(String, String)
+
 versionChoices :: String -> Dictionary String LockEntry -> List VersionChoice
-export versionChoices = (name, packages) =>
-  Dictionary.reduce(
-    (url, entry, acc) =>
-      entry.name == name && !List.any(
-        (vc) => where(vc) { VersionChoice(v, _) => v == entry.version },
-        acc
-      )
-        ? [...acc, VersionChoice(entry.version, url)]
-        : acc,
-    [],
-    packages
+export versionChoices = (name, packages) => pipe(
+  Dictionary.keys,
+  List.sort,
+  List.reduce(
+    (acc, url) => where(Dictionary.get(url, packages)) {
+      Just(entry) =>
+        entry.name == name && !List.any(
+          (vc) => where(vc) { VersionChoice(v, _) => v == entry.version },
+          acc
+        )
+          ? [...acc, VersionChoice(entry.version, url)]
+          : acc
+      Nothing => acc
+    },
+    []
   )
+)(packages)
+
+
+choiceVersion :: VersionChoice -> String
+choiceVersion = where { VersionChoice(version, _) => version }
+
+choiceUrl :: VersionChoice -> String
+choiceUrl = where { VersionChoice(_, url) => url }
+
+choiceForVersion :: String -> List VersionChoice -> Maybe VersionChoice
+choiceForVersion = (version, choices) => List.find(
+  (choice) => choiceVersion(choice) == version,
+  choices
+)
+
+choiceForResolution :: Resolution -> List VersionChoice -> Maybe VersionChoice
+choiceForResolution = (resolution, choices) => List.find(
+  (choice) => choiceVersion(choice) == resolution.version && choiceUrl(choice) == resolution.url,
+  choices
+)
+
+parsedChoices :: List VersionChoice -> List #[Version.Version, VersionChoice]
+parsedChoices = List.mapMaybe(
+  (choice) => where(Version.parse(choiceVersion(choice))) {
+    Just(version) => Just(#[version, choice])
+    Nothing => Nothing
+  }
+)
+
+samePatchLine :: List VersionChoice -> Boolean
+samePatchLine = (choices) => {
+  parsed = parsedChoices(choices)
+  return List.length(parsed) == List.length(choices) && where(parsed) {
+    [#[first, _], ...rest] => List.all(
+      (pair) => where(pair) {
+        #[version, _] =>
+          Version.getMajor(version) == Version.getMajor(first)
+          && Version.getMinor(version) == Version.getMinor(first)
+      },
+      rest
+    )
+    _ => false
+  }
+}
+
+latestPatchChoice :: List VersionChoice -> Maybe VersionChoice
+latestPatchChoice = (choices) => where(parsedChoices(choices)) {
+  [first, ...rest] => Just(where(List.reduce(
+    (best, candidate) => where(#[best, candidate]) {
+      #[#[bestVersion, _], #[candidateVersion, _]] =>
+        ge(candidateVersion, bestVersion) ? candidate : best
+    },
+    first,
+    rest
+  )) { #[_, choice] => choice })
+  _ => Nothing
+}
 
 
 pickForConflict :: String -> Dictionary String LockEntry -> List String -> String -> Wish {} VersionChoice
 pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
   choices = versionChoices(conflictedName, packages)
   options = map(
-    (vc) => where(vc) {
-      VersionChoice(version, _) =>
-        #[vc, ConflictAnalysis.findPathsToVersion(conflictedName, version, packages, [], rootDeps)]
-    },
+    (vc) => #[vc, ConflictAnalysis.findPathsToVersion(
+      conflictedName,
+      choiceVersion(vc),
+      packages,
+      [],
+      rootDeps
+    )],
     choices
   )
-
-  totalMenuLines = 4 + List.reduce(
+  totalMenuLines = 6 + List.reduce(
     (sum, opt) => where(opt) { #[_, chains] => sum + 1 + List.length(chains) },
     0,
     options
-  ) + 2
-
+  )
   selectedIndex = 0
   renderedLines = 0
   handlerId :: Maybe Terminal.HandlerId
   handlerId = Nothing
 
   render = () => {
-    if (renderedLines > 0) {
-      IO.put(Terminal.moveCursorUp(renderedLines))
-    }
+    if (renderedLines > 0) IO.put(Terminal.moveCursorUp(renderedLines)) else {}
     IO.put(Terminal.clearToEndOfScreen({}))
     IO.putLine("")
-    IO.putLine(`  ${Color.yellow("!")} Conflict: ${Color.bold(conflictedName)} — ${show(List.length(choices))} versions installed`)
-    IO.putLine("  Select version to keep in madlib_modules/:")
+    IO.putLine(`  ${Color.yellow("!")} Conflict: ${Color.bold(conflictedName)}`)
+    IO.putLine("  Select the version to persist in madlib.lock:")
     IO.putLine("")
     List.reduce(
       (idx, opt) => {
-        #[VersionChoice(version, _), chains] = opt
+        #[choice, chains] = opt
         isSelected = idx == selectedIndex
         marker = isSelected ? Color.bold(Color.green(">")) : " "
+        version = choiceVersion(choice)
         versionStr = isSelected ? Color.bold(Color.green(version)) : version
-        IO.putLine(`    ${marker} ${versionStr}`)
+        IO.putLine(`    ${marker} ${versionStr}  ${choiceUrl(choice)}`)
         List.forEach(
           (path) => IO.putLine(`        ${ConflictAnalysis.pathToChainString(packages, rootLabel, path)}`),
           chains
@@ -90,27 +159,21 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
       options
     )
     IO.putLine("")
-    IO.putLine("  ↑/↓ navigate · Enter confirm · Ctrl-C skip")
+    IO.putLine("  ↑/↓ navigate · Enter confirm · Ctrl-C cancel")
     renderedLines := totalMenuLines
   }
 
   return Wish((reject, resolve) => {
     Terminal.enableTTYRawMode({})
     render({})
-
     n = List.length(options)
-
     cleanup = () => {
       where(handlerId) {
-        Just(hid) =>
-          Terminal.clearKeyPressedHandler(hid)
-
-        Nothing =>
-          {}
+        Just(hid) => Terminal.clearKeyPressedHandler(hid)
+        Nothing => {}
       }
       Terminal.disableTTYRawMode({})
     }
-
     cb = (key) => if (key == "\x1b[A" || key == "k") do {
       selectedIndex := selectedIndex > 0 ? selectedIndex - 1 : n - 1
       render({})
@@ -120,111 +183,165 @@ pickForConflict = (rootLabel, packages, rootDeps, conflictedName) => {
     } else if (key == "\r") do {
       cleanup({})
       where(List.nth(selectedIndex, choices)) {
-        Just(choice) =>
-          resolve(choice)
-
-        Nothing =>
-          reject({})
+        Just(choice) => resolve(choice)
+        Nothing => reject({})
       }
     } else if (key == "\x03") do {
       cleanup({})
       reject({})
-    } else {
-      {}
-    }
-
+    } else {}
     handlerId := Just(Terminal.onKeyPressed(cb))
-
     return cleanup
   })
 }
 
 
-copyChosenVersion :: Config -> String -> VersionChoice -> Wish {} {}
-copyChosenVersion = (config, conflictedName, vc) => where(vc) {
-  VersionChoice(_, url) =>
-    pipe(
-      discardError(always({})),
-      chain((_) => pipe(
-        mapRej((err) => IO.putLineAndPass(`Failed to copy chosen version of '${conflictedName}': ${show(err)}`, {}))
-      )(config.copy(
-        `${Constants.TEMPORARY_MODULES_PATH}${sanitizeUrl(url)}/`,
-        `${Constants.MADLIB_MODULES_PATH}${conflictedName}/`,
-        { recursive: true, overwrite: true, exclude: [] }
-      )))
-    )(config.remove(
-      `${Constants.MADLIB_MODULES_PATH}${conflictedName}/`,
-      { recursive: true }
-    ))
-}
-
-
-// Prune `packages` to remove all entries for `conflictedName` except `chosenUrl`.
 pruneConflict :: String -> String -> Dictionary String LockEntry -> Dictionary String LockEntry
-export pruneConflict = (conflictedName, chosenUrl, packages) =>
-  Dictionary.reduce(
-    (url, entry, acc) =>
-      entry.name == conflictedName && url != chosenUrl
-        ? acc
-        : Dictionary.insert(url, entry, acc),
-    Dictionary.empty,
-    packages
+export pruneConflict = (conflictedName, chosenUrl, packages) => Dictionary.reduce(
+  (url, entry, acc) =>
+    entry.name == conflictedName && url != chosenUrl
+      ? acc
+      : Dictionary.insert(url, entry, acc),
+  Dictionary.empty,
+  packages
+)
+
+packageNames :: Dictionary String LockEntry -> List String
+packageNames = Dictionary.reduce(
+  (_, entry, names) => List.includes(entry.name, names) ? names : [...names, entry.name],
+  []
+)
+
+overrideDictionary :: List ResolutionOverride -> Dictionary String String
+overrideDictionary = List.reduce(
+  (dict, resolution) => Dictionary.insert(resolution.name, resolution.version, dict),
+  Dictionary.empty
+)
+
+applyChoice :: String -> MadlibLock.ResolutionStrategy -> VersionChoice -> MadlibLock -> MadlibLock
+applyChoice = (name, strategy, choice, lock) => {
+  version = choiceVersion(choice)
+  url = choiceUrl(choice)
+  return {
+    ...lock,
+    packages: pruneConflict(name, url, lock.packages),
+    resolutions: Dictionary.insert(name, { strategy, version, url }, lock.resolutions),
+  }
+}
+
+invalidResolution = (name, requested, choices) => {
+  available = pipe(map(choiceVersion), show)(choices)
+  return bad(`Cannot resolve '${name}@${requested}'; available versions: ${available}`)
+}
+
+staleResolution = (name, resolution, choices) => {
+  available = pipe(map(choiceVersion), show)(choices)
+  return bad(
+    `Saved resolution '${name}@${resolution.version}' is stale; available versions: ${available}. `
+    ++ `Choose one with madlib install --resolve ${name}@VERSION`
   )
+}
 
+resolveName :: Options -> String -> List String -> Dictionary String LockEntry -> Dictionary String String -> MadlibLock -> String -> Wish String MadlibLock
+resolveName = (options, rootLabel, rootDeps, originalPackages, overrides, lock, name) => {
+  choices = versionChoices(name, originalPackages)
+  return where(Dictionary.get(name, overrides)) {
+    Just(requestedVersion) => where(choiceForVersion(requestedVersion, choices)) {
+      Just(choice) => of(applyChoice(name, Exact, choice, lock))
+      Nothing => invalidResolution(name, requestedVersion, choices)
+    }
 
-resolveConflict :: Config -> String -> Dictionary String LockEntry -> List String -> String -> Wish {} (Dictionary String LockEntry)
-resolveConflict = (config, rootLabel, packages, rootDeps, conflictedName) =>
-  pipe(
-    chain(
-      (chosenVc) => where(chosenVc) {
-        VersionChoice(_, chosenUrl) =>
-          andDo(
-            of(pruneConflict(conflictedName, chosenUrl, packages)),
-            copyChosenVersion(config, conflictedName, chosenVc)
-          )
+    Nothing => where(Dictionary.get(name, lock.resolutions)) {
+      Just(resolution) => where(resolution.strategy) {
+        Exact => where(choiceForResolution(resolution, choices)) {
+          Just(choice) => of(applyChoice(name, Exact, choice, lock))
+          Nothing => staleResolution(name, resolution, choices)
+        }
+
+        LatestPatch => samePatchLine(choices)
+          ? where(latestPatchChoice(choices)) {
+              Just(choice) => of(applyChoice(name, LatestPatch, choice, lock))
+              Nothing => staleResolution(name, resolution, choices)
+            }
+          : staleResolution(name, resolution, choices)
       }
-    ),
-    discardError(always(packages))
-  )(pickForConflict(rootLabel, packages, rootDeps, conflictedName))
 
+      Nothing => List.length(choices) <= 1
+        ? of(lock)
+        : samePatchLine(choices)
+          ? where(latestPatchChoice(choices)) {
+              Just(choice) => do {
+                IO.putLine(Color.green(
+                  `Automatically resolved ${name}@${choiceVersion(choice)} (latest compatible patch).`
+                ))
+                return of(applyChoice(name, LatestPatch, choice, lock))
+              }
+              Nothing => bad(`Could not resolve patch versions for '${name}'`)
+            }
+          : options.interactive
+            ? pipe(
+                mapRej(always("Conflict resolution was cancelled")),
+                map((choice) => applyChoice(name, Exact, choice, lock))
+              )(pickForConflict(rootLabel, originalPackages, rootDeps, name))
+            : bad(`Dependency conflict '${name}' requires an explicit resolution`)
+    }
+  }
+}
 
-runInteractive :: Config -> String -> Dictionary String LockEntry -> List String -> List String -> Wish {} (Dictionary String LockEntry)
-runInteractive = (config, rootLabel, packages, rootDeps, conflictedNames) => {
+printGuidance :: MadlibDotJson -> MadlibLock -> String -> {}
+printGuidance = (madlibDotJson, lock, message) => {
+  ConflictAnalysis.analyze(madlibDotJson, lock)
+  IO.putLine(Color.red(message))
   IO.putLine("")
-  IO.putLine(Color.bold(Color.yellow("Dependency conflicts detected — interactive resolution:")))
-  return List.reduceM(
-    (dict, name) => resolveConflict(config, rootLabel, dict, rootDeps, name),
-    packages,
-    conflictedNames
+  IO.putLine("No packages were linked and madlib.lock was not changed.")
+  IO.putLine("")
+  IO.putLine("Resolve interactively:")
+  IO.putLine("  madlib install --interactive")
+  IO.putLine("")
+  IO.putLine("Or choose explicitly:")
+  List.forEach(
+    (name) => List.forEach(
+      (choice) => IO.putLine(`  madlib install --resolve ${name}@${choiceVersion(choice)}`),
+      versionChoices(name, lock.packages)
+    ),
+    ConflictAnalysis.findConflictedNames(lock.packages)
   )
 }
 
 
-// Prints the conflict report and fails so non-TTY installs surface a clear error.
-staticReport :: MadlibDotJson -> MadlibLock -> Wish String MadlibLock
-staticReport = (madlibDotJson, lock) => {
-  ConflictAnalysis.analyze(madlibDotJson, lock)
-  return bad("Dependency conflicts detected — resolve them manually or run in a TTY")
-}
-
-
-// Returns the lock file updated to reflect the user's resolution choices.
-// On TTY: interactive picker, chosen URLs kept, others pruned from the lock.
-// Non-TTY: static report printed, install fails with an actionable message.
-run :: Config -> MadlibDotJson -> MadlibLock -> Wish String MadlibLock
-export run = (config, madlibDotJson, lock) => {
-  isTTY = config.isTTY({})
+run :: Config -> Options -> MadlibDotJson -> MadlibLock -> Wish String MadlibLock
+export run = (config, options, madlibDotJson, lock) => {
   rootLabel = `${Color.bold(madlibDotJson.name)}@${Version.showVersion(madlibDotJson.version)}`
   rootDeps = pipe(fromMaybe([]), map(.url))(madlibDotJson.dependencies)
-  packages = lock.packages
-  conflictedNames = ConflictAnalysis.findConflictedNames(packages)
+  originalPackages = lock.packages
+  names = packageNames(originalPackages)
+  overrides = overrideDictionary(options.overrides)
+  cleanedResolutions = Dictionary.filterWithKey(
+    (name, _) => List.includes(name, names),
+    lock.resolutions
+  )
+  startingLock = { ...lock, lockfileVersion: 2, resolutions: cleanedResolutions }
+  unknownOverrides = List.filter(
+    (resolution) => !List.includes(resolution.name, names),
+    options.overrides
+  )
 
-  return List.length(conflictedNames) == 0
-    ? of(lock)
-    : isTTY
-      ? pipe(
-          mapRej(always("Conflict resolution was cancelled")),
-          map((updatedPackages) => ({ ...lock, packages: updatedPackages }))
-        )(runInteractive(config, rootLabel, packages, rootDeps, conflictedNames))
-      : staticReport(madlibDotJson, lock)
+  return options.interactive && !config.isTTY({})
+    ? bad("Interactive conflict resolution requires a TTY; use --resolve PACKAGE@VERSION")
+    : !List.isEmpty(unknownOverrides)
+      ? where(unknownOverrides) {
+        [first, ..._] => bad(`Cannot resolve unknown package '${first.name}'`)
+        _ => bad("Invalid resolution")
+      }
+      : pipe(
+        List.reduceM(
+          resolveName(options, rootLabel, rootDeps, originalPackages, overrides),
+          startingLock
+        ),
+        map(MadlibLock.normalizeDependencies(originalPackages)),
+        mapRej((message) => {
+          printGuidance(madlibDotJson, lock, message)
+          return message
+        })
+      )(names)
 }

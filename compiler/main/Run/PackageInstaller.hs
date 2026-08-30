@@ -8,8 +8,8 @@ import           System.Environment             ( getEnv )
 import           System.Environment.Executable  ( getExecutablePath )
 
 
-runPackageInstaller :: Bool -> Bool -> Maybe String -> IO ()
-runPackageInstaller graph upgrade mWhy = do
+runPackageInstaller :: Bool -> Bool -> Maybe String -> Bool -> [String] -> IO ()
+runPackageInstaller graph upgrade mWhy interactive resolutions = do
   executablePath              <- getExecutablePath
   packageInstallerPath        <- try $ getEnv "PKG_INSTALLER_PATH"
   packageInstallerPathChecked <- case (packageInstallerPath :: Either IOError String) of
@@ -20,5 +20,7 @@ runPackageInstaller graph upgrade mWhy = do
   let extraArgs = concat [ if graph   then ["--graph"]   else []
                          , if upgrade then ["--upgrade"] else []
                          , maybe [] (\pkg -> ["--why", pkg]) mWhy
+                         , if interactive then ["--interactive"] else []
+                         , concatMap (\resolution -> ["--resolve", resolution]) resolutions
                          ]
   callProcess "node" (packageInstallerPathChecked : extraArgs)
