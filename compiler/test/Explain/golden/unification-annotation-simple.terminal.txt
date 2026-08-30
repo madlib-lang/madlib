@@ -1,0 +1,10 @@
+[error]: Type mismatch: expected Integer but found String
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ the annotation says
+     •      Integer
+     •    but the implementation produces
+     •      String
+─────╯

@@ -1,0 +1,10 @@
+[error]: This type variable isn't declared
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ I don't recognize this type variable here.
+     •
+     │ Hint: Type variables in a constructor must also appear in the type's own parameter list.
+     │ Note: Type variables are lowercase; a capitalized name here is treated as a concrete type instead, which is a common source of this error.
+─────╯

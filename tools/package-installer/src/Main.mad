@@ -1,21 +1,47 @@
 import { fulfill } from "Wish"
-import { identity } from "Function"
+import { always, identity } from "Function"
 import IO from "IO"
 import List from "List"
 import Process from "Process"
+import String from "String"
+import type { Maybe } from "Maybe"
+import { Just, Nothing } from "Maybe"
 
 import { run } from "./Run"
 import { defaultConfig } from "./Config"
+import type { Options, ResolutionOverride } from "./ConflictResolver"
 import Graph from "./Graph"
 import Upgrade from "./Upgrade"
 import Why from "./Why"
+import Version from "./Version"
 
 
 type Mode
-  = Install
+  = Install(Options)
   | ShowGraph
   | ShowUpgrade
   | ShowWhy(String)
+  | Invalid(String)
+
+parseResolution :: String -> Maybe ResolutionOverride
+parseResolution = (raw) => where(String.split("@", raw)) {
+  [name, version] => where(Version.parse(version)) {
+    Just(_) => name == "" ? Nothing : Just({ name, version })
+    Nothing => Nothing
+  }
+  _ => Nothing
+}
+
+parseInstallOptions :: List String -> Boolean -> List ResolutionOverride -> Mode
+parseInstallOptions = (args, interactive, overrides) => where(args) {
+  [] => Install({ interactive, overrides })
+  ["--interactive", ...rest] => parseInstallOptions(rest, true, overrides)
+  ["--resolve", raw, ...rest] => where(parseResolution(raw)) {
+    Just(resolution) => parseInstallOptions(rest, interactive, [...overrides, resolution])
+    Nothing => Invalid(`Invalid resolution '${raw}'; expected PACKAGE@x.y.z`)
+  }
+  [arg, ..._] => Invalid(`Unknown install option '${arg}'`)
+}
 
 
 parseMode :: List String -> Mode
@@ -29,38 +55,45 @@ parseMode = (args) => where(List.drop(1, args)) {
   ["--why", pkg, ..._] =>
     ShowWhy(pkg)
 
-  _ =>
-    Install
+  remainingArgs =>
+    parseInstallOptions(remainingArgs, false, [])
 }
 
 
 main = () => {
   mode = parseMode(Process.Argv)
   config = defaultConfig
+  exitWithError = (error) => {
+    IO.trace("error", error)
+    return Process.exit(1)
+  }
 
   where(mode) {
     ShowGraph =>
       pipe(
         Graph.render,
-        fulfill(IO.trace("error"), identity)
+        fulfill(exitWithError, identity)
       )(config)
 
     ShowUpgrade =>
       pipe(
         Upgrade.render,
-        fulfill(IO.trace("error"), identity)
+        fulfill(exitWithError, identity)
       )(config)
 
-    _ =>
-      where(mode) {
-        ShowWhy(pkg) =>
-          fulfill(IO.trace("error"), identity, Why.render(config, pkg))
+    Invalid(message) =>
+      always(do {
+        IO.putLine(`error: ${message}`)
+        return Process.exit(1)
+      })
 
-        _ =>
-          pipe(
-            run,
-            fulfill(IO.trace("error"), identity)
-          )(config)
-      }
+    ShowWhy(pkg) =>
+      fulfill(exitWithError, identity, Why.render(config, pkg))
+
+    Install(options) =>
+      pipe(
+        run(options),
+        fulfill(exitWithError, identity)
+      )(config)
   }
 }

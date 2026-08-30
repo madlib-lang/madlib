@@ -1,9 +1,14 @@
-     ╭──▶ compiler/test/Blackbox/test-cases/record-instance-not-found/Entrypoint.mad@19:3-19:25
+     ╭──▶ compiler/test/Blackbox/test-cases/record-instance-not-found/Entrypoint.mad@18:9-20:2
      │
-  19 │   f({ y: { name: \"\" } })
-     •   ┬─────────────────────
-     •   ╰╸ 'ShowX String' is required here, but no instance was found for 'String'.
+  18 │ ╭┤ start = () => {
+  19 │ │    f({ y: { name: "" } })
+     • │    ┬ 
+     • │    ╰╸ required by 'ShowX { name :: String }', from here
+  20 │ ├┤ }
+     • │ 
+     • ╰╸ 'ShowX String' is required here, but no instance was found for 'String'.
      •
+     │ Note: Required by 'ShowX { name :: String }'.
      │ Hint: Make sure 'String' implements the 'ShowX' interface.
      │ Note: Instance methods are automatically in scope when their module is imported,
      │       directly or transitively.

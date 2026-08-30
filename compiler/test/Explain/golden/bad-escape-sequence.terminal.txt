@@ -1,0 +1,9 @@
+[error]: Bad escape sequence
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ This escape sequence is not valid
+     •
+     │ Hint: Valid escape sequences are either a byte: \xAB or a unicode: \uABCD or \u{ABCDEF} up to 10FFFF
+─────╯

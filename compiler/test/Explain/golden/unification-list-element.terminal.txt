@@ -1,0 +1,12 @@
+[error]: The 3rd list element has a different type
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ the 3rd element is
+     •      String
+     •    but the elements before it are
+     •      Float
+     •
+     │ Note: All elements of a list must share one type. For mixed data, define a union type: type Item = A(...) | B(...).
+─────╯

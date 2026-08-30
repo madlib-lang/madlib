@@ -1,0 +1,10 @@
+[error]: Negated byte
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ Bytes can't be negated
+     •
+     │ Note: Bytes are unsigned integers in range 0-255 and cannot be negative.
+     │ Hint: Use 'Integer' or 'Short' if you need signed numbers.
+─────╯

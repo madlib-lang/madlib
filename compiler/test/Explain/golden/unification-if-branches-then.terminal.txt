@@ -1,0 +1,12 @@
+[error]: The 'then' branch returns a different type than 'else'
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ this branch is
+     •      String
+     •    but the other branch is
+     •      Float
+     •
+     │ Note: An 'if' used as an expression must produce the same type from both branches.
+─────╯

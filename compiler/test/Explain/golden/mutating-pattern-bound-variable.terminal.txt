@@ -1,0 +1,9 @@
+[error]: Cannot mutate pattern-bound variable
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ 'x' is bound by pattern matching and cannot be mutated.
+     •
+     │ Hint: Introduce a local let binding first: x = <patternVar>, then use ':=' on that.
+─────╯

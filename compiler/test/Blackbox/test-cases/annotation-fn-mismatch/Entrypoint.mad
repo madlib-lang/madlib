@@ -1,0 +1,10 @@
+import IO from "IO"
+
+// Regression: this used to report "Type mismatch: Function is not Function".
+// The title must name both function types precisely.
+inc :: Integer -> Integer
+inc = (x) => "hello"
+
+main = () => {
+  IO.log(inc(1))
+}

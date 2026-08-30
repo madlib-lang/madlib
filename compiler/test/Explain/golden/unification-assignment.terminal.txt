@@ -1,0 +1,12 @@
+[error]: Cannot assign String to 'counter'
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ this value is
+     •      String
+     •    but 'counter' was declared with type
+     •      Float
+     •
+     │ Note: ':=' cannot change the type of 'counter'.
+─────╯

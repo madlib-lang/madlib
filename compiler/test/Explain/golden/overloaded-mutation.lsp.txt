@@ -1,0 +1,5 @@
+Mutation in overloaded context
+Cannot mutate 'x' because this function has type class constraints (Show).
+Note: In an overloaded function, each specialisation creates a new closure copy,
+so mutations to 'x' would be invisible to callers.
+Hint: Add a concrete type annotation to remove the polymorphism, or refactor to avoid mutation here.

@@ -1,6 +1,6 @@
      ╭──▶ compiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@3:12-3:13
      │
-   3 │   return a + \"\"
+   3 │   return a + ""
      •            ┬ 
      •            ╰╸ 'Number String' is required here, but no instance was found for 'String'.
      •
@@ -15,10 +15,9 @@
 
      ╭──▶ compiler/test/Blackbox/test-cases/basic-type-error/Entrypoint.mad@7:11-7:18
      │
-   7 │   true && \"Hello\"
+   7 │   true && "Hello"
      •           ┬──────
-     •           ╰╸ The operands of '&&' have incompatible types.
-     •              expected:
+     •           ╰╸ expected:
      •                  Boolean
      •              but found:
      •                  String

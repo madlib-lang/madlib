@@ -1,0 +1,9 @@
+[error]: I can't infer a concrete type here
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ this needs a 'Show' instance, but nothing here tells me which type to pick
+     •
+     │ Hint: Add a type annotation, e.g. a signature that fixes the type implementing 'Show'.
+─────╯

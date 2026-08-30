@@ -1,0 +1,9 @@
+[error]: Byte out of bounds
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The literal '300_b' is too big, the maximum value for bytes is 255
+     •
+     │ Hint: Use a value between 0 and 255, or use 'Integer' for larger numbers.
+─────╯

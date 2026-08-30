@@ -51,7 +51,7 @@ verifyInstancePredicates env p' p@(IsIn cls ts _) = do
   let tvs' = (\(TV n k) -> TV (n + 100000) k) <$> tvs
   catchError
     (unify (TVar <$> tvs') ts >> return True)
-    (\_ -> throwError $ CompilationError (InstancePredicateError p' p (IsIn cls (TVar <$> tvs) Nothing)) NoContext)
+    (\_ -> throwWithContext (InstancePredicateError p' p (IsIn cls (TVar <$> tvs) Nothing)))
 
 -- Add test for overlap that should also test for kind of the given type !!
 addInstance :: Env -> [Pred] -> Pred -> Bool -> Infer Env
@@ -72,7 +72,7 @@ addInstance env ps p@(IsIn cls ts _) isDerived = do
       ps
     case selfRef of
       (_ : _) ->
-        throwError $ CompilationError (SelfReferentialInstance p) NoContext
+        throwWithContext (SelfReferentialInstance p)
       [] -> return ()
 
     -- Reject overlap with fully-resolved (non-stub) instances from other modules.
@@ -80,7 +80,7 @@ addInstance env ps p@(IsIn cls ts _) isDerived = do
     let overlapping = filter (\(Instance (_ :=> h) methods) -> quickMatchPred h p && not (M.null methods)) is
     case overlapping of
       (Instance (_ :=> h) _ : _) ->
-        throwError $ CompilationError (OverlappingInstances p h) NoContext
+        throwWithContext (OverlappingInstances p h)
       [] -> return ()
 
   mapM_ (verifyInstancePredicates env p) ps
@@ -88,7 +88,7 @@ addInstance env ps p@(IsIn cls ts _) isDerived = do
   let ts'    = TVar <$> tvs
   s <- match ts' ts
   catchError (mapM_ (isInstanceDefined env s) ps')
-              (\e@(CompilationError (NoInstanceFound _ ts) _) -> when (all isConcrete ts) (throwError e))
+              (\e@(CompilationError (NoInstanceFound _ ts _) _) -> when (all isConcrete ts) (throwError e))
   return env { envInterfaces = M.insert cls (Interface tvs ps' (Instance (ps :=> p) mempty : is)) (envInterfaces env)
               }
 
@@ -148,7 +148,7 @@ isInstanceDefined env subst (IsIn id ts _) = do
     is
   case found of
     Just _  -> return True
-    Nothing -> throwError $ CompilationError (NoInstanceFound id (apply subst ts)) NoContext
+    Nothing -> throwWithContext (NoInstanceFound id (apply subst ts) [])
 
 
 resolveInstances :: Options -> Env -> [Can.Instance] -> Infer (Env, [Slv.Instance])

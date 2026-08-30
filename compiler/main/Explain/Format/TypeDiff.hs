@@ -280,6 +280,82 @@ constructorAndFunctionArgsToDocsWithDiff isFunctionArg vars1 vars2 ts = case ts 
     (vars1, vars2, [], [])
 
 
+-- | Format an integer as an English ordinal: 1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th" ...
+toOrdinal :: Int -> String
+toOrdinal n =
+  let suffix = case n `mod` 100 of
+        11 -> "th"  -- 11th, 111th, ...
+        12 -> "th"  -- 12th
+        13 -> "th"  -- 13th
+        _  -> case n `mod` 10 of
+                1 -> "st"
+                2 -> "nd"
+                3 -> "rd"
+                _ -> "th"
+  in  show n <> suffix
+
+
+-- | Human-readable path to the first structural difference between two
+-- types. Used in error titles when both types render to the same short
+-- description (e.g. two functions of equal arity that differ somewhere
+-- deep): the title can then say WHERE they differ instead of naming two
+-- identical descriptions.
+firstDifference :: Type -> Type -> Maybe String
+firstDifference t1 t2 = case (t1, t2) of
+  _ | t1 == t2 ->
+    Nothing
+
+  (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->
+    let pairs        = gatherAllFnArgsForDiff t1 t2
+        params       = init pairs
+        (ret1, ret2) = last pairs
+        diffs        = [ i | (i, (a, b)) <- zip [1 ..] params, a /= b ]
+    in  case diffs of
+          (i : _) ->
+            Just $ "the " <> toOrdinal i <> " argument"
+
+          [] ->
+            if ret1 /= ret2 then Just "the return type" else Nothing
+
+  (TRecord fields1 _ optional1, TRecord fields2 _ optional2) ->
+    let all1      = fields1 <> optional1
+        all2      = fields2 <> optional2
+        differing = M.keys $ M.filter id (M.intersectionWith (/=) all1 all2)
+        onlyInOne = M.keys (M.difference all1 all2) ++ M.keys (M.difference all2 all1)
+    in  case differing ++ onlyInOne of
+          (f : _) ->
+            Just $ "the field '" <> f <> "'"
+
+          [] ->
+            Nothing
+
+  _ | isTuple t1 && isTuple t2 ->
+    case gatherAllConstructorArgsForDiff t1 t2 of
+      (head1, head2) : args | head1 == head2 ->
+        case [ i | (i, (a, b)) <- zip [1 ..] args, a /= b ] of
+          (i : _) ->
+            Just $ "the " <> toOrdinal i <> " element of the tuple"
+
+          [] ->
+            Nothing
+
+      _ ->
+        Nothing
+
+  (TApp (TCon (TC name _) _ _) arg1, TApp (TCon (TC _ _) _ _) arg2) | sameHeadCon t1 t2 ->
+    if arg1 /= arg2 then Just ("the type parameter of " <> name) else Nothing
+
+  _ ->
+    Nothing
+  where
+    sameHeadCon a b = case (a, b) of
+      (TApp (TCon (TC n1 _) _ _) _, TApp (TCon (TC n2 _) _ _) _) ->
+        n1 == n2
+
+      _ ->
+        False
+
+
 gatherAllConstructorArgsForDiff :: Type -> Type -> [(Type, Type)]
 gatherAllConstructorArgsForDiff t1 t2 = case (t1, t2) of
   (TApp (TApp (TCon (TC "(->)" _) _ _) _) _, TApp (TApp (TCon (TC "(->)" _) _ _) _) _) ->

@@ -1,0 +1,12 @@
+[error]: Must be typed or above
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ 'parse' is used before it is defined.
+     •
+     │ Note: This is fine, but in that case you must give it a type
+     │       annotation.
+     │ Hint: Place that declaration above the place you use it, or give
+     │       it a type annotation.
+─────╯

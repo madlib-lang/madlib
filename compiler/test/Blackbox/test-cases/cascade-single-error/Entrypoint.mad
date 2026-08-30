@@ -1,0 +1,16 @@
+import IO from "IO"
+
+// Regression: a single broken binding used by three downstream bindings must
+// report exactly one error, not one per use site.
+broken :: Integer
+broken = "not an integer"
+
+useIt1 = () => broken + 1
+useIt2 = () => broken + 2
+useIt3 = () => broken + 3
+
+main = () => {
+  IO.log(useIt1())
+  IO.log(useIt2())
+  IO.log(useIt3())
+}

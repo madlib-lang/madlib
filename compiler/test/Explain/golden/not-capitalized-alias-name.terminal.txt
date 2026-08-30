@@ -1,0 +1,11 @@
+[error]: Alias name not capitalized
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The name 'user' of this type alias is not capitalized
+     •
+     │ Note: This is incorrect and all types in madlib should start with
+     │       an uppercased letter.
+     │ Hint: Change it to 'User'
+─────╯

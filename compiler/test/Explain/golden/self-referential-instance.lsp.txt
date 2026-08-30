@@ -1,0 +1,4 @@
+Self-referential instance
+The instance of 'Show' contains itself in its own constraints.
+Note: This would cause infinite recursion during type checking.
+Hint: Remove the recursive constraint from the instance declaration.

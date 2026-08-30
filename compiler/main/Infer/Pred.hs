@@ -55,7 +55,7 @@ getAllInstancePreds env p = do
 
 liftPred :: ([Type] -> [Type] -> Infer a) -> Pred -> Pred -> Infer a
 liftPred m (IsIn i ts _) (IsIn i' ts' _) | i == i'   = m ts ts'
-                                         | otherwise = throwError $ CompilationError FatalError NoContext
+                                         | otherwise = throwWithContext FatalError
 
 instance Unify Pred where
   unify = liftPred unify
@@ -120,9 +120,9 @@ findInst env p@(IsIn interface ts _) =
   tryInsts []          =
     case p of
         IsIn _ _ (Just area) ->
-          throwError $ CompilationError (NoInstanceFound interface ts) (Context (envCurrentPath env) area)
+          throwError $ CompilationError (NoInstanceFound interface ts []) (Context (envCurrentPath env) area)
         _ ->
-          throwError $ CompilationError (NoInstanceFound interface ts) NoContext
+          throwWithContext (NoInstanceFound interface ts [])
   tryInsts (inst : is) = catchError (tryInst inst) (\_ -> tryInsts is)
 
 gatherInstPreds :: Env -> Pred -> Infer [Pred]
@@ -143,7 +143,7 @@ specialMatch (IsIn cls ts _) (IsIn cls' ts' _) = do
     then do
       let zipped = zip ts ts'
       foldM (\s (t, t') -> (s `compose`) <$> match t (apply s t')) M.empty zipped
-    else throwError $ CompilationError FatalError NoContext
+    else throwWithContext FatalError
 
 
 specialMatchMany :: [Pred] -> [Pred] -> Infer Substitution
@@ -175,7 +175,7 @@ isConcrete t = case t of
 isInstanceOf :: Pred -> Pred -> Infer Substitution
 isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _)
   | interface == interface' = match ts ts'
-  | otherwise               = throwError $ CompilationError FatalError NoContext
+  | otherwise               = throwWithContext FatalError
 
 
 byInst :: Env -> Pred -> Infer [Pred]
@@ -201,11 +201,11 @@ byInst env p@(IsIn interface ts maybeArea) =
     if all isConcrete $ predTypes p then
       case maybeArea of
         Just area ->
-          throwError $ CompilationError (NoInstanceFound interface ts) (Context (envCurrentPath env) area)
+          throwError $ CompilationError (NoInstanceFound interface ts []) (Context (envCurrentPath env) area)
         _ ->
-          throwError $ CompilationError (NoInstanceFound interface ts) NoContext
+          throwWithContext (NoInstanceFound interface ts [])
     else
-      throwError $ CompilationError FatalError NoContext
+      throwWithContext FatalError
 
   tryInsts (inst : is) = catchError (tryInst inst) (const $ tryInsts is)
 
@@ -216,12 +216,25 @@ allM f = foldM (\b a -> f a >>= (return . (&& b))) True
 entail :: Env -> [Pred] -> Pred -> Infer Bool
 entail env ps p = do
   tt <- catchError
-    (byInst env p >>= allM (entail env ps))
+    (byInst env p >>= allM (\q -> catchError (entail env ps q) (throwError . addRequiredBy p)))
     (\case
       CompilationError FatalError _ -> return False
       e                             -> throwError e
     )
   return $ any ((p `elem`) . bySuper env) ps || tt
+  where
+    -- A nested predicate `q` (required by `p`'s instance) failed to resolve:
+    -- record that `p` is what required it, building a required-by chain
+    -- (innermost first) as the error unwinds back through each caller.
+    -- `byInst env p` failing for `p` itself is handled by the caller of
+    -- `entail`, not here, so `p` is never appended to its own failure.
+    addRequiredBy parent err = case err of
+      CompilationError (NoInstanceFound cls ts chain) ctx ->
+        CompilationError (NoInstanceFound cls ts (chain ++ [parent])) ctx
+
+      _ ->
+        err
+
 
 -- | ent takes two separate lists (retained, remaining) and tests if p is
 -- entailed — avoids O(n²) allocation of (rs ++ ps) at each loop step.

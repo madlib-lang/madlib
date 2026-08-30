@@ -38,6 +38,7 @@ import           Infer.Generalize
 import           Infer.Placeholder
 import           Infer.ToSolved
 import qualified Utils.Tuple                   as T
+import           Utils.EditDistance              ( findSimilar )
 import qualified Control.Monad                 as CM
 import           AST.Solved (getType)
 import qualified Data.Set as Set
@@ -48,20 +49,22 @@ import           Data.Char (isAlphaNum)
 
 -- | Extract an ErrorOrigin from a function application expression.
 -- For operators like +, &&, etc., returns FromOperator.
--- For named functions, returns FromFunctionArgument with name and arg index.
+-- For named functions, returns FromFunctionArgument with name and arg index —
+-- the index is the position of the argument being applied at the outermost
+-- App node, however deep the application spine goes.
 getAppOrigin :: Can.Exp -> ErrorOrigin
-getAppOrigin (Can.Canonical _ expr) = case expr of
-  Can.Var name
-    | isOperatorName name -> FromOperator name
-    | otherwise           -> FromFunctionArgument name 1 Nothing
-  Can.App (Can.Canonical _ (Can.Var name)) _ _
-    | isOperatorName name -> FromOperator name
-    | otherwise           -> FromFunctionArgument name 2 Nothing
-  Can.App (Can.Canonical _ (Can.App (Can.Canonical _ (Can.Var name)) _ _)) _ _
-    | isOperatorName name -> FromOperator name
-    | otherwise           -> FromFunctionArgument name 3 Nothing
-  _ -> NoOrigin
+getAppOrigin = go 1
   where
+    go argIndex (Can.Canonical _ expr) = case expr of
+      Can.Var name
+        | isOperatorName name -> FromOperator name
+        | otherwise           -> FromFunctionArgument name argIndex Nothing
+      Can.Access (Can.Canonical _ (Can.Var ns)) (Can.Canonical _ (Can.Var ('.' : field))) ->
+        FromFunctionArgument (ns <> "." <> field) argIndex Nothing
+      Can.App fn _ _ ->
+        go (argIndex + 1) fn
+      _ -> NoOrigin
+
     isOperatorName []    = False
     isOperatorName (c:_) = not (isAlphaNum c) && c /= '_' && c /= '.'
 
@@ -72,24 +75,52 @@ isMaybeType (TApp (TCon (TC "Maybe" _) _ _) _) = True
 isMaybeType _ = False
 
 
--- | Collect type variables that appear at top-level positions in a function type:
--- both parameter positions and the final return position.
--- For `String -> a -> b -> Element`, returns {a, b} (not String or Element which are TCon).
--- For `{ ...r } -> Element`, returns {} (the record is compound, not a plain TVar).
--- For `Integer -> a`, returns {a} so that binding a to a compound type is caught.
-collectTopLevelParamVars :: Type -> S.Set TVar
-collectTopLevelParamVars (TApp (TApp _ paramType) returnType) =
-  case paramType of
-    TVar tv -> S.insert tv (collectTopLevelParamVars returnType)
-    _       -> collectTopLevelParamVars returnType
-collectTopLevelParamVars (TVar tv) = S.singleton tv
-collectTopLevelParamVars _ = S.empty
+-- | Collect type variables that appear as the base (row) of a record type.
+-- These are the only annotation variables allowed to absorb structure during
+-- the signature check in inferExplicitlyTyped: record-spread inference
+-- over-constrains rows (e.g. `{ ...input, time: now() }` forces
+-- `input :: { time :: ..., ...base }` even when the annotation correctly
+-- claims `input :: { ...base }`), so a row variable may legitimately end up
+-- bound to a record carrying the extra fields.
+collectRowVars :: Type -> S.Set TVar
+collectRowVars t = case t of
+  TRecord fields base optionalFields ->
+    let baseVars = case base of
+          Just (TVar tv) -> S.singleton tv
+          Just other     -> collectRowVars other
+          Nothing        -> S.empty
+    in  baseVars <> foldMap collectRowVars (M.elems fields) <> foldMap collectRowVars (M.elems optionalFields)
 
--- | Check if a type is compound (record or type application, not a plain variable or constructor).
-isCompoundBinding :: Type -> Bool
-isCompoundBinding (TRecord _ _ _) = True
-isCompoundBinding (TApp _ _) = True
-isCompoundBinding _ = False
+  TApp l r ->
+    collectRowVars l <> collectRowVars r
+
+  _ ->
+    S.empty
+
+-- | Given the instantiated annotation type and the substitution obtained by
+-- unifying it with the inferred type, decide whether the annotation is as
+-- polymorphic as it claims. That is the case exactly when the substitution
+-- restricted to the annotation's variables is an injective renaming: every
+-- annotation variable maps to a distinct type variable. An annotation
+-- variable bound to anything concrete (`a -> String` implemented with
+-- `(x) => x ++ "!"`) or two annotation variables collapsed into one
+-- (`m a -> m b` implemented as identity) mean the signature is too general.
+-- Row variables are exempt and may also bind to a record (see collectRowVars).
+isInjectiveRenaming :: Type -> Substitution -> Bool
+isInjectiveRenaming tAnnotation s =
+  let rowVars   = collectRowVars tAnnotation
+      plainVars = S.toList (ftv tAnnotation S.\\ rowVars)
+      imageVars = [tv | TVar tv <- map (\tv -> apply s (TVar tv)) plainVars]
+      rowVarsOk = all
+        (\tv -> case apply s (TVar tv) of
+          TVar _    -> True
+          TRecord{} -> True
+          _         -> False
+        )
+        (S.toList rowVars)
+  in  length imageVars == length plainVars
+        && S.size (S.fromList imageVars) == length imageVars
+        && rowVarsOk
 
 
 -- | All inference is state-based. Substitutions accumulate into
@@ -99,7 +130,10 @@ isCompoundBinding _ = False
 infer :: Options -> Env -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
 infer options env lexp = do
   let (Can.Canonical area exp) = lexp
-  case exp of
+  -- Track the nearest enclosing expression's span so that errors thrown deep
+  -- inside unification (which have no location of their own) can be stamped
+  -- with it instead of reaching the user locationless.
+  withCurrentSpan (envCurrentPath env) area $ case exp of
     Can.LNum  _               -> do
       t <- newTVar Star
       let ps = [IsIn "Number" [t] Nothing]
@@ -342,7 +376,7 @@ postProcessBody options env s expType es = do
                   _ | discardError ->
                     return []
 
-                  (CompilationError FatalError NoContext) ->
+                  (CompilationError FatalError _) ->
                     if ambiguities fs unsolvedPs'' /= [] then
                       case p of
                         IsIn _ (TVar tv : _) _ ->
@@ -420,7 +454,30 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
   -- based subst, both have already had their relevant prior substs applied.
   t1Applied <- applyCurrentSubst t1
   t2Applied <- applyCurrentSubst t2
-  s3 <- contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) origin secondaryLoc env expForContext t1Applied (t2Applied `fn` tv)
+  s3 <- catchError
+    (contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) origin secondaryLoc env expForContext t1Applied (t2Applied `fn` tv))
+    (\err -> case err of
+      -- funcType (t1) is no longer a function at this application depth: the
+      -- caller supplied more arguments than the function accepts. Report the
+      -- over-application explicitly rather than letting it read as a mismatch
+      -- between the extra argument and whatever funcType happens to be.
+      CompilationError (UnificationError tm) ctx
+        | FromFunctionArgument fn idx _ <- baseOrigin
+        , not (isFunctionType funcType) ->
+          throwError $ CompilationError (UnificationError tm { tmOrigin = TooManyArguments fn (idx - 1) }) ctx
+
+      -- The application-level unification pairs the function's remaining type
+      -- with `argType -> ret`, but the reader cares about the operand: when
+      -- the function type is known, report (arg, param) instead of two
+      -- partially applied function types.
+      CompilationError (UnificationError tm) ctx
+        | originWantsOperandPair (tmOrigin tm)
+        , (param : _) <- getParamTypes t1Applied ->
+          throwError $ CompilationError (UnificationError tm { tmFound = t2Applied, tmExpected = param }) ctx
+
+      _ ->
+        throwError err
+    )
   extSubst s3
 
   t <- applyCurrentSubst tv
@@ -453,6 +510,11 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
   let solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs (updateQualType earg' $ apply s (ps1 ++ ps2) :=> apply s t2) final
 
   return (ps1 ++ ps2, t, solved)
+  where
+    originWantsOperandPair o = case o of
+      FromFunctionArgument{} -> True
+      FromOperator{}         -> True
+      _                      -> False
 
 
 
@@ -545,8 +607,9 @@ inferMutate options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
   discardError <- isDiscardingErrors
   (s1, (ps1, t1, e1)) <- captureDelta (infer options env lhs)
   (s2, (ps2, t2, e2)) <- captureDelta (infer options (apply s1 env) exp)
+  let assignOrigin = maybe NoOrigin FromAssignment (Can.getExpName lhs)
   s3 <- catchError
-    (contextualUnify Strict env e t1 t2)
+    (contextualUnifyWithOrigin Strict assignOrigin env e t1 t2)
     (\err -> do
       if discardError then do
         return mempty
@@ -904,7 +967,10 @@ inferNamespaceAccess _ env e@(Can.Canonical area (Can.Access (Can.Canonical _ (C
     sc <-
       catchError
         (lookupVar env (ns <> field))
-        (\_ -> enhanceVarError env e area (CompilationError (UnboundVariableFromNamespace ns (tail field)) NoContext))
+        (\_ -> do
+          exportNames <- namespaceExportNames env ns
+          let suggestions = findSimilar (tail field) exportNames
+          enhanceVarError env e area (CompilationError (UnboundVariableFromNamespace ns (tail field) suggestions) NoContext))
     (ps :=> t) <- instantiate sc
     let ps' = (\(IsIn c ts _) -> IsIn c ts (Just area)) <$> ps
 
@@ -963,7 +1029,13 @@ inferIf options env (Can.Canonical area (Can.If cond truthy falsy)) = do
 
   tfalsy' <- applyCurrentSubst tfalsy
   ttruthy' <- applyCurrentSubst ttruthy
-  let unifyBranches = contextualUnifyWithOrigin (if discardError then Discard else Strict) (FromIfBranches ElseBranch) env falsy tfalsy' ttruthy'
+  -- The error anchors on the else branch; point at the then branch as a
+  -- secondary location so both disagreeing branches are visible.
+  let branchSecondary = Just $ SecondaryLocation
+        (envCurrentPath env)
+        (Can.getArea truthy)
+        "the other branch of this 'if' is here"
+      unifyBranches = contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) (FromIfBranches ElseBranch) branchSecondary env falsy tfalsy' ttruthy'
   s4 <- catchError unifyBranches (flipUnificationErrorWithBranch ThenBranch)
   extSubst s4
   tcond' <- applyCurrentSubst tcond
@@ -1205,7 +1277,30 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   (s, (ps, t, e)) <- captureDelta (infer options env' { envNamesInScope = envVars env } exp)
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
   let sNorm = s `compose` s -- resolve internal substitution chains
-  s'' <- catchError (contextualUnifyWithOrigin (if discardError then Discard else Strict) FromTypeAnnotation env canExp t' (apply sNorm t)) (throwError . limitContextArea 2)
+  let tInferred = apply sNorm t
+      -- When annotation and implementation are functions of equal arity that
+      -- differ only in their return type, report just the two return types
+      -- under FromFunctionReturn instead of the whole function types. Uses
+      -- the types actually reported in the thrown error (already normalized
+      -- by contextualUnify), not the pre-unification annotation/inferred
+      -- pair, so partially-substituted type variables don't defeat the
+      -- structural comparison.
+      retagReturnMismatch err = case (err, Can.getExpName exp) of
+        (CompilationError (UnificationError tm) errCtx, Just name)
+          | isFunctionType (tmFound tm)
+          , isFunctionType (tmExpected tm)
+          , getParamTypes (tmFound tm) == getParamTypes (tmExpected tm)
+          , getReturnType (tmFound tm) /= getReturnType (tmExpected tm) ->
+            CompilationError
+              (UnificationError tm { tmFound    = getReturnType (tmFound tm)
+                                   , tmExpected = getReturnType (tmExpected tm)
+                                   , tmOrigin   = FromFunctionReturn name
+                                   })
+              errCtx
+
+        _ ->
+          err
+  s'' <- catchError (contextualUnifyWithOrigin (if discardError then Discard else Strict) FromTypeAnnotation env canExp t' tInferred) (throwError . limitContextArea 2 . retagReturnMismatch)
   let s' = s'' `compose` sNorm
 
   let envWithVarsExcluded =
@@ -1237,24 +1332,16 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
       gs = filter (not . (`S.member` fsSet)) (ftvList (apply s' t'))
       scCheck  = quantify (ftvList (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
   sigCheckResult <- if sc /= scCheck then
-    -- The inferred scheme differs from the declared scheme.
-    -- Check if the declared type subsumes the inferred type.
-    -- This handles cases like record spreads where the inference over-constrains
-    -- the input type (e.g., { ...input, time: now() } makes input :: { time: ..., ...r }
-    -- but the declared type correctly says input :: { ...r }).
-    -- However, we reject annotations where a plain type variable is bound to a
-    -- compound type (record, applied type), indicating the annotation is too general.
+    -- The inferred scheme differs from the declared scheme. Unify a fresh
+    -- instance of each and inspect how the annotation's variables were bound:
+    -- only an injective renaming — with row variables allowed to absorb extra
+    -- record fields (see collectRowVars) — means the annotation matches the
+    -- implementation's generality. Anything else means it is too general.
     catchError (do
-      (ps1 :=> t1) <- instantiate sc
-      let annotationVars = ftv t1
-      (ps2 :=> t2) <- instantiate scCheck
+      (_ :=> t1) <- instantiate sc
+      (_ :=> t2) <- instantiate scCheck
       s <- unify t1 t2
-      -- Check that no top-level annotation type variable was bound to a compound type.
-      -- This catches e.g. `f :: a -> b` where the inferred type is `{ name :: String } -> String`.
-      -- But allows row variables in records (e.g. `{ ...r }` annotation where r absorbs extra fields).
-      let topLevelVars = collectTopLevelParamVars t1
-      let tooGeneral = any (\tv -> isCompoundBinding (apply s (TVar tv))) (S.toList topLevelVars)
-      return (not tooGeneral)
+      return (isInjectiveRenaming t1 s)
     ) (const $ return False)
   else
     return True

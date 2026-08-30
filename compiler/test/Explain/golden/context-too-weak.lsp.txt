@@ -1,0 +1,7 @@
+Context too weak
+The context of the type annotation is too weak. The type
+inferred for the implementation has constraints
+for the following instances: Eq
+Hint: Add the missing interface constraints to the type annotation.
+Note: Example: if the constraint 'Eq a' is missing, change
+  'myFn :: a -> Boolean'  to  'myFn :: Eq a => a -> Boolean'

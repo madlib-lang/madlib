@@ -1,0 +1,10 @@
+[error]: You can't assign to this expression
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ This isn't a name or pattern that a value can be bound to.
+     •
+     │ Note: The left-hand side of '=' must be a variable name, a record pattern, or a list pattern.
+     │ Hint: Valid forms: x = expr, { field } = record, [first] = list
+─────╯

@@ -1,0 +1,15 @@
+[error]: Infinite type
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ I can't construct the type 'a' because it would need to contain itself:
+     •      a = List a
+     •
+     │ Note: This happens when the type checker tries to unify a type variable with
+     │       a type that contains that same variable, creating an infinite loop.
+     │ Hint: Common causes:
+     │ Note:   1. A function applied to itself: f(f) — wrap it in a lambda: f((_) => f)
+     │         2. A recursive data structure without a type alias
+     │         3. A missing type annotation on a recursive function
+─────╯

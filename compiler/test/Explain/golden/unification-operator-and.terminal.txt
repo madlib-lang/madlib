@@ -1,0 +1,13 @@
+[error]: Both sides of '&&' must be Boolean
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ expected:
+     •        Boolean
+     •    but found:
+     •        String
+     •
+     │ Hint: '&&' requires Boolean, not String. Did you mean to compare with '=='?
+     │ Note: Example: instead of 'cond && str', write 'cond && str == expectedValue'
+─────╯

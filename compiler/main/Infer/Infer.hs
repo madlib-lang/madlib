@@ -5,6 +5,8 @@ module Infer.Infer where
 import           Control.Monad.Except
 import           Control.Monad.State
 import           Error.Error
+import           Error.Context
+import           Explain.Location (Area)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified Rock
@@ -37,6 +39,12 @@ data InferState
   -- AST for IDE/error-recovery scenarios. Replaces the discardError Bool
   -- parameter that used to be threaded through every infer* function.
   -- Toggled with `withDiscardErrors`.
+  , currentSpan :: Maybe (FilePath, Area)
+  -- ^ The span of the expression currently being inferred. Maintained by
+  -- `withCurrentSpan` around the central dispatcher so that any error thrown
+  -- without a location (NoContext) can be stamped with the nearest enclosing
+  -- expression's span instead of reaching the user locationless. Read at
+  -- throw/catch boundaries via `throwWithContext` / `stampContext`.
   }
 
 
@@ -44,10 +52,27 @@ getErrors :: Infer [CompilationError]
 getErrors = gets errors
 
 
+-- | Record an error for the final report. A no-op while best-effort
+-- (discardErrors) inference is running: errors discovered during a
+-- speculative retry are not real failures — either the retry succeeds and
+-- they never mattered, or it fails and the caller reports its own error for
+-- the whole binding. Pushing them anyway would surface cascading, spurious
+-- errors on top of the one that actually explains the problem. Call
+-- 'forcePushError' to bypass this when an error must be recorded regardless.
 pushError :: CompilationError -> Infer ()
 pushError err = do
+  discarding <- isDiscardingErrors
+  if discarding then return () else forcePushError err
+
+
+-- | Like 'pushError' but always records the error, even while discardErrors
+-- is set. Use only when the error is not speculative — e.g. one explicitly
+-- surfaced as the outcome of a best-effort attempt, not a byproduct of it.
+forcePushError :: CompilationError -> Infer ()
+forcePushError err = do
+  err' <- stampContext err
   s <- get
-  put s { errors = err : errors s }
+  put s { errors = err' : errors s }
 
 
 pushWarning :: CompilationWarning -> Infer ()
@@ -114,3 +139,46 @@ recover :: Infer a -> a -> Infer a
 recover action fallback = catchError action $ \err -> do
   pushError err
   return fallback
+
+
+-- | Run an action with the current span set to the given location, restoring
+-- the previous span afterwards. Wrapped around the central expression
+-- dispatcher so every nested throw inherits the nearest enclosing
+-- expression's span as its positional fallback; more precise sub-expression
+-- contexts attached by contextualUnify* still take precedence.
+withCurrentSpan :: FilePath -> Area -> Infer a -> Infer a
+withCurrentSpan path area action = do
+  prev <- gets currentSpan
+  modify $ \s -> s { currentSpan = Just (path, area) }
+  let restore = modify $ \s -> s { currentSpan = prev }
+  result <- action `catchError` (\err -> restore >> throwError err)
+  restore
+  return result
+
+
+-- | Throw a type error located at the current span when one is known.
+throwWithContext :: TypeError -> Infer a
+throwWithContext typeError = do
+  span' <- gets currentSpan
+  throwError $ CompilationError typeError (spanToContext span')
+
+
+-- | Stamp a locationless error with the current span. Errors that already
+-- carry a context are left untouched.
+stampContext :: CompilationError -> Infer CompilationError
+stampContext err = case err of
+  CompilationError e NoContext -> do
+    span' <- gets currentSpan
+    return $ CompilationError e (spanToContext span')
+
+  _ ->
+    return err
+
+
+spanToContext :: Maybe (FilePath, Area) -> Context
+spanToContext span' = case span' of
+  Just (path, area) ->
+    Context path area
+
+  Nothing ->
+    NoContext

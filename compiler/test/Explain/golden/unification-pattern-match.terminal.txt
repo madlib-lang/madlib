@@ -1,0 +1,12 @@
+[error]: The 2nd branch of 'where' returns a different type
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ the 2nd branch returns
+     •      String
+     •    but the previous branches return
+     •      Float
+     •
+     │ Note: All branches of a 'where' must return the same type.
+─────╯

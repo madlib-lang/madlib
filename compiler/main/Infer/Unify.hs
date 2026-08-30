@@ -78,7 +78,8 @@ instance Unify Type where
       s1 <- unify tBase (TRecord fieldsDiff Nothing mempty)
 
       let missingInConcrete = M.keys $ M.difference (fields <> optionalFields) (fields' <> optionalFields')
-      unless (null missingInConcrete) $ throwError (CompilationError (RecordMissingFields missingInConcrete) NoContext)
+          availableInConcrete = M.keys (fields' <> optionalFields')
+      unless (null missingInConcrete) $ throwError (CompilationError (RecordMissingFields missingInConcrete availableInConcrete) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -99,7 +100,8 @@ instance Unify Type where
       s1 <- unify tBase' (TRecord fieldsDiff Nothing mempty)
 
       let missingInPattern = M.keys $ M.difference (fields' <> optionalFields') (fields <> optionalFields)
-      unless (null missingInPattern) $ throwError (CompilationError (RecordMissingFields missingInPattern) NoContext)
+          availableInPattern = M.keys (fields <> optionalFields)
+      unless (null missingInPattern) $ throwError (CompilationError (RecordMissingFields missingInPattern availableInPattern) NoContext)
 
       let fieldsToCheck  = M.intersection fields fields'
           fieldsToCheck' = M.intersection fields' fields
@@ -116,7 +118,7 @@ instance Unify Type where
       if not (null extraFields') then
         throwError $ CompilationError (RecordExtraFields extraFields' availableFields) NoContext
       else if not (null extraFields) then
-        throwError $ CompilationError (RecordMissingFields extraFields) NoContext
+        throwError $ CompilationError (RecordMissingFields extraFields availableFields) NoContext
       else
         unifyVars' M.empty (M.elems fields) (M.elems fields')
 
@@ -125,7 +127,7 @@ instance Unify Type where
   unify t1@(TCon a fpa _) t2@(TCon b fpb _)
     | a == b && fpa == fpb = return M.empty
     | a == b && (fpa == "JSX" || fpb == "JSX") = return M.empty
-    | a /= b               = throwError $ CompilationError (UnificationError t2 t1 NoOrigin Nothing) NoContext
+    | a /= b               = throwError $ CompilationError (UnificationError TypeMismatch { tmFound = t2, tmExpected = t1, tmOrigin = NoOrigin, tmSecondaries = [] }) NoContext
     | fpa /= fpb           = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId a) fpa fpb) NoContext
 
   unify (TCon (TC tNameA _) _ _) (TApp (TCon (TC tNameB _) _ _) _)
@@ -137,7 +139,7 @@ instance Unify Type where
         return mempty
 
   unify t1 t2 =
-    throwError $ CompilationError (UnificationError t2 t1 NoOrigin Nothing) NoContext
+    throwError $ CompilationError (UnificationError TypeMismatch { tmFound = t2, tmExpected = t1, tmOrigin = NoOrigin, tmSecondaries = [] }) NoContext
 
 
 
@@ -195,9 +197,9 @@ instance Match Type where
     let allFields1 = fields1 <> optionalFields1
     let allFields2 = fields2 <> optionalFields2
     Monad.when (M.size allFields1 /= M.size allFields2) $
-      throwError $ CompilationError (UnificationError t2 t1 NoOrigin Nothing) NoContext
+      throwError $ CompilationError (UnificationError TypeMismatch { tmFound = t2, tmExpected = t1, tmOrigin = NoOrigin, tmSecondaries = [] }) NoContext
     unify (TRecord allFields1 Nothing mempty) (TRecord allFields2 Nothing mempty)
-  match t1 t2 = throwError $ CompilationError (UnificationError t2 t1 NoOrigin Nothing) NoContext
+  match t1 t2 = throwError $ CompilationError (UnificationError TypeMismatch { tmFound = t2, tmExpected = t1, tmOrigin = NoOrigin, tmSecondaries = [] }) NoContext
 
 instance Match t => Match [t] where
   -- Fast path for the common single-element case
@@ -222,15 +224,12 @@ contextualUnify strategy env exp t1 t2 = catchError
     _ | strategy == Discard ->
       return $ gentleUnify t1 t2
 
-    (CompilationError (UnificationError _ _ origin _) ctx) -> do
-      let t2' = getParamTypeOrSame t2
-          t1' = getParamTypeOrSame t1
-          hasNotChanged = t2' == t2 || t1' == t1
-          t2'' = if hasNotChanged then t2 else t2'
-          t1'' = if hasNotChanged then t1 else t1'
-      (t2''', t1''') <- catchError (unify t1'' t2'' >> return (t2, t1)) (\_ -> return (t2'', t1''))
-      (t2'''', t1'''') <- improveRecordErrorTypes t2''' t1'''
-      addContext env exp (CompilationError (UnificationError t2'''' t1'''' origin Nothing) ctx)
+    (CompilationError (UnificationError tm) ctx) -> do
+      -- Report the full types being unified at this call site, never a
+      -- sub-part: truncating (e.g. to the first function parameter) hides
+      -- where in the type the conflict actually is.
+      (tFound, tExpected) <- improveRecordErrorTypes t2 t1
+      addContext env exp (CompilationError (UnificationError tm { tmFound = tFound, tmExpected = tExpected, tmSecondaries = [] }) ctx)
 
     e ->
       addContext env exp e
@@ -255,7 +254,7 @@ contextualUnify' env discardError = contextualUnify (if discardError then Discar
 unifyM :: Type -> Type -> Infer ()
 unifyM t1 t2 = do
   s <- getSubst
-  s' <- unify (apply s t1) (apply s t2)
+  s' <- catchError (unify (apply s t1) (apply s t2)) (\err -> stampContext err >>= throwError)
   extSubst s'
 
 -- | Like contextualUnify but embeds an ErrorOrigin into any UnificationError thrown.
@@ -271,8 +270,8 @@ contextualUnifyWithOriginAndSecondary :: UnifyStrategy -> ErrorOrigin -> Maybe S
 contextualUnifyWithOriginAndSecondary strategy origin secondaryLoc env exp t1 t2 = catchError
   (contextualUnify strategy env exp t1 t2)
   (\case
-    CompilationError (UnificationError l r _ _) ctx ->
-      throwError $ CompilationError (UnificationError l r origin secondaryLoc) ctx
+    CompilationError (UnificationError tm) ctx ->
+      throwError $ CompilationError (UnificationError tm { tmOrigin = origin, tmSecondaries = maybe [] pure secondaryLoc }) ctx
     e ->
       throwError e
   )
@@ -291,15 +290,15 @@ contextualUnifyElems' env (e, t) ((e', t') : xs) = do
 
 flipUnificationError :: CompilationError -> Infer b
 flipUnificationError e@(CompilationError err x) = case err of
-  UnificationError l r origin sec -> throwError $ CompilationError (UnificationError r l origin sec) x
-  _                           -> throwError e
+  UnificationError tm -> throwError $ CompilationError (UnificationError tm { tmFound = tmExpected tm, tmExpected = tmFound tm }) x
+  _                   -> throwError e
 
 
 -- | Like flipUnificationError but also replaces the ErrorOrigin with a specific BranchSide.
 -- Used for if-expression branch unification where flipping means the other branch is the culprit.
 flipUnificationErrorWithBranch :: BranchSide -> CompilationError -> Infer b
-flipUnificationErrorWithBranch side (CompilationError (UnificationError l r _ sec) ctx) =
-  throwError $ CompilationError (UnificationError r l (FromIfBranches side) sec) ctx
+flipUnificationErrorWithBranch side (CompilationError (UnificationError tm) ctx) =
+  throwError $ CompilationError (UnificationError tm { tmFound = tmExpected tm, tmExpected = tmFound tm, tmOrigin = FromIfBranches side }) ctx
 flipUnificationErrorWithBranch _ e = throwError e
 
 

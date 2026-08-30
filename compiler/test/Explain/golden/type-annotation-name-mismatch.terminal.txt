@@ -1,0 +1,10 @@
+[error]: Type annotation name mismatch
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The type annotation is for 'foo' but the following definition is for 'bar'.
+     •
+     │ Hint: Rename the annotation to match: 'bar :: <type>'
+     │ Note: A type annotation must immediately precede the definition it annotates and share the same name.
+─────╯

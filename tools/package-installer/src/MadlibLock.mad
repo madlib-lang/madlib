@@ -20,15 +20,27 @@ export alias LockEntry = {
   dependencies :: List String,
 }
 
+export type ResolutionStrategy
+  = Exact
+  | LatestPatch
+
+export alias Resolution = {
+  strategy :: ResolutionStrategy,
+  version :: String,
+  url :: String,
+}
+
 export alias MadlibLock = {
   lockfileVersion :: Integer,
+  resolutions :: Dictionary String Resolution,
   packages :: Dictionary String LockEntry,
 }
 
 
 empty :: MadlibLock
 export empty = {
-  lockfileVersion: 1,
+  lockfileVersion: 2,
+  resolutions: Dictionary.empty,
   packages: Dictionary.empty,
 }
 
@@ -51,11 +63,39 @@ lockEntryParser = J.chain5(
   J.field("dependencies", J.list(J.string))
 )
 
+resolutionStrategyParser :: J.Parser ResolutionStrategy
+resolutionStrategyParser = J.chain1(
+  (strategy) => strategy == "exact"
+    ? J.succeed(Exact)
+    : strategy == "latestPatch"
+      ? J.succeed(LatestPatch)
+      : J.fail(`Unknown resolution strategy '${strategy}'`),
+  J.string
+)
+
+resolutionParser :: J.Parser Resolution
+resolutionParser = J.map3(
+  (strategy, version, url) => ({ strategy, version, url }),
+  J.field("strategy", resolutionStrategyParser),
+  J.field("version", J.string),
+  J.field("url", J.string)
+)
+
 parser :: J.Parser MadlibLock
-parser = J.map2(
-  (lockfileVersion, packages) => ({ lockfileVersion, packages }),
-  J.field("lockfileVersion", J.integer),
-  J.field("packages", J.dict(lockEntryParser))
+parser = J.chain1(
+  (lockfileVersion) => lockfileVersion == 1
+    ? J.map1(
+        (packages) => ({ lockfileVersion, resolutions: Dictionary.empty, packages }),
+        J.field("packages", J.dict(lockEntryParser))
+      )
+    : lockfileVersion == 2
+      ? J.map2(
+          (resolutions, packages) => ({ lockfileVersion, resolutions, packages }),
+          J.field("resolutions", J.dict(resolutionParser)),
+          J.field("packages", J.dict(lockEntryParser))
+        )
+      : J.fail(`Unsupported lockfile version '${show(lockfileVersion)}'`),
+  J.field("lockfileVersion", J.integer)
 )
 
 
@@ -70,10 +110,24 @@ serializeLockEntry = (entry) => Print.object([
   #["dependencies", Print.list(Print.string, entry.dependencies)],
 ])
 
+serializeResolutionStrategy :: ResolutionStrategy -> String
+serializeResolutionStrategy = where {
+  Exact => "exact"
+  LatestPatch => "latestPatch"
+}
+
+serializeResolution :: Resolution -> Value
+serializeResolution = (resolution) => Print.object([
+  #["strategy", Print.string(serializeResolutionStrategy(resolution.strategy))],
+  #["version", Print.string(resolution.version)],
+  #["url", Print.string(resolution.url)],
+])
+
 serialize :: MadlibLock -> String
 serialize = (lock) => pipe(
   (l) => Print.object([
-    #["lockfileVersion", Print.integer(l.lockfileVersion)],
+    #["lockfileVersion", Print.integer(2)],
+    #["resolutions", Print.dict(serializeResolution, l.resolutions)],
     #["packages", Print.dict(serializeLockEntry, l.packages)],
   ]),
   Print.print(80)
@@ -145,5 +199,5 @@ export normalizeDependencies = (originalPackages, resolvedLock) => {
     resolved
   )
 
-  return { ...resolvedLock, packages: fixedPackages }
+  return { ...resolvedLock, lockfileVersion: 2, packages: fixedPackages }
 }

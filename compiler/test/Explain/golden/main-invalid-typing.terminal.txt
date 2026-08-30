@@ -1,0 +1,10 @@
+[error]: Invalid 'main' signature
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The 'main' function has the wrong type. It must accept 'List String' and return '{}'.
+     •
+     │ Hint: Change the signature to:  main :: List String -> {}
+     │ Note: You can also omit the type annotation entirely and let it be inferred.
+─────╯

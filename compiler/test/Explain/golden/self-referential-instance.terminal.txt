@@ -1,0 +1,10 @@
+[error]: Self-referential instance
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The instance of 'Show' contains itself in its own constraints.
+     •
+     │ Note: This would cause infinite recursion during type checking.
+     │ Hint: Remove the recursive constraint from the instance declaration.
+─────╯

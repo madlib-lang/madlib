@@ -43,9 +43,14 @@ library
       Canonicalize.Typing
       Driver
       Driver.Rules
+      Explain.Diagnostic
+      Explain.Diagnostic.Build
       Explain.Format
       Explain.Format.Hints
       Explain.Format.TypeDiff
+      Explain.Render.Json
+      Explain.Render.Terminal
+      Explain.Render.Text
       Format.Format
       Fuzz.Engine
       Fuzz.Generator
@@ -248,6 +253,7 @@ library common
       Driver.Query
       Error.Context
       Error.Error
+      Error.Filter
       Error.Warning
       Explain.Location
       Generate.LLVM.Env
@@ -477,15 +483,21 @@ test-suite madlib-test
   other-modules:
       Blackbox.RunnerSpec
       DocStringSpec
+      Error.FilterSpec
+      Explain.ContextEnforcementSpec
       Explain.FormatSpec
+      Explain.GoldenSpec
       Format.FormatSpec
       FuzzSpec
       Generate.JSInternalsSpec
       Infer.PlaceholderSpec
       Infer.SolveSpec
       MegaparsecSpec
+      Run.CommandLineSpec
+      Run.LanguageServer.DiagnosticsSpec
       Run.PackageSpec
       TestUtils
+      TestUtils.Golden
       Utils.PathSpec
       Paths_madlib
   autogen-modules:

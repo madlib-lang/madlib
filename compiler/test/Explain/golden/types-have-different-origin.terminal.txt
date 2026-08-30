@@ -1,0 +1,12 @@
+[error]: Types have different origins
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The type 'User' is imported from two different locations:
+     •      - 'a/User.mad'
+     •      - 'b/User.mad'
+     •    These are treated as distinct types even though they share a name.
+     •
+     │ Hint: Import 'User' from only one location, or convert between the two explicitly.
+─────╯

@@ -263,22 +263,12 @@
 , []
 , [ CompilationError
       (UnificationError
-         (TApp
-            (TApp
-               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-               (TApp
-                  (TCon (TC "List" (Kfun Star Star)) "prelude")
-                  (TCon (TC "String" Star) "prelude")))
-            (TCon (TC "Integer" Star) "prelude"))
-         (TApp
-            (TApp
-               (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-               (TApp
-                  (TCon (TC "List" (Kfun Star Star)) "prelude")
-                  (TCon (TC "String" Star) "prelude")))
-            (TCon (TC "{}" Star) "prelude"))
-         FromTypeAnnotation
-         Nothing)
+         TypeMismatch
+           { tmFound = TCon (TC "Integer" Star) "prelude"
+           , tmExpected = TCon (TC "{}" Star) "prelude"
+           , tmOrigin = FromFunctionReturn "main"
+           , tmSecondaries = []
+           })
       Context
         { ctxAstPath = "Module.mad"
         , ctxArea = Area (Loc 57 4 1) (Loc 74 4 18)

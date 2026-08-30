@@ -1,0 +1,10 @@
+[error]: Unknown type
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The type 'MyType' is not defined in this scope.
+     •
+     │ Hint: Check for a typo in the type name.
+     │ Note: If 'MyType' is defined in another module, import it: 'import Type from "./Module"'
+─────╯

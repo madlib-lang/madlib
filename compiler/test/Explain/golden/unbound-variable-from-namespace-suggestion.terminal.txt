@@ -1,0 +1,10 @@
+[error]: Name not in module
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ 'fliter' was not found in 'List'.
+     •
+     │ Hint: Did you mean 'List.filter'?
+     │ Note: With a default import 'import List from "List"', use 'List.filter', 'List.length', etc.
+─────╯

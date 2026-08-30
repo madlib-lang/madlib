@@ -1,0 +1,6 @@
+Refutable pattern in function parameter
+This pattern may not match all possible values.
+Note: Function parameter patterns must be irrefutable (guaranteed to match).
+Only tuple (#[a, b]) and record ({ name, age }) patterns are allowed.
+Hint: Use a 'where' expression for refutable patterns:
+  (x) => where(x) { Just(val) => ... }

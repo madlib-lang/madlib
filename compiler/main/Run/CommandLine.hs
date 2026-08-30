@@ -52,7 +52,13 @@ data Command
       , testEmitLLVM :: Bool
       , testErrorFormat :: ErrorFormat
       }
-  | Install { installGraph :: Bool, installUpgrade :: Bool, installWhy :: Maybe String }
+  | Install
+      { installGraph :: Bool
+      , installUpgrade :: Bool
+      , installWhy :: Maybe String
+      , installInteractive :: Bool
+      , installResolutions :: [String]
+      }
   | Add { addUrl :: String, addName :: Maybe String }
   | Remove { removeName :: String }
   | New { newFolder :: FilePath }
@@ -209,8 +215,26 @@ parseInstallWhy = optional $ strOption
   <> help "Explain why a package is included in the dependency graph"
   )
 
+parseInstallInteractive :: Parser Bool
+parseInstallInteractive = switch
+  (  long "interactive"
+  <> help "Interactively resolve incompatible dependency versions"
+  )
+
+parseInstallResolutions :: Parser [String]
+parseInstallResolutions = many $ strOption
+  (  long "resolve"
+  <> metavar "PACKAGE@VERSION"
+  <> help "Persist an exact dependency resolution (repeatable)"
+  )
+
 parseInstall :: Parser Command
-parseInstall = Install <$> parseInstallGraph <*> parseInstallUpgrade <*> parseInstallWhy
+parseInstall = Install
+  <$> parseInstallGraph
+  <*> parseInstallUpgrade
+  <*> parseInstallWhy
+  <*> parseInstallInteractive
+  <*> parseInstallResolutions
 
 parseAddUrl :: Parser String
 parseAddUrl = strArgument (metavar "URL" <> help "URL of the package to add")

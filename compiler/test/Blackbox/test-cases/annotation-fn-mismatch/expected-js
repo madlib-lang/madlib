@@ -1,0 +1,25 @@
+[warning]: Unused parameter
+     ╭──▶ compiler/test/Blackbox/test-cases/annotation-fn-mismatch/Entrypoint.mad@6:8-6:9
+     │
+   6 │ inc = (x) => "hello"
+     •        ┬ 
+     •        ╰╸ You declared a parameter named 'x' but it seems that
+     •           you never use it
+     •
+     │ Hint: Remove this parameter if you don't need it
+     │ Hint: Use the skip parameter '_' to suppress this warning.
+─────╯
+
+     ╭──▶ compiler/test/Blackbox/test-cases/annotation-fn-mismatch/Entrypoint.mad@5:1-6:21
+     │
+   5 │ ╭┤ inc :: Integer -> Integer
+   6 │ ├┤ inc = (x) => "hello"
+     • │ 
+     • ╰╸ the body produces
+     •      String
+     •    but the annotation says 'inc' returns
+     •      Integer
+     •
+     │ Note: Check that every branch of 'inc's body returns the same type.
+─────╯
+

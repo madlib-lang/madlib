@@ -1,0 +1,11 @@
+[error]: Constructor name not capitalized
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ The name 'just' of this type constructor is not capitalized
+     •
+     │ Note: This is incorrect and all types in madlib should start with
+     │       an uppercased letter.
+     │ Hint: Change it to 'Just'
+─────╯

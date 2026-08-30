@@ -1,0 +1,13 @@
+import IO from "IO"
+
+// This must compile: inference over-constrains `input` to already have a
+// `time` field because of the spread, but the annotation's row variable is
+// allowed to absorb it
+addTime :: { ...r, name :: String } -> { ...r, name :: String, time :: Integer }
+addTime = (input) => ({ ...input, time: 123 })
+
+main = () => {
+  updated = addTime({ name: "hey", time: 0 })
+  IO.log(updated.name)
+  IO.log(updated.time)
+}

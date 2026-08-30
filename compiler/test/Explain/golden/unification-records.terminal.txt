@@ -1,0 +1,10 @@
+[error]: Type mismatch: expected a record with fields 'age', 'name' but found { name :: String }
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ expected:
+     •        { name :: String, age :: Integer }
+     •    but found:
+     •        { name :: String }
+─────╯

@@ -1,0 +1,10 @@
+[error]: Duplicate rest pattern
+     ╭──▶ test/Module.mad@1:1-1:20
+     │
+   1 │ someValue = doStuff(1, 2)
+     • ┬────────────────── 
+     • ╰╸ A record pattern can only have one rest/spread pattern ('...').
+     •
+     │ Hint: Remove the extra '...' and keep only one.
+     │ Note: Example:  { x, ...rest } = myRecord  -- only one spread allowed
+─────╯
