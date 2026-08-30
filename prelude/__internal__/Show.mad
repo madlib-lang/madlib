@@ -173,7 +173,7 @@ alphaNumericalName = do {
 
 alphaNumericalNameWithUnderscores :: Parser String
 alphaNumericalNameWithUnderscores = do {
-  firstChar <- Parse.letter
+  firstChar <- Parse.letter <|> Parse.char('_')
   rest <- Parse.many(Parse.choice([Parse.letter, Parse.digit, Parse.char('_')]))
 
   return pipe(
