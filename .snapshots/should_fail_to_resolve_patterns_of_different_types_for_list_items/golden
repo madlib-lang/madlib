@@ -19,8 +19,8 @@
                    , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                    , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                    , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
-                   , IsIn "Number" [ TVar (TV 9 Star) ] Nothing
-                   , IsIn "Number" [ TVar (TV 10 Star) ] Nothing
+                   , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
+                   , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                    , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                    , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                    ] :=>
@@ -101,8 +101,8 @@
                                      (LNum "8")))
                            ]))
                      [ Typed
-                         ([ IsIn "Number" [ TVar (TV 9 Star) ] Nothing
-                          , IsIn "Number" [ TVar (TV 10 Star) ] Nothing
+                         ([ IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
+                          , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                           , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                           , IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
                           ] :=>
@@ -123,13 +123,15 @@
                                (Area (Loc 31 2 3) (Loc 40 2 12))
                                (PList
                                   [ Typed
-                                      ([ IsIn "Number" [ TVar (TV 9 Star) ] Nothing ] :=>
-                                         TVar (TV 9 Star))
+                                      ([ IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
+                                       ] :=>
+                                         TCon (TC "String" Star) "prelude")
                                       (Area (Loc 32 2 4) (Loc 33 2 5))
                                       (PNum "1")
                                   , Typed
-                                      ([ IsIn "Number" [ TVar (TV 10 Star) ] Nothing ] :=>
-                                         TVar (TV 10 Star))
+                                      ([ IsIn "Number" [ TCon (TC "String" Star) "prelude" ] Nothing
+                                       ] :=>
+                                         TCon (TC "String" Star) "prelude")
                                       (Area (Loc 35 2 7) (Loc 36 2 8))
                                       (PNum "2")
                                   , Typed

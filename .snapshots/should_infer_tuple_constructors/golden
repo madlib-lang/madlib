@@ -85,7 +85,8 @@
                                       (LNum "3")
                                   ])
                            , Typed
-                               ([] :=>
+                               ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                ] :=>
                                   TApp
                                     (TApp
                                        (TApp

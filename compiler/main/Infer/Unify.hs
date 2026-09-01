@@ -15,17 +15,11 @@ import           Infer.Infer
 import           Infer.Env
 import           Control.Monad.Except
 import qualified Data.Map                      as M
-import qualified Data.Set                      as S
 import qualified AST.Canonical                 as Can
-import qualified Control.Monad as Monad
 
 
 
 varBind :: TVar -> Type -> Infer Substitution
-varBind tv t@(TRecord fields (Just base) optionalFields)
-  | any (occursCheck tv) (M.elems fields) || occursCheck tv base || any (occursCheck tv) (M.elems optionalFields)
-                                          = throwError $ CompilationError (InfiniteType tv t) NoContext
-  | otherwise                             = return $ M.singleton tv (TRecord fields (Just base) optionalFields)
 varBind tv t | t == TVar tv        = return M.empty
              | occursCheck tv t    = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t   = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
@@ -40,87 +34,8 @@ instance Unify Type where
     s2 <- unify (apply s1 r) (apply s1 r')
     return $ compose s2 s1
 
-  unify (TRecord fields base optionalFields) (TRecord fields' base' optionalFields') = case (base, base') of
-    (Just tBase, Just tBase') -> do
-      newBase <- newTVar Star
-      -- Include optional fields in the field calculations
-      let allFields = fields <> optionalFields
-          allFields' = fields' <> optionalFields'
-          fieldsToCheck  = M.intersection allFields allFields'
-          fieldsToCheck' = M.intersection allFields' allFields
-          fieldsForLeft  = M.difference allFields allFields'
-          fieldsForRight = M.difference allFields' allFields
-
-      s1 <- unifyVars' M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-      let tBase'Applied = apply s1 tBase'
-          tBaseApplied = apply s1 tBase
-      
-      -- Check if tBase and tBase' are the same after applying s1
-      if tBaseApplied == tBase'Applied then do
-        -- They're the same, so we unify both with the same newBase
-        s2 <- unify (TRecord (M.union fieldsForLeft fieldsForRight) (Just newBase) mempty) tBaseApplied
-        return $ s2 `compose` s1
-      else do
-        -- They're different, unify separately
-        s2 <- unify (TRecord fieldsForLeft (Just newBase) mempty) tBase'Applied
-        let tBaseApplied2 = apply s2 tBaseApplied
-        s3 <- unify (TRecord fieldsForRight (Just newBase) mempty) tBaseApplied2
-        return $ s3 `compose` s2 `compose` s1
-
-    (Just tBase, Nothing) -> do
-      -- Include all fields from the concrete record (both explicit and optional) that aren't in the pattern
-      -- This ensures the row variable gets all unmatched fields from the concrete record
-      -- CRITICAL: When pattern has no explicit fields, row variable should get ALL concrete fields
-      let allConcreteFields = fields' <> optionalFields'
-          fieldsDiff = if M.null fields
-                       then allConcreteFields  -- Pattern has no explicit fields, row var gets all concrete fields
-                       else M.difference allConcreteFields fields  -- Exclude only explicitly matched fields
-      s1 <- unify tBase (TRecord fieldsDiff Nothing mempty)
-
-      let missingInConcrete = M.keys $ M.difference (fields <> optionalFields) (fields' <> optionalFields')
-          availableInConcrete = M.keys (fields' <> optionalFields')
-      unless (null missingInConcrete) $ throwError (CompilationError (RecordMissingFields missingInConcrete availableInConcrete) NoContext)
-
-      let fieldsToCheck  = M.intersection fields fields'
-          fieldsToCheck' = M.intersection fields' fields
-          fieldsToCheckApplied = M.map (apply s1) fieldsToCheck
-          fieldsToCheck'Applied = M.map (apply s1) fieldsToCheck'
-      s2 <- unifyVars' s1 (M.elems fieldsToCheckApplied) (M.elems fieldsToCheck'Applied)
-
-      return $ s2 `compose` s1
-
-    (Nothing, Just tBase') -> do
-      -- Include all fields from the pattern (both explicit and optional) that aren't in the concrete record
-      -- CRITICAL: When concrete record has no explicit fields, row variable should get ALL pattern fields
-      let allPatternFields = fields <> optionalFields
-          allConcreteFields = fields' <> optionalFields'
-          fieldsDiff = if M.null fields'
-                       then allPatternFields  -- Concrete record has no explicit fields, row var gets all pattern fields
-                       else M.difference allPatternFields allConcreteFields  -- Exclude fields that are in concrete record
-      s1 <- unify tBase' (TRecord fieldsDiff Nothing mempty)
-
-      let missingInPattern = M.keys $ M.difference (fields' <> optionalFields') (fields <> optionalFields)
-          availableInPattern = M.keys (fields <> optionalFields)
-      unless (null missingInPattern) $ throwError (CompilationError (RecordMissingFields missingInPattern availableInPattern) NoContext)
-
-      let fieldsToCheck  = M.intersection fields fields'
-          fieldsToCheck' = M.intersection fields' fields
-          fieldsToCheckApplied = M.map (apply s1) fieldsToCheck
-          fieldsToCheck'Applied = M.map (apply s1) fieldsToCheck'
-      s2 <- unifyVars' s1 (M.elems fieldsToCheckApplied) (M.elems fieldsToCheck'Applied)
-
-      return $ s2 `compose` s1
-
-    _ -> do
-      let extraFields  = M.keys $ M.difference (fields <> optionalFields) (fields' <> optionalFields')
-          extraFields' = M.keys $ M.difference (fields' <> optionalFields') (fields <> optionalFields)
-          availableFields  = M.keys (fields <> optionalFields)
-      if not (null extraFields') then
-        throwError $ CompilationError (RecordExtraFields extraFields' availableFields) NoContext
-      else if not (null extraFields) then
-        throwError $ CompilationError (RecordMissingFields extraFields availableFields) NoContext
-      else
-        unifyVars' M.empty (M.elems fields) (M.elems fields')
+  unify (TRecordRow row optionalFields) (TRecordRow row' optionalFields') =
+    unifyRows (rowFromFields optionalFields row) (rowFromFields optionalFields' row')
 
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
@@ -140,6 +55,128 @@ instance Unify Type where
 
   unify t1 t2 =
     throwError $ CompilationError (UnificationError TypeMismatch { tmFound = t2, tmExpected = t1, tmOrigin = NoOrigin, tmSecondaries = [] }) NoContext
+
+
+-- | Scoped-label row unification.  `rewriteRow` removes the first visible
+-- occurrence of a label, rebuilding the intervening row extensions.  That is
+-- what makes `{ ...r, x: a }` lawful even when `r` itself has an `x`: the
+-- outer occurrence is selected and the tail stays intact.
+unifyRows :: Type -> Type -> Infer Substitution
+unifyRows left right = case left of
+  TRowEmpty -> case right of
+    TRowEmpty -> return M.empty
+    TVar tv | kind tv == Row -> varBind tv TRowEmpty
+    _ -> unifyRows right TRowEmpty
+
+  TVar tv | kind tv == Row -> varBind tv right
+
+  TRowExtend label fieldType tail -> do
+    (otherFieldType, residual, rewriteSubst) <- rewriteRow label right
+    fieldSubst <- unify (apply rewriteSubst fieldType) (apply rewriteSubst otherFieldType)
+    -- An outer label shadows every equal label below it.  Compare the
+    -- residual rows only after masking those hidden occurrences; otherwise
+    -- `{ ...r, x: a }` unified with a closed record containing `x` would
+    -- incorrectly require a second `x` from `r`.
+    let visibleTail = maskRowLabel label (apply fieldSubst (apply rewriteSubst tail))
+    tailSubst <- unifyRows visibleTail
+                           (apply fieldSubst (apply rewriteSubst residual))
+    return $ tailSubst `compose` fieldSubst `compose` rewriteSubst
+
+  _ -> throwError $ CompilationError FatalError NoContext
+
+
+rewriteRow :: Id -> Type -> Infer (Type, Type, Substitution)
+rewriteRow label row = case row of
+  TRowExtend name fieldType tail
+    | name == label -> return (fieldType, maskRowLabel label tail, M.empty)
+    | otherwise -> do
+        (foundType, residual, subst) <- rewriteRow label tail
+        return (apply subst foundType, TRowExtend name (apply subst fieldType) residual, subst)
+
+  TVar tv | kind tv == Row -> do
+    fieldType <- newTVar Star
+    residual  <- newTVar Row
+    subst     <- varBind tv (TRowExtend label fieldType residual)
+    return (apply subst fieldType, apply subst residual, subst)
+
+  TRowEmpty ->
+    throwError $ CompilationError (RecordMissingFields [label] []) NoContext
+
+  _ -> throwError $ CompilationError FatalError NoContext
+
+
+-- | Remove concrete occurrences of a label that are hidden by an outer
+-- scoped extension.  A row variable is deliberately left untouched: it may
+-- later be instantiated with that label, which remains hidden by the outer
+-- scope and therefore needs no lacks constraint.
+maskRowLabel :: Id -> Type -> Type
+maskRowLabel label = go
+  where
+    go (TRowExtend name fieldType tail)
+      | name == label = go tail
+      | otherwise     = TRowExtend name fieldType (go tail)
+    go row = row
+
+
+-- | Check that an inferred implementation can inhabit an explicitly declared
+-- function type.  Function arguments are contravariant: an implementation
+-- which only reads `{ body, headers }` can safely be published as accepting a
+-- larger closed `{ body, headers, url }` request.  This is essential for
+-- spread updates, where the overwritten field deliberately is not required
+-- from the input row.  Results remain checked in the ordinary direction.
+--
+-- This is deliberately narrower than general subtyping.  It only relaxes
+-- record *arguments* at a signature boundary; every other type continues to
+-- use HM unification.
+signatureUnify :: Type -> Type -> Infer Substitution
+signatureUnify declared inferred
+  | isFunctionType declared && isFunctionType inferred
+  , let declaredArgs = getParamTypes declared
+  , let inferredArgs = getParamTypes inferred
+  , length declaredArgs == length inferredArgs
+  , not (null declaredArgs) = do
+      argSubst <- signatureArguments M.empty (zip inferredArgs declaredArgs)
+      resultSubst <- catchError
+        (signatureUnify (apply argSubst (getReturnType declared))
+                        (apply argSubst (getReturnType inferred)))
+        (throwError . markSignatureReturnMismatch)
+      return (resultSubst `compose` argSubst)
+  | otherwise = unify declared inferred
+  where
+    -- `(implementation, declaration)`: every field the implementation reads
+    -- must be supplied by the public declaration.  A row tail is open-ended
+    -- and therefore contributes no additional required labels here.
+    signatureArguments subst [] = return subst
+    signatureArguments subst ((implementation, declaration) : rest) = do
+      current <- inputUnify (apply subst implementation) (apply subst declaration)
+      signatureArguments (current `compose` subst) rest
+
+    inputUnify implementation declaration = case (recordVisibleParts implementation, recordVisibleParts declaration) of
+      (Just (implementationFields, _, implementationOptional), Just (declarationFields, _, declarationOptional)) -> do
+        let required = implementationFields <> implementationOptional
+            supplied = declarationFields <> declarationOptional
+            missing = M.keys (M.difference required supplied)
+        unless (null missing) $
+          throwError $ CompilationError (RecordMissingFields missing (M.keys supplied)) NoContext
+        unifyVars' M.empty
+          [ fieldType | (fieldName, fieldType) <- M.toAscList required
+                      , M.member fieldName supplied
+          ]
+          [ supplied M.! fieldName | (fieldName, _) <- M.toAscList required
+                                  , M.member fieldName supplied
+          ]
+      _ -> unify declaration implementation
+
+    -- Preserve which phase of signature checking failed.  The caller replaces
+    -- the empty name with the declared binding name when it adds source
+    -- context; without this marker a return mismatch is indistinguishable from
+    -- an argument mismatch after recursive function unification.
+    markSignatureReturnMismatch err = case err of
+      CompilationError (UnificationError tm) errCtx ->
+        CompilationError
+          (UnificationError tm { tmOrigin = FromFunctionReturn "" })
+          errCtx
+      other -> other
 
 
 
@@ -163,7 +200,8 @@ unifyVars' :: Substitution -> [Type] -> [Type] -> Infer Substitution
 unifyVars' s (tp : xs) (tp' : xs') = do
   s1 <- unify (apply s tp) (apply s tp')
   unifyVars' (compose s1 s) xs xs'
-unifyVars' s _ _  = return s
+unifyVars' s [] [] = return s
+unifyVars' _ _ _ = throwError $ CompilationError Error NoContext
 
 
 unifyElems :: Env -> [Type] -> Infer Substitution
@@ -193,25 +231,55 @@ instance Match Type where
     | tc1 == tc2 && fp1 == fp2 = return nullSubst
     | tc1 == tc2 && (fp1 == "JSX" || fp2 == "JSX") = return M.empty
     | fp1 /= fp2 = throwError $ CompilationError (TypesHaveDifferentOrigin (getTConId tc1) fp1 fp2) NoContext
-  match t1@(TRecord fields1 _ optionalFields1) t2@(TRecord fields2 _ optionalFields2) = do
-    let allFields1 = fields1 <> optionalFields1
-    let allFields2 = fields2 <> optionalFields2
-    Monad.when (M.size allFields1 /= M.size allFields2) $
-      throwError $ CompilationError (UnificationError TypeMismatch { tmFound = t2, tmExpected = t1, tmOrigin = NoOrigin, tmSecondaries = [] }) NoContext
-    unify (TRecord allFields1 Nothing mempty) (TRecord allFields2 Nothing mempty)
+  match (TRecordRow row optionalFields) (TRecordRow row' optionalFields') =
+    matchRows (rowFromFields optionalFields row)
+              (rowFromFields optionalFields' row')
   match t1 t2 = throwError $ CompilationError (UnificationError TypeMismatch { tmFound = t2, tmExpected = t1, tmOrigin = NoOrigin, tmSecondaries = [] }) NoContext
+
+
+-- | Asymmetric row matching used for instance heads. Only variables in the
+-- first row are bound; goal variables in the second row remain rigid. This is
+-- intentionally different from unification, which may bind either side.
+matchRows :: Type -> Type -> Infer Substitution
+matchRows (TVar tv) row
+  | kind tv == Row = return (M.singleton tv row)
+matchRows TRowEmpty TRowEmpty = return M.empty
+matchRows patternRow@(TRowExtend label fieldType tail) goalRow =
+  case rewriteKnownRow label goalRow of
+    Nothing -> rowMatchError patternRow goalRow
+    Just (goalFieldType, residual) -> do
+      fieldSubst <- match fieldType goalFieldType
+      tailSubst <- matchRows
+        (maskRowLabel label (apply fieldSubst tail))
+        (apply fieldSubst residual)
+      return (tailSubst `compose` fieldSubst)
+matchRows patternRow goalRow = rowMatchError patternRow goalRow
+
+
+rowMatchError :: Type -> Type -> Infer a
+rowMatchError patternRow goalRow =
+  throwError $ CompilationError
+    (UnificationError TypeMismatch
+      { tmFound = goalRow
+      , tmExpected = patternRow
+      , tmOrigin = NoOrigin
+      , tmSecondaries = []
+      })
+    NoContext
 
 instance Match t => Match [t] where
   -- Fast path for the common single-element case
   match [t] [t'] = match t t'
   match []  []   = return nullSubst
-  match ts  ts'  = do
-    ss <- zipWithM match ts ts'
-    let totalKeys = sum (map M.size ss)
-        merged    = M.unions ss
-    if M.size merged == totalKeys
-      then return merged
-      else foldM merge nullSubst ss
+  match ts  ts'
+    | length ts /= length ts' = throwError $ CompilationError Error NoContext
+    | otherwise = do
+        ss <- zipWithM match ts ts'
+        let totalKeys = sum (map M.size ss)
+            merged    = M.unions ss
+        if M.size merged == totalKeys
+          then return merged
+          else foldM merge nullSubst ss
 
 
 data UnifyStrategy = Strict | Discard | AccessStyle
@@ -321,22 +389,22 @@ improveRecordErrorTypes t1 t2 = do
 
 cleanBase :: Type -> Type
 cleanBase t = case t of
-  TRecord fields (Just (TRecord extraFields _ _)) _ ->
-    TRecord (extraFields <> fields) Nothing mempty
-
   TApp l r ->
     TApp (cleanBase l) (cleanBase r)
+
+  TRecordRow row optionalFields ->
+    TRecordRow (cleanBase row) (cleanBase <$> optionalFields)
+
+  TRowExtend label fieldType tail ->
+    TRowExtend label (cleanBase fieldType) (cleanBase tail)
 
   _ ->
     t
 
 skipBase :: Type -> Type
 skipBase t = case t of
-  TRecord fields (Just (TRecord extraFields _ _)) _ ->
-    TRecord (extraFields <> fields) Nothing mempty
-
-  TRecord fields _ _ ->
-    TRecord fields Nothing mempty
+  TRecordRow row optionalFields ->
+    closedRecord (fst (visibleRow row) <> optionalFields)
 
   TApp l r ->
     TApp (skipBase l) (skipBase r)
@@ -345,54 +413,21 @@ skipBase t = case t of
     t
 
 
-gentleUnifyVars :: Substitution -> [Type] -> [Type] -> Substitution
-gentleUnifyVars s (tp : xs) (tp' : xs') =
-  let s1 = gentleUnify (apply s tp) (apply s tp')
-  in  gentleUnifyVars (compose s1 s) xs xs'
-gentleUnifyVars s _ _  = s
-
-
 gentleUnify :: Type -> Type -> Substitution
 gentleUnify (l `TApp` r) (l' `TApp` r') =
   let s1 = gentleUnify l l'
       s2 = gentleUnify (apply s1 r) (apply s1 r')
   in  compose s2 s1
 
-gentleUnify (TRecord fields base _) (TRecord fields' base' _) = case (base, base') of
-  (Just tBase, Just tBase') ->
-    let s1 = gentleUnify tBase' (TRecord (M.union fields fields') base mempty)
-        fieldsToCheck  = M.intersection fields fields'
-        fieldsToCheck' = M.intersection fields' fields
-
-        s2 = gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-        s3 = gentleUnify tBase tBase'
-
-    in  s3 `compose` s2 `compose` s1
-
-  (Just tBase, Nothing) ->
-    let s1 = gentleUnify tBase (TRecord fields' Nothing mempty)
-    in  if not $ M.null (M.difference fields fields') then
-          M.empty
-        else
-          let fieldsToCheck  = M.intersection fields fields'
-              fieldsToCheck' = M.intersection fields' fields
-              s2 = gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-          in  s2 `compose` s1
-
-  (Nothing, Just tBase') ->
-    let s1 = gentleUnify tBase' (TRecord fields Nothing mempty)
-    in  if not $ M.null (M.difference fields' fields) then
-          M.empty
-        else
-          let fieldsToCheck  = M.intersection fields fields'
-              fieldsToCheck' = M.intersection fields' fields
-              s2 = gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
-          in  s2 `compose` s1
-
-  _ ->
-    let fieldsToCheck  = M.intersection fields fields'
-        fieldsToCheck' = M.intersection fields' fields
-    in  gentleUnifyVars M.empty (M.elems fieldsToCheck) (M.elems fieldsToCheck')
+-- Monomorphization uses this total, best-effort matcher after inference has
+-- already proved the program.  Row variables must nevertheless remain
+-- kind-correct: flattening a TRecordRow through a record view bound a
+-- Row variable to a whole Star-kinded record and made LLVM use the field
+-- layout of only the visible projection.  Match rows directly and bind an
+-- open tail to the residual concrete row.
+gentleUnify (TRecordRow row optionalFields) (TRecordRow row' optionalFields') =
+  gentleUnifyRows (rowFromFields optionalFields row)
+                  (rowFromFields optionalFields' row')
 
 gentleUnify (TVar tv) t         = M.singleton tv t
 gentleUnify t         (TVar tv) = M.singleton tv t
@@ -405,13 +440,47 @@ gentleUnify (TCon a fpa _) (TCon b fpb _)
 gentleUnify _ _ = M.empty
 
 
+gentleUnifyRows :: Type -> Type -> Substitution
+gentleUnifyRows (TVar tv) row
+  | kind tv == Row = M.singleton tv row
+gentleUnifyRows row (TVar tv)
+  | kind tv == Row = M.singleton tv row
+gentleUnifyRows TRowEmpty TRowEmpty = M.empty
+gentleUnifyRows (TRowExtend label fieldType tail) row =
+  case rewriteKnownRow label row of
+    Just (otherFieldType, residual) ->
+      let fieldSubst = gentleUnify fieldType otherFieldType
+          tailSubst = gentleUnifyRows
+            (maskRowLabel label (apply fieldSubst tail))
+            (apply fieldSubst residual)
+      in  tailSubst `compose` fieldSubst
+    Nothing -> M.empty
+gentleUnifyRows _ _ = M.empty
+
+
+-- Pure counterpart of rewriteRow for the already-known rows seen during
+-- monomorphization.  Inference has eliminated any need to invent fresh row
+-- variables here; encountering an unknown tail simply means no useful
+-- best-effort substitution can be learned from this orientation.
+rewriteKnownRow :: Id -> Type -> Maybe (Type, Type)
+rewriteKnownRow label = go
+  where
+    go (TRowExtend name fieldType tail)
+      | name == label = Just (fieldType, maskRowLabel label tail)
+      | otherwise = do
+          (foundType, residual) <- go tail
+          return (foundType, TRowExtend name fieldType residual)
+    go _ = Nothing
+
+
 -- Should that be called roughMatch?
 quickMatch :: Type -> Type -> Bool
 quickMatch (l `TApp` r) (l' `TApp` r') =
   quickMatch l l' && quickMatch r r'
 
-quickMatch (TRecord fields base _) (TRecord fields' base' _) =
-  quickMatchRecordFields fields base fields' base'
+quickMatch (TRecordRow row optionalFields) (TRecordRow row' optionalFields') =
+  quickMatchRows (rowFromFields optionalFields row)
+                 (rowFromFields optionalFields' row')
 
 quickMatch (TVar _) _ = True
 quickMatch _ (TVar _) = True
@@ -432,17 +501,15 @@ quickMatch (TApp (TCon (TC tNameB _) _ _) _) (TCon (TC tNameA _) _ _)
 quickMatch _ _ =
   False
 
-quickMatchRecordFields :: M.Map String Type -> Maybe Type -> M.Map String Type -> Maybe Type -> Bool
-quickMatchRecordFields fields base fields' base' =
-  -- Extra fields are compatible only when the record on the other side has
-  -- an open row that can absorb them. Shared fields must still match.
-  let sharedFieldsMatch =
-        and $ M.elems $ M.intersectionWith quickMatch fields fields'
-      fieldsOnlyOnLeft  = M.difference fields fields'
-      fieldsOnlyOnRight = M.difference fields' fields
+
+quickMatchRows :: Type -> Type -> Bool
+quickMatchRows left right =
+  let (leftFields, leftTail) = visibleRow left
+      (rightFields, rightTail) = visibleRow right
+      sharedFieldsMatch =
+        and $ M.elems $ M.intersectionWith quickMatch leftFields rightFields
+      onlyOnLeft = M.difference leftFields rightFields
+      onlyOnRight = M.difference rightFields leftFields
   in  sharedFieldsMatch
-      && (M.null fieldsOnlyOnLeft || isOpenRecord base')
-      && (M.null fieldsOnlyOnRight || isOpenRecord base)
-  where
-    isOpenRecord Nothing  = False
-    isOpenRecord (Just _) = True
+      && (M.null onlyOnLeft || maybe False ((== Row) . kind) rightTail)
+      && (M.null onlyOnRight || maybe False ((== Row) . kind) leftTail)

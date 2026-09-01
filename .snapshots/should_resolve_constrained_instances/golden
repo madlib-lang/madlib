@@ -304,15 +304,15 @@
                                   (TApp
                                      (TApp
                                         (TCon (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TVar (TV 13 Star)))
-                                     (TVar (TV 14 Star))))
+                                        (TVar (TV 17 Star)))
+                                     (TVar (TV 18 Star))))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 258 14 3) (Loc 336 14 81))
                           (Assignment
                              "inspect"
                              (Typed
-                                ([ IsIn "Inspect" [ TVar (TV 13 Star) ] Nothing
-                                 , IsIn "Inspect" [ TVar (TV 14 Star) ] Nothing
+                                ([ IsIn "Inspect" [ TVar (TV 17 Star) ] Nothing
+                                 , IsIn "Inspect" [ TVar (TV 18 Star) ] Nothing
                                  ] :=>
                                    TApp
                                      (TApp
@@ -321,8 +321,8 @@
                                            (TApp
                                               (TCon
                                                  (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV 13 Star)))
-                                           (TVar (TV 14 Star))))
+                                              (TVar (TV 17 Star)))
+                                           (TVar (TV 18 Star))))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 268 14 13) (Loc 336 14 81))
                                 (Abs
@@ -345,19 +345,19 @@
                                            (Just (Area (Loc 292 14 37) (Loc 294 14 39)))
                                        , IsIn
                                            "Inspect"
-                                           [ TVar (TV 13 Star) ]
+                                           [ TVar (TV 17 Star) ]
                                            (Just (Area (Loc 295 14 40) (Loc 302 14 47)))
                                        , IsIn
                                            "Inspect"
-                                           [ TVar (TV 14 Star) ]
+                                           [ TVar (TV 18 Star) ]
                                            (Just (Area (Loc 317 14 62) (Loc 324 14 69)))
                                        ] :=>
                                          TApp
                                            (TApp
                                               (TCon
                                                  (TC "(,)" (Kfun Star (Kfun Star Star))) "prelude")
-                                              (TVar (TV 13 Star)))
-                                           (TVar (TV 14 Star)))
+                                              (TVar (TV 17 Star)))
+                                           (TVar (TV 18 Star)))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__W__1")
                                    [ Typed
@@ -379,11 +379,11 @@
                                             (Just (Area (Loc 292 14 37) (Loc 294 14 39)))
                                         , IsIn
                                             "Inspect"
-                                            [ TVar (TV 13 Star) ]
+                                            [ TVar (TV 17 Star) ]
                                             (Just (Area (Loc 295 14 40) (Loc 302 14 47)))
                                         , IsIn
                                             "Inspect"
-                                            [ TVar (TV 14 Star) ]
+                                            [ TVar (TV 18 Star) ]
                                             (Just (Area (Loc 317 14 62) (Loc 324 14 69)))
                                         ] :=>
                                           TCon (TC "String" Star) "prelude")
@@ -396,8 +396,8 @@
                                                      (TCon
                                                         (TC "(,)" (Kfun Star (Kfun Star Star)))
                                                         "prelude")
-                                                     (TVar (TV 13 Star)))
-                                                  (TVar (TV 14 Star)))
+                                                     (TVar (TV 17 Star)))
+                                                  (TVar (TV 18 Star)))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              (Var "__W__1" False))
                                           [ Typed
@@ -419,11 +419,11 @@
                                                    (Just (Area (Loc 292 14 37) (Loc 294 14 39)))
                                                , IsIn
                                                    "Inspect"
-                                                   [ TVar (TV 13 Star) ]
+                                                   [ TVar (TV 17 Star) ]
                                                    (Just (Area (Loc 295 14 40) (Loc 302 14 47)))
                                                , IsIn
                                                    "Inspect"
-                                                   [ TVar (TV 14 Star) ]
+                                                   [ TVar (TV 18 Star) ]
                                                    (Just (Area (Loc 317 14 62) (Loc 324 14 69)))
                                                ] :=>
                                                  TApp
@@ -438,8 +438,8 @@
                                                                   "(,)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV 13 Star)))
-                                                         (TVar (TV 14 Star))))
+                                                            (TVar (TV 17 Star)))
+                                                         (TVar (TV 18 Star))))
                                                    (TCon (TC "String" Star) "prelude"))
                                               (Area (Loc 276 14 21) (Loc 334 14 79))
                                               (Is
@@ -452,16 +452,16 @@
                                                                   "(,)"
                                                                   (Kfun Star (Kfun Star Star)))
                                                                "prelude")
-                                                            (TVar (TV 13 Star)))
-                                                         (TVar (TV 14 Star)))
+                                                            (TVar (TV 17 Star)))
+                                                         (TVar (TV 18 Star)))
                                                     (Area (Loc 276 14 21) (Loc 283 14 28))
                                                     (PTuple
                                                        [ Typed
-                                                           ([] :=> TVar (TV 13 Star))
+                                                           ([] :=> TVar (TV 17 Star))
                                                            (Area (Loc 278 14 23) (Loc 279 14 24))
                                                            (PVar "a")
                                                        , Typed
-                                                           ([] :=> TVar (TV 14 Star))
+                                                           ([] :=> TVar (TV 18 Star))
                                                            (Area (Loc 281 14 26) (Loc 282 14 27))
                                                            (PVar "b")
                                                        ]))
@@ -488,12 +488,12 @@
                                                             (Area (Loc 292 14 37) (Loc 294 14 39)))
                                                      , IsIn
                                                          "Inspect"
-                                                         [ TVar (TV 13 Star) ]
+                                                         [ TVar (TV 17 Star) ]
                                                          (Just
                                                             (Area (Loc 295 14 40) (Loc 302 14 47)))
                                                      , IsIn
                                                          "Inspect"
-                                                         [ TVar (TV 14 Star) ]
+                                                         [ TVar (TV 18 Star) ]
                                                          (Just
                                                             (Area (Loc 317 14 62) (Loc 324 14 69)))
                                                      ] :=>
@@ -531,14 +531,14 @@
                                                                      (Loc 294 14 39)))
                                                            , IsIn
                                                                "Inspect"
-                                                               [ TVar (TV 13 Star) ]
+                                                               [ TVar (TV 17 Star) ]
                                                                (Just
                                                                   (Area
                                                                      (Loc 295 14 40)
                                                                      (Loc 302 14 47)))
                                                            , IsIn
                                                                "Inspect"
-                                                               [ TVar (TV 14 Star) ]
+                                                               [ TVar (TV 18 Star) ]
                                                                (Just
                                                                   (Area
                                                                      (Loc 317 14 62)
@@ -640,14 +640,14 @@
                                                                            (Loc 294 14 39)))
                                                                  , IsIn
                                                                      "Inspect"
-                                                                     [ TVar (TV 13 Star) ]
+                                                                     [ TVar (TV 17 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 295 14 40)
                                                                            (Loc 302 14 47)))
                                                                  , IsIn
                                                                      "Inspect"
-                                                                     [ TVar (TV 14 Star) ]
+                                                                     [ TVar (TV 18 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 317 14 62)
@@ -691,7 +691,7 @@
                                                                                  (Loc 294 14 39)))
                                                                        , IsIn
                                                                            "Inspect"
-                                                                           [ TVar (TV 13 Star) ]
+                                                                           [ TVar (TV 17 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 295 14 40)
@@ -821,7 +821,7 @@
                                                                                           39)))
                                                                              , IsIn
                                                                                  "Inspect"
-                                                                                 [ TVar (TV 13 Star)
+                                                                                 [ TVar (TV 17 Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
@@ -880,7 +880,7 @@
                                                                                        "Inspect"
                                                                                        [ TVar
                                                                                            (TV
-                                                                                              13
+                                                                                              17
                                                                                               Star)
                                                                                        ]
                                                                                        (Just
@@ -1021,7 +1021,7 @@
                                                                                              "Inspect"
                                                                                              [ TVar
                                                                                                  (TV
-                                                                                                    13
+                                                                                                    17
                                                                                                     Star)
                                                                                              ]
                                                                                              (Just
@@ -1221,7 +1221,7 @@
                                                                                                    "Inspect"
                                                                                                    [ TVar
                                                                                                        (TV
-                                                                                                          13
+                                                                                                          17
                                                                                                           Star)
                                                                                                    ]
                                                                                                    (Just
@@ -1255,7 +1255,7 @@
                                                                                                          "Inspect"
                                                                                                          [ TVar
                                                                                                              (TV
-                                                                                                                13
+                                                                                                                17
                                                                                                                 Star)
                                                                                                          ]
                                                                                                          Nothing
@@ -1273,7 +1273,7 @@
                                                                                                                "prelude")
                                                                                                             (TVar
                                                                                                                (TV
-                                                                                                                  13
+                                                                                                                  17
                                                                                                                   Star)))
                                                                                                          (TCon
                                                                                                             (TC
@@ -1297,7 +1297,7 @@
                                                                                                          "Inspect"
                                                                                                          [ TVar
                                                                                                              (TV
-                                                                                                                13
+                                                                                                                17
                                                                                                                 Star)
                                                                                                          ]
                                                                                                          (Just
@@ -1313,7 +1313,7 @@
                                                                                                      ] :=>
                                                                                                        TVar
                                                                                                          (TV
-                                                                                                            13
+                                                                                                            17
                                                                                                             Star))
                                                                                                     (Area
                                                                                                        (Loc
@@ -1371,7 +1371,7 @@
                                                                                        "Inspect"
                                                                                        [ TVar
                                                                                            (TV
-                                                                                              13
+                                                                                              17
                                                                                               Star)
                                                                                        ]
                                                                                        (Just
@@ -1430,14 +1430,14 @@
                                                                                  (Loc 294 14 39)))
                                                                        , IsIn
                                                                            "Inspect"
-                                                                           [ TVar (TV 13 Star) ]
+                                                                           [ TVar (TV 17 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 295 14 40)
                                                                                  (Loc 302 14 47)))
                                                                        , IsIn
                                                                            "Inspect"
-                                                                           [ TVar (TV 14 Star) ]
+                                                                           [ TVar (TV 18 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 317 14 62)
@@ -1453,7 +1453,7 @@
                                                                          (Typed
                                                                             ([ IsIn
                                                                                  "Inspect"
-                                                                                 [ TVar (TV 14 Star)
+                                                                                 [ TVar (TV 18 Star)
                                                                                  ]
                                                                                  Nothing
                                                                              ] :=>
@@ -1470,7 +1470,7 @@
                                                                                        "prelude")
                                                                                     (TVar
                                                                                        (TV
-                                                                                          14 Star)))
+                                                                                          18 Star)))
                                                                                  (TCon
                                                                                     (TC
                                                                                        "String"
@@ -1483,7 +1483,7 @@
                                                                          (Typed
                                                                             ([ IsIn
                                                                                  "Inspect"
-                                                                                 [ TVar (TV 14 Star)
+                                                                                 [ TVar (TV 18 Star)
                                                                                  ]
                                                                                  (Just
                                                                                     (Area
@@ -1494,7 +1494,7 @@
                                                                                           14
                                                                                           69)))
                                                                              ] :=>
-                                                                               TVar (TV 14 Star))
+                                                                               TVar (TV 18 Star))
                                                                             (Area
                                                                                (Loc 325 14 70)
                                                                                (Loc 326 14 71))
@@ -1533,14 +1533,14 @@
                                                                      (Loc 294 14 39)))
                                                            , IsIn
                                                                "Inspect"
-                                                               [ TVar (TV 13 Star) ]
+                                                               [ TVar (TV 17 Star) ]
                                                                (Just
                                                                   (Area
                                                                      (Loc 295 14 40)
                                                                      (Loc 302 14 47)))
                                                            , IsIn
                                                                "Inspect"
-                                                               [ TVar (TV 14 Star) ]
+                                                               [ TVar (TV 18 Star) ]
                                                                (Just
                                                                   (Area
                                                                      (Loc 317 14 62)

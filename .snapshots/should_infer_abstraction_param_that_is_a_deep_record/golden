@@ -13,37 +13,28 @@
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TRecord
-                       (fromList
-                          [ ( "a"
-                            , TRecord
-                                (fromList
-                                   [ ( "b"
-                                     , TRecord
-                                         (fromList
-                                            [ ( "c"
-                                              , TRecord
-                                                  (fromList
-                                                     [ ( "d"
-                                                       , TRecord
-                                                           (fromList [ ( "e" , TVar (TV 2 Star) ) ])
-                                                           (Just (TVar (TV 21 Star)))
-                                                           (fromList [])
-                                                       )
-                                                     ])
-                                                  (Just (TVar (TV 20 Star)))
-                                                  (fromList [])
-                                              )
-                                            ])
-                                         (Just (TVar (TV 19 Star)))
-                                         (fromList [])
-                                     )
-                                   ])
-                                (Just (TVar (TV 18 Star)))
-                                (fromList [])
-                            )
-                          ])
-                       (Just (TVar (TV 17 Star)))
+                    (TRecordRow
+                       (TRowExtend
+                          "a"
+                          (TRecordRow
+                             (TRowExtend
+                                "b"
+                                (TRecordRow
+                                   (TRowExtend
+                                      "c"
+                                      (TRecordRow
+                                         (TRowExtend
+                                            "d"
+                                            (TRecordRow
+                                               (TRowExtend "e" (TVar (TV 2 Star)) (TVar (TV 4 Row)))
+                                               (fromList []))
+                                            (TVar (TV 7 Row)))
+                                         (fromList []))
+                                      (TVar (TV 10 Row)))
+                                   (fromList []))
+                                (TVar (TV 13 Row)))
+                             (fromList []))
+                          (TVar (TV 16 Row)))
                        (fromList [])))
                  (TVar (TV 2 Star)))
             (Area (Loc 0 1 1) (Loc 24 1 25))
@@ -54,76 +45,58 @@
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TRecord
-                             (fromList
-                                [ ( "a"
-                                  , TRecord
-                                      (fromList
-                                         [ ( "b"
-                                           , TRecord
-                                               (fromList
-                                                  [ ( "c"
-                                                    , TRecord
-                                                        (fromList
-                                                           [ ( "d"
-                                                             , TRecord
-                                                                 (fromList
-                                                                    [ ( "e" , TVar (TV 2 Star) ) ])
-                                                                 (Just (TVar (TV 21 Star)))
-                                                                 (fromList [])
-                                                             )
-                                                           ])
-                                                        (Just (TVar (TV 20 Star)))
-                                                        (fromList [])
-                                                    )
-                                                  ])
-                                               (Just (TVar (TV 19 Star)))
-                                               (fromList [])
-                                           )
-                                         ])
-                                      (Just (TVar (TV 18 Star)))
-                                      (fromList [])
-                                  )
-                                ])
-                             (Just (TVar (TV 17 Star)))
+                          (TRecordRow
+                             (TRowExtend
+                                "a"
+                                (TRecordRow
+                                   (TRowExtend
+                                      "b"
+                                      (TRecordRow
+                                         (TRowExtend
+                                            "c"
+                                            (TRecordRow
+                                               (TRowExtend
+                                                  "d"
+                                                  (TRecordRow
+                                                     (TRowExtend
+                                                        "e" (TVar (TV 2 Star)) (TVar (TV 4 Row)))
+                                                     (fromList []))
+                                                  (TVar (TV 7 Row)))
+                                               (fromList []))
+                                            (TVar (TV 10 Row)))
+                                         (fromList []))
+                                      (TVar (TV 13 Row)))
+                                   (fromList []))
+                                (TVar (TV 16 Row)))
                              (fromList [])))
                        (TVar (TV 2 Star)))
                   (Area (Loc 4 1 5) (Loc 24 1 25))
                   (Abs
                      (Typed
                         ([] :=>
-                           TRecord
-                             (fromList
-                                [ ( "a"
-                                  , TRecord
-                                      (fromList
-                                         [ ( "b"
-                                           , TRecord
-                                               (fromList
-                                                  [ ( "c"
-                                                    , TRecord
-                                                        (fromList
-                                                           [ ( "d"
-                                                             , TRecord
-                                                                 (fromList
-                                                                    [ ( "e" , TVar (TV 2 Star) ) ])
-                                                                 (Just (TVar (TV 21 Star)))
-                                                                 (fromList [])
-                                                             )
-                                                           ])
-                                                        (Just (TVar (TV 20 Star)))
-                                                        (fromList [])
-                                                    )
-                                                  ])
-                                               (Just (TVar (TV 19 Star)))
-                                               (fromList [])
-                                           )
-                                         ])
-                                      (Just (TVar (TV 18 Star)))
-                                      (fromList [])
-                                  )
-                                ])
-                             (Just (TVar (TV 17 Star)))
+                           TRecordRow
+                             (TRowExtend
+                                "a"
+                                (TRecordRow
+                                   (TRowExtend
+                                      "b"
+                                      (TRecordRow
+                                         (TRowExtend
+                                            "c"
+                                            (TRecordRow
+                                               (TRowExtend
+                                                  "d"
+                                                  (TRecordRow
+                                                     (TRowExtend
+                                                        "e" (TVar (TV 2 Star)) (TVar (TV 4 Row)))
+                                                     (fromList []))
+                                                  (TVar (TV 7 Row)))
+                                               (fromList []))
+                                            (TVar (TV 10 Row)))
+                                         (fromList []))
+                                      (TVar (TV 13 Row)))
+                                   (fromList []))
+                                (TVar (TV 16 Row)))
                              (fromList []))
                         (Area (Loc 5 1 6) (Loc 6 1 7))
                         "x")
@@ -133,139 +106,102 @@
                          (Access
                             (Typed
                                ([] :=>
-                                  TRecord
-                                    (fromList [ ( "e" , TVar (TV 2 Star) ) ])
-                                    (Just (TVar (TV 21 Star)))
+                                  TRecordRow
+                                    (TRowExtend "e" (TVar (TV 2 Star)) (TVar (TV 4 Row)))
                                     (fromList []))
                                (Area (Loc 12 1 13) (Loc 21 1 22))
                                (Access
                                   (Typed
                                      ([] :=>
-                                        TRecord
-                                          (fromList
-                                             [ ( "d"
-                                               , TRecord
-                                                   (fromList [ ( "e" , TVar (TV 2 Star) ) ])
-                                                   (Just (TVar (TV 21 Star)))
-                                                   (fromList [])
-                                               )
-                                             ])
-                                          (Just (TVar (TV 20 Star)))
+                                        TRecordRow
+                                          (TRowExtend
+                                             "d"
+                                             (TRecordRow
+                                                (TRowExtend
+                                                   "e" (TVar (TV 2 Star)) (TVar (TV 4 Row)))
+                                                (fromList []))
+                                             (TVar (TV 7 Row)))
                                           (fromList []))
                                      (Area (Loc 12 1 13) (Loc 19 1 20))
                                      (Access
                                         (Typed
                                            ([] :=>
-                                              TRecord
-                                                (fromList
-                                                   [ ( "c"
-                                                     , TRecord
-                                                         (fromList
-                                                            [ ( "d"
-                                                              , TRecord
-                                                                  (fromList
-                                                                     [ ( "e" , TVar (TV 2 Star) ) ])
-                                                                  (Just (TVar (TV 21 Star)))
-                                                                  (fromList [])
-                                                              )
-                                                            ])
-                                                         (Just (TVar (TV 20 Star)))
-                                                         (fromList [])
-                                                     )
-                                                   ])
-                                                (Just (TVar (TV 19 Star)))
+                                              TRecordRow
+                                                (TRowExtend
+                                                   "c"
+                                                   (TRecordRow
+                                                      (TRowExtend
+                                                         "d"
+                                                         (TRecordRow
+                                                            (TRowExtend
+                                                               "e"
+                                                               (TVar (TV 2 Star))
+                                                               (TVar (TV 4 Row)))
+                                                            (fromList []))
+                                                         (TVar (TV 7 Row)))
+                                                      (fromList []))
+                                                   (TVar (TV 10 Row)))
                                                 (fromList []))
                                            (Area (Loc 12 1 13) (Loc 17 1 18))
                                            (Access
                                               (Typed
                                                  ([] :=>
-                                                    TRecord
-                                                      (fromList
-                                                         [ ( "b"
-                                                           , TRecord
-                                                               (fromList
-                                                                  [ ( "c"
-                                                                    , TRecord
-                                                                        (fromList
-                                                                           [ ( "d"
-                                                                             , TRecord
-                                                                                 (fromList
-                                                                                    [ ( "e"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             2 Star)
-                                                                                      )
-                                                                                    ])
-                                                                                 (Just
-                                                                                    (TVar
-                                                                                       (TV
-                                                                                          21 Star)))
-                                                                                 (fromList [])
-                                                                             )
-                                                                           ])
-                                                                        (Just (TVar (TV 20 Star)))
-                                                                        (fromList [])
-                                                                    )
-                                                                  ])
-                                                               (Just (TVar (TV 19 Star)))
-                                                               (fromList [])
-                                                           )
-                                                         ])
-                                                      (Just (TVar (TV 18 Star)))
+                                                    TRecordRow
+                                                      (TRowExtend
+                                                         "b"
+                                                         (TRecordRow
+                                                            (TRowExtend
+                                                               "c"
+                                                               (TRecordRow
+                                                                  (TRowExtend
+                                                                     "d"
+                                                                     (TRecordRow
+                                                                        (TRowExtend
+                                                                           "e"
+                                                                           (TVar (TV 2 Star))
+                                                                           (TVar (TV 4 Row)))
+                                                                        (fromList []))
+                                                                     (TVar (TV 7 Row)))
+                                                                  (fromList []))
+                                                               (TVar (TV 10 Row)))
+                                                            (fromList []))
+                                                         (TVar (TV 13 Row)))
                                                       (fromList []))
                                                  (Area (Loc 12 1 13) (Loc 15 1 16))
                                                  (Access
                                                     (Typed
                                                        ([] :=>
-                                                          TRecord
-                                                            (fromList
-                                                               [ ( "a"
-                                                                 , TRecord
-                                                                     (fromList
-                                                                        [ ( "b"
-                                                                          , TRecord
-                                                                              (fromList
-                                                                                 [ ( "c"
-                                                                                   , TRecord
-                                                                                       (fromList
-                                                                                          [ ( "d"
-                                                                                            , TRecord
-                                                                                                (fromList
-                                                                                                   [ ( "e"
-                                                                                                     , TVar
-                                                                                                         (TV
-                                                                                                            2
-                                                                                                            Star)
-                                                                                                     )
-                                                                                                   ])
-                                                                                                (Just
-                                                                                                   (TVar
-                                                                                                      (TV
-                                                                                                         21
-                                                                                                         Star)))
-                                                                                                (fromList
-                                                                                                   [])
-                                                                                            )
-                                                                                          ])
-                                                                                       (Just
-                                                                                          (TVar
-                                                                                             (TV
-                                                                                                20
-                                                                                                Star)))
-                                                                                       (fromList [])
-                                                                                   )
-                                                                                 ])
-                                                                              (Just
-                                                                                 (TVar
-                                                                                    (TV 19 Star)))
-                                                                              (fromList [])
-                                                                          )
-                                                                        ])
-                                                                     (Just (TVar (TV 18 Star)))
-                                                                     (fromList [])
-                                                                 )
-                                                               ])
-                                                            (Just (TVar (TV 17 Star)))
+                                                          TRecordRow
+                                                            (TRowExtend
+                                                               "a"
+                                                               (TRecordRow
+                                                                  (TRowExtend
+                                                                     "b"
+                                                                     (TRecordRow
+                                                                        (TRowExtend
+                                                                           "c"
+                                                                           (TRecordRow
+                                                                              (TRowExtend
+                                                                                 "d"
+                                                                                 (TRecordRow
+                                                                                    (TRowExtend
+                                                                                       "e"
+                                                                                       (TVar
+                                                                                          (TV
+                                                                                             2
+                                                                                             Star))
+                                                                                       (TVar
+                                                                                          (TV
+                                                                                             4
+                                                                                             Row)))
+                                                                                    (fromList []))
+                                                                                 (TVar (TV 7 Row)))
+                                                                              (fromList []))
+                                                                           (TVar (TV 10 Row)))
+                                                                        (fromList []))
+                                                                     (TVar (TV 13 Row)))
+                                                                  (fromList []))
+                                                               (TVar (TV 16 Row)))
                                                             (fromList []))
                                                        (Area (Loc 12 1 13) (Loc 13 1 14))
                                                        (Var "x" False))
@@ -278,99 +214,64 @@
                                                                      "(->)"
                                                                      (Kfun Star (Kfun Star Star)))
                                                                   "prelude")
-                                                               (TRecord
-                                                                  (fromList
-                                                                     [ ( "a"
-                                                                       , TRecord
-                                                                           (fromList
-                                                                              [ ( "b"
-                                                                                , TRecord
-                                                                                    (fromList
-                                                                                       [ ( "c"
-                                                                                         , TRecord
-                                                                                             (fromList
-                                                                                                [ ( "d"
-                                                                                                  , TRecord
-                                                                                                      (fromList
-                                                                                                         [ ( "e"
-                                                                                                           , TVar
-                                                                                                               (TV
-                                                                                                                  2
-                                                                                                                  Star)
-                                                                                                           )
-                                                                                                         ])
-                                                                                                      (Just
-                                                                                                         (TVar
-                                                                                                            (TV
-                                                                                                               21
-                                                                                                               Star)))
-                                                                                                      (fromList
-                                                                                                         [])
-                                                                                                  )
-                                                                                                ])
-                                                                                             (Just
-                                                                                                (TVar
-                                                                                                   (TV
-                                                                                                      20
-                                                                                                      Star)))
-                                                                                             (fromList
-                                                                                                [])
-                                                                                         )
-                                                                                       ])
-                                                                                    (Just
-                                                                                       (TVar
-                                                                                          (TV
-                                                                                             19
-                                                                                             Star)))
-                                                                                    (fromList [])
-                                                                                )
-                                                                              ])
-                                                                           (Just
-                                                                              (TVar (TV 18 Star)))
-                                                                           (fromList [])
-                                                                       )
-                                                                     ])
-                                                                  (Just (TVar (TV 17 Star)))
-                                                                  (fromList [])))
-                                                            (TRecord
-                                                               (fromList
-                                                                  [ ( "b"
-                                                                    , TRecord
-                                                                        (fromList
-                                                                           [ ( "c"
-                                                                             , TRecord
-                                                                                 (fromList
-                                                                                    [ ( "d"
-                                                                                      , TRecord
-                                                                                          (fromList
-                                                                                             [ ( "e"
-                                                                                               , TVar
-                                                                                                   (TV
-                                                                                                      2
-                                                                                                      Star)
-                                                                                               )
-                                                                                             ])
-                                                                                          (Just
+                                                               (TRecordRow
+                                                                  (TRowExtend
+                                                                     "a"
+                                                                     (TRecordRow
+                                                                        (TRowExtend
+                                                                           "b"
+                                                                           (TRecordRow
+                                                                              (TRowExtend
+                                                                                 "c"
+                                                                                 (TRecordRow
+                                                                                    (TRowExtend
+                                                                                       "d"
+                                                                                       (TRecordRow
+                                                                                          (TRowExtend
+                                                                                             "e"
                                                                                              (TVar
                                                                                                 (TV
-                                                                                                   21
-                                                                                                   Star)))
+                                                                                                   2
+                                                                                                   Star))
+                                                                                             (TVar
+                                                                                                (TV
+                                                                                                   4
+                                                                                                   Row)))
                                                                                           (fromList
-                                                                                             [])
-                                                                                      )
-                                                                                    ])
-                                                                                 (Just
+                                                                                             []))
+                                                                                       (TVar
+                                                                                          (TV
+                                                                                             7
+                                                                                             Row)))
+                                                                                    (fromList []))
+                                                                                 (TVar (TV 10 Row)))
+                                                                              (fromList []))
+                                                                           (TVar (TV 13 Row)))
+                                                                        (fromList []))
+                                                                     (TVar (TV 16 Row)))
+                                                                  (fromList [])))
+                                                            (TRecordRow
+                                                               (TRowExtend
+                                                                  "b"
+                                                                  (TRecordRow
+                                                                     (TRowExtend
+                                                                        "c"
+                                                                        (TRecordRow
+                                                                           (TRowExtend
+                                                                              "d"
+                                                                              (TRecordRow
+                                                                                 (TRowExtend
+                                                                                    "e"
                                                                                     (TVar
-                                                                                       (TV
-                                                                                          20 Star)))
-                                                                                 (fromList [])
-                                                                             )
-                                                                           ])
-                                                                        (Just (TVar (TV 19 Star)))
-                                                                        (fromList [])
-                                                                    )
-                                                                  ])
-                                                               (Just (TVar (TV 18 Star)))
+                                                                                       (TV 2 Star))
+                                                                                    (TVar
+                                                                                       (TV 4 Row)))
+                                                                                 (fromList []))
+                                                                              (TVar (TV 7 Row)))
+                                                                           (fromList []))
+                                                                        (TVar (TV 10 Row)))
+                                                                     (fromList []))
+                                                                  (TVar (TV 13 Row)))
                                                                (fromList [])))
                                                        (Area (Loc 14 1 15) (Loc 15 1 16))
                                                        (Var ".a" False))))
@@ -381,66 +282,42 @@
                                                          (TCon
                                                             (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                             "prelude")
-                                                         (TRecord
-                                                            (fromList
-                                                               [ ( "b"
-                                                                 , TRecord
-                                                                     (fromList
-                                                                        [ ( "c"
-                                                                          , TRecord
-                                                                              (fromList
-                                                                                 [ ( "d"
-                                                                                   , TRecord
-                                                                                       (fromList
-                                                                                          [ ( "e"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   2
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])
-                                                                                       (Just
-                                                                                          (TVar
-                                                                                             (TV
-                                                                                                21
-                                                                                                Star)))
-                                                                                       (fromList [])
-                                                                                   )
-                                                                                 ])
-                                                                              (Just
-                                                                                 (TVar
-                                                                                    (TV 20 Star)))
-                                                                              (fromList [])
-                                                                          )
-                                                                        ])
-                                                                     (Just (TVar (TV 19 Star)))
-                                                                     (fromList [])
-                                                                 )
-                                                               ])
-                                                            (Just (TVar (TV 18 Star)))
+                                                         (TRecordRow
+                                                            (TRowExtend
+                                                               "b"
+                                                               (TRecordRow
+                                                                  (TRowExtend
+                                                                     "c"
+                                                                     (TRecordRow
+                                                                        (TRowExtend
+                                                                           "d"
+                                                                           (TRecordRow
+                                                                              (TRowExtend
+                                                                                 "e"
+                                                                                 (TVar (TV 2 Star))
+                                                                                 (TVar (TV 4 Row)))
+                                                                              (fromList []))
+                                                                           (TVar (TV 7 Row)))
+                                                                        (fromList []))
+                                                                     (TVar (TV 10 Row)))
+                                                                  (fromList []))
+                                                               (TVar (TV 13 Row)))
                                                             (fromList [])))
-                                                      (TRecord
-                                                         (fromList
-                                                            [ ( "c"
-                                                              , TRecord
-                                                                  (fromList
-                                                                     [ ( "d"
-                                                                       , TRecord
-                                                                           (fromList
-                                                                              [ ( "e"
-                                                                                , TVar (TV 2 Star)
-                                                                                )
-                                                                              ])
-                                                                           (Just
-                                                                              (TVar (TV 21 Star)))
-                                                                           (fromList [])
-                                                                       )
-                                                                     ])
-                                                                  (Just (TVar (TV 20 Star)))
-                                                                  (fromList [])
-                                                              )
-                                                            ])
-                                                         (Just (TVar (TV 19 Star)))
+                                                      (TRecordRow
+                                                         (TRowExtend
+                                                            "c"
+                                                            (TRecordRow
+                                                               (TRowExtend
+                                                                  "d"
+                                                                  (TRecordRow
+                                                                     (TRowExtend
+                                                                        "e"
+                                                                        (TVar (TV 2 Star))
+                                                                        (TVar (TV 4 Row)))
+                                                                     (fromList []))
+                                                                  (TVar (TV 7 Row)))
+                                                               (fromList []))
+                                                            (TVar (TV 10 Row)))
                                                          (fromList [])))
                                                  (Area (Loc 16 1 17) (Loc 17 1 18))
                                                  (Var ".b" False))))
@@ -451,39 +328,32 @@
                                                    (TCon
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
-                                                   (TRecord
-                                                      (fromList
-                                                         [ ( "c"
-                                                           , TRecord
-                                                               (fromList
-                                                                  [ ( "d"
-                                                                    , TRecord
-                                                                        (fromList
-                                                                           [ ( "e"
-                                                                             , TVar (TV 2 Star)
-                                                                             )
-                                                                           ])
-                                                                        (Just (TVar (TV 21 Star)))
-                                                                        (fromList [])
-                                                                    )
-                                                                  ])
-                                                               (Just (TVar (TV 20 Star)))
-                                                               (fromList [])
-                                                           )
-                                                         ])
-                                                      (Just (TVar (TV 19 Star)))
+                                                   (TRecordRow
+                                                      (TRowExtend
+                                                         "c"
+                                                         (TRecordRow
+                                                            (TRowExtend
+                                                               "d"
+                                                               (TRecordRow
+                                                                  (TRowExtend
+                                                                     "e"
+                                                                     (TVar (TV 2 Star))
+                                                                     (TVar (TV 4 Row)))
+                                                                  (fromList []))
+                                                               (TVar (TV 7 Row)))
+                                                            (fromList []))
+                                                         (TVar (TV 10 Row)))
                                                       (fromList [])))
-                                                (TRecord
-                                                   (fromList
-                                                      [ ( "d"
-                                                        , TRecord
-                                                            (fromList
-                                                               [ ( "e" , TVar (TV 2 Star) ) ])
-                                                            (Just (TVar (TV 21 Star)))
-                                                            (fromList [])
-                                                        )
-                                                      ])
-                                                   (Just (TVar (TV 20 Star)))
+                                                (TRecordRow
+                                                   (TRowExtend
+                                                      "d"
+                                                      (TRecordRow
+                                                         (TRowExtend
+                                                            "e"
+                                                            (TVar (TV 2 Star))
+                                                            (TVar (TV 4 Row)))
+                                                         (fromList []))
+                                                      (TVar (TV 7 Row)))
                                                    (fromList [])))
                                            (Area (Loc 18 1 19) (Loc 19 1 20))
                                            (Var ".c" False))))
@@ -493,20 +363,17 @@
                                           (TApp
                                              (TCon
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                             (TRecord
-                                                (fromList
-                                                   [ ( "d"
-                                                     , TRecord
-                                                         (fromList [ ( "e" , TVar (TV 2 Star) ) ])
-                                                         (Just (TVar (TV 21 Star)))
-                                                         (fromList [])
-                                                     )
-                                                   ])
-                                                (Just (TVar (TV 20 Star)))
+                                             (TRecordRow
+                                                (TRowExtend
+                                                   "d"
+                                                   (TRecordRow
+                                                      (TRowExtend
+                                                         "e" (TVar (TV 2 Star)) (TVar (TV 4 Row)))
+                                                      (fromList []))
+                                                   (TVar (TV 7 Row)))
                                                 (fromList [])))
-                                          (TRecord
-                                             (fromList [ ( "e" , TVar (TV 2 Star) ) ])
-                                             (Just (TVar (TV 21 Star)))
+                                          (TRecordRow
+                                             (TRowExtend "e" (TVar (TV 2 Star)) (TVar (TV 4 Row)))
                                              (fromList [])))
                                      (Area (Loc 20 1 21) (Loc 21 1 22))
                                      (Var ".d" False))))
@@ -515,9 +382,8 @@
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TRecord
-                                          (fromList [ ( "e" , TVar (TV 2 Star) ) ])
-                                          (Just (TVar (TV 21 Star)))
+                                       (TRecordRow
+                                          (TRowExtend "e" (TVar (TV 2 Star)) (TVar (TV 4 Row)))
                                           (fromList [])))
                                     (TVar (TV 2 Star)))
                                (Area (Loc 22 1 23) (Loc 23 1 24))

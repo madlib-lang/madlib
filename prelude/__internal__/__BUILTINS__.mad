@@ -27,6 +27,7 @@ export type RecordBase
 
 export type Kind
   = Star
+  | Row
   | Kfun(Kind, Kind)
 
 export type Type
@@ -42,6 +43,7 @@ export typeTRecord = TRecord
 export typeNoBase = NoBase
 export typeBase = Base
 export typeStar = Star
+export typeRow = Row
 export typeKfun = Kfun
 
 

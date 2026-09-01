@@ -32,11 +32,7 @@
                   (Assignment
                      "main"
                      (Typed
-                        ([ IsIn
-                             "Number"
-                             [ TCon (TC "Integer" Star) "prelude" ]
-                             (Just (Area (Loc 77 5 9) (Loc 84 5 16)))
-                         ] :=>
+                        ([] :=>
                            TApp
                              (TApp
                                 (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
@@ -47,18 +43,15 @@
                         (Area (Loc 41 3 8) (Loc 127 9 2))
                         (Abs
                            (Typed
-                              ([ IsIn
-                                   "Number"
-                                   [ TCon (TC "Integer" Star) "prelude" ]
-                                   (Just (Area (Loc 77 5 9) (Loc 84 5 16)))
-                               ] :=>
+                              ([] :=>
                                  TApp
                                    (TCon (TC "List" (Kfun Star Star)) "prelude")
                                    (TCon (TC "String" Star) "prelude"))
                               (Area (Loc 126 9 1) (Loc 126 9 1))
                               "_")
                            [ Typed
-                               ([] :=>
+                               ([ IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                ] :=>
                                   TApp
                                     (TCon (TC "Maybe" (Kfun Star Star)) "Module.mad")
                                     (TCon (TC "Integer" Star) "prelude"))

@@ -27,7 +27,9 @@
                           (TApp
                              (TCon (TC "List" (Kfun Star Star)) "prelude")
                              (TCon (TC "String" Star) "prelude")))
-                       (TCon (TC "{}" Star) "prelude"))
+                       (TApp
+                          (TCon (TC "List" (Kfun Star Star)) "prelude")
+                          (TCon (TC "String" Star) "prelude")))
                   (Area (Loc 0 1 1) (Loc 35 4 2))
                   (Assignment
                      "main"
@@ -113,7 +115,7 @@
            })
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 0 1 1) (Loc 35 3 1)
+        , ctxArea = Area (Loc 0 1 1) (Loc 35 4 2)
         }
   ]
 )

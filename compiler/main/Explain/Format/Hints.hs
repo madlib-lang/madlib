@@ -134,8 +134,9 @@ describeType t
       TApp (TCon (TC "List" _) _ _) inner ->
         "List " <> describeType inner
 
-      TRecord fields _ optionalFields ->
-        let names = M.keys (fields <> optionalFields)
+      TRecordRow row optionalFields ->
+        let fields = fst (visibleRow row)
+            names = M.keys (fields <> optionalFields)
             shown = take 3 names
             more  = length names - length shown
         in  "a record with field" <> (if length names == 1 then " " else "s ")
@@ -375,9 +376,9 @@ typesRoughlyMatch t1 t2 = case (t1, t2) of
   (_, TVar _) -> True
   (TApp l1 r1, TApp l2 r2) -> typesRoughlyMatch l1 l2 && typesRoughlyMatch r1 r2
   (TCon (TC n1 _) _ _, TCon (TC n2 _) _ _) -> n1 == n2
-  (TRecord f1 _ o1, TRecord f2 _ o2) ->
-    let a1 = f1 <> o1
-        a2 = f2 <> o2
+  (TRecordRow r1 o1, TRecordRow r2 o2) ->
+    let a1 = fst (visibleRow r1) <> o1
+        a2 = fst (visibleRow r2) <> o2
     in  M.keys a1 == M.keys a2 && and (M.intersectionWith typesRoughlyMatch a1 a2)
   _ -> False
 

@@ -81,7 +81,8 @@
       (NoInstanceFound
          "Number"
          [ TApp
-             (TCon (TC "List" (Kfun Star Star)) "prelude") (TVar (TV 5 Star))
+             (TCon (TC "List" (Kfun Star Star)) "prelude")
+             (TCon (TC "Integer" Star) "prelude")
          ]
          [])
       Context

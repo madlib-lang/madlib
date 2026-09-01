@@ -565,13 +565,20 @@ spec = do
 
   -- -------------------------------------------------------------------------
   describe "prettyPrintQualType" $ do
+    it "renders raw row types instead of an empty string" $ do
+      let row = TRowExtend "x" tInteger (TVar (TV 42 Row))
+      prettyPrintType True row `shouldBe` "{ ...a, x :: Integer }"
+
+    it "renders an empty raw row" $ do
+      prettyPrintType True TRowEmpty `shouldBe` "{}"
+
     it "renders multiple constraints" $ do
-      let qt = ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing, IsIn "Monoid" [TVar $ TV 100 Star] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` tTuple2Of tBool tStr))
-      prettyPrintQualType qt `shouldBe` "(Monad m, Monoid a) => m -> { ...base, x :: Integer } -> #[Boolean, String]"
+      let qt = ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing, IsIn "Monoid" [TVar $ TV 100 Row] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` openRecord (Map.fromList [("x", tInteger)]) (TVar $ TV 100 Row) `fn` tTuple2Of tBool tStr))
+      prettyPrintQualType qt `shouldBe` "(Monad m, Monoid a) => m -> { ...a, x :: Integer } -> #[Boolean, String]"
 
     it "renders a single constraint" $ do
-      let scheme = Forall [] ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` TRecord (Map.fromList [("x", tInteger)]) (Just (TVar $ TV 100 Star)) mempty `fn` (tStr `fn` tTuple4Of tByte tBool tBool tBool) `fn` tTuple3Of tBool tStr (TApp (TApp (mkTCon (TC "Either" (Kfun (Kfun Star Star) Star)) "Either.mad") tByteArray) (tListOf tStr))))
-      schemeToStr scheme `shouldBe` "Monad m => m -> { ...base, x :: Integer } -> (String -> #[Byte, Boolean, Boolean, Boolean]) -> #[Boolean, String, Either ByteArray (List String)]"
+      let scheme = Forall [] ([IsIn "Monad" [TVar $ TV 11 (Kfun Star Star)] Nothing] :=> (TVar (TV 11 (Kfun Star Star)) `fn` openRecord (Map.fromList [("x", tInteger)]) (TVar $ TV 100 Row) `fn` (tStr `fn` tTuple4Of tByte tBool tBool tBool) `fn` tTuple3Of tBool tStr (TApp (TApp (mkTCon (TC "Either" (Kfun (Kfun Star Star) Star)) "Either.mad") tByteArray) (tListOf tStr))))
+      schemeToStr scheme `shouldBe` "Monad m => m -> { ...a, x :: Integer } -> (String -> #[Byte, Boolean, Boolean, Boolean]) -> #[Boolean, String, Either ByteArray (List String)]"
 
     it "renders many type variables without crashing" $ do
       let mkVar i = TVar (TV i Star)

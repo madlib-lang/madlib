@@ -26,31 +26,30 @@ getAllParentPreds :: Env -> [Pred] -> Infer [Pred]
 getAllParentPreds env ps = concat <$> mapM (getParentPreds env) ps
 
 getParentPreds :: Env -> Pred -> Infer [Pred]
-getParentPreds env p@(IsIn cls ts maybeArea) = do
-  (Interface tvs ps _) <- lookupInterface env cls
-
-  s <- unify (TVar <$> tvs) ts
-  let ps' = (\(IsIn cls ts' _) -> IsIn cls (apply s ts') maybeArea) <$> ps
-  nextPreds <- mapM (getParentPreds env) ps'
-
-  return $ [p] `union` ps' `union` concat nextPreds
+getParentPreds env = go Set.empty
+  where
+    go seen p@(IsIn cls ts maybeArea)
+      | Set.member (predKey p) seen = return []
+      | otherwise = do
+          (Interface tvs parents _) <- lookupInterface env cls
+          s <- unify (TVar <$> tvs) ts
+          let parents' = (\(IsIn parentCls parentTs _) -> IsIn parentCls (apply s parentTs) maybeArea) <$> parents
+          nested <- concat <$> mapM (go (Set.insert (predKey p) seen)) parents'
+          return (p : parents' ++ nested)
 
 getParentPredsOnly :: Env -> Pred -> Infer [Pred]
-getParentPredsOnly env (IsIn cls ts maybeArea) = do
-  (Interface tvs ps _) <- lookupInterface env cls
-
-  s <- unify (TVar <$> tvs) ts
-  let ps' = (\(IsIn cls ts' _) -> IsIn cls (apply s ts') maybeArea) <$> ps
-  nextPreds <- mapM (getParentPreds env) ps'
-
-  return $ ps' `union` concat nextPreds
+getParentPredsOnly env p = filter (/= p) <$> getParentPreds env p
 
 
 getAllInstancePreds :: Env -> Pred -> Infer [Pred]
-getAllInstancePreds env p = do
-  ps <- catchError (byInst env p) (const $ return [])
-  more <- mapM (getAllInstancePreds env) ps
-  return $ ps ++ concat more
+getAllInstancePreds env = go Set.empty
+  where
+    go seen p
+      | Set.member (predKey p) seen = return []
+      | otherwise = do
+          ps <- catchError (byInst env p) (const $ return [])
+          more <- concat <$> mapM (go (Set.insert (predKey p) seen)) ps
+          return (ps ++ more)
 
 
 liftPred :: ([Type] -> [Type] -> Infer a) -> Pred -> Pred -> Infer a
@@ -63,24 +62,6 @@ instance Unify Pred where
 instance Match Pred where
   match = liftPred match
 
-sig :: Env -> Id -> [TVar]
-sig env i = case M.lookup i (envInterfaces env) of
-  Just (Interface vs _ _) ->
-    vs
-
-  Nothing ->
-    []
-
-
-super :: Env -> Id -> [Pred]
-super env i = case M.lookup i (envInterfaces env) of
-  Just (Interface _ is _) ->
-    is
-
-  Nothing ->
-    []
-
-
 insts :: Env -> Id -> [Instance]
 insts env i = case M.lookup i (envInterfaces env) of
   Just (Interface _ _ insts) ->
@@ -91,12 +72,25 @@ insts env i = case M.lookup i (envInterfaces env) of
 
 
 bySuper :: Env -> Pred -> [Pred]
-bySuper env p@(IsIn i ts maybeArea) =
-  p : ((\(IsIn c ts' _) -> IsIn c ts' maybeArea) <$> concatMap (bySuper env) supers')
+bySuper env = go Set.empty
   where
-    supers = apply s (super env i)
-    supers' = map (\(IsIn c' ts' maybeArea') -> IsIn c' ts' (if Maybe.isNothing maybeArea' then maybeArea else maybeArea')) supers
-    s      = M.fromList $ zip (sig env i) ts
+    go seen p@(IsIn i ts maybeArea)
+      | Set.member (predKey p) seen = []
+      | otherwise = case M.lookup i (envInterfaces env) of
+          Just (Interface vars supers _)
+            | length vars == length ts ->
+                let seen' = Set.insert (predKey p) seen
+                    subst = M.fromList (zip vars ts)
+                    supers' = map (\(IsIn cls args inheritedArea) ->
+                      IsIn cls
+                        (apply subst args)
+                        (if Maybe.isNothing inheritedArea then maybeArea else inheritedArea)
+                      ) supers
+                in p : concatMap (go seen') supers'
+          -- Arity is validated at predicate construction boundaries. Do not
+          -- derive evidence from a malformed predicate if an invariant is
+          -- nevertheless violated here.
+          _ -> [p]
 
 
 findInst :: Env -> Pred -> Infer (Maybe Instance)
@@ -104,7 +98,10 @@ findInst env p@(IsIn interface ts _) =
   catchError
     (Just <$> tryInsts candidates)
     (const $ case ts of
-      [TRecord fields _ _] | interface == "Eq" || interface == "Show" -> do
+      [TRecordRow row optionalFields]
+        | interface == "Eq" || interface == "Show"
+        , (requiredFields, Nothing) <- visibleRow row -> do
+        let fields = requiredFields <> optionalFields
         let (fieldsPreds, tRec) = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
             qp = fieldsPreds :=> IsIn interface [tRec] Nothing
         return $ Just (Instance qp mempty)
@@ -113,7 +110,9 @@ findInst env p@(IsIn interface ts _) =
         return Nothing
     )
  where
-  candidates = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
+  candidates
+    | isOpenRecordWanted interface ts = []
+    | otherwise = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
   tryInst i@(Instance (_ :=> h) _) = do
     isInstanceOf h p
     return i
@@ -130,24 +129,10 @@ gatherInstPreds env p =
   catchError (byInst env p) (\_ -> return [p])
 
 
-removeInstanceVars :: Pred -> Pred -> (Pred, Pred)
-removeInstanceVars (IsIn cls ts maybeArea) (IsIn cls' ts' maybeArea') =
-  let groupped = zip ts ts'
-      filtered = filter (not . isTVar . fst) groupped
-  in  (IsIn cls (fst <$> filtered) maybeArea, IsIn cls' (snd <$> filtered) maybeArea')
-
-
 specialMatch :: Pred -> Pred -> Infer Substitution
-specialMatch (IsIn cls ts _) (IsIn cls' ts' _) = do
-  if cls == cls'
-    then do
-      let zipped = zip ts ts'
-      foldM (\s (t, t') -> (s `compose`) <$> match t (apply s t')) M.empty zipped
-    else throwWithContext FatalError
-
-
-specialMatchMany :: [Pred] -> [Pred] -> Infer Substitution
-specialMatchMany ps ps' = foldM (\s (a, b) -> M.union s <$> specialMatch a b) mempty (zip ps ps')
+specialMatch (IsIn cls ts _) (IsIn cls' ts' _)
+  | cls == cls' = match ts ts'
+  | otherwise = throwWithContext FatalError
 
 
 quickMatchPred :: Pred -> Pred -> Bool
@@ -160,13 +145,18 @@ isConcrete t = case t of
   TCon _ _ _ ->
     True
 
-  TApp l _ ->
-    isConcrete l
+  TApp l r ->
+    isConcrete l && isConcrete r
 
-  -- TRecord _ _ _ ->
-  --   True
-  TRecord fields Nothing extra ->
-    all isConcrete (M.elems fields) && all isConcrete (M.elems extra)
+  TRecordRow row optionalFields
+    | (fields, Nothing) <- visibleRow row ->
+        all isConcrete (M.elems fields) && all isConcrete (M.elems optionalFields)
+
+  -- Aliases are transparent to instance resolution.  Treating every alias as
+  -- non-concrete makes a fully-known goal look deferred forever and can hide
+  -- a real missing-instance error behind the generic inference fallback.
+  TAlias _ _ _ t' ->
+    isConcrete t'
 
   _ ->
     False
@@ -183,7 +173,10 @@ byInst env p@(IsIn interface ts maybeArea) =
   catchError
     (tryInsts candidates)
     (\err -> case ts of
-      [TRecord fields _ _] | interface == "Eq" || interface == "Show" -> do
+      [TRecordRow row optionalFields]
+        | interface == "Eq" || interface == "Show"
+        , (requiredFields, Nothing) <- visibleRow row -> do
+        let fields = requiredFields <> optionalFields
         pushExtensibleRecordToDerive (M.keys fields)
         let (fieldsPreds, ts') = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
         u <- isInstanceOf (IsIn interface [ts'] Nothing) p
@@ -193,7 +186,9 @@ byInst env p@(IsIn interface ts maybeArea) =
         throwError err
     )
  where
-  candidates = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
+  candidates
+    | isOpenRecordWanted interface ts = []
+    | otherwise = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
   tryInst (Instance (ps :=> h) _) = do
     u <- isInstanceOf h p
     return $ apply u <$> ps
@@ -210,19 +205,40 @@ byInst env p@(IsIn interface ts maybeArea) =
   tryInsts (inst : is) = catchError (tryInst inst) (const $ tryInsts is)
 
 
+-- A closed, shape-specific record instance is not evidence for an open
+-- record.  Matching it would bind the unknown tail to the empty row and
+-- silently discard constraints for fields supplied later by a caller.
+isOpenRecordWanted :: Id -> [Type] -> Bool
+isOpenRecordWanted interface ts =
+  (interface == "Eq" || interface == "Show")
+  && case ts of
+    [TRecordRow row _] -> case visibleRow row of
+      (_, Just _) -> True
+      _           -> False
+    _ -> False
+
+
 allM :: (Monad m, Foldable t) => (a -> m Bool) -> t a -> m Bool
 allM f = foldM (\b a -> f a >>= (return . (&& b))) True
 
 entail :: Env -> [Pred] -> Pred -> Infer Bool
-entail env ps p = do
-  tt <- catchError
-    (byInst env p >>= allM (\q -> catchError (entail env ps q) (throwError . addRequiredBy p)))
-    (\case
-      CompilationError FatalError _ -> return False
-      e                             -> throwError e
-    )
-  return $ any ((p `elem`) . bySuper env) ps || tt
+entail env ps = go Set.empty []
   where
+    go seen path p
+      -- Givens are evidence; do not unfold an instance before consulting
+      -- them.  Apart from being cheaper this prevents a recursive instance
+      -- graph from diverging on a goal that is already available.
+      | any ((p `elem`) . bySuper env) ps = return True
+      | Set.member (predKey p) seen = throwWithContext (InstanceResolutionCycle (reverse (p : path)))
+      | otherwise = do
+          tt <- catchError
+            (byInst env p >>= allM (\q -> catchError (go (Set.insert (predKey p) seen) (p : path) q) (throwError . addRequiredBy p)))
+            (\case
+              CompilationError FatalError _ -> return False
+              e                             -> throwError e
+            )
+          return tt
+
     -- A nested predicate `q` (required by `p`'s instance) failed to resolve:
     -- record that `p` is what required it, building a required-by chain
     -- (innermost first) as the error unwinds back through each caller.

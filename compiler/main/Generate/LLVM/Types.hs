@@ -132,8 +132,8 @@ buildLLVMType env symbolTable (ps IT.:=> t) = case t of
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude" _) _ ->
     listType
 
-  IT.TRecord fields _ optionalFields ->
-    let allFields  = Map.union fields optionalFields
+  IT.TRecordRow row optionalFields ->
+    let allFields  = Map.union (fst $ IT.visibleRow row) optionalFields
         fieldTypes = Map.elems allFields
     in  if null fieldTypes then
           recordType
@@ -191,8 +191,8 @@ buildLLVMType' (ps IT.:=> t) = case t of
   IT.TApp (IT.TCon (IT.TC "List" (IT.Kfun IT.Star IT.Star)) "prelude" _) _ ->
     return (listType, Nothing)
 
-  IT.TRecord fields _ optionalFields -> do
-    let allFields  = Map.union fields optionalFields
+  IT.TRecordRow row optionalFields -> do
+    let allFields  = Map.union (fst $ IT.visibleRow row) optionalFields
         fieldTypes = Map.elems allFields
     if null fieldTypes then
       return (recordType, Nothing)
@@ -398,8 +398,8 @@ getTupleElemTypes t = reverse (go t)
 -- Fields are ordered alphabetically by name (Map.keys ordering).
 -- Primitive fields use their native LLVM type (i64, double, etc.); others use boxType.
 flatRecordType :: IT.Type -> Type.Type
-flatRecordType (IT.TRecord fields _ optionalFields) =
-  let allFields  = Map.union fields optionalFields
+flatRecordType (IT.TRecordRow row optionalFields) =
+  let allFields  = Map.union (fst $ IT.visibleRow row) optionalFields
       fieldTypes = Map.elems allFields
   in  if null fieldTypes then recordType
       else Type.ptr $ Type.StructureType False (primitiveTupleFieldType . ([] IT.:=>) <$> fieldTypes)
@@ -408,15 +408,15 @@ flatRecordType _ = recordType
 -- | Ordered list of LLVM field types for a record type (same ordering as Map.keys).
 -- Used when constructing or accessing record fields with native primitive types.
 recordFieldLLVMTypes :: IT.Type -> [Type.Type]
-recordFieldLLVMTypes (IT.TRecord fields _ optionalFields) =
-  (primitiveTupleFieldType . ([] IT.:=>)) <$> Map.elems (Map.union fields optionalFields)
+recordFieldLLVMTypes (IT.TRecordRow row optionalFields) =
+  (primitiveTupleFieldType . ([] IT.:=>)) <$> Map.elems (Map.union (fst $ IT.visibleRow row) optionalFields)
 recordFieldLLVMTypes _ = []
 
 -- | Get the index of a field in a flat record struct.
 -- Fields are ordered alphabetically by name (Map.keys ordering).
 recordFieldIndex :: String -> IT.Type -> Integer
-recordFieldIndex fieldName (IT.TRecord fields _ optionalFields) =
-  let allFields = Map.union fields optionalFields
+recordFieldIndex fieldName (IT.TRecordRow row optionalFields) =
+  let allFields = Map.union (fst $ IT.visibleRow row) optionalFields
   in  case List.elemIndex fieldName (Map.keys allFields) of
         Just i  -> fromIntegral i
         Nothing -> error $ "Record field '" <> fieldName <> "' not found in record type"

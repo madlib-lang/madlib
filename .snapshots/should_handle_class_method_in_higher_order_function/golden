@@ -101,68 +101,249 @@
                             ])
                      ])))
         , Typed
-            ([] :=> TVar (TV (-1) Star))
+            ([] :=>
+               TApp
+                 (TApp
+                    (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                    (TApp
+                       (TCon (TC "List" (Kfun Star Star)) "prelude")
+                       (TCon (TC "String" Star) "prelude")))
+                 (TCon (TC "{}" Star) "prelude"))
             (Area (Loc 31 2 1) (Loc 71 2 41))
             (TypedExp
                (Typed
-                  ([] :=> TVar (TV (-1) Star))
+                  ([] :=>
+                     TApp
+                       (TApp
+                          (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                          (TApp
+                             (TCon (TC "List" (Kfun Star Star)) "prelude")
+                             (TCon (TC "String" Star) "prelude")))
+                       (TCon (TC "Integer" Star) "prelude"))
                   (Area (Loc 31 2 1) (Loc 71 2 41))
                   (Assignment
                      "main"
                      (Typed
-                        ([] :=> TVar (TV (-1) Star))
+                        ([ IsIn
+                             "Number"
+                             [ TCon (TC "Integer" Star) "prelude" ]
+                             (Just (Area (Loc 64 2 34) (Loc 65 2 35)))
+                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                         , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                         ] :=>
+                           TApp
+                             (TApp
+                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                (TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude")))
+                             (TCon (TC "Integer" Star) "prelude"))
                         (Area (Loc 38 2 8) (Loc 71 2 41))
                         (Abs
                            (Typed
-                              ([] :=> TVar (TV (-1) Star))
+                              ([ IsIn
+                                   "Number"
+                                   [ TCon (TC "Integer" Star) "prelude" ]
+                                   (Just (Area (Loc 64 2 34) (Loc 65 2 35)))
+                               , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                               , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                               ] :=>
+                                 TApp
+                                   (TCon (TC "List" (Kfun Star Star)) "prelude")
+                                   (TCon (TC "String" Star) "prelude"))
                               (Area (Loc 70 2 40) (Loc 70 2 40))
                               "_")
                            [ Typed
-                               ([] :=> TVar (TV (-1) Star))
+                               ([ IsIn
+                                    "Number"
+                                    [ TCon (TC "Integer" Star) "prelude" ]
+                                    (Just (Area (Loc 64 2 34) (Loc 65 2 35)))
+                                , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                ] :=>
+                                  TCon (TC "Integer" Star) "prelude")
                                (Area (Loc 44 2 14) (Loc 70 2 40))
                                (App
                                   (Typed
-                                     ([] :=> TVar (TV (-1) Star))
+                                     ([ IsIn
+                                          "Number"
+                                          [ TCon (TC "Integer" Star) "prelude" ]
+                                          (Just (Area (Loc 64 2 34) (Loc 65 2 35)))
+                                      , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                      ] :=>
+                                        TApp
+                                          (TApp
+                                             (TCon
+                                                (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
+                                             (TCon (TC "Integer" Star) "prelude"))
+                                          (TCon (TC "Integer" Star) "prelude"))
                                      (Area (Loc 44 2 14) (Loc 71 2 41))
                                      (App
                                         (Typed
-                                           ([] :=> TVar (TV (-1) Star))
+                                           ([] :=>
+                                              TApp
+                                                (TApp
+                                                   (TCon
+                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                      "prelude")
+                                                   (TApp
+                                                      (TApp
+                                                         (TCon
+                                                            (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                            "prelude")
+                                                         (TCon (TC "Integer" Star) "prelude"))
+                                                      (TCon (TC "Integer" Star) "prelude")))
+                                                (TApp
+                                                   (TApp
+                                                      (TCon
+                                                         (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                         "prelude")
+                                                      (TCon (TC "Integer" Star) "prelude"))
+                                                   (TCon (TC "Integer" Star) "prelude")))
                                            (Area (Loc 44 2 14) (Loc 54 2 24))
                                            (Var "applyTwice" False))
                                         (Typed
-                                           ([] :=> TVar (TV (-1) Star))
+                                           ([ IsIn
+                                                "Number"
+                                                [ TCon (TC "Integer" Star) "prelude" ]
+                                                (Just (Area (Loc 64 2 34) (Loc 65 2 35)))
+                                            , IsIn
+                                                "Number"
+                                                [ TCon (TC "Integer" Star) "prelude" ]
+                                                Nothing
+                                            ] :=>
+                                              TApp
+                                                (TApp
+                                                   (TCon
+                                                      (TC "(->)" (Kfun Star (Kfun Star Star)))
+                                                      "prelude")
+                                                   (TCon (TC "Integer" Star) "prelude"))
+                                                (TCon (TC "Integer" Star) "prelude"))
                                            (Area (Loc 55 2 25) (Loc 67 2 37))
                                            (Abs
                                               (Typed
-                                                 ([] :=> TVar (TV (-1) Star))
+                                                 ([ IsIn
+                                                      "Number"
+                                                      [ TCon (TC "Integer" Star) "prelude" ]
+                                                      (Just (Area (Loc 64 2 34) (Loc 65 2 35)))
+                                                  , IsIn
+                                                      "Number"
+                                                      [ TCon (TC "Integer" Star) "prelude" ]
+                                                      Nothing
+                                                  ] :=>
+                                                    TCon (TC "Integer" Star) "prelude")
                                                  (Area (Loc 56 2 26) (Loc 57 2 27))
                                                  "n")
                                               [ Typed
-                                                  ([] :=> TVar (TV (-1) Star))
+                                                  ([ IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Integer" Star) "prelude" ]
+                                                       (Just (Area (Loc 64 2 34) (Loc 65 2 35)))
+                                                   , IsIn
+                                                       "Number"
+                                                       [ TCon (TC "Integer" Star) "prelude" ]
+                                                       Nothing
+                                                   ] :=>
+                                                     TCon (TC "Integer" Star) "prelude")
                                                   (Area (Loc 62 2 32) (Loc 67 2 37))
                                                   (App
                                                      (Typed
-                                                        ([] :=> TVar (TV (-1) Star))
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Integer" Star) "prelude" ]
+                                                             (Just
+                                                                (Area (Loc 64 2 34) (Loc 65 2 35)))
+                                                         ] :=>
+                                                           TApp
+                                                             (TApp
+                                                                (TCon
+                                                                   (TC
+                                                                      "(->)"
+                                                                      (Kfun Star (Kfun Star Star)))
+                                                                   "prelude")
+                                                                (TCon
+                                                                   (TC "Integer" Star) "prelude"))
+                                                             (TCon (TC "Integer" Star) "prelude"))
                                                         (Area (Loc 62 2 32) (Loc 67 2 37))
                                                         (App
                                                            (Typed
-                                                              ([] :=> TVar (TV (-1) Star))
+                                                              ([ IsIn
+                                                                   "Number"
+                                                                   [ TCon
+                                                                       (TC "Integer" Star) "prelude"
+                                                                   ]
+                                                                   Nothing
+                                                               ] :=>
+                                                                 TApp
+                                                                   (TApp
+                                                                      (TCon
+                                                                         (TC
+                                                                            "(->)"
+                                                                            (Kfun
+                                                                               Star
+                                                                               (Kfun Star Star)))
+                                                                         "prelude")
+                                                                      (TCon
+                                                                         (TC "Integer" Star)
+                                                                         "prelude"))
+                                                                   (TApp
+                                                                      (TApp
+                                                                         (TCon
+                                                                            (TC
+                                                                               "(->)"
+                                                                               (Kfun
+                                                                                  Star
+                                                                                  (Kfun Star Star)))
+                                                                            "prelude")
+                                                                         (TCon
+                                                                            (TC "Integer" Star)
+                                                                            "prelude"))
+                                                                      (TCon
+                                                                         (TC "Integer" Star)
+                                                                         "prelude")))
                                                               (Area (Loc 64 2 34) (Loc 65 2 35))
                                                               (Var "+" False))
                                                            (Typed
-                                                              ([] :=> TVar (TV (-1) Star))
+                                                              ([ IsIn
+                                                                   "Number"
+                                                                   [ TCon
+                                                                       (TC "Integer" Star) "prelude"
+                                                                   ]
+                                                                   (Just
+                                                                      (Area
+                                                                         (Loc 64 2 34)
+                                                                         (Loc 65 2 35)))
+                                                               ] :=>
+                                                                 TCon (TC "Integer" Star) "prelude")
                                                               (Area (Loc 62 2 32) (Loc 63 2 33))
                                                               (Var "n" False))
                                                            False))
                                                      (Typed
-                                                        ([] :=> TVar (TV 0 Star))
+                                                        ([ IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Integer" Star) "prelude" ]
+                                                             (Just
+                                                                (Area (Loc 64 2 34) (Loc 65 2 35)))
+                                                         , IsIn
+                                                             "Number"
+                                                             [ TCon (TC "Integer" Star) "prelude" ]
+                                                             Nothing
+                                                         ] :=>
+                                                           TCon (TC "Integer" Star) "prelude")
                                                         (Area (Loc 66 2 36) (Loc 67 2 37))
                                                         (LNum "1"))
                                                      True)
                                               ]))
                                         False))
                                   (Typed
-                                     ([] :=> TVar (TV 0 Star))
+                                     ([ IsIn
+                                          "Number"
+                                          [ TCon (TC "Integer" Star) "prelude" ]
+                                          (Just (Area (Loc 64 2 34) (Loc 65 2 35)))
+                                      , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                      , IsIn "Number" [ TCon (TC "Integer" Star) "prelude" ] Nothing
+                                      ] :=>
+                                        TCon (TC "Integer" Star) "prelude")
                                      (Area (Loc 69 2 39) (Loc 70 2 40))
                                      (LNum "0"))
                                   True)
@@ -194,10 +375,16 @@
     }
 , []
 , [ CompilationError
-      (NoInstanceFound "Number" [ TCon (TC "{}" Star) "prelude" ] [])
+      (UnificationError
+         TypeMismatch
+           { tmFound = TCon (TC "Integer" Star) "prelude"
+           , tmExpected = TCon (TC "{}" Star) "prelude"
+           , tmOrigin = FromFunctionReturn "main"
+           , tmSecondaries = []
+           })
       Context
         { ctxAstPath = "Module.mad"
-        , ctxArea = Area (Loc 64 2 34) (Loc 65 2 35)
+        , ctxArea = Area (Loc 31 2 1) (Loc 71 2 41)
         }
   ]
 )

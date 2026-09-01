@@ -48,65 +48,27 @@ instance Substitutable Type where
   apply s t@(TVar a) =
     case M.lookup a s of
       Nothing -> t
-      Just t' -> if occursCheck a t' then t else t'
+      -- Follow substitution chains so every caller observes a zonked type.
+      -- Removing the variable currently expanded prevents a malformed cycle
+      -- from looping forever while proper occurs checks keep such cycles from
+      -- being constructed in the first place.
+      Just t' -> apply (M.delete a s) t'
 
   apply s (t1 `TApp` t2) =
     let !t1' = apply s t1
         !t2' = apply s t2
     in  TApp t1' t2'
 
-  apply s (TRecord fields (Just (TVar tv)) optionalFields) = case M.lookup tv s of
-    Just newBase@(TVar _) ->
-      -- Row variable substituted with another row variable - preserve it
-      TRecord (apply s <$> fields) (Just newBase) (apply s <$> optionalFields)
+  apply _ TRowEmpty = TRowEmpty
 
-    Just (TRecord fields' Nothing optionalFields') ->
-      -- Row variable substituted with a closed record - merge fields and remove
-      -- row variable. mkRecord folds the optional fields into required since
-      -- the result is closed.
-      mkRecord (apply s <$> (fields <> fields')) Nothing (apply s <$> (optionalFields <> optionalFields'))
+  apply s (TRowExtend name fieldType tail) =
+    TRowExtend name (apply s fieldType) (apply s tail)
 
-    Just (TRecord fields' base' optionalFields') ->
-      -- Row variable substituted with an open record - merge fields and preserve the base
-      let appliedBase = apply s <$> base'
-      in  if appliedBase /= base' then
-            -- Base changed after substitution, recurse to handle nested substitutions
-            apply s $ TRecord (fields <> fields') appliedBase (optionalFields <> optionalFields')
-          else
-            -- Base unchanged, just merge fields
-            TRecord (apply s <$> (fields <> fields')) appliedBase (apply s <$> (optionalFields <> optionalFields'))
-
-    Nothing ->
-      -- Row variable not in substitution - keep it as is
-      TRecord (apply s <$> fields) (Just (TVar tv)) (apply s <$> optionalFields)
-
-    Just (TGen x) ->
-      -- Row variable substituted with a generic type variable - preserve it
-      TRecord (apply s <$> fields) (Just $ TGen x) (apply s <$> optionalFields)
-
-    Just otherType ->
-      -- Row variable substituted with a non-record type - try to apply substitution recursively
-      -- This handles cases where the substitution might resolve to a record after further application
-      let appliedOther = apply s otherType
-      in  case appliedOther of
-            TRecord fields' base' optionalFields' ->
-              -- After substitution, it became a record - merge fields
-              TRecord (apply s <$> (fields <> fields')) base' (apply s <$> (optionalFields <> optionalFields'))
-            _ ->
-              -- Still not a record - keep original row variable but apply substitution to fields
-              TRecord (apply s <$> fields) (Just (TVar tv)) (apply s <$> optionalFields)
-
-  apply s (TRecord fields (Just (TRecord fields' base optionalFields')) optionalFields) =
-    -- Base is already a record - merge and recurse
-    apply s $ TRecord (fields <> fields') base (optionalFields <> optionalFields')
-
-  apply s (TRecord fields Nothing optionalFields)
-    | M.null optionalFields =
-      -- No row variable, no optional fields - just apply substitution to main fields
-      TRecord (apply s <$> fields) Nothing mempty
-    | otherwise =
-      -- No row variable - merge optional fields into main fields and apply substitution
-      TRecord (apply s <$> (fields <> optionalFields)) Nothing mempty
+  -- Rows are substituted structurally.  Do not flatten through the legacy
+  -- record view: doing so would erase an outer label that shadows the same
+  -- label in its tail.
+  apply s (TRecordRow row optionalFields) =
+    TRecordRow (apply s row) (apply s <$> optionalFields)
 
   apply _ t = t
 
@@ -119,13 +81,13 @@ instance Substitutable Type where
   ftv (t1 `TApp` t2) =
     ftv t1 `S.union` ftv t2
 
-  ftv (TRecord fields Nothing optionalFields) =
-    foldMap ftv (M.elems fields) `S.union` foldMap ftv (M.elems optionalFields)
+  ftv TRowEmpty = S.empty
 
-  ftv (TRecord fields (Just base) optionalFields) =
-    foldMap ftv (M.elems fields)
-    `S.union` ftv base
-    `S.union` foldMap ftv (M.elems optionalFields)
+  ftv (TRowExtend _ fieldType tail) =
+    ftv fieldType `S.union` ftv tail
+
+  ftv (TRecordRow row optionalFields) =
+    ftv row `S.union` foldMap ftv (M.elems optionalFields)
 
   ftv _ =
     S.empty
@@ -159,9 +121,18 @@ instance Substitutable Env where
     -- pre-generalization let-bindings) vs envVars's hundreds of imports
     -- + post-generalization names.
     | otherwise =
-        let openMap = M.restrictKeys (envVars env) (envOpenVarNames env)
-            applied = M.map (apply s) openMap
-        in  env { envVars = M.union applied (envVars env) }
+        -- A substitution may introduce fresh free variables in a scheme
+        -- (for example a ↦ List b).  Keeping the old cache in that case is
+        -- an under-approximation, so a later substitution for b can be
+        -- incorrectly skipped.  Rebuild both caches from the resulting map.
+        let openMap  = M.restrictKeys (envVars env) (envOpenVarNames env)
+            applied  = M.map (apply s) openMap
+            vars'    = M.union applied (envVars env)
+            openVars = M.filter (not . S.null . ftv) vars'
+        in  env { envVars = vars'
+                , envFreeTVars = foldMap ftv openVars
+                , envOpenVarNames = M.keysSet openVars
+                }
   ftv env = ftv $ M.elems $ envVars env
 
 
@@ -175,8 +146,10 @@ occursCheck tv = go
     go TCon{}            = False
     go TGen{}            = False
     go (TApp l r)        = go l || go r
-    go (TRecord fields base optionalFields) =
-      any go (M.elems fields) || maybe False go base || any go (M.elems optionalFields)
+    go TRowEmpty         = False
+    go (TRowExtend _ t r) = go t || go r
+    go (TRecordRow row optionalFields) =
+      go row || any go optionalFields
     go _                 = False
 
 
@@ -188,13 +161,10 @@ instance FtvOrdered Type where
   ftvList TCon{}                         = []
   ftvList (TVar a)                       = [a]
   ftvList (t1 `TApp` t2)                = ftvList t1 ++ ftvList t2
-  ftvList (TRecord fields Nothing optionalFields) =
-    concatMap ftvList (M.elems fields)
-    ++ concatMap ftvList (M.elems optionalFields)
-  ftvList (TRecord fields (Just base) optionalFields) =
-    concatMap ftvList (M.elems fields)
-    ++ ftvList base
-    ++ concatMap ftvList (M.elems optionalFields)
+  ftvList TRowEmpty                      = []
+  ftvList (TRowExtend _ t r)             = ftvList t ++ ftvList r
+  ftvList (TRecordRow row optionalFields) =
+    ftvList row ++ concatMap ftvList (M.elems optionalFields)
   ftvList _                              = []
 
 instance FtvOrdered Pred where
@@ -219,31 +189,16 @@ instance FtvOrdered t => FtvOrdered (Qual t) where
 compose :: Substitution -> Substitution -> Substitution
 compose !s1 s2
   | M.null s1 = s2
-  | M.null s2 = M.map (apply s1) s1
   | otherwise =
-      let s1' = M.map (apply s1) s1
-          s2' = M.map (apply s1) s2
-      in  M.unionWith mergeTypes s2' s1'
- where
-  mergeTypes :: Type -> Type -> Type
-  mergeTypes t1 t2 = case (t1, t2) of
-    (TRecord fields1 base1 optionalFields1, TRecord fields2 base2 optionalFields2) ->
-      let base = base1 <|> base2
-      in  TRecord (M.unionWith mergeTypes fields1 fields2) base (optionalFields1 <> optionalFields2)
-
-    (TRecord fields base optionalFields, TVar _) ->
-      TRecord fields base optionalFields
-
-    (TVar _, TRecord fields base optionalFields) ->
-      TRecord fields base optionalFields
-
-    (TApp tl tr, TApp tl' tr') ->
-      let tl'' = mergeTypes tl tl'
-          tr'' = mergeTypes tr tr'
-      in  TApp tl'' tr''
-
-    (_, t) ->
-      t
+      -- `compose new old` satisfies
+      --   apply (compose new old) t == apply new (apply old t)
+      -- for every type t.  On an overlapping domain the transformed `old`
+      -- binding must win: `old` is applied first, so `new`'s binding for the
+      -- same input variable is unreachable.  Overlap is never an invitation
+      -- to structurally merge two unrelated records or functions.
+      let new' = M.map (apply s1) s1
+          old' = M.map (apply s1) s2
+      in  M.union old' new'
 
 merge :: Substitution -> Substitution -> Infer Substitution
 merge s1 s2
@@ -265,15 +220,28 @@ buildVarSubsts t = case t of
   TApp l r ->
     M.union (buildVarSubsts l) (buildVarSubsts r)
 
-  TRecord fields base optionalFields ->
-    foldr (\t s -> buildVarSubsts t `compose` s) nullSubst (M.elems fields <> baseToList base <> M.elems optionalFields)
+  TRowEmpty ->
+    mempty
+
+  TRowExtend _ fieldType tail ->
+    buildVarSubsts fieldType `compose` buildVarSubsts tail
+
+  TRecordRow row optionalFields ->
+    foldr
+      (\fieldType s -> buildVarSubsts fieldType `compose` s)
+      (buildVarSubsts row)
+      (M.elems optionalFields)
+
+  TAlias _ _ _ aliased ->
+    buildVarSubsts aliased
 
   _ ->
     mempty
 
 
--- | Compose a substitution into the monad state's `currentSubst`. The new
--- substitution takes precedence on overlapping variables (left-biased compose).
+-- | Compose a substitution into the monad state's `currentSubst`. Existing
+-- bindings are transformed by the new substitution, matching sequential
+-- application (`new` after `current`).
 extSubst :: Substitution -> Infer ()
 extSubst s = modify $ \st -> st
   { currentSubst = s `compose` currentSubst st

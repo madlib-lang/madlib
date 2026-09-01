@@ -281,8 +281,8 @@ findMutationsInExp params expr = case expr of
   Typed _ _ _ (Call fn args) ->
     findMutationsInExp params fn ++ concatMap (findMutationsInExp params) args
 
-  Typed _ _ _ (Definition _ body) ->
-    findMutationsInBody params body
+  Typed _ _ _ (Definition params' body) ->
+    findMutationsInBody (enterScope (getValue <$> params') params) body
 
   Typed _ _ _ (Access rec _) ->
     findMutationsInExp params rec
@@ -312,7 +312,7 @@ findMutationsInExp params expr = case expr of
 
   Typed _ _ _ (Where e iss) ->
     findMutationsInExp params e
-    ++ concatMap (findMutationsInExp params . getIsExpression) iss
+    ++ concatMap (findMutationsInBranch params) iss
 
   _ ->
     []
@@ -320,6 +320,12 @@ findMutationsInExp params expr = case expr of
 
 findMutationsInBody :: [String] -> [Exp] -> [String]
 findMutationsInBody params = concatMap (findMutationsInExp params)
+
+
+findMutationsInBranch :: [String] -> Is -> [String]
+findMutationsInBranch params (Typed _ _ _ (Is pat e)) =
+  findMutationsInExp (enterScope (getPatternVars pat) params) e
+findMutationsInBranch _ _ = []
 
 
 -- | Find ALL mutations: both reassignments and reads of previously assigned variables.
@@ -343,7 +349,11 @@ findAllMutationsInExp params assignments expr = case expr of
     ++ concatMap (findAllMutationsInExp params assignments) args
 
   Typed _ _ _ (Definition params' body) ->
-    findAllMutationsInExps (params ++ (getValue <$> params')) assignments body
+    let scopedNames = getValue <$> params'
+    in  findAllMutationsInExps
+          (enterScope scopedNames params)
+          (removeShadowed scopedNames assignments)
+          body
 
   Typed _ _ _ (Access rec _) ->
     findAllMutationsInExp params assignments rec
@@ -375,7 +385,7 @@ findAllMutationsInExp params assignments expr = case expr of
 
   Typed _ _ _ (Where e iss) ->
     findAllMutationsInExp params assignments e
-    ++ concatMap (findAllMutationsInExp params assignments . getIsExpression) iss
+    ++ concatMap (findAllMutationsInBranch params assignments) iss
 
   _ ->
     []
@@ -391,6 +401,28 @@ findAllMutationsInExps params assignments (e : rest) = case e of
   _ ->
     findAllMutationsInExp params assignments e
     ++ findAllMutationsInExps params assignments rest
+
+
+findAllMutationsInBranch :: [String] -> [String] -> Is -> [String]
+findAllMutationsInBranch params assignments (Typed _ _ _ (Is pat e)) =
+  let scopedNames = getPatternVars pat
+  in  findAllMutationsInExp
+        (enterScope scopedNames params)
+        (removeShadowed scopedNames assignments)
+        e
+findAllMutationsInBranch _ _ _ = []
+
+
+-- Binding occurrences in patterns and function parameters introduce a fresh
+-- lexical binding even when an optimizer has inlined code containing the same
+-- source-level name. Mutation analysis must therefore forget any outer binding
+-- with that name while descending into the nested scope.
+enterScope :: [String] -> [String] -> [String]
+enterScope names outer = names ++ removeShadowed names outer
+
+
+removeShadowed :: [String] -> [String] -> [String]
+removeShadowed names = filter (`notElem` names)
 
 
 -- ---------------------------------------------------------------------------

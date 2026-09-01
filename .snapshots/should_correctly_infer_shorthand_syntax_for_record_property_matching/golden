@@ -17,10 +17,11 @@
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TRecord
-                       (fromList
-                          [ ( "x" , TVar (TV 6 Star) ) , ( "y" , TVar (TV 6 Star) ) ])
-                       (Just (TVar (TV 9 Star)))
+                    (TRecordRow
+                       (TRowExtend
+                          "x"
+                          (TVar (TV 6 Star))
+                          (TRowExtend "y" (TVar (TV 6 Star)) (TVar (TV 5 Row))))
                        (fromList [])))
                  (TVar (TV 6 Star)))
             (Area (Loc 0 1 1) (Loc 54 5 2))
@@ -35,10 +36,11 @@
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TRecord
-                             (fromList
-                                [ ( "x" , TVar (TV 6 Star) ) , ( "y" , TVar (TV 6 Star) ) ])
-                             (Just (TVar (TV 9 Star)))
+                          (TRecordRow
+                             (TRowExtend
+                                "x"
+                                (TVar (TV 6 Star))
+                                (TRowExtend "y" (TVar (TV 6 Star)) (TVar (TV 5 Row))))
                              (fromList [])))
                        (TVar (TV 6 Star)))
                   (Area (Loc 5 1 6) (Loc 54 5 2))
@@ -49,10 +51,11 @@
                              [ TVar (TV 6 Star) ]
                              (Just (Area (Loc 45 3 19) (Loc 46 3 20)))
                          ] :=>
-                           TRecord
-                             (fromList
-                                [ ( "x" , TVar (TV 6 Star) ) , ( "y" , TVar (TV 6 Star) ) ])
-                             (Just (TVar (TV 9 Star)))
+                           TRecordRow
+                             (TRowExtend
+                                "x"
+                                (TVar (TV 6 Star))
+                                (TRowExtend "y" (TVar (TV 6 Star)) (TVar (TV 5 Row))))
                              (fromList []))
                         (Area (Loc 6 1 7) (Loc 7 1 8))
                         "r")
@@ -67,10 +70,11 @@
                          (Where
                             (Typed
                                ([] :=>
-                                  TRecord
-                                    (fromList
-                                       [ ( "x" , TVar (TV 6 Star) ) , ( "y" , TVar (TV 6 Star) ) ])
-                                    (Just (TVar (TV 9 Star)))
+                                  TRecordRow
+                                    (TRowExtend
+                                       "x"
+                                       (TVar (TV 6 Star))
+                                       (TRowExtend "y" (TVar (TV 6 Star)) (TVar (TV 5 Row))))
                                     (fromList []))
                                (Area (Loc 22 2 9) (Loc 23 2 10))
                                (Var "r" False))
@@ -83,24 +87,22 @@
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TRecord
-                                           (fromList
-                                              [ ( "x" , TVar (TV 6 Star) )
-                                              , ( "y" , TVar (TV 6 Star) )
-                                              ])
-                                           (Just (TVar (TV 9 Star)))
+                                        (TRecordRow
+                                           (TRowExtend
+                                              "x"
+                                              (TVar (TV 6 Star))
+                                              (TRowExtend "y" (TVar (TV 6 Star)) (TVar (TV 5 Row))))
                                            (fromList [])))
                                      (TVar (TV 6 Star)))
                                 (Area (Loc 31 3 5) (Loc 48 3 22))
                                 (Is
                                    (Typed
                                       ([] :=>
-                                         TRecord
-                                           (fromList
-                                              [ ( "x" , TVar (TV 6 Star) )
-                                              , ( "y" , TVar (TV 6 Star) )
-                                              ])
-                                           (Just (TVar (TV 9 Star)))
+                                         TRecordRow
+                                           (TRowExtend
+                                              "x"
+                                              (TVar (TV 6 Star))
+                                              (TRowExtend "y" (TVar (TV 6 Star)) (TVar (TV 5 Row))))
                                            (fromList []))
                                       (Area (Loc 31 3 5) (Loc 39 3 13))
                                       (PRecord

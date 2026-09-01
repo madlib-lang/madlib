@@ -52,6 +52,9 @@ expectKind :: Slv.Exp -> Kind -> Expectation
 expectKind exp_ Star =
   expectCtor exp_ "__BUILTINS__.typeStar" (`shouldBe` [])
 
+expectKind exp_ Row =
+  expectCtor exp_ "__BUILTINS__.typeRow" (`shouldBe` [])
+
 expectKind exp_ (Kfun left right) =
   expectCtor exp_ "__BUILTINS__.typeKfun" $ \args ->
     case args of
@@ -96,6 +99,11 @@ spec = do
           exp_ = lowerTypeToRuntimeValue builtinsPath emptyArea (TVar (TV 42 tvKind))
 
       expectRuntimeTVar exp_ "a" tvKind
+
+    it "lowers row-kinded variables" $ do
+      let exp_ = lowerTypeToRuntimeValue builtinsPath emptyArea (TVar (TV 42 Row))
+
+      expectRuntimeTVar exp_ "a" Row
 
     it "lowers TCon with normalized name, kind, and origin path" $ do
       let arrowKind = Kfun Star (Kfun Star Star)

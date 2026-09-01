@@ -9,40 +9,40 @@
         ]
     , aexps =
         [ Typed
-            ([ IsIn "Number" [ TVar (TV 3 Star) ] Nothing ] :=>
+            ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
                TApp
                  (TApp
                     (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                    (TRecord
-                       (fromList [ ( "count" , TVar (TV 3 Star) ) ])
-                       (Just (TVar (TV 5 Star)))
+                    (TRecordRow
+                       (TRowExtend
+                          "count"
+                          (TVar (TV 5 Star))
+                          (TRowExtend "count" (TVar (TV 5 Star)) (TVar (TV 6 Row))))
                        (fromList [])))
                  (TVar (TV 2 Star)))
             (Area (Loc 0 1 1) (Loc 38 1 39))
             (Assignment
                "loop"
                (Typed
-                  ([ IsIn "Number" [ TVar (TV 3 Star) ] Nothing ] :=>
+                  ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
                      TApp
                        (TApp
                           (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                          (TRecord
-                             (fromList [ ( "count" , TVar (TV 3 Star) ) ])
-                             (Just (TVar (TV 5 Star)))
+                          (TRecordRow
+                             (TRowExtend "count" (TVar (TV 5 Star)) (TVar (TV 6 Row)))
                              (fromList [])))
                        (TVar (TV 2 Star)))
                   (Area (Loc 7 1 8) (Loc 38 1 39))
                   (Abs
                      (Typed
-                        ([ IsIn "Number" [ TVar (TV 3 Star) ] Nothing ] :=>
-                           TRecord
-                             (fromList [ ( "count" , TVar (TV 3 Star) ) ])
-                             (Just (TVar (TV 5 Star)))
+                        ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
+                           TRecordRow
+                             (TRowExtend "count" (TVar (TV 5 Star)) (TVar (TV 6 Row)))
                              (fromList []))
                         (Area (Loc 8 1 9) (Loc 9 1 10))
                         "r")
                      [ Typed
-                         ([ IsIn "Number" [ TVar (TV 3 Star) ] Nothing ] :=>
+                         ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
                             TVar (TV 2 Star))
                          (Area (Loc 14 1 15) (Loc 38 1 39))
                          (App
@@ -51,46 +51,50 @@
                                   TApp
                                     (TApp
                                        (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                       (TRecord
-                                          (fromList [ ( "count" , TVar (TV 3 Star) ) ])
-                                          (Just (TVar (TV 5 Star)))
+                                       (TRecordRow
+                                          (TRowExtend
+                                             "count"
+                                             (TVar (TV 5 Star))
+                                             (TRowExtend
+                                                "count" (TVar (TV 5 Star)) (TVar (TV 6 Row))))
                                           (fromList [])))
                                     (TVar (TV 2 Star)))
                                (Area (Loc 14 1 15) (Loc 18 1 19))
                                (Var "loop" False))
                             (Typed
-                               ([ IsIn "Number" [ TVar (TV 3 Star) ] Nothing ] :=>
-                                  TRecord
-                                    (fromList [ ( "count" , TVar (TV 3 Star) ) ])
-                                    (Just (TVar (TV 5 Star)))
+                               ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
+                                  TRecordRow
+                                    (TRowExtend
+                                       "count"
+                                       (TVar (TV 5 Star))
+                                       (TRowExtend "count" (TVar (TV 5 Star)) (TVar (TV 6 Row))))
                                     (fromList []))
                                (Area (Loc 19 1 20) (Loc 37 1 38))
                                (Record
                                   [ Typed
                                       ([] :=>
-                                         TRecord
-                                           (fromList [ ( "count" , TVar (TV 3 Star) ) ])
-                                           (Just (TVar (TV 5 Star)))
+                                         TRecordRow
+                                           (TRowExtend "count" (TVar (TV 5 Star)) (TVar (TV 6 Row)))
                                            (fromList []))
                                       (Area (Loc 19 1 20) (Loc 25 1 26))
                                       (FieldSpread
                                          (Typed
                                             ([] :=>
-                                               TRecord
-                                                 (fromList [ ( "count" , TVar (TV 3 Star) ) ])
-                                                 (Just (TVar (TV 5 Star)))
+                                               TRecordRow
+                                                 (TRowExtend
+                                                    "count" (TVar (TV 5 Star)) (TVar (TV 6 Row)))
                                                  (fromList []))
                                             (Area (Loc 24 1 25) (Loc 25 1 26))
                                             (Var "r" False)))
                                   , Typed
-                                      ([ IsIn "Number" [ TVar (TV 3 Star) ] Nothing ] :=>
-                                         TVar (TV 3 Star))
+                                      ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
+                                         TVar (TV 5 Star))
                                       (Area (Loc 27 1 28) (Loc 35 1 36))
                                       (Field
                                          ( "count"
                                          , Typed
-                                             ([ IsIn "Number" [ TVar (TV 3 Star) ] Nothing ] :=>
-                                                TVar (TV 3 Star))
+                                             ([ IsIn "Number" [ TVar (TV 5 Star) ] Nothing ] :=>
+                                                TVar (TV 5 Star))
                                              (Area (Loc 34 1 35) (Loc 35 1 36))
                                              (LNum "1")
                                          ))
@@ -173,9 +177,8 @@
                [ IsIn "Eq" [ TVar (TV 204274412242036023 Star) ] Nothing ]
                (IsIn
                   "Eq"
-                  [ TRecord
-                      (fromList [ ( "count" , TVar (TV 204274412242036023 Star) ) ])
-                      Nothing
+                  [ TRecordRow
+                      (TRowExtend "count" (TVar (TV 204274412242036023 Star)) TRowEmpty)
                       (fromList [])
                   ]
                   Nothing)
@@ -186,36 +189,32 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList [ ( "count" , TVar (TV 18 Star) ) ])
-                                     Nothing
+                                  (TRecordRow
+                                     (TRowExtend "count" (TVar (TV 19 Star)) TRowEmpty)
                                      (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord
-                                        (fromList [ ( "count" , TVar (TV 18 Star) ) ])
-                                        Nothing
+                                     (TRecordRow
+                                        (TRowExtend "count" (TVar (TV 19 Star)) TRowEmpty)
                                         (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "=="
                              (Typed
-                                ([ IsIn "Eq" [ TVar (TV 18 Star) ] Nothing ] :=>
+                                ([ IsIn "Eq" [ TVar (TV 19 Star) ] Nothing ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TRecord
-                                           (fromList [ ( "count" , TVar (TV 18 Star) ) ])
-                                           Nothing
+                                        (TRecordRow
+                                           (TRowExtend "count" (TVar (TV 19 Star)) TRowEmpty)
                                            (fromList [])))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TRecord
-                                              (fromList [ ( "count" , TVar (TV 18 Star) ) ])
-                                              Nothing
+                                           (TRecordRow
+                                              (TRowExtend "count" (TVar (TV 19 Star)) TRowEmpty)
                                               (fromList [])))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -223,19 +222,18 @@
                                    (Typed
                                       ([ IsIn
                                            "Eq"
-                                           [ TVar (TV 18 Star) ]
+                                           [ TVar (TV 19 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
-                                         TRecord
-                                           (fromList [ ( "count" , TVar (TV 18 Star) ) ])
-                                           Nothing
+                                         TRecordRow
+                                           (TRowExtend "count" (TVar (TV 19 Star)) TRowEmpty)
                                            (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
                                    [ Typed
                                        ([ IsIn
                                             "Eq"
-                                            [ TVar (TV 18 Star) ]
+                                            [ TVar (TV 19 Star) ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                         ] :=>
                                           TApp
@@ -243,9 +241,8 @@
                                                (TCon
                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                   "prelude")
-                                               (TRecord
-                                                  (fromList [ ( "count" , TVar (TV 18 Star) ) ])
-                                                  Nothing
+                                               (TRecordRow
+                                                  (TRowExtend "count" (TVar (TV 19 Star)) TRowEmpty)
                                                   (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -253,19 +250,18 @@
                                           (Typed
                                              ([ IsIn
                                                   "Eq"
-                                                  [ TVar (TV 18 Star) ]
+                                                  [ TVar (TV 19 Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
-                                                TRecord
-                                                  (fromList [ ( "count" , TVar (TV 18 Star) ) ])
-                                                  Nothing
+                                                TRecordRow
+                                                  (TRowExtend "count" (TVar (TV 19 Star)) TRowEmpty)
                                                   (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
                                           [ Typed
                                               ([ IsIn
                                                    "Eq"
-                                                   [ TVar (TV 18 Star) ]
+                                                   [ TVar (TV 19 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "Boolean" Star) "prelude")
@@ -274,7 +270,7 @@
                                                  (Typed
                                                     ([ IsIn
                                                          "Eq"
-                                                         [ TVar (TV 18 Star) ]
+                                                         [ TVar (TV 19 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TApp
@@ -320,7 +316,7 @@
                                                        (Typed
                                                           ([ IsIn
                                                                "Eq"
-                                                               [ TVar (TV 18 Star) ]
+                                                               [ TVar (TV 19 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
                                                              TCon (TC "Boolean" Star) "prelude")
@@ -329,7 +325,7 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 18 Star) ]
+                                                                     [ TVar (TV 19 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
@@ -343,7 +339,7 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TVar (TV 18 Star)))
+                                                                        (TVar (TV 19 Star)))
                                                                      (TCon
                                                                         (TC "Boolean" Star)
                                                                         "prelude"))
@@ -352,7 +348,7 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 18 Star) ]
+                                                                           [ TVar (TV 19 Star) ]
                                                                            Nothing
                                                                        ] :=>
                                                                          TApp
@@ -366,7 +362,7 @@
                                                                                           Star
                                                                                           Star)))
                                                                                  "prelude")
-                                                                              (TVar (TV 18 Star)))
+                                                                              (TVar (TV 19 Star)))
                                                                            (TApp
                                                                               (TApp
                                                                                  (TCon
@@ -379,7 +375,7 @@
                                                                                              Star)))
                                                                                     "prelude")
                                                                                  (TVar
-                                                                                    (TV 18 Star)))
+                                                                                    (TV 19 Star)))
                                                                               (TCon
                                                                                  (TC "Boolean" Star)
                                                                                  "prelude")))
@@ -388,27 +384,23 @@
                                                                    (Typed
                                                                       ([ IsIn
                                                                            "Eq"
-                                                                           [ TVar (TV 18 Star) ]
+                                                                           [ TVar (TV 19 Star) ]
                                                                            (Just
                                                                               (Area
                                                                                  (Loc 0 0 0)
                                                                                  (Loc 0 0 0)))
                                                                        ] :=>
-                                                                         TVar (TV 18 Star))
+                                                                         TVar (TV 19 Star))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Access
                                                                          (Typed
                                                                             ([] :=>
-                                                                               TRecord
-                                                                                 (fromList
-                                                                                    [ ( "count"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             18
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])
-                                                                                 Nothing
+                                                                               TRecordRow
+                                                                                 (TRowExtend
+                                                                                    "count"
+                                                                                    (TVar
+                                                                                       (TV 19 Star))
+                                                                                    TRowEmpty)
                                                                                  (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
@@ -427,20 +419,18 @@
                                                                                                 Star
                                                                                                 Star)))
                                                                                        "prelude")
-                                                                                    (TRecord
-                                                                                       (fromList
-                                                                                          [ ( "count"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   18
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])
-                                                                                       Nothing
+                                                                                    (TRecordRow
+                                                                                       (TRowExtend
+                                                                                          "count"
+                                                                                          (TVar
+                                                                                             (TV
+                                                                                                19
+                                                                                                Star))
+                                                                                          TRowEmpty)
                                                                                        (fromList
                                                                                           [])))
                                                                                  (TVar
-                                                                                    (TV 18 Star)))
+                                                                                    (TV 19 Star)))
                                                                             (Area
                                                                                (Loc 0 0 0)
                                                                                (Loc 0 0 0))
@@ -449,23 +439,21 @@
                                                              (Typed
                                                                 ([ IsIn
                                                                      "Eq"
-                                                                     [ TVar (TV 18 Star) ]
+                                                                     [ TVar (TV 19 Star) ]
                                                                      (Just
                                                                         (Area
                                                                            (Loc 0 0 0) (Loc 0 0 0)))
                                                                  ] :=>
-                                                                   TVar (TV 18 Star))
+                                                                   TVar (TV 19 Star))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Access
                                                                    (Typed
                                                                       ([] :=>
-                                                                         TRecord
-                                                                           (fromList
-                                                                              [ ( "count"
-                                                                                , TVar (TV 18 Star)
-                                                                                )
-                                                                              ])
-                                                                           Nothing
+                                                                         TRecordRow
+                                                                           (TRowExtend
+                                                                              "count"
+                                                                              (TVar (TV 19 Star))
+                                                                              TRowEmpty)
                                                                            (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
@@ -482,18 +470,14 @@
                                                                                           Star
                                                                                           Star)))
                                                                                  "prelude")
-                                                                              (TRecord
-                                                                                 (fromList
-                                                                                    [ ( "count"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             18
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])
-                                                                                 Nothing
+                                                                              (TRecordRow
+                                                                                 (TRowExtend
+                                                                                    "count"
+                                                                                    (TVar
+                                                                                       (TV 19 Star))
+                                                                                    TRowEmpty)
                                                                                  (fromList [])))
-                                                                           (TVar (TV 18 Star)))
+                                                                           (TVar (TV 19 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var ".count" False))))
                                                              True))
@@ -501,7 +485,7 @@
                                                  (Typed
                                                     ([ IsIn
                                                          "Eq"
-                                                         [ TVar (TV 18 Star) ]
+                                                         [ TVar (TV 19 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "Boolean" Star) "prelude")
@@ -516,13 +500,13 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList [ ( "count" , TGen 0 ) ]) Nothing (fromList [])))
+                                  (TRecordRow
+                                     (TRowExtend "count" (TGen 0) TRowEmpty) (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord
-                                        (fromList [ ( "count" , TGen 0 ) ]) Nothing (fromList [])))
+                                     (TRecordRow
+                                        (TRowExtend "count" (TGen 0) TRowEmpty) (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                       )
                     )
@@ -534,9 +518,8 @@
                [ IsIn "Show" [ TVar (TV 204274412242036023 Star) ] Nothing ]
                (IsIn
                   "Show"
-                  [ TRecord
-                      (fromList [ ( "count" , TVar (TV 204274412242036023 Star) ) ])
-                      Nothing
+                  [ TRecordRow
+                      (TRowExtend "count" (TVar (TV 204274412242036023 Star)) TRowEmpty)
                       (fromList [])
                   ]
                   Nothing)
@@ -547,22 +530,20 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList [ ( "count" , TVar (TV 29 Star) ) ])
-                                     Nothing
+                                  (TRecordRow
+                                     (TRowExtend "count" (TVar (TV 30 Star)) TRowEmpty)
                                      (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
                           (Assignment
                              "show"
                              (Typed
-                                ([ IsIn "Show" [ TVar (TV 29 Star) ] Nothing ] :=>
+                                ([ IsIn "Show" [ TVar (TV 30 Star) ] Nothing ] :=>
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TRecord
-                                           (fromList [ ( "count" , TVar (TV 29 Star) ) ])
-                                           Nothing
+                                        (TRecordRow
+                                           (TRowExtend "count" (TVar (TV 30 Star)) TRowEmpty)
                                            (fromList [])))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -578,12 +559,11 @@
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        , IsIn
                                            "Show"
-                                           [ TVar (TV 29 Star) ]
+                                           [ TVar (TV 30 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
-                                         TRecord
-                                           (fromList [ ( "count" , TVar (TV 29 Star) ) ])
-                                           Nothing
+                                         TRecordRow
+                                           (TRowExtend "count" (TVar (TV 30 Star)) TRowEmpty)
                                            (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
@@ -606,7 +586,7 @@
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                , IsIn
                                                    "Show"
-                                                   [ TVar (TV 29 Star) ]
+                                                   [ TVar (TV 30 Star) ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                ] :=>
                                                  TCon (TC "String" Star) "prelude")
@@ -694,7 +674,7 @@
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      , IsIn
                                                          "Show"
-                                                         [ TVar (TV 29 Star) ]
+                                                         [ TVar (TV 30 Star) ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                      ] :=>
                                                        TCon (TC "String" Star) "prelude")
@@ -702,7 +682,7 @@
                                                     (App
                                                        (Typed
                                                           ([ IsIn
-                                                               "Show" [ TVar (TV 29 Star) ] Nothing
+                                                               "Show" [ TVar (TV 30 Star) ] Nothing
                                                            ] :=>
                                                              TApp
                                                                (TApp
@@ -712,28 +692,26 @@
                                                                         (Kfun
                                                                            Star (Kfun Star Star)))
                                                                      "prelude")
-                                                                  (TVar (TV 29 Star)))
+                                                                  (TVar (TV 30 Star)))
                                                                (TCon (TC "String" Star) "prelude"))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Var "show" False))
                                                        (Typed
                                                           ([ IsIn
                                                                "Show"
-                                                               [ TVar (TV 29 Star) ]
+                                                               [ TVar (TV 30 Star) ]
                                                                (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                                            ] :=>
-                                                             TVar (TV 29 Star))
+                                                             TVar (TV 30 Star))
                                                           (Area (Loc 0 0 0) (Loc 0 0 0))
                                                           (Access
                                                              (Typed
                                                                 ([] :=>
-                                                                   TRecord
-                                                                     (fromList
-                                                                        [ ( "count"
-                                                                          , TVar (TV 29 Star)
-                                                                          )
-                                                                        ])
-                                                                     Nothing
+                                                                   TRecordRow
+                                                                     (TRowExtend
+                                                                        "count"
+                                                                        (TVar (TV 30 Star))
+                                                                        TRowEmpty)
                                                                      (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
@@ -748,15 +726,13 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TRecord
-                                                                           (fromList
-                                                                              [ ( "count"
-                                                                                , TVar (TV 29 Star)
-                                                                                )
-                                                                              ])
-                                                                           Nothing
+                                                                        (TRecordRow
+                                                                           (TRowExtend
+                                                                              "count"
+                                                                              (TVar (TV 30 Star))
+                                                                              TRowEmpty)
                                                                            (fromList [])))
-                                                                     (TVar (TV 29 Star)))
+                                                                     (TVar (TV 30 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var ".count" False))))
                                                        True))
@@ -773,8 +749,8 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList [ ( "count" , TGen 0 ) ]) Nothing (fromList [])))
+                                  (TRecordRow
+                                     (TRowExtend "count" (TGen 0) TRowEmpty) (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                       )
                     )

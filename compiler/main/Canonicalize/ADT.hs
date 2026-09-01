@@ -130,9 +130,9 @@ canonicalizeTypeDecl env astPath typeNamesInScope td@(Src.Source area _ typeDecl
   alias@Src.Alias{} -> do
     verifyTypeVars area astPath (Src.aliasname alias) (Src.aliasparams alias)
     let name   = Src.aliasname alias
-    let params = ((`TV` Star) . hash) <$> Src.aliasparams alias
     let typing = Src.aliastype alias
     typingType <- typingToType env (KindRequired Star) typing
+    params <- mapM (inferAliasParamKind astPath area typingType) (Src.aliasparams alias)
     when (isRecordType typingType) $ do
       pushRecordToDerive (getTRecordFieldNames typingType)
     let env' = addADT env name (TAlias astPath name params typingType)
@@ -148,6 +148,19 @@ canonicalizeTypeDecl env astPath typeNamesInScope td@(Src.Source area _ typeDecl
       throwError $ CompilationError (NotCapitalizedAliasName name) (Context astPath area)
     else
       return (env', alias')
+
+
+inferAliasParamKind :: FilePath -> Area -> Type -> String -> CanonicalM TVar
+inferAliasParamKind astPath area aliasType paramName =
+  let paramId = hash paramName
+      kinds = nub [kind tv | tv@(TV n _) <- collectVars aliasType, n == paramId]
+  in case kinds of
+    [] -> return (TV paramId Star)
+    [paramKind] -> return (TV paramId paramKind)
+    expected : found : _ ->
+      throwError $ CompilationError
+        (TypingHasWrongKind (TVar $ TV paramId found) expected found)
+        (Context astPath area)
 
 
 canonicalizeConstructors :: Env -> FilePath -> Src.TypeDecl -> CanonicalM (Env, Can.TypeDecl)

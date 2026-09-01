@@ -107,18 +107,37 @@ namespaceExportNames env ns =
       return []
 
 
+-- | Replace the term-variable environment and rebuild its derived caches.
+-- Keeping this operation central prevents generalization and substitution
+-- from observing a variable map whose free-variable cache describes an older
+-- map.
+setVars :: Env -> Vars -> Env
+setVars env vars =
+  let openVars = M.filter (not . Set.null . ftv) vars
+  in env
+      { envVars = vars
+      , envFreeTVars = foldMap ftv openVars
+      , envOpenVarNames = M.keysSet openVars
+      }
+
+
 extendVars :: Env -> (String, Scheme) -> Env
 extendVars env (x, s) =
-  let scFtv = ftv s
-      isOpen = not (Set.null scFtv)
-  in env
-      { envVars = M.insert x s $ envVars env
-      , envFreeTVars = scFtv `Set.union` envFreeTVars env
-      , envOpenVarNames =
-          if isOpen
-            then Set.insert x (envOpenVarNames env)
-            else Set.delete x (envOpenVarNames env)
-      }
+  case M.lookup x (envVars env) of
+    Just _ ->
+      -- Replacing a binding can remove the last occurrence of a cached free
+      -- variable, so rebuild rather than retaining an over-approximation.
+      setVars env (M.insert x s $ envVars env)
+    Nothing ->
+      let schemeVars = ftv s
+      in env
+          { envVars = M.insert x s $ envVars env
+          , envFreeTVars = schemeVars `Set.union` envFreeTVars env
+          , envOpenVarNames =
+              if Set.null schemeVars
+                then envOpenVarNames env
+                else Set.insert x (envOpenVarNames env)
+          }
 
 
 safeExtendVars :: Env -> (String, Scheme) -> Infer Env
@@ -159,13 +178,7 @@ lookupInterface env name = case M.lookup name (envInterfaces env) of
 
 
 mergeVars :: Env -> Vars -> Env
-mergeVars env vs =
-  let openInVs = M.keysSet (M.filter (not . Set.null . ftv) vs)
-  in env
-      { envVars = vs <> envVars env
-      , envFreeTVars = foldMap ftv vs `Set.union` envFreeTVars env
-      , envOpenVarNames = openInVs `Set.union` envOpenVarNames env
-      }
+mergeVars env vs = setVars env (vs <> envVars env)
 
 
 setNamespacesInScope :: Env -> Set.Set String -> Env
@@ -177,23 +190,27 @@ tDictionaryOf builtinsPath keyType = TApp (TApp (mkTCon (TC "Dictionary" (Kfun S
 
 
 mergeEnv :: Env -> Env -> Env
-mergeEnv initial env = Env { envVars                 = envVars initial <> envVars env
-                           , envMethods              = envMethods initial <> envMethods env
-                           , envInterfaces           = envInterfaces initial <> envInterfaces env
-                           , envConstructors         = envConstructors initial <> envConstructors env
-                           , envCurrentPath          = envCurrentPath env
-                           , envInBody               = False
-                           , envDeferBodyAmbiguity   = False
-                           , envNamesInScope         = mempty
-                           , envNamespacesInScope    = envNamespacesInScope initial <> envNamespacesInScope env
-                           , envImportInfo           = envImportInfo initial
-                           , envPlaceholdersToDelete = mempty
-                           , envPlaceholdersInScope  = []
-                           , envPatternBoundNames    = mempty
-                           , envFreeTVars            = envFreeTVars initial <> envFreeTVars env
-                           , envOpenVarNames         = envOpenVarNames initial <> envOpenVarNames env
-                           , envBuiltinsModulePath   = envBuiltinsModulePath initial
-                           }
+mergeEnv initial env =
+  let vars = envVars initial <> envVars env
+      merged = Env
+        { envVars                 = mempty
+        , envMethods              = envMethods initial <> envMethods env
+        , envInterfaces           = envInterfaces initial <> envInterfaces env
+        , envConstructors         = envConstructors initial <> envConstructors env
+        , envCurrentPath          = envCurrentPath env
+        , envInBody               = False
+        , envDeferBodyAmbiguity   = False
+        , envNamesInScope         = mempty
+        , envNamespacesInScope    = envNamespacesInScope initial <> envNamespacesInScope env
+        , envImportInfo           = envImportInfo initial
+        , envPlaceholdersToDelete = mempty
+        , envPlaceholdersInScope  = []
+        , envPatternBoundNames    = mempty
+        , envFreeTVars            = mempty
+        , envOpenVarNames         = mempty
+        , envBuiltinsModulePath   = envBuiltinsModulePath initial
+        }
+  in setVars merged vars
 
 mkTupleInstance :: String -> Int -> Instance
 mkTupleInstance cls n =

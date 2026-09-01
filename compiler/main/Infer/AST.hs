@@ -149,7 +149,8 @@ buildInitialEnv priorEnv Can.AST { Can.atypedecls, Can.ainterfaces, Can.ainstanc
     defaultImportNames <- buildDefaultImportNames [] env''' { envCurrentPath = apath } aimports
     let defaultImportVars  = M.fromList $ (, Forall [] $ [] :=> tVar (-3)) <$> defaultImportNames
 
-    return $ env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath, envVars = defaultImportVars <> envVars env''' }
+    let finalEnv = env''' { envMethods = methods <> envMethods priorEnv, envCurrentPath = apath }
+    return $ setVars finalEnv (defaultImportVars <> envVars env''')
 
 
 addConstructors :: Env -> [Can.Constructor] -> Infer Env
@@ -270,11 +271,10 @@ solveImport env imp = do
   importedVars <- extractImportedVars env' ast imp
   constructorImports <- extractImportedConstructors env' ast imp
   let env'' = mergeEnv' env env'
-  return
-    env''
-      { envVars = envVars env'' <> importedVars <> constructorImports
-      , envConstructors = envConstructors env <> S.fromList (M.keys constructorImports)
-      }
+  let envWithConstructors = env''
+        { envConstructors = envConstructors env <> S.fromList (M.keys constructorImports) }
+  return $ setVars envWithConstructors
+    (envVars env'' <> importedVars <> constructorImports)
 
 
 solveImports :: Env -> [Can.Import] -> Infer Env
@@ -477,7 +477,7 @@ buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case inst
   RecordToDerive fieldNames ->
     let fieldNamesWithVars = zip (Set.toList fieldNames) chars
         fields             = TVar . ((`TV` Star) . hash) <$> M.fromList fieldNamesWithVars
-        recordType         = TRecord fields Nothing mempty
+        recordType         = closedRecord fields
         instPreds interfaceName = (\var -> IsIn interfaceName [var] Nothing) <$> M.elems fields
         showInstPreds = instPreds "Show"
         eqInstanceForEnv = Instance (instPreds "Eq" :=> IsIn "Eq" [recordType] Nothing) mempty
@@ -559,7 +559,9 @@ deriveExtra options env derivedTypes extra = do
 
 inferAST :: Options -> Env -> [InstanceToDerive] -> Can.AST -> Infer (Slv.AST, Env)
 inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.aimports, Can.atypedecls, Can.ainstances, Can.ainterfaces } = do
-  let envWithDerivedInstances = buildEnvForDerivedInstances env instancesToDerive
+  let envWithDerivedInstances
+        | optGenerateDerivedInstances options = buildEnvForDerivedInstances env instancesToDerive
+        | otherwise = env
   let namespacesInScope = namespacesInScopeFromImports aimports
       envWithNamespaces = setNamespacesInScope envWithDerivedInstances namespacesInScope
       envWithImportInfo = buildImportInfos envWithNamespaces ast

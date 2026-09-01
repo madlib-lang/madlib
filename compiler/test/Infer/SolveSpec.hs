@@ -44,6 +44,7 @@ import           Control.Monad (forM)
 import           System.FilePath (normalise)
 import Explain.Location
 import Explain.Format.TypeDiff (renderType)
+import Infer.Type (Kind(..), Type(..), TCon(..))
 
 
 snapshotTest :: Show a => String -> a -> Golden Text
@@ -62,7 +63,18 @@ snapshotTest name actualOutput =
 buildOptions :: FilePath -> PathUtils -> Options
 buildOptions entrypoint pathUtils =
   Options
-    { optPathUtils = pathUtils { canonicalizePath = return, normalisePath = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then normalise p else (("./"++) . normalise) p }
+    { optPathUtils = pathUtils
+        { -- Keep virtual source paths stable, but allow the prelude locator to
+          -- resolve the test executable.  Without this, Infer.Solve only finds
+          -- __BUILTINS__ when an earlier black-box test happens to warm the
+          -- process-global prelude cache.
+          canonicalizePath = \p ->
+            if ".mad" `List.isSuffixOf` p
+              then return p
+              else Dir.canonicalizePath p
+        , getExecutablePath = return "./madlib-test"
+        , normalisePath = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then normalise p else (("./"++) . normalise) p
+        }
     , optEntrypoint = entrypoint
     , optRootPath = "./"
     , optOutputPath = "./build"
@@ -113,6 +125,28 @@ inferModuleWithoutMain :: String -> IO (Slv.AST, [CompilationWarning], [Compilat
 inferModuleWithoutMain code = do
   let modulePath = "Module.mad"
   let options = (buildOptions modulePath defaultPathUtils { doesFileExist = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then Dir.doesFileExist p else return True }) { optMustHaveMain = False }
+  initialState <- Driver.initialState
+  ((ast, _), warnings, errors) <- Driver.runIncrementalTask
+    initialState
+    options
+    [modulePath]
+    (M.singleton modulePath code)
+    Don'tPrune
+    (Rock.fetch $ Query.SolvedASTWithEnv modulePath)
+
+  return (ast { Slv.aimports = map renameBuiltinsImport (Slv.aimports ast) }, warnings, errors)
+
+
+inferModuleWithoutDerivedInstances :: String -> IO (Slv.AST, [CompilationWarning], [CompilationError])
+inferModuleWithoutDerivedInstances code = do
+  let modulePath = "Module.mad"
+  let options =
+        (buildOptions modulePath defaultPathUtils
+          { doesFileExist = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then Dir.doesFileExist p else return True
+          })
+          { optMustHaveMain = False
+          , optGenerateDerivedInstances = False
+          }
   initialState <- Driver.initialState
   ((ast, _), warnings, errors) <- Driver.runIncrementalTask
     initialState
@@ -919,7 +953,7 @@ spec = do
             Nothing -> error "restTest was not inferred"
 
       errors `shouldBe` []
-      restTestType `shouldBe` "{ ...base, barf :: a } -> { ...base, snarf :: a }"
+      restTestType `shouldBe` "{ ...b, barf :: a } -> { ...b, snarf :: a }"
 
     it "should infer extensible records with typed holes" $ do
       let code   = unlines
@@ -1925,6 +1959,118 @@ spec = do
       let code   = unlines ["addX = (r) => ({ ...r, x: 1 })", "main = () => {}"]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer row poly for record spread" actual
+
+    it "should apply the same spread update to rows with or without the overwritten label" $ do
+      let code = unlines
+            [ "addX = (r) => ({ ...r, x: 1 })"
+            , "main = () => {"
+            , "  withoutX = addX({ y: true })"
+            , "  withDifferentX = addX({ x: \"old\", y: true })"
+            , "  _sum = withoutX.x + withDifferentX.x"
+            , "  return {}"
+            , "}"
+            ]
+      (_, _, errors) <- inferModule code
+      errors `shouldBe` []
+
+    it "should compose row-returning spread functions" $ do
+      let code = unlines
+            [ "addX = (r) => ({ ...r, x: 1 })"
+            , "addName = (r) => ({ ...r, name: \"madlib\" })"
+            , "main = () => {"
+            , "  result = pipe(addX, addName)({ enabled: true })"
+            , "  _x = result.x"
+            , "  return {}"
+            , "}"
+            ]
+      (_, _, errors) <- inferModule code
+      errors `shouldBe` []
+
+    it "should reject a non-row type in a record tail" $ do
+      let code = unlines
+            [ "bad :: { ...String, x :: Integer } -> Integer"
+            , "bad = (.x)"
+            ]
+      (_, _, errors) <- inferModuleWithoutMain code
+      case errors of
+        [CompilationError (TypingHasWrongKind _ Row Star) _] -> return ()
+        _ -> expectationFailure $ "expected a Row kind error, got: " <> show errors
+
+    it "should instantiate row-polymorphic aliases with the supplied row" $ do
+      let code = unlines
+            [ "alias WithX r = { ...r, x :: Integer }"
+            , "getY :: WithX { y :: String } -> String"
+            , "getY = (.y)"
+            ]
+      (_, _, errors) <- inferModuleWithoutMain code
+      errors `shouldBe` []
+
+    it "should instantiate nested row-polymorphic aliases" $ do
+      let code = unlines
+            [ "alias WithX r = { ...r, x :: Integer }"
+            , "alias Nested r = WithX { ...r, nested :: Boolean }"
+            , "getY :: Nested { y :: String } -> String"
+            , "getY = (.y)"
+            ]
+      (_, _, errors) <- inferModuleWithoutMain code
+      errors `shouldBe` []
+
+    it "should instantiate exported row-polymorphic aliases" $ do
+      let aliases = unlines
+            [ "export alias WithX r = { ...r, x :: Integer }"
+            , "export alias Nested r = WithX { ...r, nested :: Boolean }"
+            ]
+          client = unlines
+            [ "import Types from \"./Types\""
+            , "getY :: Types.Nested { y :: String } -> String"
+            , "getY = (.y)"
+            ]
+      (_, _, errors) <- inferManyModulesWithoutMain "./Client.mad"
+        (M.fromList [("./Types.mad", aliases), ("./Client.mad", client)])
+      errors `shouldBe` []
+
+    it "should reject an alias parameter used at incompatible kinds" $ do
+      let code = "alias Invalid a = #[a, { ...a, x :: Integer }]"
+      (_, _, errors) <- inferModuleWithoutMain code
+      case errors of
+        [CompilationError (TypingHasWrongKind _ _ _) _] -> return ()
+        _ -> expectationFailure $ "expected a kind error, got: " <> show errors
+
+    it "should defer Show for an open record until its row is concrete" $ do
+      let code = unlines
+            [ "render = (r) => show({ ...r, x: 1 })"
+            , "main = () => {"
+            , "  rendered = render({ y: true })"
+            , "  return {}"
+            , "}"
+            ]
+      (_, _, errors) <- inferModule code
+      errors `shouldBe` []
+
+    it "should defer Eq for an open record until its row is concrete" $ do
+      let code = unlines
+            [ "same = (r) => ({ ...r, x: 1 } == { ...r, x: 1 })"
+            , "main = () => {"
+            , "  result = same({ y: true })"
+            , "  return {}"
+            , "}"
+            ]
+      (_, _, errors) <- inferModule code
+      errors `shouldBe` []
+
+    it "should reject an open-record Show use whose concrete row is not showable" $ do
+      let code = unlines
+            [ "type Secret = Secret"
+            , "render = (r) => show({ ...r, x: 1 })"
+            , "rendered :: String"
+            , "rendered = render({ hidden: Secret })"
+            ]
+      (_, _, errors) <- inferModuleWithoutDerivedInstances code
+      let isMissingSecretShow (CompilationError (NoInstanceFound "Show" [TCon (TC "Secret" _) _ _] _) _) = True
+          isMissingSecretShow _ = False
+      if any isMissingSecretShow errors
+        then return ()
+        else expectationFailure $ "expected a missing Show instance, got: " <> show errors
 
     it "should match record pattern with rest" $ do
       let code   = unlines

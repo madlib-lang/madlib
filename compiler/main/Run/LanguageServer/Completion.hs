@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 module Run.LanguageServer.Completion
   ( getAutocompletionSuggestions
   , completionSuggestionsTask
@@ -17,7 +18,7 @@ import qualified Driver.Query as Query
 import qualified Data.Map as Map
 import Explain.Location (Loc(..))
 import qualified AST.Solved as Slv
-import           Infer.Type (Qual((:=>)), Type (..), Kind (Star), TVar (..), Scheme (Forall), getParamTypes)
+import           Infer.Type (Qual((:=>)), Type (..), Kind (Star), TVar (..), Scheme (Forall), getParamTypes, recordVisibleFields)
 import           Run.Target
 import Control.Monad.IO.Class
 import qualified Data.List as List
@@ -145,23 +146,22 @@ completionSuggestionsTask loc@(Loc _ line col) modulePath moduleContent = do
     AutocompletingRecordAccess recordName fieldName -> do
       let updatedLoc = Loc 0 line (col - length fieldName - 1)
       case findNodeInExps updatedLoc (Slv.aexps typedAst ++ Slv.getAllMethods typedAst) of
-        Just (ExpNode _ (Slv.Typed (_ :=> TRecord fields _ extraFields) _ _)) ->
-          return
-            $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
-            $ Map.toList $ fields <> extraFields
+        Just (ExpNode _ (Slv.Typed (_ :=> recordType@TRecordRow{}) _ _)) ->
+          return $ recordFields recordType
 
-        Just (NameNode _ (Slv.Typed (_ :=> TApp _ (TRecord fields _ extraFields)) _ _)) ->
-          return
-            $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
-            $ Map.toList $ fields <> extraFields
+        Just (NameNode _ (Slv.Typed (_ :=> TApp _ recordType@TRecordRow{}) _ _)) ->
+          return $ recordFields recordType
 
         _ ->
           case List.find (\(n, _) -> n == recordName) localNames of
-            Just (_, Forall _ (_ :=> TRecord fields _ extraFields)) ->
-              return
-                $ map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField))
-                $ Map.toList
-                $ fields <> extraFields
+            Just (_, Forall _ (_ :=> recordType@TRecordRow{})) ->
+              return $ recordFields recordType
 
             _ ->
               return $ map (\(n, qt) -> (n, prettyScheme qt, CiField)) $ localNames ++ namesInEnv ++ methodsInEnv
+      where
+        recordFields recordType =
+          case recordVisibleFields recordType of
+            Just fields ->
+              map (\(n, t) -> (n, prettyScheme (Forall [] ([] :=> t)), CiField)) (Map.toList fields)
+            Nothing -> []

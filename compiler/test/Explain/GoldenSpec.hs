@@ -77,7 +77,7 @@ goldenCases =
   , ("unification-pattern-match-unknown", UnificationError (TypeMismatch tStr tFloat (FromPatternMatch 0) []), makeCtx)
   , ("unification-assignment", UnificationError (TypeMismatch tStr tFloat (FromAssignment "counter") []), makeCtx)
   , ("unification-secondary-location", UnificationError (TypeMismatch tStr tFloat (FromFunctionArgument "f" 1 Nothing) [secondaryLoc]), makeCtx)
-  , ("unification-records", UnificationError (TypeMismatch (TRecord (M.fromList [("name", tStr)]) Nothing mempty) (TRecord (M.fromList [("name", tStr), ("age", tInteger)]) Nothing mempty) NoOrigin []), makeCtx)
+  , ("unification-records", UnificationError (TypeMismatch (closedRecord (M.fromList [("name", tStr)])) (closedRecord (M.fromList [("name", tStr), ("age", tInteger)])) NoOrigin []), makeCtx)
   , ("unification-no-context", UnificationError (TypeMismatch tStr tFloat NoOrigin []), NoContext)
 
   -- Type errors

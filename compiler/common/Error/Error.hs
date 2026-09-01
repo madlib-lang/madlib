@@ -87,6 +87,10 @@ data TypeError
   | NotCapitalizedConstructorName String
   | TypingHasWrongKind Type Kind Kind
   | WrongAliasArgCount String Int Int
+  | WrongInterfaceArgCount String Int Int
+  | InstanceResolutionCycle [Pred]
+  | SuperclassCycle [String]
+  | InvalidInstanceContext Pred
   | UnknownType String [String]
   | WrongSpreadType String
   | ImportNotFound String

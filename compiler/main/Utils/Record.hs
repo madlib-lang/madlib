@@ -16,6 +16,6 @@ generateRecordPredsAndType astPath interfaceName fieldNames =
       fields             = TVar . ((`TV` Star) . hash) <$> Map.fromList fieldNamesWithVars
       -- TODO: Do we need this?
       -- fields             = TVar . (`TV` Star) . (++ moduleHash) <$> Map.fromList fieldNamesWithVars
-      recordType         = TRecord fields Nothing mempty
+      recordType         = closedRecord fields
       instPreds          = (\var -> IsIn interfaceName [var] Nothing) <$> Map.elems fields
   in  (instPreds, recordType)

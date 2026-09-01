@@ -23,6 +23,8 @@ import qualified Data.Map                      as M
 import           Data.Char
 import           Error.Error
 import           Error.Context
+import           Explain.Location              ( Area )
+import           Control.Monad                  ( when )
 import           Control.Monad.Except
 import           Data.List
 import Debug.Trace
@@ -113,6 +115,16 @@ qualTypingToQualType env t@(Src.Source _ _ typing) = case typing of
 
 constraintToPredicate :: Env -> Type -> Src.Typing -> CanonicalM Pred
 constraintToPredicate env t (Src.Source _ _ (Src.TRComp n typings)) = do
+  -- Imported interfaces are resolved lazily during canonicalisation.  Check
+  -- arity whenever the interface is already available locally; otherwise
+  -- retain the predicate and let the normal resolved-interface path validate
+  -- it later.
+  case M.lookup n (envInterfaces env) of
+    Just (Interface tvs _ _) -> when (length typings /= length tvs) $
+      throwError $ CompilationError
+        (WrongInterfaceArgCount n (length tvs) (length typings))
+        NoContext
+    Nothing -> return ()
   let s = buildVarSubsts t
   ts <- mapM
     (\case
@@ -135,17 +147,44 @@ data KindRequirement
   | AnyKind
 
 
+validateKind :: Env -> Area -> KindRequirement -> Type -> CanonicalM Type
+validateKind _ _ AnyKind parsedType =
+  return parsedType
+validateKind env area (KindRequired expected) parsedType
+  | expected == Row
+  , Just row <- typeAsRow parsedType = return row
+  | kind parsedType == expected = return parsedType
+  | otherwise =
+      throwError $ CompilationError
+        (TypingHasWrongKind parsedType expected (kind parsedType))
+        (Context (envCurrentPath env) area)
+
+
+typeAsRow :: Type -> Maybe Type
+typeAsRow ty = case ty of
+  TRowEmpty -> Just TRowEmpty
+  TRowExtend{} -> Just ty
+  TVar tv | kind tv == Row -> Just ty
+  TRecordRow row optionalFields -> Just (rowFromFields optionalFields row)
+  TAlias _ _ _ inner -> typeAsRow inner
+  _ -> Nothing
+
+
 typingToType :: Env -> KindRequirement -> Src.Typing -> CanonicalM Type
 typingToType env kindNeeded (Src.Source area _ (Src.TRSingle t))
-  | t == "Integer" = return tInteger
-  | t == "Float"   = return tFloat
-  | t == "Byte"    = return tByte
-  | t == "Short"   = return tShort
-  | t == "Boolean" = return tBool
-  | t == "String"  = return tStr
-  | t == "Char"    = return tChar
-  | t == "{}" = return tUnit
-  | isLower $ head t = return (TVar $ TV (hash t) Star)
+  | t == "Integer" = validateKind env area kindNeeded tInteger
+  | t == "Float"   = validateKind env area kindNeeded tFloat
+  | t == "Byte"    = validateKind env area kindNeeded tByte
+  | t == "Short"   = validateKind env area kindNeeded tShort
+  | t == "Boolean" = validateKind env area kindNeeded tBool
+  | t == "String"  = validateKind env area kindNeeded tStr
+  | t == "Char"    = validateKind env area kindNeeded tChar
+  | t == "{}"      = validateKind env area kindNeeded tUnit
+  | isLower $ head t =
+      let variableKind = case kindNeeded of
+            KindRequired k -> k
+            AnyKind        -> Star
+      in  return (TVar $ TV (hash t) variableKind)
   | otherwise = do
     pushTypeAccess t
     h <- catchError
@@ -161,22 +200,15 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRSingle t))
 
       t                -> return $ getConstructorCon t
 
-    case kindNeeded of
-      AnyKind ->
-        return parsedType
-
-      KindRequired k ->
-        if k == kind parsedType then
-          return parsedType
-        else
-          throwError $ CompilationError (TypingHasWrongKind parsedType k (kind parsedType)) (Context (envCurrentPath env) area)
+    validateKind env area kindNeeded parsedType
 
 
 
 typingToType env kindNeeded (Src.Source area _ (Src.TRComp t ts))
   | isLower . head $ t = do
     params <- mapM (typingToType env AnyKind) ts
-    return $ foldl' TApp (TVar $ TV (hash t) (buildKind (length ts))) params
+    validateKind env area kindNeeded
+      (foldl' TApp (TVar $ TV (hash t) (buildKind (length ts))) params)
   | otherwise = do
     pushTypeAccess t
     h <- catchError
@@ -185,12 +217,27 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRComp t ts))
 
     let (Forall ks (_ :=> rr)) = quantify (ftvList h) ([] :=> h)
 
-    let kargs =
-          (\case
-              (TGen x) -> ks !! x
-              _        -> Star
-            )
-            <$> getConstructorArgs rr
+    let kargs = case h of
+          TAlias _ _ tvs _ -> kind <$> tvs
+          _ ->
+            (\case
+                TGen x -> ks !! x
+                _      -> Star
+              )
+              <$> getConstructorArgs rr
+
+    case h of
+      TAlias _ id tvs _
+        | length tvs /= length ts ->
+            throwError $ CompilationError
+              (WrongAliasArgCount id (length tvs) (length ts))
+              (Context (envCurrentPath env) area)
+      _
+        | length ts > length kargs ->
+            throwError $ CompilationError
+              (TypingHasWrongKind h Star (kind h))
+              (Context (envCurrentPath env) area)
+      _ -> return ()
 
     params <- mapM
       (\(typin, k) -> do
@@ -202,50 +249,55 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRComp t ts))
       (zip ts kargs)
 
     parsedType <- case h of
-      TAlias _ id tvs _ ->
-        if length tvs /= length ts then
-          throwError $ CompilationError (WrongAliasArgCount id (length tvs) (length ts)) (Context (envCurrentPath env) area)
-        else
-          updateAliasVars (getConstructorCon h) params
+      TAlias{} ->
+        updateAliasVars (getConstructorCon h) params
 
       t ->
         return $ foldl' TApp (getConstructorCon t) params
 
-    case kindNeeded of
-      AnyKind ->
-        return parsedType
-
-      KindRequired k ->
-        if k == kind parsedType && length kargs >= length ts then
-          return parsedType
-        else
-          throwError $ CompilationError (TypingHasWrongKind parsedType k (kind parsedType)) (Context (envCurrentPath env) area)
+    validateKind env area kindNeeded parsedType
 
 
-typingToType env _ (Src.Source _ _ (Src.TRArr l r)) = do
+typingToType env kindNeeded (Src.Source area _ (Src.TRArr l r)) = do
   l' <- typingToType env (KindRequired Star) l
   r' <- typingToType env (KindRequired Star) r
-  return $ l' `fn` r'
+  validateKind env area kindNeeded (l' `fn` r')
 
-typingToType env _ (Src.Source _ _ (Src.TRRecord fields base)) = do
+typingToType env kindNeeded (Src.Source area _ (Src.TRRecord fields base)) = do
   fields' <- mapM (typingToType env (KindRequired Star)) (snd <$> fields)
-  base'   <- mapM (typingToType env (KindRequired Star)) base
+  base'   <- mapM (typingToType env (KindRequired Row)) base
 
-  case base' of
-    Just (TRecord baseFields _ _) -> do
-      let fieldNames = S.toList $ M.keysSet fields' `S.union` M.keysSet baseFields
-      pushRecordToDerive fieldNames
+  rowTail <- case base' of
+    Nothing -> return TRowEmpty
+    Just baseType -> asRowTail baseType
 
-    _ -> do
-      let fieldNames = M.keys fields'
-      pushRecordToDerive fieldNames
+  let (baseFields, _) = visibleRow rowTail
+      fieldNames = S.toList $ M.keysSet fields' `S.union` M.keysSet baseFields
+  pushRecordToDerive fieldNames
 
-  return $ TRecord fields' base' mempty
+  -- A record expression itself has kind Star even though its internal tail
+  -- has kind Row. Nested record syntax in a spread position is converted to
+  -- its row above rather than embedded as an ill-kinded row tail.
+  let row = rowFromFields fields' rowTail
+  case kindNeeded of
+    KindRequired Row -> return row
+    _ -> validateKind env area kindNeeded (TRecordRow row mempty)
+  where
+    asRowTail ty = case ty of
+      TRowEmpty -> return TRowEmpty
+      TRowExtend{} -> return ty
+      TVar tv | kind tv == Row -> return ty
+      TRecordRow row optionalFields ->
+        return (rowFromFields optionalFields row)
+      TAlias _ _ _ inner -> asRowTail inner
+      _ -> throwError $ CompilationError
+        (TypingHasWrongKind ty Row (kind ty))
+        (Context (envCurrentPath env) area)
 
-typingToType env _ (Src.Source _ _ (Src.TRTuple elems)) = do
+typingToType env kindNeeded (Src.Source area _ (Src.TRTuple elems)) = do
   elems' <- mapM (typingToType env (KindRequired Star)) elems
   let tupleT = getTupleCtor (length elems)
-  return $ foldl' TApp tupleT elems'
+  validateKind env area kindNeeded (foldl' TApp tupleT elems')
 
 -- Never happens as it's handled in the qualTypingToQualType function
 typingToType _ _ (Src.Source _ _ (Src.TRConstrained _ _)) = undefined
@@ -287,13 +339,21 @@ updateAliasVars t args = do
               r' <- update r
               return $ TApp l' r'
 
+            TRowEmpty ->
+              return TRowEmpty
+
+            TRowExtend label fieldType tail -> do
+              fieldType' <- update fieldType
+              tail' <- update tail
+              return $ TRowExtend label fieldType' tail'
+
+            TRecordRow row optionalFields -> do
+              row' <- update row
+              optionalFields' <- mapM update optionalFields
+              return $ TRecordRow row' optionalFields'
+
             TCon _ _ _ ->
               return ty
-
-            TRecord fs base _ -> do
-              fs'   <- mapM update fs
-              base' <- mapM update base
-              return $ TRecord fs' base' mempty
 
             _ -> undefined
       in  update t'

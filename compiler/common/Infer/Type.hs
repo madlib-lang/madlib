@@ -65,9 +65,15 @@ data Type
   | TCon TCon FilePath {-# UNPACK #-} !Int -- Constructor type - FilePath of where that type is defined, Int is hash of FilePath for fast equality
   | TGen Int
   | TApp Type Type                 -- Arrow type
-  | TRecord (M.Map Id Type) (Maybe Type) (M.Map Id Type)
-  -- ^ Maybe Type is the extended record type, most likely a type variable
-  -- and the last Map is the optional fields due to unifying extensible with non extensible records
+  | TRowEmpty
+  | TRowExtend Id Type Type
+  -- ^ A scoped row label.  The tail is a type of kind `Row`; equal labels in
+  -- the tail are deliberately not collapsed, because the outer label shadows
+  -- them (the semantics of record spread/update).
+  | TRecordRow Type (M.Map Id Type)
+  -- ^ A record is a row plus the short-lived JSX optional-field compatibility
+  -- map.  Normal records use an empty map; this map disappears when JSX
+  -- defaulting is migrated to row constraints.
   | TAlias FilePath Id [TVar] Type -- Aliases, filepath of definition module, name, params, type it aliases
   deriving (Generic)
 
@@ -82,17 +88,101 @@ instance Show Type where
     showString "TGen " . shows n
   showsPrec p (TApp l r)             = showParen (p > 10) $
     showString "TApp " . showsPrec 11 l . showChar ' ' . showsPrec 11 r
-  showsPrec p (TRecord f b o)        = showParen (p > 10) $
-    showString "TRecord " . showsPrec 11 f . showChar ' ' . showsPrec 11 b . showChar ' ' . showsPrec 11 o
+  showsPrec _ TRowEmpty              = showString "TRowEmpty"
+  showsPrec p (TRowExtend n t tail)  = showParen (p > 10) $
+    showString "TRowExtend " . showsPrec 11 n . showChar ' ' . showsPrec 11 t . showChar ' ' . showsPrec 11 tail
+  showsPrec p (TRecordRow row o)     = showParen (p > 10) $
+    showString "TRecordRow " . showsPrec 11 row . showChar ' ' . showsPrec 11 o
   showsPrec p (TAlias fp n vs t)     = showParen (p > 10) $
     showString "TAlias " . showsPrec 11 fp . showChar ' ' . showsPrec 11 n . showChar ' ' . showsPrec 11 vs . showChar ' ' . showsPrec 11 t
 
+
+visibleRow :: Type -> (M.Map Id Type, Maybe Type)
+visibleRow = go
+  where
+    go TRowEmpty = (M.empty, Nothing)
+    go (TRowExtend name fieldType tail) =
+      let (fields, base) = go tail
+      in  (M.insert name fieldType fields, base)
+    go tail = (M.empty, Just tail)
+
+
+recordRow :: Type -> Type
+recordRow row = TRecordRow row M.empty
+
+
+closedRecord :: M.Map Id Type -> Type
+closedRecord fields = recordRow (rowFromFields fields TRowEmpty)
+
+
+openRecord :: M.Map Id Type -> Type -> Type
+openRecord fields tail = recordRow (rowFromFields fields tail)
+
+
+recordParts :: Type -> Maybe (Type, M.Map Id Type)
+recordParts (TRecordRow row optionalFields) = Just (row, optionalFields)
+recordParts _ = Nothing
+
+
+recordVisibleParts :: Type -> Maybe (M.Map Id Type, Maybe Type, M.Map Id Type)
+recordVisibleParts (TRecordRow row optionalFields) =
+  let (fields, tail) = visibleRow row
+  in Just (fields, tail, optionalFields)
+recordVisibleParts _ = Nothing
+
+
+recordVisibleFields :: Type -> Maybe (M.Map Id Type)
+recordVisibleFields record = do
+  (fields, _, optionalFields) <- recordVisibleParts record
+  return (fields <> optionalFields)
+
+
+isClosedRecord :: Type -> Bool
+isClosedRecord (TRecordRow row _) = case snd (visibleRow row) of
+  Nothing -> True
+  Just _  -> False
+isClosedRecord _ = False
+
+
+removeRowLabels :: S.Set Id -> Type -> Type
+removeRowLabels labels = go
+  where
+    go TRowEmpty = TRowEmpty
+    go (TRowExtend name fieldType tail)
+      | name `S.member` labels = go tail
+      | otherwise = TRowExtend name fieldType (go tail)
+    go tail = tail
+
+
+removeRecordLabels :: S.Set Id -> Type -> Type
+removeRecordLabels labels (TRecordRow row optionalFields) =
+  TRecordRow (removeRowLabels labels row) (M.withoutKeys optionalFields labels)
+removeRecordLabels _ t = t
+
+
+rowEmpty :: Type
+rowEmpty = TRowEmpty
+
+
+rowExtend :: Id -> Type -> Type -> Type
+rowExtend = TRowExtend
+
+
+rowFromFields :: M.Map Id Type -> Type -> Type
+rowFromFields fields tail =
+  foldr (\(name, fieldType) rest -> TRowExtend name fieldType rest) tail (M.toAscList fields)
+
 instance Eq Type where
   TVar a       == TVar b        = a == b
-  TCon tc1 _ h1 == TCon tc2 _ h2 = h1 == h2 && tc1 == tc2
+  -- The cached path hash is only a fast rejection check.  Treating it as the
+  -- identity of a module is unsound: a collision made two constructors from
+  -- different modules equal while Ord still distinguished them.
+  TCon tc1 fp1 h1 == TCon tc2 fp2 h2 = h1 == h2 && fp1 == fp2 && tc1 == tc2
   TGen a       == TGen b        = a == b
   TApp l1 r1   == TApp l2 r2    = l1 == l2 && r1 == r2
-  TRecord f1 b1 o1 == TRecord f2 b2 o2 = f1 == f2 && b1 == b2 && o1 == o2
+  TRowEmpty    == TRowEmpty     = True
+  TRowExtend n1 t1 r1 == TRowExtend n2 t2 r2 = n1 == n2 && t1 == t2 && r1 == r2
+  TRecordRow r1 o1 == TRecordRow r2 o2 = r1 == r2 && o1 == o2
   TAlias p1 n1 vs1 t1 == TAlias p2 n2 vs2 t2 = p1 == p2 && n1 == n2 && vs1 == vs2 && t1 == t2
   _ == _ = False
 
@@ -101,7 +191,9 @@ instance Ord Type where
   compare (TCon tc1 fp1 h1)   (TCon tc2 fp2 h2)   = compare tc1 tc2 <> compare h1 h2 <> compare fp1 fp2
   compare (TGen a)            (TGen b)             = compare a b
   compare (TApp l1 r1)        (TApp l2 r2)         = compare l1 l2 <> compare r1 r2
-  compare (TRecord f1 b1 o1)  (TRecord f2 b2 o2)  = compare f1 f2 <> compare b1 b2 <> compare o1 o2
+  compare TRowEmpty TRowEmpty = EQ
+  compare (TRowExtend n1 t1 r1) (TRowExtend n2 t2 r2) = compare n1 n2 <> compare t1 t2 <> compare r1 r2
+  compare (TRecordRow r1 o1)  (TRecordRow r2 o2)  = compare r1 r2 <> compare o1 o2
   compare (TAlias p1 n1 vs1 t1) (TAlias p2 n2 vs2 t2) = compare p1 p2 <> compare n1 n2 <> compare vs1 vs2 <> compare t1 t2
   compare x y = compare (typeTag x) (typeTag y)
     where
@@ -110,16 +202,20 @@ instance Ord Type where
       typeTag TCon{}   = 1
       typeTag TGen{}   = 2
       typeTag TApp{}   = 3
-      typeTag TRecord{} = 4
-      typeTag TAlias{} = 5
+      typeTag TRowEmpty = 4
+      typeTag TRowExtend{} = 5
+      typeTag TRecordRow{} = 6
+      typeTag TAlias{} = 7
 
 instance Hashable Type where
   hashWithSalt s (TVar tv)         = s `hashWithSalt` (0 :: Int) `hashWithSalt` tv
   hashWithSalt s (TCon tc _ h)     = s `hashWithSalt` (1 :: Int) `hashWithSalt` tc `hashWithSalt` h
   hashWithSalt s (TGen n)          = s `hashWithSalt` (2 :: Int) `hashWithSalt` n
   hashWithSalt s (TApp l r)        = s `hashWithSalt` (3 :: Int) `hashWithSalt` l `hashWithSalt` r
-  hashWithSalt s (TRecord f b o)   = s `hashWithSalt` (4 :: Int) `hashWithSalt` f `hashWithSalt` b `hashWithSalt` o
-  hashWithSalt s (TAlias p n vs t) = s `hashWithSalt` (5 :: Int) `hashWithSalt` p `hashWithSalt` n `hashWithSalt` vs `hashWithSalt` t
+  hashWithSalt s TRowEmpty         = s `hashWithSalt` (4 :: Int)
+  hashWithSalt s (TRowExtend n t r) = s `hashWithSalt` (5 :: Int) `hashWithSalt` n `hashWithSalt` t `hashWithSalt` r
+  hashWithSalt s (TRecordRow r o)  = s `hashWithSalt` (6 :: Int) `hashWithSalt` r `hashWithSalt` o
+  hashWithSalt s (TAlias p n vs t) = s `hashWithSalt` (7 :: Int) `hashWithSalt` p `hashWithSalt` n `hashWithSalt` vs `hashWithSalt` t
 
 
 -- | Smart constructor: builds a TCon with a precomputed FilePath hash for fast equality.
@@ -393,35 +489,39 @@ predArea (IsIn _ _ area) = area
 type Id = String
 
 
--- | Smart constructor for TRecord that maintains the invariant: when there is
--- no row variable (closed record), optional fields are folded into required
--- fields. Phase 4 of the typechecker rewrite uses this to keep TRecord values
--- in a canonical shape so downstream Unify/Substitute don't have to handle
--- the "closed record with separate optional fields" case.
-mkRecord :: M.Map Id Type -> Maybe Type -> M.Map Id Type -> Type
-mkRecord fields Nothing optFields = TRecord (fields <> optFields) Nothing M.empty
-mkRecord fields base@(Just _) optFields = TRecord fields base optFields
-
 data Kind
   = Star
+  | Row
   | Kfun Kind Kind
   deriving (Eq, Show, Ord, Generic)
 
 instance Hashable Kind where
   hashWithSalt s Star         = s `hashWithSalt` (0 :: Int)
-  hashWithSalt s (Kfun k1 k2) = s `hashWithSalt` (1 :: Int) `hashWithSalt` k1 `hashWithSalt` k2
+  hashWithSalt s Row          = s `hashWithSalt` (1 :: Int)
+  hashWithSalt s (Kfun k1 k2) = s `hashWithSalt` (2 :: Int) `hashWithSalt` k1 `hashWithSalt` k2
   {-# INLINE hashWithSalt #-}
 
 data Pred
   = IsIn Id [Type] (Maybe Area)
-  deriving (Show, Ord, Generic)
+  deriving (Show, Generic)
+
+-- | The semantic identity of a predicate.  Source spans are diagnostics, not
+-- evidence: including them in a set/map/hash key makes otherwise-identical
+-- constraints fail to deduplicate.
+data PredKey = PredKey Id [Type]
+  deriving (Eq, Ord, Show, Generic, Hashable)
+
+predKey :: Pred -> PredKey
+predKey (IsIn i ts _) = PredKey i ts
 
 instance Eq Pred where
   (==) (IsIn id ts _) (IsIn id' ts' _) = id == id' && ts == ts'
 
+instance Ord Pred where
+  compare p p' = compare (predKey p) (predKey p')
+
 instance Hashable Pred where
-  hashWithSalt s (IsIn i ts a) =
-    s `hashWithSalt` i `hashWithSalt` ts `hashWithSalt` a
+  hashWithSalt s = hashWithSalt s . predKey
   {-# INLINE hashWithSalt #-}
 
 data Qual t
@@ -471,6 +571,8 @@ instance HasKind Type where
   kind (TApp t _   ) = case kind t of
     (Kfun _ k) -> k
     k          -> k
+  kind TRowEmpty = Row
+  kind (TRowExtend _ _ _) = Row
   kind _ = Star
 
 buildKind :: Int -> Kind
@@ -480,6 +582,7 @@ buildKind n | n > 0     = Kfun Star $ buildKind (n - 1)
 kindLength :: Kind -> Int
 kindLength k = case k of
   Star -> 1
+  Row -> 1
   Kfun k1 k2 -> kindLength k1 + kindLength k2
 
 
@@ -503,6 +606,19 @@ searchVarInType id t = case t of
           (_     , Just x) -> Just x
           _                -> Nothing
 
+  TRowEmpty ->
+    Nothing
+
+  TRowExtend _ fieldType tail ->
+    searchVarInType id fieldType <|> searchVarInType id tail
+
+  TRecordRow row optionalFields ->
+    searchVarInType id row
+    <|> foldl (<|>) Nothing (searchVarInType id <$> M.elems optionalFields)
+
+  TAlias _ _ _ aliased ->
+    searchVarInType id aliased
+
   _ ->
     Nothing
 
@@ -518,7 +634,7 @@ isTVar t = case t of
 
 isRecordType :: Type -> Bool
 isRecordType t = case t of
-  TRecord _ _ _ ->
+  TRecordRow _ _ ->
     True
 
   _ ->
@@ -526,17 +642,11 @@ isRecordType t = case t of
 
 getTRecordFieldNames :: Type -> [String]
 getTRecordFieldNames t = case t of
-  TRecord fields _ _ ->
-    M.keys fields
+  TRecordRow row _ ->
+    M.keys (fst $ visibleRow row)
 
   _ ->
     []
-
-
-baseToList :: Maybe Type -> [Type]
-baseToList maybeBase = case maybeBase of
-  Just t  -> [t]
-  Nothing -> []
 
 
 collectVars :: Type -> [TVar]
@@ -547,8 +657,17 @@ collectVars t = case t of
   TApp l r ->
     collectVars l `union` collectVars r
 
-  TRecord fs base _ ->
-    nub $ concat $ collectVars <$> M.elems fs <> baseToList base
+  TRowEmpty ->
+    []
+
+  TRowExtend _ fieldType tail ->
+    collectVars fieldType `union` collectVars tail
+
+  TRecordRow row optionalFields ->
+    nub $ collectVars row ++ concatMap collectVars (M.elems optionalFields)
+
+  TAlias _ _ _ aliased ->
+    collectVars aliased
 
   _ ->
     []
@@ -566,23 +685,11 @@ getConstructorCon t = case t of
   TApp l _ ->
     getConstructorCon l
 
-  TRecord _ _ _ ->
+  TRecordRow _ _ ->
     t
 
   _ ->
     t
-
-
-mergeRecords :: Type -> Type -> Type
-mergeRecords t1 t2 = case (t1, t2) of
-  (TRecord fields1 base1 _, TRecord fields2 _ _) ->
-    TRecord (M.unionWith mergeRecords fields1 fields2) base1 mempty
-
-  (TApp l r, TApp l' r') ->
-    TApp (mergeRecords l l') (mergeRecords r r')
-
-  _ ->
-    t1
 
 
 isFunctionType :: Type -> Bool
@@ -682,8 +789,18 @@ getTypeVarsInType t = case t of
   TApp l r ->
     getTypeVarsInType l ++ getTypeVarsInType r
 
-  TRecord fields _ _ ->
-    concat $ getTypeVarsInType <$> M.elems fields
+  TRowEmpty ->
+    []
+
+  TRowExtend _ fieldType tail ->
+    getTypeVarsInType fieldType ++ getTypeVarsInType tail
+
+  TRecordRow row optionalFields ->
+    getTypeVarsInType row
+    ++ concatMap getTypeVarsInType (M.elems optionalFields)
+
+  TAlias _ _ _ aliased ->
+    getTypeVarsInType aliased
 
   _ ->
     []
@@ -726,10 +843,18 @@ findTypeVarInType tvName t = case t of
   TVar (TV n _) | n == tvName ->
     Just t
 
-  TRecord fields base optionalFields ->
-    (foldl (<|>) Nothing $ findTypeVarInType tvName <$> (M.elems fields))
-    <|> (base >>= findTypeVarInType tvName)
+  TRowEmpty ->
+    Nothing
+
+  TRowExtend _ fieldType tail ->
+    findTypeVarInType tvName fieldType <|> findTypeVarInType tvName tail
+
+  TRecordRow row optionalFields ->
+    findTypeVarInType tvName row
     <|> (foldl (<|>) Nothing $ findTypeVarInType tvName <$> (M.elems optionalFields))
+
+  TAlias _ _ _ aliased ->
+    findTypeVarInType tvName aliased
 
   _ ->
     Nothing

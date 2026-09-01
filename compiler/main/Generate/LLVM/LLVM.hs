@@ -804,8 +804,8 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             fieldType = primitiveTupleFieldType expQt
 
         case recType of
-          IT.TRecord fields _ optionalFields -> do
-            let allFields   = Map.union fields optionalFields
+          IT.TRecordRow row optionalFields -> do
+            let allFields   = Map.union (fst $ IT.visibleRow row) optionalFields
                 bareTypes   = Map.elems allFields
                 structType  = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> bareTypes)
                 index       = recordFieldIndex fieldName recType
@@ -1545,12 +1545,8 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     let (base, fields') = List.partition isSpreadField fields
     let sortedFields = List.sortOn (Maybe.fromMaybe "" . Core.getFieldName) fields'
     -- Use the result record type to determine the struct size (not just explicit fields)
-    let allFieldNames = case recType of
-          IT.TRecord fs _ os -> Map.keys (Map.union fs os)
-          _                  -> []
-    let allFieldTypes = case recType of
-          IT.TRecord fs _ os -> Map.elems (Map.union fs os)
-          _                  -> []
+    let allFieldNames = maybe [] Map.keys (IT.recordVisibleFields recType)
+    let allFieldTypes = maybe [] Map.elems (IT.recordVisibleFields recType)
     let fieldLLVMTypes = (primitiveTupleFieldType . ([] IT.:=>)) <$> allFieldTypes
     let structType = Type.StructureType False fieldLLVMTypes
 
@@ -1564,12 +1560,8 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
       [Core.Typed _ _ _ (Core.FieldSpread exp)] -> do
         (_, baseOperand, _) <- generateExp env symbolTable exp
         let baseRecType     = let (_ IT.:=> bt) = Core.getQualType exp in bt
-        let baseFieldNames  = case baseRecType of
-              IT.TRecord fs _ os -> Map.keys (Map.union fs os)
-              _                  -> []
-        let baseFieldTypes' = case baseRecType of
-              IT.TRecord fs _ os -> Map.elems (Map.union fs os)
-              _                  -> []
+        let baseFieldNames  = maybe [] Map.keys (IT.recordVisibleFields baseRecType)
+        let baseFieldTypes' = maybe [] Map.elems (IT.recordVisibleFields baseRecType)
         let baseStructType  = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> baseFieldTypes')
         basePtr <- safeBitcast baseOperand (Type.ptr baseStructType)
         -- Copy each base field to its position in the result struct (field types are preserved)
@@ -1646,8 +1638,8 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
   Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recType) _ _ _) (Core.Typed _ area _ (Core.Var ('.' : fieldName) _))) -> do
     (_, recordOperand, _) <- generateExp env symbolTable record
     value <- case recType of
-      IT.TRecord fields _ optionalFields -> do
-        let allFields  = Map.union fields optionalFields
+      IT.TRecordRow row optionalFields -> do
+        let allFields  = Map.union (fst $ IT.visibleRow row) optionalFields
             bareTypes  = Map.elems allFields
             structType = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> bareTypes)
             index      = recordFieldIndex fieldName recType

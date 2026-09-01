@@ -18,6 +18,7 @@ import           Error.Context
 import           Control.Monad
 import           Control.Monad.Except
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import           Data.Maybe
 import           Data.List
 import           Utils.List
@@ -58,11 +59,31 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
     let ts' = addConstraints n vars' <$> ts
     let tvs = removeDuplicates $ catMaybes $ concat $ mapM searchVarInType vars' <$> M.elems ts
 
+    -- Superinterface canonicalisation currently runs before imported
+    -- interfaces are guaranteed to be present in this environment.  Keep the
+    -- established deferred unary representation here; exact arity validation
+    -- is performed for all resolved instance/constraint heads below.
     let supers = mapMaybe
           (\(Src.Source _ _ (Src.TRComp interface' [Src.Source _ _ (Src.TRSingle v)])) ->
             (\tv -> IsIn interface' [tv] Nothing) <$> findTypeVar tvs (hash v)
           )
           constraints
+
+    let reaches target start = go S.empty start
+          where
+            go seen current
+              | current == target = True
+              | S.member current seen = False
+              | otherwise = case M.lookup current (envInterfaces env) of
+                  Just (Interface _ parentPreds _) ->
+                    any (go (S.insert current seen) . predClass) parentPreds
+                  Nothing -> False
+    case find (reaches n . predClass) supers of
+      Just cyclic ->
+        throwError $ CompilationError
+          (SuperclassCycle [n, predClass cyclic, n])
+          (Context (envCurrentPath env) area)
+      Nothing -> return ()
 
     let psTypes = concat $ (\(IsIn _ ts _) -> ts) <$> supers
     let subst   = foldr (\t s -> s `compose` buildVarSubsts t) mempty psTypes
@@ -135,6 +156,10 @@ canonicalizeInstance :: Env -> Target -> Src.Instance -> CanonicalM Can.Instance
 canonicalizeInstance env target (Src.Source area _ inst) = case inst of
   Src.Instance constraints n typings methods -> do
     (Interface tvs _ methodNames) <- lookupInterface env n
+    when (length typings /= length tvs) $
+      throwError $ CompilationError
+        (WrongInterfaceArgCount n (length tvs) (length typings))
+        (Context (envCurrentPath env) area)
     let missingMethods = methodNames \\ M.keys methods
         missingMethods' =
           if n == "Eq" then
@@ -153,6 +178,10 @@ canonicalizeInstance env target (Src.Source area _ inst) = case inst of
         <$> mapM
               (\(Src.Source _ _ (Src.TRComp interface' args)) -> do
                 (Interface tvs _ _) <- lookupInterface env interface'
+                when (length args /= length tvs) $
+                  throwError $ CompilationError
+                    (WrongInterfaceArgCount interface' (length tvs) (length args))
+                    (Context (envCurrentPath env) area)
                 vars <- mapM
                     (\case
                       (Src.Source _ _ (Src.TRSingle v), TV _ k) -> return $ TVar $ TV (hash v) k

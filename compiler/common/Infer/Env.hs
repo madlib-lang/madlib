@@ -57,19 +57,16 @@ data Env
     , envPatternBoundNames :: Set.Set String
     -- ^ names bound by pattern matching, cannot be mutated with ':='
     , envFreeTVars :: !(Set.Set TVar)
-    -- ^ Cached union of free type variables across `envVars`. Maintained
-    -- as an over-approximation so the Substitutable Env apply can
-    -- short-circuit when the substitution's domain doesn't overlap. When
-    -- entries are added, their `ftv` is unioned in; entries that get
-    -- removed or refined leave stale entries that are safe (just
-    -- prevent the fast path from firing in some cases).
+    -- ^ Exact cached union of free type variables across envVars. This is
+    -- maintained together with envOpenVarNames; use the constructors in
+    -- Infer.EnvUtils instead of updating envVars directly.
     , envOpenVarNames :: !(Set.Set Id)
     -- ^ Names of `envVars` entries whose schemes have non-empty free type
     -- variables (i.e., parameters or pre-generalization let-bindings).
     -- The Substitutable Env apply walks only these on the slow path,
     -- skipping the typically-large set of closed (TGen) schemes from
     -- imports and post-generalization bindings. Maintained by
-    -- `extendVars` / `mergeVars` / etc.
+    -- setVars / extendVars / mergeVars.
     , envBuiltinsModulePath :: FilePath
     -- ^ Absolute path to the builtins module. Used for runtime Type values
     -- synthesized by `typeof` so they share the same origin as the source

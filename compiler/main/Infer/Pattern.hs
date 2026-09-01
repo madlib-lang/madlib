@@ -105,11 +105,20 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
       (\(patsRev, ps, vars, t) pat -> do
         (pat', ps', vars', t') <- inferPListItem env t pat
         s                      <- contextualUnify Strict env pat t t'
+        -- Pattern-local unification is part of the enclosing inference
+        -- problem.  Keeping it only in this fold disconnects predicates from
+        -- the final element type (for example Number a after a is unified
+        -- with String by a later list item).
+        extSubst s
         let dupes = M.keys $ M.intersection vars vars'
         case dupes of
           (dupName : _) -> throwError $ CompilationError (NameAlreadyDefined dupName) (Context (envCurrentPath env) (Can.getArea pat))
           []            -> return ()
-        return (pat' : patsRev, ps ++ ps', M.map (apply s) vars <> M.map (apply s) vars', apply s t)
+        return ( updatePatternTypes s mempty pat' : patsRev
+               , apply s (ps ++ ps')
+               , M.map (apply s) vars <> M.map (apply s) vars'
+               , apply s t
+               )
       )
       ([], [], mempty, tv)
       pats
@@ -157,10 +166,10 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
       (zip fieldPatterns fields)
 
     -- Create row variable for extensibility
-    baseRowVar <- newTVar Star
+    baseRowVar <- newTVar Row
     
     -- Pattern type: record with matched fields and a row variable for remaining fields
-    let t = TRecord tsMap (Just baseRowVar) mempty
+    let t = openRecord tsMap baseRowVar
 
     -- If there's a rest pattern, bind it to a record type that excludes matched fields
     (restVars, restPreds) <- case restName of
@@ -172,7 +181,7 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
         -- back into the input row.
         when (M.member restVarName vars) $
           throwError $ CompilationError (NameAlreadyDefined restVarName) (Context (envCurrentPath env) area)
-        let restType = TRecord mempty (Just baseRowVar) mempty
+        let restType = openRecord mempty baseRowVar
         let restVar = M.singleton restVarName (toScheme restType)
         return (restVar, [])
       Nothing ->
@@ -204,10 +213,14 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
 
     (ps' :=> t) <- instantiate sc
     s           <- contextualUnify Strict env p t (foldr fn tv ts)
-    let s' = s
-
-    let t = apply s' tv
-    return (Slv.Typed ([] :=> t) area (Slv.PCon n (map (updateTypes s') pats')), ps <> ps', M.map (apply s') vars, t)
+    extSubst s
+    current <- getSubst
+    let t' = apply current tv
+    return ( Slv.Typed ([] :=> t') area (Slv.PCon n (map (updateTypes current) pats'))
+           , apply current (ps <> ps')
+           , M.map (apply current) vars
+           , t'
+           )
 
   _ -> error "inferPattern: unreachable pattern case"
 
@@ -250,12 +263,7 @@ fixRestVarTypes s pat vars =
           Forall ks (ps :=> restTVar) ->
             let substitutedType = apply s restTVar
                 -- Remove matched fields from the substituted type
-                fixedType = case substitutedType of
-                  TRecord allFields base optFields ->
-                    -- mkRecord normalizes when base becomes Nothing (after substitution),
-                    -- folding optFields into required.
-                    mkRecord (M.withoutKeys allFields fieldsToRemove) base optFields
-                  _ -> substitutedType
+                fixedType = removeRecordLabels fieldsToRemove substitutedType
             in Forall ks (ps :=> fixedType)
         Nothing -> scheme
       ) vars

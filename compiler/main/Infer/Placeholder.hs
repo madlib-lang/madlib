@@ -121,6 +121,7 @@ lowerTypeToRuntimeValue builtinsPath area ty =
             "NoBase"  -> "__BUILTINS__.typeNoBase"
             "Base"    -> "__BUILTINS__.typeBase"
             "Star"    -> "__BUILTINS__.typeStar"
+            "Row"     -> "__BUILTINS__.typeRow"
             "Kfun"    -> "__BUILTINS__.typeKfun"
             other     -> other
       in  buildCtorApp (typed $ Slv.Var ctorName False) args
@@ -136,6 +137,9 @@ lowerTypeToRuntimeValue builtinsPath area ty =
     kindValue :: Kind -> Slv.Exp
     kindValue Star =
       ctor "Star" []
+
+    kindValue Row =
+      ctor "Row" []
 
     kindValue (Kfun left right) =
       ctor "Kfun" [kindValue left, kindValue right]
@@ -184,11 +188,23 @@ lowerTypeToRuntimeValue builtinsPath area ty =
             (right', names'', next'') = go names' next' right
         in  (ctor "TApp" [left', right'], names'', next'')
 
-      TRecord fields base optionalFields ->
-        let (fieldDocs, names', next') = lowerFieldList (M.toAscList fields) names next
+      TRecordRow row optionalFields ->
+        let (fields, base) = visibleRow row
+            (fieldDocs, names', next') = lowerFieldList (M.toAscList fields) names next
             (optionalDocs, names'', next'') = lowerFieldList (M.toAscList optionalFields) names' next'
             (baseDoc, names''', next''') = tailValue base names'' next''
         in  (ctor "TRecord" [list fieldDocs, baseDoc, list optionalDocs], names''', next''')
+
+      -- Row constructors only occur inside a record while inference is in
+      -- progress.  Runtime reflection intentionally keeps its stable record
+      -- representation, so lower a raw row as its legacy open-record view.
+      -- This also makes a row-kind variable serializable instead of crashing
+      -- the placeholder pass with a non-exhaustive Kind match.
+      TRowEmpty ->
+        (ctor "TRecord" [list [], ctor "NoBase" [], list []], names, next)
+
+      TRowExtend _ _ _ ->
+        go names next (TRecordRow t M.empty)
 
       TAlias _ _ _ inner ->
         go names next inner
@@ -285,8 +301,8 @@ updateExpTypes options env push s fullExp@(Slv.Typed qt a e) = case e of
     fields' <- mapM (updateField s) fields
     let appliedQt = apply s qt
     case appliedQt of
-      _ :=> TRecord fieldTypes _ _ ->
-        pushExtensibleRecordToDerive $ M.keys fieldTypes
+      _ :=> TRecordRow row optionalFields ->
+        pushExtensibleRecordToDerive $ M.keys (fst (visibleRow row) <> optionalFields)
 
       _ ->
         return ()
@@ -375,16 +391,16 @@ collectHoleSuggestions env s holeType = do
         else return Nothing
 
     -- Structural pre-filter: do the two types have the same outermost shape?
-    -- This prevents a TRecord hole from matching plain Integer/String values and
+    -- This prevents a record hole from matching plain Integer/String values and
     -- prevents a fully-free TVar hole from matching literally everything.
     structurallyCompatible :: Type -> Type -> Bool
     structurallyCompatible h c = case (h, c) of
       -- Both record types — compatible (field check is left to unification)
-      (TRecord _ _ _, TRecord _ _ _) -> True
+      (TRecordRow _ _, TRecordRow _ _) -> True
       -- Hole is a record, candidate is a plain type var — could be anything, skip
-      (TRecord _ _ _, TVar _)        -> False
+      (TRecordRow _ _, TVar _)        -> False
       -- Candidate is a record, hole is a plain var — skip (hole is probably not record-shaped)
-      (TVar _, TRecord _ _ _)        -> False
+      (TVar _, TRecordRow _ _)        -> False
       -- Both concrete constructors — must match
       (TCon c1 _ _, TCon c2 _ _)     -> c1 == c2
       -- Both function types — compatible (return type was already extracted)

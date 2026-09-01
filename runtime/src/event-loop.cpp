@@ -4,12 +4,22 @@
 #include <uv.h>
 #include <curl/curl.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <cmath>
 #include <gc.h>
 
 #include "apply-pap.hpp"
 
 static thread_local uv_loop_t *loop;
+
+// Flushes stdout right before the loop blocks waiting for I/O, so that output
+// produced during a loop iteration (timer callback, request handler, ...) is
+// visible even when stdout is a pipe or a file and stdio buffering is in effect.
+static uv_prepare_t *stdoutFlushHandle = NULL;
+
+static void flushStdoutBeforeBlocking(uv_prepare_t *handle) {
+  fflush(stdout);
+}
 
 uv_loop_t *getLoop() { return loop; }
 
@@ -219,6 +229,12 @@ void __initEventLoop__() {
 
   loop = (uv_loop_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_loop_t));
   uv_loop_init(loop);
+
+  stdoutFlushHandle = (uv_prepare_t *)GC_MALLOC_UNCOLLECTABLE(sizeof(uv_prepare_t));
+  uv_prepare_init(loop, stdoutFlushHandle);
+  uv_prepare_start(stdoutFlushHandle, flushStdoutBeforeBlocking);
+  // must not keep the loop alive on its own
+  uv_unref((uv_handle_t *)stdoutFlushHandle);
 }
 
 
@@ -246,6 +262,15 @@ void __startEventLoop__() {
     uv_run(loop, UV_RUN_DEFAULT);
   }
 
+  if (stdoutFlushHandle != NULL) {
+    uv_prepare_stop(stdoutFlushHandle);
+    uv_close((uv_handle_t *)stdoutFlushHandle, on_uv_close);
+    // let the close callback run
+    uv_run(loop, UV_RUN_NOWAIT);
+    GC_FREE(stdoutFlushHandle);
+    stdoutFlushHandle = NULL;
+  }
+  fflush(stdout);
 
   int r = uv_loop_close(loop);
 

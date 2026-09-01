@@ -65,24 +65,22 @@
                                                    (TCon
                                                       (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                       "prelude")
-                                                   (TRecord
-                                                      (fromList
-                                                         [ ( "value"
-                                                           , TCon (TC "String" Star) "prelude"
-                                                           )
-                                                         ])
-                                                      Nothing
+                                                   (TRecordRow
+                                                      (TRowExtend
+                                                         "value"
+                                                         (TCon (TC "String" Star) "prelude")
+                                                         TRowEmpty)
                                                       (fromList [])))
                                                 (TCon (TC "Result" Star) "Module.mad"))
                                            (Area (Loc 64 3 7) (Loc 71 3 14))
                                            (Var "Success" True))
                                         (Typed
                                            ([] :=>
-                                              TRecord
-                                                (fromList
-                                                   [ ( "value" , TCon (TC "String" Star) "prelude" )
-                                                   ])
-                                                Nothing
+                                              TRecordRow
+                                                (TRowExtend
+                                                   "value"
+                                                   (TCon (TC "String" Star) "prelude")
+                                                   TRowEmpty)
                                                 (fromList []))
                                            (Area (Loc 72 3 15) (Loc 87 3 30))
                                            (Record
@@ -178,9 +176,8 @@
                          (TApp
                             (TApp
                                (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                               (TRecord
-                                  (fromList [ ( "value" , TCon (TC "String" Star) "prelude" ) ])
-                                  Nothing
+                               (TRecordRow
+                                  (TRowExtend "value" (TCon (TC "String" Star) "prelude") TRowEmpty)
                                   (fromList [])))
                             (TCon (TC "Result" Star) "Module.mad")))
                   ]
@@ -197,9 +194,8 @@
                [ IsIn "Eq" [ TVar (TV 204274412242036023 Star) ] Nothing ]
                (IsIn
                   "Eq"
-                  [ TRecord
-                      (fromList [ ( "value" , TVar (TV 204274412242036023 Star) ) ])
-                      Nothing
+                  [ TRecordRow
+                      (TRowExtend "value" (TVar (TV 204274412242036023 Star)) TRowEmpty)
                       (fromList [])
                   ]
                   Nothing)
@@ -210,16 +206,14 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList [ ( "value" , TVar (TV 17 Star) ) ])
-                                     Nothing
+                                  (TRecordRow
+                                     (TRowExtend "value" (TVar (TV 17 Star)) TRowEmpty)
                                      (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord
-                                        (fromList [ ( "value" , TVar (TV 17 Star) ) ])
-                                        Nothing
+                                     (TRecordRow
+                                        (TRowExtend "value" (TVar (TV 17 Star)) TRowEmpty)
                                         (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -230,16 +224,14 @@
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TRecord
-                                           (fromList [ ( "value" , TVar (TV 17 Star) ) ])
-                                           Nothing
+                                        (TRecordRow
+                                           (TRowExtend "value" (TVar (TV 17 Star)) TRowEmpty)
                                            (fromList [])))
                                      (TApp
                                         (TApp
                                            (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                           (TRecord
-                                              (fromList [ ( "value" , TVar (TV 17 Star) ) ])
-                                              Nothing
+                                           (TRecordRow
+                                              (TRowExtend "value" (TVar (TV 17 Star)) TRowEmpty)
                                               (fromList [])))
                                         (TCon (TC "Boolean" Star) "prelude")))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -250,9 +242,8 @@
                                            [ TVar (TV 17 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
-                                         TRecord
-                                           (fromList [ ( "value" , TVar (TV 17 Star) ) ])
-                                           Nothing
+                                         TRecordRow
+                                           (TRowExtend "value" (TVar (TV 17 Star)) TRowEmpty)
                                            (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
@@ -267,9 +258,8 @@
                                                (TCon
                                                   (TC "(->)" (Kfun Star (Kfun Star Star)))
                                                   "prelude")
-                                               (TRecord
-                                                  (fromList [ ( "value" , TVar (TV 17 Star) ) ])
-                                                  Nothing
+                                               (TRecordRow
+                                                  (TRowExtend "value" (TVar (TV 17 Star)) TRowEmpty)
                                                   (fromList [])))
                                             (TCon (TC "Boolean" Star) "prelude"))
                                        (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -280,9 +270,8 @@
                                                   [ TVar (TV 17 Star) ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                               ] :=>
-                                                TRecord
-                                                  (fromList [ ( "value" , TVar (TV 17 Star) ) ])
-                                                  Nothing
+                                                TRecordRow
+                                                  (TRowExtend "value" (TVar (TV 17 Star)) TRowEmpty)
                                                   (fromList []))
                                              (Area (Loc 0 0 0) (Loc 0 0 0))
                                              "__$b__")
@@ -423,16 +412,12 @@
                                                                       (Access
                                                                          (Typed
                                                                             ([] :=>
-                                                                               TRecord
-                                                                                 (fromList
-                                                                                    [ ( "value"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             17
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])
-                                                                                 Nothing
+                                                                               TRecordRow
+                                                                                 (TRowExtend
+                                                                                    "value"
+                                                                                    (TVar
+                                                                                       (TV 17 Star))
+                                                                                    TRowEmpty)
                                                                                  (fromList []))
                                                                             (Area
                                                                                (Loc 0 0 0)
@@ -451,16 +436,14 @@
                                                                                                 Star
                                                                                                 Star)))
                                                                                        "prelude")
-                                                                                    (TRecord
-                                                                                       (fromList
-                                                                                          [ ( "value"
-                                                                                            , TVar
-                                                                                                (TV
-                                                                                                   17
-                                                                                                   Star)
-                                                                                            )
-                                                                                          ])
-                                                                                       Nothing
+                                                                                    (TRecordRow
+                                                                                       (TRowExtend
+                                                                                          "value"
+                                                                                          (TVar
+                                                                                             (TV
+                                                                                                17
+                                                                                                Star))
+                                                                                          TRowEmpty)
                                                                                        (fromList
                                                                                           [])))
                                                                                  (TVar
@@ -483,13 +466,11 @@
                                                                 (Access
                                                                    (Typed
                                                                       ([] :=>
-                                                                         TRecord
-                                                                           (fromList
-                                                                              [ ( "value"
-                                                                                , TVar (TV 17 Star)
-                                                                                )
-                                                                              ])
-                                                                           Nothing
+                                                                         TRecordRow
+                                                                           (TRowExtend
+                                                                              "value"
+                                                                              (TVar (TV 17 Star))
+                                                                              TRowEmpty)
                                                                            (fromList []))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                       (Var "__$b__" False))
@@ -506,16 +487,12 @@
                                                                                           Star
                                                                                           Star)))
                                                                                  "prelude")
-                                                                              (TRecord
-                                                                                 (fromList
-                                                                                    [ ( "value"
-                                                                                      , TVar
-                                                                                          (TV
-                                                                                             17
-                                                                                             Star)
-                                                                                      )
-                                                                                    ])
-                                                                                 Nothing
+                                                                              (TRecordRow
+                                                                                 (TRowExtend
+                                                                                    "value"
+                                                                                    (TVar
+                                                                                       (TV 17 Star))
+                                                                                    TRowEmpty)
                                                                                  (fromList [])))
                                                                            (TVar (TV 17 Star)))
                                                                       (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -540,13 +517,13 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList [ ( "value" , TGen 0 ) ]) Nothing (fromList [])))
+                                  (TRecordRow
+                                     (TRowExtend "value" (TGen 0) TRowEmpty) (fromList [])))
                                (TApp
                                   (TApp
                                      (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                     (TRecord
-                                        (fromList [ ( "value" , TGen 0 ) ]) Nothing (fromList [])))
+                                     (TRecordRow
+                                        (TRowExtend "value" (TGen 0) TRowEmpty) (fromList [])))
                                   (TCon (TC "Boolean" Star) "prelude")))
                       )
                     )
@@ -589,11 +566,11 @@
                                    (Typed
                                       ([ IsIn
                                            "Eq"
-                                           [ TRecord
-                                               (fromList
-                                                  [ ( "value" , TCon (TC "String" Star) "prelude" )
-                                                  ])
-                                               Nothing
+                                           [ TRecordRow
+                                               (TRowExtend
+                                                  "value"
+                                                  (TCon (TC "String" Star) "prelude")
+                                                  TRowEmpty)
                                                (fromList [])
                                            ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -604,11 +581,11 @@
                                    [ Typed
                                        ([ IsIn
                                             "Eq"
-                                            [ TRecord
-                                                (fromList
-                                                   [ ( "value" , TCon (TC "String" Star) "prelude" )
-                                                   ])
-                                                Nothing
+                                            [ TRecordRow
+                                                (TRowExtend
+                                                   "value"
+                                                   (TCon (TC "String" Star) "prelude")
+                                                   TRowEmpty)
                                                 (fromList [])
                                             ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -625,13 +602,11 @@
                                           (Typed
                                              ([ IsIn
                                                   "Eq"
-                                                  [ TRecord
-                                                      (fromList
-                                                         [ ( "value"
-                                                           , TCon (TC "String" Star) "prelude"
-                                                           )
-                                                         ])
-                                                      Nothing
+                                                  [ TRecordRow
+                                                      (TRowExtend
+                                                         "value"
+                                                         (TCon (TC "String" Star) "prelude")
+                                                         TRowEmpty)
                                                       (fromList [])
                                                   ]
                                                   (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -642,13 +617,11 @@
                                           [ Typed
                                               ([ IsIn
                                                    "Eq"
-                                                   [ TRecord
-                                                       (fromList
-                                                          [ ( "value"
-                                                            , TCon (TC "String" Star) "prelude"
-                                                            )
-                                                          ])
-                                                       Nothing
+                                                   [ TRecordRow
+                                                       (TRowExtend
+                                                          "value"
+                                                          (TCon (TC "String" Star) "prelude")
+                                                          TRowEmpty)
                                                        (fromList [])
                                                    ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -683,14 +656,11 @@
                                                  [ Typed
                                                      ([ IsIn
                                                           "Eq"
-                                                          [ TRecord
-                                                              (fromList
-                                                                 [ ( "value"
-                                                                   , TCon
-                                                                       (TC "String" Star) "prelude"
-                                                                   )
-                                                                 ])
-                                                              Nothing
+                                                          [ TRecordRow
+                                                              (TRowExtend
+                                                                 "value"
+                                                                 (TCon (TC "String" Star) "prelude")
+                                                                 TRowEmpty)
                                                               (fromList [])
                                                           ]
                                                           (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -746,17 +716,15 @@
                                                                      "Success"
                                                                      [ Typed
                                                                          ([] :=>
-                                                                            TRecord
-                                                                              (fromList
-                                                                                 [ ( "value"
-                                                                                   , TCon
-                                                                                       (TC
-                                                                                          "String"
-                                                                                          Star)
-                                                                                       "prelude"
-                                                                                   )
-                                                                                 ])
-                                                                              Nothing
+                                                                            TRecordRow
+                                                                              (TRowExtend
+                                                                                 "value"
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "String"
+                                                                                       Star)
+                                                                                    "prelude")
+                                                                                 TRowEmpty)
                                                                               (fromList []))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
@@ -772,17 +740,15 @@
                                                                      "Success"
                                                                      [ Typed
                                                                          ([] :=>
-                                                                            TRecord
-                                                                              (fromList
-                                                                                 [ ( "value"
-                                                                                   , TCon
-                                                                                       (TC
-                                                                                          "String"
-                                                                                          Star)
-                                                                                       "prelude"
-                                                                                   )
-                                                                                 ])
-                                                                              Nothing
+                                                                            TRecordRow
+                                                                              (TRowExtend
+                                                                                 "value"
+                                                                                 (TCon
+                                                                                    (TC
+                                                                                       "String"
+                                                                                       Star)
+                                                                                    "prelude")
+                                                                                 TRowEmpty)
                                                                               (fromList []))
                                                                          (Area
                                                                             (Loc 0 0 0) (Loc 0 0 0))
@@ -792,15 +758,13 @@
                                                         (Typed
                                                            ([ IsIn
                                                                 "Eq"
-                                                                [ TRecord
-                                                                    (fromList
-                                                                       [ ( "value"
-                                                                         , TCon
-                                                                             (TC "String" Star)
-                                                                             "prelude"
-                                                                         )
-                                                                       ])
-                                                                    Nothing
+                                                                [ TRecordRow
+                                                                    (TRowExtend
+                                                                       "value"
+                                                                       (TCon
+                                                                          (TC "String" Star)
+                                                                          "prelude")
+                                                                       TRowEmpty)
                                                                     (fromList [])
                                                                 ]
                                                                 (Just
@@ -812,16 +776,13 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Eq"
-                                                                      [ TRecord
-                                                                          (fromList
-                                                                             [ ( "value"
-                                                                               , TCon
-                                                                                   (TC
-                                                                                      "String" Star)
-                                                                                   "prelude"
-                                                                               )
-                                                                             ])
-                                                                          Nothing
+                                                                      [ TRecordRow
+                                                                          (TRowExtend
+                                                                             "value"
+                                                                             (TCon
+                                                                                (TC "String" Star)
+                                                                                "prelude")
+                                                                             TRowEmpty)
                                                                           (fromList [])
                                                                       ]
                                                                       (Just
@@ -889,17 +850,15 @@
                                                                     (Typed
                                                                        ([ IsIn
                                                                             "Eq"
-                                                                            [ TRecord
-                                                                                (fromList
-                                                                                   [ ( "value"
-                                                                                     , TCon
-                                                                                         (TC
-                                                                                            "String"
-                                                                                            Star)
-                                                                                         "prelude"
-                                                                                     )
-                                                                                   ])
-                                                                                Nothing
+                                                                            [ TRecordRow
+                                                                                (TRowExtend
+                                                                                   "value"
+                                                                                   (TCon
+                                                                                      (TC
+                                                                                         "String"
+                                                                                         Star)
+                                                                                      "prelude")
+                                                                                   TRowEmpty)
                                                                                 (fromList [])
                                                                             ]
                                                                             (Just
@@ -916,17 +875,15 @@
                                                                           (Typed
                                                                              ([ IsIn
                                                                                   "Eq"
-                                                                                  [ TRecord
-                                                                                      (fromList
-                                                                                         [ ( "value"
-                                                                                           , TCon
-                                                                                               (TC
-                                                                                                  "String"
-                                                                                                  Star)
-                                                                                               "prelude"
-                                                                                           )
-                                                                                         ])
-                                                                                      Nothing
+                                                                                  [ TRecordRow
+                                                                                      (TRowExtend
+                                                                                         "value"
+                                                                                         (TCon
+                                                                                            (TC
+                                                                                               "String"
+                                                                                               Star)
+                                                                                            "prelude")
+                                                                                         TRowEmpty)
                                                                                       (fromList [])
                                                                                   ]
                                                                                   (Just
@@ -946,17 +903,15 @@
                                                                                                  Star
                                                                                                  Star)))
                                                                                         "prelude")
-                                                                                     (TRecord
-                                                                                        (fromList
-                                                                                           [ ( "value"
-                                                                                             , TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"
-                                                                                             )
-                                                                                           ])
-                                                                                        Nothing
+                                                                                     (TRecordRow
+                                                                                        (TRowExtend
+                                                                                           "value"
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "String"
+                                                                                                 Star)
+                                                                                              "prelude")
+                                                                                           TRowEmpty)
                                                                                         (fromList
                                                                                            [])))
                                                                                   (TCon
@@ -971,17 +926,15 @@
                                                                                 (Typed
                                                                                    ([ IsIn
                                                                                         "Eq"
-                                                                                        [ TRecord
-                                                                                            (fromList
-                                                                                               [ ( "value"
-                                                                                                 , TCon
-                                                                                                     (TC
-                                                                                                        "String"
-                                                                                                        Star)
-                                                                                                     "prelude"
-                                                                                                 )
-                                                                                               ])
-                                                                                            Nothing
+                                                                                        [ TRecordRow
+                                                                                            (TRowExtend
+                                                                                               "value"
+                                                                                               (TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude")
+                                                                                               TRowEmpty)
                                                                                             (fromList
                                                                                                [])
                                                                                         ]
@@ -998,17 +951,15 @@
                                                                                                        Star
                                                                                                        Star)))
                                                                                               "prelude")
-                                                                                           (TRecord
-                                                                                              (fromList
-                                                                                                 [ ( "value"
-                                                                                                   , TCon
-                                                                                                       (TC
-                                                                                                          "String"
-                                                                                                          Star)
-                                                                                                       "prelude"
-                                                                                                   )
-                                                                                                 ])
-                                                                                              Nothing
+                                                                                           (TRecordRow
+                                                                                              (TRowExtend
+                                                                                                 "value"
+                                                                                                 (TCon
+                                                                                                    (TC
+                                                                                                       "String"
+                                                                                                       Star)
+                                                                                                    "prelude")
+                                                                                                 TRowEmpty)
                                                                                               (fromList
                                                                                                  [])))
                                                                                         (TApp
@@ -1022,17 +973,15 @@
                                                                                                           Star
                                                                                                           Star)))
                                                                                                  "prelude")
-                                                                                              (TRecord
-                                                                                                 (fromList
-                                                                                                    [ ( "value"
-                                                                                                      , TCon
-                                                                                                          (TC
-                                                                                                             "String"
-                                                                                                             Star)
-                                                                                                          "prelude"
-                                                                                                      )
-                                                                                                    ])
-                                                                                                 Nothing
+                                                                                              (TRecordRow
+                                                                                                 (TRowExtend
+                                                                                                    "value"
+                                                                                                    (TCon
+                                                                                                       (TC
+                                                                                                          "String"
+                                                                                                          Star)
+                                                                                                       "prelude")
+                                                                                                    TRowEmpty)
                                                                                                  (fromList
                                                                                                     [])))
                                                                                            (TCon
@@ -1047,17 +996,15 @@
                                                                                 (Typed
                                                                                    ([ IsIn
                                                                                         "Eq"
-                                                                                        [ TRecord
-                                                                                            (fromList
-                                                                                               [ ( "value"
-                                                                                                 , TCon
-                                                                                                     (TC
-                                                                                                        "String"
-                                                                                                        Star)
-                                                                                                     "prelude"
-                                                                                                 )
-                                                                                               ])
-                                                                                            Nothing
+                                                                                        [ TRecordRow
+                                                                                            (TRowExtend
+                                                                                               "value"
+                                                                                               (TCon
+                                                                                                  (TC
+                                                                                                     "String"
+                                                                                                     Star)
+                                                                                                  "prelude")
+                                                                                               TRowEmpty)
                                                                                             (fromList
                                                                                                [])
                                                                                         ]
@@ -1072,17 +1019,15 @@
                                                                                                  0
                                                                                                  0)))
                                                                                     ] :=>
-                                                                                      TRecord
-                                                                                        (fromList
-                                                                                           [ ( "value"
-                                                                                             , TCon
-                                                                                                 (TC
-                                                                                                    "String"
-                                                                                                    Star)
-                                                                                                 "prelude"
-                                                                                             )
-                                                                                           ])
-                                                                                        Nothing
+                                                                                      TRecordRow
+                                                                                        (TRowExtend
+                                                                                           "value"
+                                                                                           (TCon
+                                                                                              (TC
+                                                                                                 "String"
+                                                                                                 Star)
+                                                                                              "prelude")
+                                                                                           TRowEmpty)
                                                                                         (fromList
                                                                                            []))
                                                                                    (Area
@@ -1093,17 +1038,15 @@
                                                                           (Typed
                                                                              ([ IsIn
                                                                                   "Eq"
-                                                                                  [ TRecord
-                                                                                      (fromList
-                                                                                         [ ( "value"
-                                                                                           , TCon
-                                                                                               (TC
-                                                                                                  "String"
-                                                                                                  Star)
-                                                                                               "prelude"
-                                                                                           )
-                                                                                         ])
-                                                                                      Nothing
+                                                                                  [ TRecordRow
+                                                                                      (TRowExtend
+                                                                                         "value"
+                                                                                         (TCon
+                                                                                            (TC
+                                                                                               "String"
+                                                                                               Star)
+                                                                                            "prelude")
+                                                                                         TRowEmpty)
                                                                                       (fromList [])
                                                                                   ]
                                                                                   (Just
@@ -1112,17 +1055,15 @@
                                                                                         (Loc
                                                                                            0 0 0)))
                                                                               ] :=>
-                                                                                TRecord
-                                                                                  (fromList
-                                                                                     [ ( "value"
-                                                                                       , TCon
-                                                                                           (TC
-                                                                                              "String"
-                                                                                              Star)
-                                                                                           "prelude"
-                                                                                       )
-                                                                                     ])
-                                                                                  Nothing
+                                                                                TRecordRow
+                                                                                  (TRowExtend
+                                                                                     "value"
+                                                                                     (TCon
+                                                                                        (TC
+                                                                                           "String"
+                                                                                           Star)
+                                                                                        "prelude")
+                                                                                     TRowEmpty)
                                                                                   (fromList []))
                                                                              (Area
                                                                                 (Loc 0 0 0)
@@ -1133,16 +1074,13 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Eq"
-                                                                      [ TRecord
-                                                                          (fromList
-                                                                             [ ( "value"
-                                                                               , TCon
-                                                                                   (TC
-                                                                                      "String" Star)
-                                                                                   "prelude"
-                                                                               )
-                                                                             ])
-                                                                          Nothing
+                                                                      [ TRecordRow
+                                                                          (TRowExtend
+                                                                             "value"
+                                                                             (TCon
+                                                                                (TC "String" Star)
+                                                                                "prelude")
+                                                                             TRowEmpty)
                                                                           (fromList [])
                                                                       ]
                                                                       (Just
@@ -1228,9 +1166,8 @@
                [ IsIn "Show" [ TVar (TV 204274412242036023 Star) ] Nothing ]
                (IsIn
                   "Show"
-                  [ TRecord
-                      (fromList [ ( "value" , TVar (TV 204274412242036023 Star) ) ])
-                      Nothing
+                  [ TRecordRow
+                      (TRowExtend "value" (TVar (TV 204274412242036023 Star)) TRowEmpty)
                       (fromList [])
                   ]
                   Nothing)
@@ -1241,9 +1178,8 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList [ ( "value" , TVar (TV 45 Star) ) ])
-                                     Nothing
+                                  (TRecordRow
+                                     (TRowExtend "value" (TVar (TV 45 Star)) TRowEmpty)
                                      (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                           (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -1254,9 +1190,8 @@
                                    TApp
                                      (TApp
                                         (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                        (TRecord
-                                           (fromList [ ( "value" , TVar (TV 45 Star) ) ])
-                                           Nothing
+                                        (TRecordRow
+                                           (TRowExtend "value" (TVar (TV 45 Star)) TRowEmpty)
                                            (fromList [])))
                                      (TCon (TC "String" Star) "prelude"))
                                 (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -1275,9 +1210,8 @@
                                            [ TVar (TV 45 Star) ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
                                        ] :=>
-                                         TRecord
-                                           (fromList [ ( "value" , TVar (TV 45 Star) ) ])
-                                           Nothing
+                                         TRecordRow
+                                           (TRowExtend "value" (TVar (TV 45 Star)) TRowEmpty)
                                            (fromList []))
                                       (Area (Loc 0 0 0) (Loc 0 0 0))
                                       "__$a__")
@@ -1421,13 +1355,11 @@
                                                           (Access
                                                              (Typed
                                                                 ([] :=>
-                                                                   TRecord
-                                                                     (fromList
-                                                                        [ ( "value"
-                                                                          , TVar (TV 45 Star)
-                                                                          )
-                                                                        ])
-                                                                     Nothing
+                                                                   TRecordRow
+                                                                     (TRowExtend
+                                                                        "value"
+                                                                        (TVar (TV 45 Star))
+                                                                        TRowEmpty)
                                                                      (fromList []))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                 (Var "__$a__" False))
@@ -1442,13 +1374,11 @@
                                                                                  Star
                                                                                  (Kfun Star Star)))
                                                                            "prelude")
-                                                                        (TRecord
-                                                                           (fromList
-                                                                              [ ( "value"
-                                                                                , TVar (TV 45 Star)
-                                                                                )
-                                                                              ])
-                                                                           Nothing
+                                                                        (TRecordRow
+                                                                           (TRowExtend
+                                                                              "value"
+                                                                              (TVar (TV 45 Star))
+                                                                              TRowEmpty)
                                                                            (fromList [])))
                                                                      (TVar (TV 45 Star)))
                                                                 (Area (Loc 0 0 0) (Loc 0 0 0))
@@ -1467,8 +1397,8 @@
                              TApp
                                (TApp
                                   (TCon (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
-                                  (TRecord
-                                     (fromList [ ( "value" , TGen 0 ) ]) Nothing (fromList [])))
+                                  (TRecordRow
+                                     (TRowExtend "value" (TGen 0) TRowEmpty) (fromList [])))
                                (TCon (TC "String" Star) "prelude"))
                       )
                     )
@@ -1503,11 +1433,11 @@
                                    (Typed
                                       ([ IsIn
                                            "Show"
-                                           [ TRecord
-                                               (fromList
-                                                  [ ( "value" , TCon (TC "String" Star) "prelude" )
-                                                  ])
-                                               Nothing
+                                           [ TRecordRow
+                                               (TRowExtend
+                                                  "value"
+                                                  (TCon (TC "String" Star) "prelude")
+                                                  TRowEmpty)
                                                (fromList [])
                                            ]
                                            (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -1518,11 +1448,11 @@
                                    [ Typed
                                        ([ IsIn
                                             "Show"
-                                            [ TRecord
-                                                (fromList
-                                                   [ ( "value" , TCon (TC "String" Star) "prelude" )
-                                                   ])
-                                                Nothing
+                                            [ TRecordRow
+                                                (TRowExtend
+                                                   "value"
+                                                   (TCon (TC "String" Star) "prelude")
+                                                   TRowEmpty)
                                                 (fromList [])
                                             ]
                                             (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -1537,13 +1467,11 @@
                                           [ Typed
                                               ([ IsIn
                                                    "Show"
-                                                   [ TRecord
-                                                       (fromList
-                                                          [ ( "value"
-                                                            , TCon (TC "String" Star) "prelude"
-                                                            )
-                                                          ])
-                                                       Nothing
+                                                   [ TRecordRow
+                                                       (TRowExtend
+                                                          "value"
+                                                          (TCon (TC "String" Star) "prelude")
+                                                          TRowEmpty)
                                                        (fromList [])
                                                    ]
                                                    (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -1564,15 +1492,12 @@
                                                        "Success"
                                                        [ Typed
                                                            ([] :=>
-                                                              TRecord
-                                                                (fromList
-                                                                   [ ( "value"
-                                                                     , TCon
-                                                                         (TC "String" Star)
-                                                                         "prelude"
-                                                                     )
-                                                                   ])
-                                                                Nothing
+                                                              TRecordRow
+                                                                (TRowExtend
+                                                                   "value"
+                                                                   (TCon
+                                                                      (TC "String" Star) "prelude")
+                                                                   TRowEmpty)
                                                                 (fromList []))
                                                            (Area (Loc 0 0 0) (Loc 0 0 0))
                                                            (PVar "a0")
@@ -1580,14 +1505,11 @@
                                                  (Typed
                                                     ([ IsIn
                                                          "Show"
-                                                         [ TRecord
-                                                             (fromList
-                                                                [ ( "value"
-                                                                  , TCon
-                                                                      (TC "String" Star) "prelude"
-                                                                  )
-                                                                ])
-                                                             Nothing
+                                                         [ TRecordRow
+                                                             (TRowExtend
+                                                                "value"
+                                                                (TCon (TC "String" Star) "prelude")
+                                                                TRowEmpty)
                                                              (fromList [])
                                                          ]
                                                          (Just (Area (Loc 0 0 0) (Loc 0 0 0)))
@@ -1603,15 +1525,13 @@
                                                        , Typed
                                                            ([ IsIn
                                                                 "Show"
-                                                                [ TRecord
-                                                                    (fromList
-                                                                       [ ( "value"
-                                                                         , TCon
-                                                                             (TC "String" Star)
-                                                                             "prelude"
-                                                                         )
-                                                                       ])
-                                                                    Nothing
+                                                                [ TRecordRow
+                                                                    (TRowExtend
+                                                                       "value"
+                                                                       (TCon
+                                                                          (TC "String" Star)
+                                                                          "prelude")
+                                                                       TRowEmpty)
                                                                     (fromList [])
                                                                 ]
                                                                 (Just
@@ -1623,16 +1543,13 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Show"
-                                                                      [ TRecord
-                                                                          (fromList
-                                                                             [ ( "value"
-                                                                               , TCon
-                                                                                   (TC
-                                                                                      "String" Star)
-                                                                                   "prelude"
-                                                                               )
-                                                                             ])
-                                                                          Nothing
+                                                                      [ TRecordRow
+                                                                          (TRowExtend
+                                                                             "value"
+                                                                             (TCon
+                                                                                (TC "String" Star)
+                                                                                "prelude")
+                                                                             TRowEmpty)
                                                                           (fromList [])
                                                                       ]
                                                                       Nothing
@@ -1646,17 +1563,13 @@
                                                                                   Star
                                                                                   (Kfun Star Star)))
                                                                             "prelude")
-                                                                         (TRecord
-                                                                            (fromList
-                                                                               [ ( "value"
-                                                                                 , TCon
-                                                                                     (TC
-                                                                                        "String"
-                                                                                        Star)
-                                                                                     "prelude"
-                                                                                 )
-                                                                               ])
-                                                                            Nothing
+                                                                         (TRecordRow
+                                                                            (TRowExtend
+                                                                               "value"
+                                                                               (TCon
+                                                                                  (TC "String" Star)
+                                                                                  "prelude")
+                                                                               TRowEmpty)
                                                                             (fromList [])))
                                                                       (TCon
                                                                          (TC "String" Star)
@@ -1666,16 +1579,13 @@
                                                               (Typed
                                                                  ([ IsIn
                                                                       "Show"
-                                                                      [ TRecord
-                                                                          (fromList
-                                                                             [ ( "value"
-                                                                               , TCon
-                                                                                   (TC
-                                                                                      "String" Star)
-                                                                                   "prelude"
-                                                                               )
-                                                                             ])
-                                                                          Nothing
+                                                                      [ TRecordRow
+                                                                          (TRowExtend
+                                                                             "value"
+                                                                             (TCon
+                                                                                (TC "String" Star)
+                                                                                "prelude")
+                                                                             TRowEmpty)
                                                                           (fromList [])
                                                                       ]
                                                                       (Just
@@ -1683,15 +1593,13 @@
                                                                             (Loc 0 0 0)
                                                                             (Loc 0 0 0)))
                                                                   ] :=>
-                                                                    TRecord
-                                                                      (fromList
-                                                                         [ ( "value"
-                                                                           , TCon
-                                                                               (TC "String" Star)
-                                                                               "prelude"
-                                                                           )
-                                                                         ])
-                                                                      Nothing
+                                                                    TRecordRow
+                                                                      (TRowExtend
+                                                                         "value"
+                                                                         (TCon
+                                                                            (TC "String" Star)
+                                                                            "prelude")
+                                                                         TRowEmpty)
                                                                       (fromList []))
                                                                  (Area (Loc 0 0 0) (Loc 0 0 0))
                                                                  (Var "a0" False))

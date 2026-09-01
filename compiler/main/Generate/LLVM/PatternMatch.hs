@@ -482,8 +482,8 @@ generateSymbolTableForPattern ctx env symbolTable baseExp pat = case pat of
     case restName of
       Just restVarName -> do
         case recType of
-          IT.TRecord allFields _ optionalFields -> do
-            let allFieldMap = Map.union allFields optionalFields
+          IT.TRecordRow row optionalFields -> do
+            let allFieldMap = Map.union (fst $ IT.visibleRow row) optionalFields
             let matchedFieldNames = Map.keys fieldPatterns
             let restFieldNames = List.filter (`List.notElem` matchedFieldNames) (Map.keys allFieldMap)
             let restCount = List.length restFieldNames
@@ -742,8 +742,8 @@ getFieldPattern :: (MonadIO m, MonadIRBuilder m, MonadFix.MonadFix m, MonadModul
                => PatternCtx m -> Env -> SymbolTable -> IT.Type -> Operand -> (String, Core.Pattern) -> m (Operand, Core.Pattern)
 getFieldPattern ctx env symbolTable recType record (fieldName, fieldPattern) = do
   field <- case recType of
-    IT.TRecord fields _ optionalFields -> do
-      let allFields  = Map.union fields optionalFields
+    IT.TRecordRow row optionalFields -> do
+      let allFields  = Map.union (fst $ IT.visibleRow row) optionalFields
           bareTypes  = Map.elems allFields
           structType = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> bareTypes)
           index      = recordFieldIndex fieldName recType

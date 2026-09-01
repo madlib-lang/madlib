@@ -944,6 +944,30 @@ errorDiagnostic context typeError = case typeError of
           , note exampleNote
           ]
 
+  WrongInterfaceArgCount interfaceName expected actual ->
+    mkErr "Wrong interface argument count" context
+      [ P $ "The interface '" <> interfaceName <> "' expects " <> show expected <> " argument"
+            <> (if expected == 1 then "" else "s") <> ", but " <> show actual <> " were given." ]
+      [ hint $ if actual > expected
+          then "Remove " <> show (actual - expected) <> " argument(s)."
+          else "Add " <> show (expected - actual) <> " argument(s)."
+      ]
+
+  InstanceResolutionCycle preds ->
+    mkErr "Recursive instance resolution" context
+      [P "Resolving this constraint repeats an earlier instance goal."]
+      [note $ "Cycle: " <> intercalate " -> " (predClass <$> preds)]
+
+  SuperclassCycle classes ->
+    mkErr "Recursive superclass hierarchy" context
+      [P "This interface declaration introduces a superclass cycle."]
+      [note $ "Cycle: " <> intercalate " -> " classes]
+
+  InvalidInstanceContext pred ->
+    mkErr "Invalid instance context" context
+      [P $ "The instance context cannot provide required evidence for '" <> predClass pred <> "'."]
+      [hint "Add the required constraint to the instance context or make the instance head more specific."]
+
   ImportNotFound importName ->
     let isRelative = List.isPrefixOf "./" importName || List.isPrefixOf "../" importName
         notes' =

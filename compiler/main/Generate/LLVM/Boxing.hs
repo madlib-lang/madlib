@@ -56,8 +56,8 @@ unbox env symbolTable qt@(ps IT.:=> t) what = case t of
   IT.TApp (IT.TCon (IT.TC "List" _) _ _) _ -> do
     emitSafeBitcast what listType
 
-  IT.TRecord fields _ optionalFields -> do
-    let allFields  = Map.union fields optionalFields
+  IT.TRecordRow row optionalFields -> do
+    let allFields  = Map.union (fst $ IT.visibleRow row) optionalFields
         fieldTypes = Map.elems allFields
     if null fieldTypes then
       emitSafeBitcast what recordType

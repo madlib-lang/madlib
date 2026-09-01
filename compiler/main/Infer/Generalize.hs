@@ -7,6 +7,7 @@ module Infer.Generalize
   , split
   , tryDefaults
   , tryDefaultingAmbiguities
+  , tryDefaultingAmbiguitiesExcept
   , dedupePreds
   , ftvForLetGenSet
   , ftvForLetGen
@@ -30,7 +31,7 @@ import           Infer.Type
 import           Infer.Env
 import           Infer.Substitute               ( apply, compose, ftv, ftvList )
 import           Infer.Unify                    ( unify )
-import           Infer.Pred                     ( reduce, findInst, getParentPredsOnly )
+import           Infer.Pred                     ( reduce, findInst, getParentPredsOnly, entail )
 import           Error.Error
 import           Error.Context
 import           Explain.Location               ( Area )
@@ -52,6 +53,17 @@ tryDefaultingAmbiguities env vs ps = do
   tryDefaultsWith env (`S.member` ambiguousVars) ps
 
 
+-- | Preserve monomorphic locals from the legacy Eq/Show-to-Unit rule while
+-- still allowing Number/Bits defaulting.  Equality observations must not
+-- specialize a value-restricted binding elsewhere in the same block.
+tryDefaultingAmbiguitiesExcept
+  :: Env -> S.Set TVar -> [TVar] -> [Pred] -> Infer (Substitution, [Pred])
+tryDefaultingAmbiguitiesExcept env unitProtected vs ps = do
+  let ambiguousVars = S.fromList $ fst <$> ambiguities vs ps
+      canDefault tv = tv `S.member` ambiguousVars && tv `S.notMember` unitProtected
+  tryDefaultsWith env canDefault ps
+
+
 hasPredForType :: String -> Type -> [Pred] -> Bool
 hasPredForType cls t ps =
   any (\(IsIn cls' ts _) -> t `elem` ts && cls == cls') ps
@@ -65,22 +77,10 @@ updateRecordUpdatePreds ps = updateRecordUpdatePreds' ps ps
 -- are checked against user-defined type class instances.
 -- Empty records (no fields, no base) are filtered out as they don't need instances.
 updateRecordUpdatePreds' :: [Pred] -> [Pred] -> [Pred]
-updateRecordUpdatePreds' allPreds ps = case ps of
-  IsIn _ [TRecord fields Nothing optionalFields] _ : next
-    | M.null fields && M.null optionalFields ->
+updateRecordUpdatePreds' _ ps = case ps of
+  IsIn _ [TRecordRow TRowEmpty optionalFields] _ : next
+    | M.null optionalFields ->
       updateRecordUpdatePreds next
-
-  IsIn cls [tRec@(TRecord fields (Just base@(TVar _)) optionalFields)] maybeArea : next
-    | not (hasPredForType "Number" tRec allPreds)
-    && not (hasPredForType "Bits" tRec allPreds)
-    && not (hasPredForType "Number" base allPreds)
-    && not (hasPredForType "Bits" base allPreds) ->
-      if M.null fields && M.null optionalFields then
-        IsIn cls [base] maybeArea : updateRecordUpdatePreds next
-      else
-        IsIn cls [base] maybeArea
-          : IsIn cls [TRecord fields Nothing optionalFields] maybeArea
-          : updateRecordUpdatePreds next
 
   or : next ->
     or : updateRecordUpdatePreds next
@@ -124,18 +124,54 @@ tryDefaults env ps = tryDefaultsWith env (const True) ps
 tryDefaultsWith :: Env -> (TVar -> Bool) -> [Pred] -> Infer (Substitution, [Pred])
 tryDefaultsWith env canDefaultEqShowToUnit ps = tryDefaults' env ps ps
   where
+    -- Numeric defaulting has priority over the legacy Eq/Show-to-Unit rule.
+    -- Instance reduction can expose `Eq a` ahead of an already-pending
+    -- `Number a`; processing the former first turns a lawful `a + 1` into
+    -- `Number Unit`.  Keep the defaulting policy independent of incidental
+    -- predicate traversal order.
+    prioritiseNumeric :: [Pred] -> [Pred]
+    prioritiseNumeric ps = numeric ++ other
+      where
+        (numeric, other) = partition isNumeric ps
+        isNumeric (IsIn cls [TVar _] _) = cls == "Number" || cls == "Bits"
+        isNumeric _                     = False
+
     tryDefaults' :: Env -> [Pred] -> [Pred] -> Infer (Substitution, [Pred])
-    tryDefaults' env originalPs remainingPs = case remainingPs of
+    tryDefaults' env originalPs remainingPs = case prioritiseNumeric remainingPs of
       (p : next) -> case p of
         IsIn "Number" [TVar tv] _ -> do
-          (nextSubst, nextPS) <- tryDefaults' env originalPs next
           let s = M.singleton tv tInteger
-          return (s `compose` nextSubst, nextPS)
+          (nextSubst, nextPS) <- tryDefaults' env originalPs (apply s next)
+          return (nextSubst `compose` s, nextPS)
 
         IsIn "Bits" [TVar tv] _ -> do
-          (nextSubst, nextPS) <- tryDefaults' env originalPs next
           let s = M.singleton tv tInteger
-          return (s `compose` nextSubst, nextPS)
+          (nextSubst, nextPS) <- tryDefaults' env originalPs (apply s next)
+          return (nextSubst `compose` s, nextPS)
+
+        IsIn interface [t] _ | interface == "Eq" || interface == "Show", not (isTVar t) -> do
+          -- A compound equality/show constraint is not a candidate for the
+          -- legacy Unit default.  It may, however, have an instance whose
+          -- context exposes an *inner* bare variable (Eq (Maybe a) => Eq a).
+          -- Reducing through that instance before deciding whether the
+          -- original wanted is solved preserves valid prelude expressions
+          -- such as `assertEquals(Nothing, Nothing)` without dropping an
+          -- actually-unsatisfied concrete predicate.
+          maybeFound <- findInst env p
+          case maybeFound of
+            Just (Instance (instancePreds :=> headPred) _) -> do
+              headSubst <- unify headPred p
+              (restSubst, restPreds) <- tryDefaults' env originalPs (apply headSubst instancePreds ++ next)
+              let totalSubst = restSubst `compose` headSubst
+                  p' = apply totalSubst p
+              solved <- catchError (entail env [] p') (const $ return False)
+              if solved
+                then return (totalSubst, restPreds)
+                else return (totalSubst, p' : restPreds)
+
+            Nothing -> do
+              (nextSubst, nextPS) <- tryDefaults' env originalPs next
+              return (nextSubst, apply nextSubst p : nextPS)
 
         IsIn interface [t] _ | interface == "Eq" || interface == "Show" -> do
           (nextSubst, nextPS) <- tryDefaults' env originalPs next
@@ -189,10 +225,20 @@ tryDefaultsWith env canDefaultEqShowToUnit ps = tryDefaults' env ps ps
               ) (tvs' ++ tvsWithoutNumberOrBits)
             let s = M.fromList $ catMaybes sList
 
-            if M.null s && isSimpleTypeVar then
-              return (nextSubst, p : nextPS)
-            else
-              return (s `compose` nextSubst, nextPS)
+            -- Defaulting is not evidence.  The previous implementation
+            -- dropped every complex Eq/Show predicate here, including a
+            -- concrete predicate for which no instance exists.  Keep the
+            -- wanted unless the selected default actually discharges it.
+            let totalSubst = s `compose` nextSubst
+                p'         = apply totalSubst p
+            solved <- catchError (entail env [] p') (const $ return False)
+            if solved
+              then return (totalSubst, nextPS)
+              -- A default is only valid when it provides evidence for the
+              -- wanted.  Keeping a failed `a -> Unit` candidate here turns a
+              -- later numeric use into the concrete, impossible goal
+              -- `Number Unit`.
+              else return (nextSubst, apply nextSubst p : nextPS)
 
         _ -> do
           maybeFound <- findInst env p
@@ -231,8 +277,8 @@ ftvForLetGenSet t = case t of
   TApp t1 t2 ->
     ftvForLetGenSet t1 `S.union` ftvForLetGenSet t2
 
-  TRecord fields _ _ ->
-    foldMap ftvForLetGenSet (M.elems fields)
+  TRecordRow row optionalFields ->
+    ftv row `S.union` foldMap ftvForLetGenSet (M.elems optionalFields)
 
   _ ->
     S.empty

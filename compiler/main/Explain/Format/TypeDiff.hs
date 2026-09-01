@@ -145,6 +145,9 @@ kindToStr k = case k of
   Star     ->
     "*"
 
+  Row      ->
+    "row"
+
   Kfun l r ->
     kindToStr l <> " -> " <> kindToStr r
 
@@ -317,9 +320,9 @@ firstDifference t1 t2 = case (t1, t2) of
           [] ->
             if ret1 /= ret2 then Just "the return type" else Nothing
 
-  (TRecord fields1 _ optional1, TRecord fields2 _ optional2) ->
-    let all1      = fields1 <> optional1
-        all2      = fields2 <> optional2
+  (TRecordRow row1 optional1, TRecordRow row2 optional2) ->
+    let all1      = fst (visibleRow row1) <> optional1
+        all2      = fst (visibleRow row2) <> optional2
         differing = M.keys $ M.filter id (M.intersectionWith (/=) all1 all2)
         onlyInOne = M.keys (M.difference all1 all2) ++ M.keys (M.difference all2 all1)
     in  case differing ++ onlyInOne of
@@ -884,17 +887,11 @@ typesToDocWithDiff vars1 vars2 t1 t2 = case (t1, t2) of
           )
         )
 
-  (TRecord fields1 base1 _, TRecord fields2 base2 _) ->
-    let allFields1 = case base1 of
-          Just (TRecord fields _ _) ->
-            fields <> fields1
-          _ ->
-            fields1
-        allFields2 = case base2 of
-          Just (TRecord fields _ _) ->
-            fields <> fields2
-          _ ->
-            fields2
+  (TRecordRow row1 optional1, TRecordRow row2 optional2) ->
+    let (fields1, base1) = visibleRow row1
+        (fields2, base2) = visibleRow row2
+        allFields1 = fields1 <> optional1
+        allFields2 = fields2 <> optional2
         ((finalVars1, finalHkVars1), (finalVars2, finalHkVars2), compiledFields1, compiledFields2) =
             foldl'
                 (\(allVars1, allVars2, compiledFields1', compiledFields2') (fieldName, fieldType1) ->
@@ -990,6 +987,14 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
             let newIndex = M.size vars
             in  (M.insert n newIndex vars, hkVars, renderIndexedLetter newIndex)
 
+        Row -> case M.lookup n vars of
+          Just x ->
+            (vars, hkVars, renderIndexedLetter x)
+
+          Nothing ->
+            let newIndex = M.size vars
+            in  (M.insert n newIndex vars, hkVars, renderIndexedLetter newIndex)
+
         Kfun _ _ -> case M.lookup n hkVars of
           Just x ->
             (vars, hkVars, [hkLetters !! x])
@@ -1050,22 +1055,17 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
           _ -> prettyPrintType' rewrite (varsLeft, hkVarsLeft) tr
     in  (varsRight, hkVarsRight, left <> " " <> right)
 
-  -- TODO: Add spreads display
-  TRecord fields base _ ->
-    let (finalVars, finalHkVars, compiledFields) =
-            foldl'
-                (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
-                  let (vars'', hkVars'', compiledField) = prettyPrintType' rewrite (vars', hkVars') fieldType
-                  in  (vars'', hkVars'', compiledFields' ++ [(fieldName, compiledField)])
-                )
-                (vars, hkVars, [])
-              $ M.toList fields
-        compiledFields' = (\(fieldName, fieldType) -> fieldName <> " :: " <> fieldType) <$> compiledFields
-        formattedBase   = case base of
-          Just _  -> "...base, "
-          Nothing -> ""
-        compiled = "{ " <> formattedBase <> intercalate ", " compiledFields' <> " }"
-    in  (finalVars, finalHkVars, compiled)
+  TRowEmpty ->
+    (vars, hkVars, "{}")
+
+  row@TRowExtend{} ->
+    prettyPrintRow rewrite (vars, hkVars) row M.empty
+
+  TRecordRow row optionalFields ->
+    prettyPrintRow rewrite (vars, hkVars) row optionalFields
+
+  TAlias _ _ _ aliased ->
+    prettyPrintType' rewrite (vars, hkVars) aliased
 
   TGen n ->
     if not rewrite then
@@ -1079,8 +1079,26 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
           let newIndex = M.size vars
           in  (M.insert (n - 1000) newIndex vars, hkVars, renderIndexedLetter newIndex)
 
-  _ ->
-    (vars, hkVars, "")
+
+prettyPrintRow :: Bool -> (M.Map Int Int, M.Map Int Int) -> Type -> M.Map Id Type -> (M.Map Int Int, M.Map Int Int, String)
+prettyPrintRow rewrite (vars, hkVars) row optionalFields =
+  let (fields, base) = visibleRow row
+      allFields = fields <> optionalFields
+      (finalVars, finalHkVars, compiledFields) =
+        foldl'
+          (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
+            let (vars'', hkVars'', compiledField) = prettyPrintType' rewrite (vars', hkVars') fieldType
+            in  (vars'', hkVars'', compiledFields' ++ [(fieldName, compiledField)]))
+          (vars, hkVars, [])
+          (M.toList allFields)
+      compiledFields' = (\(fieldName, fieldType) -> fieldName <> " :: " <> fieldType) <$> compiledFields
+      (varsWithBase, hkVarsWithBase, formattedBase) = case base of
+        Just tailType ->
+          let (vars', hkVars', renderedTail) = prettyPrintType' rewrite (finalVars, finalHkVars) tailType
+          in (vars', hkVars', "..." <> renderedTail <> if null compiledFields' then "" else ", ")
+        Nothing -> (finalVars, finalHkVars, "")
+      compiled = "{ " <> formattedBase <> intercalate ", " compiledFields' <> " }"
+  in (varsWithBase, hkVarsWithBase, compiled)
 
 
 gatherAllFnArgs :: Type -> [Type]
@@ -1177,6 +1195,14 @@ typeToDoc (vars, hkVars) t = case t of
   TVar (TV n k)   ->
     case k of
       Star -> case M.lookup n vars of
+        Just x ->
+          (vars, hkVars, Pretty.pretty (renderIndexedLetter x))
+
+        Nothing ->
+          let newIndex = M.size vars
+          in  (M.insert n newIndex vars, hkVars, Pretty.pretty (renderIndexedLetter newIndex))
+
+      Row -> case M.lookup n vars of
         Just x ->
           (vars, hkVars, Pretty.pretty (renderIndexedLetter x))
 
@@ -1412,29 +1438,17 @@ typeToDoc (vars, hkVars) t = case t of
           )
         )
 
-  TRecord fields base _ ->
-    let (finalVars, finalHkVars, compiledFields) =
-            foldl'
-                (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
-                  let (vars'', hkVars'', compiledField) = typeToDoc (vars', hkVars') fieldType
-                  in  (vars'', hkVars'', compiledFields' ++ [(fieldName, compiledField)])
-                )
-                (vars, hkVars, [])
-              $ M.toList fields
-        compiledFields' = (\(fieldName, fieldType) -> Pretty.pretty fieldName <> Pretty.pretty " :: " <> fieldType) <$> compiledFields
-        formattedBase   = case base of
-          Just _  -> Pretty.pretty "...base," <> Pretty.line
-          Nothing -> Pretty.emptyDoc
-        compiled = Pretty.group (
-            Pretty.lbrace <> Pretty.nest indentationSize (
-              Pretty.line
-              <> formattedBase
-              <> Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.line) compiledFields')
-            )
-            <> Pretty.line
-            <> Pretty.rbrace
-          )
-    in  (finalVars, finalHkVars, compiled)
+  TRowEmpty ->
+    (vars, hkVars, Pretty.pretty "{}")
+
+  row@TRowExtend{} ->
+    rowToDoc (vars, hkVars) row M.empty
+
+  TRecordRow row optionalFields ->
+    rowToDoc (vars, hkVars) row optionalFields
+
+  TAlias _ _ _ aliased ->
+    typeToDoc (vars, hkVars) aliased
 
   TGen n ->
     case M.lookup (n - 1000) vars of
@@ -1445,8 +1459,32 @@ typeToDoc (vars, hkVars) t = case t of
         let newIndex = M.size vars
         in  (M.insert (n - 1000) newIndex vars, hkVars, Pretty.pretty (renderIndexedLetter newIndex))
 
-  _ ->
-    (vars, hkVars, Pretty.emptyDoc)
+
+rowToDoc :: (M.Map Int Int, M.Map Int Int) -> Type -> M.Map Id Type -> (M.Map Int Int, M.Map Int Int, Pretty.Doc ann)
+rowToDoc (vars, hkVars) row optionalFields =
+  let (fields, base) = visibleRow row
+      allFields = fields <> optionalFields
+      (finalVars, finalHkVars, compiledFields) =
+        foldl'
+          (\(vars', hkVars', compiledFields') (fieldName, fieldType) ->
+            let (vars'', hkVars'', compiledField) = typeToDoc (vars', hkVars') fieldType
+            in  (vars'', hkVars'', compiledFields' ++ [(fieldName, compiledField)]))
+          (vars, hkVars, [])
+          (M.toList allFields)
+      compiledFields' = (\(fieldName, fieldType) -> Pretty.pretty fieldName <> Pretty.pretty " :: " <> fieldType) <$> compiledFields
+      (varsWithBase, hkVarsWithBase, formattedBase) = case base of
+        Just tailType ->
+          let (vars', hkVars', renderedTail) = typeToDoc (finalVars, finalHkVars) tailType
+          in (vars', hkVars', Pretty.pretty "..." <> renderedTail <> Pretty.comma <> Pretty.line)
+        Nothing -> (finalVars, finalHkVars, Pretty.emptyDoc)
+      compiled = Pretty.group (
+        Pretty.lbrace <> Pretty.nest indentationSize (
+          Pretty.line
+          <> formattedBase
+          <> Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.line) compiledFields'))
+        <> Pretty.line
+        <> Pretty.rbrace)
+  in  (varsWithBase, hkVarsWithBase, compiled)
 
 
 isTuple :: Type -> Bool

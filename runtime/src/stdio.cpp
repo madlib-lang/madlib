@@ -297,13 +297,33 @@ void madlib__stdio__cancelGet(StdinData_t *handle) {
 }
 
 
+// When stdout is a terminal, flush after every write so that output shows up
+// immediately, like process.stdout.write does on a TTY in Node. When stdout is
+// a pipe or a file we keep C stdio buffering for throughput; the event loop
+// flushes once per iteration (see event-loop.cpp) and libc flushes on exit.
+static int stdoutIsTTY = -1;
+
+static inline bool shouldFlushStdout() {
+  if (stdoutIsTTY < 0) {
+    stdoutIsTTY = isatty(STDOUT) ? 1 : 0;
+  }
+  return stdoutIsTTY == 1;
+}
+
+
 void madlib__stdio__put(char *str) {
   fputs(str, stdout);
+  if (shouldFlushStdout()) {
+    fflush(stdout);
+  }
 }
 
 
 void madlib__stdio__putLine(char *str) {
   puts(str);
+  if (shouldFlushStdout()) {
+    fflush(stdout);
+  }
 }
 
 

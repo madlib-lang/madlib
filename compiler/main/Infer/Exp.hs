@@ -75,28 +75,6 @@ isMaybeType (TApp (TCon (TC "Maybe" _) _ _) _) = True
 isMaybeType _ = False
 
 
--- | Collect type variables that appear as the base (row) of a record type.
--- These are the only annotation variables allowed to absorb structure during
--- the signature check in inferExplicitlyTyped: record-spread inference
--- over-constrains rows (e.g. `{ ...input, time: now() }` forces
--- `input :: { time :: ..., ...base }` even when the annotation correctly
--- claims `input :: { ...base }`), so a row variable may legitimately end up
--- bound to a record carrying the extra fields.
-collectRowVars :: Type -> S.Set TVar
-collectRowVars t = case t of
-  TRecord fields base optionalFields ->
-    let baseVars = case base of
-          Just (TVar tv) -> S.singleton tv
-          Just other     -> collectRowVars other
-          Nothing        -> S.empty
-    in  baseVars <> foldMap collectRowVars (M.elems fields) <> foldMap collectRowVars (M.elems optionalFields)
-
-  TApp l r ->
-    collectRowVars l <> collectRowVars r
-
-  _ ->
-    S.empty
-
 -- | Given the instantiated annotation type and the substitution obtained by
 -- unifying it with the inferred type, decide whether the annotation is as
 -- polymorphic as it claims. That is the case exactly when the substitution
@@ -105,22 +83,45 @@ collectRowVars t = case t of
 -- variable bound to anything concrete (`a -> String` implemented with
 -- `(x) => x ++ "!"`) or two annotation variables collapsed into one
 -- (`m a -> m b` implemented as identity) mean the signature is too general.
--- Row variables are exempt and may also bind to a record (see collectRowVars).
+-- Row variables are no exception: a signature is a public contract and must
+-- not be silently narrowed by a field access in its implementation.
 isInjectiveRenaming :: Type -> Substitution -> Bool
 isInjectiveRenaming tAnnotation s =
-  let rowVars   = collectRowVars tAnnotation
-      plainVars = S.toList (ftv tAnnotation S.\\ rowVars)
-      imageVars = [tv | TVar tv <- map (\tv -> apply s (TVar tv)) plainVars]
-      rowVarsOk = all
-        (\tv -> case apply s (TVar tv) of
-          TVar _    -> True
-          TRecord{} -> True
-          _         -> False
-        )
-        (S.toList rowVars)
-  in  length imageVars == length plainVars
+  let annotationVars = S.toList (ftv tAnnotation)
+      imageVars = [tv | TVar tv <- map (\tv -> apply s (TVar tv)) annotationVars]
+  in  length imageVars == length annotationVars
         && S.size (S.fromList imageVars) == length imageVars
-        && rowVarsOk
+
+
+numericDefaultsForClosedResult :: Type -> Type -> [Pred] -> Substitution
+numericDefaultsForClosedResult declared inferred preds
+  | not (S.null (ftv (getReturnType declared))) = M.empty
+  | otherwise =
+      let inferredResultVars = ftv (getReturnType inferred)
+          numericResultVars = S.fromList
+            [ tv
+            | IsIn cls [TVar tv] _ <- preds
+            , cls == "Number" || cls == "Bits"
+            , tv `S.member` inferredResultVars
+            ]
+      in  M.fromList [(tv, tInteger) | tv <- S.toList numericResultVars]
+
+
+numericDefaultsForMatchedScrutinee :: Slv.Exp -> [Pred] -> Substitution
+numericDefaultsForMatchedScrutinee solved preds =
+  let scrutineeVars = go solved
+  in  M.fromList
+        [ (tv, tInteger)
+        | IsIn cls [TVar tv] _ <- preds
+        , cls == "Number" || cls == "Bits"
+        , tv `S.member` scrutineeVars
+        ]
+  where
+    go (Slv.Typed _ _ (Slv.Assignment _ rhs)) = go rhs
+    go (Slv.Typed _ _ (Slv.Export rhs)) = go rhs
+    go (Slv.Typed _ _ (Slv.TypedExp rhs _ _)) = go rhs
+    go (Slv.Typed _ _ (Slv.Where scrutinee _)) = ftv (getType scrutinee)
+    go _ = S.empty
 
 
 -- | All inference is state-based. Substitutions accumulate into
@@ -246,7 +247,7 @@ updatePattern qt (Can.Canonical area pat) = case pat of
 inferVar :: Options -> Env -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
 inferVar _ env exp@(Can.Canonical area (Can.Var n)) = case n of
   ('.' : name) -> do
-    let s = Forall [Star, Star] $ [] :=> (TRecord (M.fromList [(name, TGen 0)]) (Just $ TGen 1) mempty `fn` TGen 0)
+    let s = Forall [Star, Row] $ [] :=> (openRecord (M.fromList [(name, TGen 0)]) (TGen 1) `fn` TGen 0)
     (ps :=> t) <- instantiate s
     return (ps, t, Slv.Typed (ps :=> t) area $ Slv.Var n False)
 
@@ -281,7 +282,7 @@ inferNameExport env exp@(Can.Canonical area (Can.NameExport name)) = do
 -- INFER TYPEOF
 
 inferTypeOf :: Options -> Env -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
-inferTypeOf options env exp@(Can.Canonical area (Can.TypeOf inner)) = do
+inferTypeOf options env (Can.Canonical area (Can.TypeOf inner)) = do
   (_ps, _t, e) <- infer options env inner
   let runtimeType = runtimeTypeAt (envBuiltinsModulePath env)
   let e' = Slv.Typed ([] :=> runtimeType) area (Slv.TypeOf e)
@@ -321,6 +322,25 @@ inferAbs options env l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) bo
   return (apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' $ ps :=> paramType) area param) es' (apply s' $ ps :=> t'))
 
 
+-- | An explicit record argument type is useful evidence while checking the
+-- body: a spread update can otherwise solve its base row before an earlier
+-- use establishes that an overwritten label is required.  Restricting this
+-- to annotation-backed record parameters keeps ordinary inference fully HM.
+inferAbsWithExpectedParam :: Options -> Env -> Type -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
+inferAbsWithExpectedParam options env expected l@(Can.Canonical _ (Can.Abs p@(Can.Canonical area param) body)) = do
+  env'        <- extendAbsEnv env expected p
+  (ps, t, es) <- inferBody options env' { envInBody = True } body
+  s           <- getSubst
+  es'         <- postProcessBody options env' s (expected `fn` t) es
+  s'          <- getSubst
+
+  let t'        = apply s' (expected `fn` t)
+      paramType = apply s' expected
+
+  return (apply s' ps, t', applyAbsSolve l (Slv.Typed (apply s' $ ps :=> paramType) area param) es' (apply s' $ ps :=> t'))
+inferAbsWithExpectedParam _ _ _ _ = error "inferAbsWithExpectedParam: expected abstraction"
+
+
 -- | Phase 1 migrated: 3-tuple. With transactional `captureDelta`, state's
 -- currentSubst correctly reflects only this frame's contributions while
 -- inside the action, so we can use applyCurrentSubst to get the cumulative
@@ -347,12 +367,36 @@ inferBody options env (e : es) = do
 postProcessBody :: Options -> Env -> Substitution -> Type -> [Slv.Exp] -> Infer [Slv.Exp]
 postProcessBody options env s expType es = do
   discardError <- isDiscardingErrors
+  -- Defaulting is a property of the whole lexical block, not whichever
+  -- expression happens to be post-processed first.  In particular, an
+  -- equality assertion over a local `Nothing` must see a sibling `Number a`
+  -- use before it is allowed to choose the legacy Unit default for `a`.
+  let blockPreds = concat [ps | Slv.Typed (ps :=> _) _ _ <- es]
+      functionProtected = S.unions
+        [ ftvForLetGenSet t
+        | typed@(Slv.Typed (_ :=> t) _ Slv.Assignment{}) <- es
+        , Slv.isNamedAbs typed
+        ]
+      -- Non-function assignments are deliberately value-restricted.  Their
+      -- variables remain monomorphic throughout the block and therefore must
+      -- not be specialized to Unit merely to discharge a later Eq/Show use.
+      -- Numeric defaulting remains available for them.
+      unitProtected = S.unions
+        [ ftv t
+        | typed@(Slv.Typed (_ :=> t) _ Slv.Assignment{}) <- es
+        , not (Slv.isNamedAbs typed)
+        ]
   -- Accumulate reversed (cons O(1)) then reverse at end — avoids O(n²) with ++
   (esRev, s', _) <- foldM
     (\(resultsRev, accSubst, env'') (Slv.Typed (ps' :=> t') area e) -> do
       let ps'' = apply accSubst ps'
-          -- Lazily compute fs only when needed (non-empty unsolvedPs)
-          fs = S.toList $ ftv (apply accSubst env'') `S.union` ftv (apply accSubst expType) `S.union` ftvForLetGenSet (apply accSubst t')
+          -- Function-local variables are part of the binding's inferred
+          -- scheme and cannot be defaulted while processing its definition.
+          fs = S.toList $
+            ftv (apply accSubst env'')
+              `S.union` ftv (apply accSubst expType)
+              `S.union` ftvForLetGenSet (apply accSubst t')
+              `S.union` ftv (apply accSubst (TVar <$> S.toList functionProtected))
 
       (ps''', substFromDefaulting) <- do
         prep <- CM.forM ps'' $ \p -> do
@@ -362,11 +406,42 @@ postProcessBody options env s expType es = do
         let solvedPs = [p | (p, True) <- prep]
         let unsolvedPs = [p | (p, False) <- prep]
 
-        -- Short-circuit: ambiguities is only non-empty if unsolvedPs is non-empty
-        if not (null unsolvedPs) && ambiguities fs unsolvedPs /= [] then do
-          (sDef, unsolvedPs')   <- tryDefaultingAmbiguities env fs unsolvedPs
-          (sDef', unsolvedPs'') <- tryDefaultingAmbiguities env fs (apply sDef unsolvedPs')
+        let currentCandidates = S.fromList (fst <$> ambiguities fs unsolvedPs)
+
+        if not (S.null currentCandidates) then do
+          let
+              blockVars = ftv (apply accSubst blockPreds)
+              blockFs = S.toList $
+                S.fromList fs `S.union` (blockVars `S.difference` currentCandidates)
+          let defaultableBlockPreds = filter
+                (S.null . (`S.intersection` functionProtected) . ftv)
+                (apply accSubst blockPreds)
+          (sDef, _) <- tryDefaultingAmbiguitiesExcept
+            env
+            (ftv (apply accSubst (TVar <$> S.toList unitProtected)))
+            blockFs
+            defaultableBlockPreds
+          let fsAfterFirst = S.toList (ftv (apply sDef (TVar <$> fs)))
+              unsolvedAfterFirst = apply sDef unsolvedPs
+              candidatesAfterFirst = S.fromList (fst <$> ambiguities fsAfterFirst unsolvedAfterFirst)
+              blockVarsAfterFirst = ftv (apply sDef (apply accSubst blockPreds))
+              blockFsAfterFirst = S.toList $
+                S.fromList fsAfterFirst
+                  `S.union` (blockVarsAfterFirst `S.difference` candidatesAfterFirst)
+          (sDef', _) <- tryDefaultingAmbiguitiesExcept
+            env
+            (ftv (apply sDef (apply accSubst (TVar <$> S.toList unitProtected))))
+            blockFsAfterFirst
+            (apply sDef defaultableBlockPreds)
           let subst = sDef' `compose` sDef
+              defaultedPs = apply subst unsolvedPs
+
+          -- Defaulting may turn an ambiguous wanted into a concrete, entailed
+          -- predicate (for example Number a into Number Integer).  Keep only
+          -- the residual wanteds; retaining already-proved predicates here
+          -- leaks evidence into every typed child and can make downstream
+          -- monomorphization treat solved constraints as live.
+          unsolvedPs'' <- filterM ((not <$>) . entail env []) defaultedPs
 
           if unsolvedPs'' /= [] then do
             CM.forM_ unsolvedPs'' $ \p -> do
@@ -400,14 +475,20 @@ postProcessBody options env s expType es = do
           return (ps'', mempty)
 
       let sFinal = substFromDefaulting `compose` accSubst
-      e' <- updateExpTypes options env False sFinal (Slv.Typed (apply sFinal $ ps''' :=> t') area e)
+      e' <- updateExpTypes options env False sFinal
+        (Slv.Typed (apply sFinal $ ps''' :=> t') area e)
 
       return (e' : resultsRev, sFinal, apply sFinal env'')
     )
     (mempty, s, env)
     es
 
-  extSubst s'
+  -- The block result may default variables from later expressions.  Never
+  -- let that final substitution export a binding for variables quantified by
+  -- an earlier local function: those variables belong to the definition's
+  -- scheme, while each later use has its own fresh instantiation.
+  let escapingSubst = foldr M.delete s' (S.toList functionProtected)
+  extSubst escapingSubst
   return (reverse esRev)
 
 
@@ -487,8 +568,8 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
     Can.JsxRecord jsxFields -> do
       let explicitNames = S.fromList [ n | Can.Canonical _ (Can.Field (n, _)) <- jsxFields ]
       resolvedArgType <- applyCurrentSubst t2
-      case resolvedArgType of
-        TRecord allFields _ _ -> do
+      case recordVisibleFields resolvedArgType of
+        Just allFields -> do
           let missingFields = M.filterWithKey (\k _ -> k `S.notMember` explicitNames) allFields
           let allMaybe = all isMaybeType (M.elems missingFields)
           if M.null missingFields || not allMaybe then
@@ -555,12 +636,8 @@ inferTemplateString options env (Can.Canonical area (Can.TemplateString exps)) =
 
 -- INFER ASSIGNMENT
 
--- | Phase 1 migrated: 3-tuple. Note the load-bearing `s1 `compose` s2` order
--- (legacy convention: applies s2 FIRST then s1, opposite to the HM newer-LEFT
--- convention used by inferApp etc.). We compute the composed substitution
--- explicitly (instead of incremental extSubst calls which would produce HM
--- order) and extSubst the result so the dispatch's liftWithDelta sees the
--- delta. Tests are calibrated against this exact ordering.
+-- | Phase 1 migrated: 3-tuple. The inferred expression contribution is
+-- followed by signature defaulting and then the placeholder unifier.
 inferAssignment :: Options -> Env -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
 inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = do
   discardError <- isDiscardingErrors
@@ -577,10 +654,24 @@ inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = d
 
   (currentPreds :=> currentType) <- instantiate currentScheme
   let env' = extendVars env (name, currentScheme)
-  (s1, (ps1, t1, e1)) <- captureDelta (infer options env' exp)
-  s2                <- catchError (contextualUnify Strict env' e currentType t1) (const $ return M.empty)
+  (s1, (ps1, t1, e1)) <- captureDelta $
+    case (exp, getParamTypes currentType) of
+      (absExp@(Can.Canonical _ Can.Abs{}), hintedParam : _)
+        | Just _ <- recordParts hintedParam ->
+            inferAbsWithExpectedParam options env' hintedParam absExp
+      _ -> infer options env' exp
+  let inferredType = apply s1 t1
+      inferredPreds = apply s1 ps1
+      signatureDefaults = numericDefaultsForClosedResult
+        (apply s1 currentType) inferredType inferredPreds
+      checkingSubst = signatureDefaults `compose` s1
+  s2 <- catchError
+    (contextualUnify Strict env' e
+      (apply checkingSubst currentType)
+      (apply checkingSubst t1))
+    (const $ return M.empty)
   --  ^ We can skip this error as we mainly need the substitution. It would fail in inferExplicitlyTyped anyways.
-  let s  = s1 `compose` s2
+  let s = s2 `compose` checkingSubst
   let t2 = apply s t1
   extSubst s
 
@@ -597,19 +688,19 @@ inferAssignment options env e@(Can.Canonical area (Can.Assignment name exp)) = d
 
 -- INFER MUTATE
 
--- | Phase 1 migrated: 3-tuple. Same legacy reversed compose order pattern as
--- inferAssignment (s1 `compose` s2 `compose` s3 — applies s3 first, s1 last).
--- We compute the composition explicitly and extSubst the result so the
--- dispatch's liftWithDelta sees the right delta. Tests are calibrated against
--- this exact ordering.
+-- | Phase 1 migrated: 3-tuple. Compose contributions in inference order:
+-- lhs, rhs, then the assignment equality.
 inferMutate :: Options -> Env -> Can.Exp -> Infer ([Pred], Type, Slv.Exp)
 inferMutate options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
   discardError <- isDiscardingErrors
   (s1, (ps1, t1, e1)) <- captureDelta (infer options env lhs)
   (s2, (ps2, t2, e2)) <- captureDelta (infer options (apply s1 env) exp)
   let assignOrigin = maybe NoOrigin FromAssignment (Can.getExpName lhs)
+  let inferredSubst = s2 `compose` s1
   s3 <- catchError
-    (contextualUnifyWithOrigin Strict assignOrigin env e t1 t2)
+    (contextualUnifyWithOrigin Strict assignOrigin env e
+      (apply inferredSubst t1)
+      (apply inferredSubst t2))
     (\err -> do
       if discardError then do
         return mempty
@@ -617,7 +708,7 @@ inferMutate options env e@(Can.Canonical area (Can.Mutate lhs exp)) = do
         throwError err
     )
 
-  let s  = s1 `compose` s2 `compose` s3
+  let s  = s3 `compose` inferredSubst
   let t3 = apply s t2
   extSubst s
 
@@ -708,9 +799,8 @@ inferListConstructor options env listExp@(Can.Canonical area (Can.ListConstructo
       return (ps, t, Slv.Typed (ps :=> t) area (Slv.ListConstructor es))
 
 
--- | Phase 1 migrated: 3-tuple. Same legacy reversed compose order pattern as
--- inferAssignment (`s = s1 `compose` s2` — applies s2 first, s1 last). We
--- compute the composition explicitly and extSubst the result.
+-- | Phase 1 migrated: 3-tuple. The element inference contribution is
+-- followed by the list-shape unifier.
 inferListItem :: Options -> Env -> Type -> Can.ListItem -> Infer ([Pred], Type, Slv.ListItem)
 inferListItem options env _ (Can.Canonical area li) = do
   discardError <- isDiscardingErrors
@@ -722,9 +812,9 @@ inferListItem options env _ (Can.Canonical area li) = do
     Can.ListSpread exp -> do
       (s1, (ps, t, e)) <- captureDelta (infer options env exp)
       tv <- newTVar Star
-      s2 <- contextualUnify' env discardError exp (tListOf tv) t
+      s2 <- contextualUnify' env discardError exp (tListOf tv) (apply s1 t)
 
-      let s = s1 `compose` s2
+      let s = s2 `compose` s1
       extSubst s
 
       return (ps, apply s tv, Slv.Typed (apply s ps :=> apply s t) area $ Slv.ListSpread e)
@@ -797,29 +887,24 @@ inferRecord options env exp = do
 
   baseApplied <- maybe (return Nothing) (fmap Just . applyCurrentSubst) base
   recordType <- case baseApplied of
-    Just (TRecord spreadFields baseBase optionalFields) -> do
-      -- Merge the spread record's fields with our explicit fields
-      -- The spread fields take precedence if there are conflicts
-      let mergedFields = M.fromList fieldTypes' `M.union` spreadFields
-      baseBaseApplied <- maybe (return Nothing) (fmap Just . applyCurrentSubst) baseBase
-      return (mkRecord mergedFields baseBaseApplied optionalFields)
+    Just (TRecordRow spreadRow optionalFields) ->
+      -- Keep the base row verbatim.  `rowFromFields` places explicit fields
+      -- outside it, so an equal tail label is shadowed rather than merged.
+      return $ TRecordRow (rowFromFields (M.fromList fieldTypes') spreadRow) optionalFields
 
     Just tBase -> do
-      -- The spread is a type variable or other type - unify it with a record type
-      -- that has our fields and a row variable for extension
-      baseVar <- newTVar Star
-      let recordWithBase = TRecord (M.fromList fieldTypes') (Just baseVar) mempty
+      -- Constrain the spread operand to be a record, but do not put the
+      -- fields being written into its input row.  Spread is an overwrite:
+      -- `{ ...r, x: value }` accepts both rows with x and rows without x;
+      -- the outer x shadows any x in the base row.
+      baseVar <- newTVar Row
+      let recordWithBase = recordRow baseVar
       s <- contextualUnify' env discardError exp tBase recordWithBase
       extSubst s
-      unifiedBase <- applyCurrentSubst tBase
-      case unifiedBase of
-        TRecord unifiedFields unifiedBase' unifiedOptionalFields ->
-          return (mkRecord unifiedFields unifiedBase' unifiedOptionalFields)
-        _ ->
-          return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty)
+      return (recordRow (rowFromFields (M.fromList fieldTypes') baseVar))
 
     Nothing ->
-      return (TRecord (M.fromList fieldTypes') Nothing mempty)
+      return (recordRow (rowFromFields (M.fromList fieldTypes') TRowEmpty))
 
   let allPS = concat fieldPS
   recordType' <- applyCurrentSubst recordType
@@ -857,29 +942,22 @@ inferJsxRecord options env exp = do
 
   baseApplied <- maybe (return Nothing) (fmap Just . applyCurrentSubst) base
   recordType <- case baseApplied of
-    Just (TRecord spreadFields baseBase optionalFields) -> do
-      let mergedFields = M.fromList fieldTypes' `M.union` spreadFields
-      baseBaseApplied <- maybe (return Nothing) (fmap Just . applyCurrentSubst) baseBase
-      return (mkRecord mergedFields baseBaseApplied optionalFields)
+    Just (TRecordRow spreadRow optionalFields) ->
+      return $ TRecordRow (rowFromFields (M.fromList fieldTypes') spreadRow) optionalFields
 
     Just tBase -> do
-      baseVar <- newTVar Star
-      let recordWithBase = TRecord (M.fromList fieldTypes') (Just baseVar) mempty
+      baseVar <- newTVar Row
+      let recordWithBase = recordRow baseVar
       s <- contextualUnify' env discardError exp tBase recordWithBase
       extSubst s
-      unifiedBase <- applyCurrentSubst tBase
-      case unifiedBase of
-        TRecord unifiedFields unifiedBase' unifiedOptionalFields ->
-          return (mkRecord unifiedFields unifiedBase' unifiedOptionalFields)
-        _ ->
-          return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty)
+      return (recordRow (rowFromFields (M.fromList fieldTypes') baseVar))
 
     Nothing -> do
       -- JSX record without spread: create an EXTENSIBLE record with a base type variable.
       -- This allows unification to absorb missing fields into the base, which we later
       -- check are all Maybe-typed and fill with Nothing.
-      baseVar <- newTVar Star
-      return (TRecord (M.fromList fieldTypes') (Just baseVar) mempty)
+      baseVar <- newTVar Row
+      return (recordRow (rowFromFields (M.fromList fieldTypes') baseVar))
 
   let allPS = concat fieldPS
   recordType' <- applyCurrentSubst recordType
@@ -899,7 +977,7 @@ inferRecordField options env (Can.Canonical area field) = do
     Can.FieldSpread exp -> do
       (ps, t, e) <- infer options env exp
       case t of
-        TRecord{} ->
+        TRecordRow _ _ ->
           return (ps, [("...", t)], Slv.Typed (ps :=> t) area $ Slv.FieldSpread e)
 
         TVar _ ->
@@ -1121,10 +1199,8 @@ inferWhere options env (Can.Canonical area (Can.Where exp iss)) = do
   return (ps ++ ps', apply s'' tv, wher)
 
 
--- | Phase 1 migrated: 3-tuple. Same legacy reversed compose order pattern as
--- inferAssignment (`s `compose` s' `compose` s''` — applies s'' first, s last).
--- We compute the composition explicitly and extSubst the result so the
--- migrated inferWhere caller picks up the contribution via state.
+-- | Phase 1 migrated: 3-tuple. Compose the pattern/scrutinee unifier, branch
+-- body contribution, and result unifier in their evaluation order.
 inferBranch :: Options -> Env -> Type -> Type -> Int -> Can.Is -> Infer ([Pred], Slv.Is)
 inferBranch options env tv t branchIdx (Can.Canonical area (Can.Is pat exp)) = do
   discardError <- isDiscardingErrors
@@ -1141,9 +1217,12 @@ inferBranch options env tv t branchIdx (Can.Canonical area (Can.Is pat exp)) = d
   let envWithPatternVars = (apply s $ mergeVars env vars')
         { envPatternBoundNames = envPatternBoundNames env <> patternBoundNames }
   (s', (ps', t'', e')) <- captureDelta (infer options envWithPatternVars exp)
-  s'' <- contextualUnify' env discardError exp tv (apply (s `compose` s') t'')
+  let bodySubst = s' `compose` s
+  s'' <- contextualUnify' env discardError exp
+    (apply bodySubst tv)
+    (apply bodySubst t'')
 
-  let subst = s `compose` s' `compose` s''
+  let subst = s'' `compose` bodySubst
   let allPreds = ps ++ ps'
   extSubst subst
 
@@ -1215,46 +1294,44 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
   let env'' = apply s env'
 
   s' <- contextualUnify' env'' discardError exp (apply s tv) t
-  let s'' = s `compose` s' `compose` s
-      envWithVarsExcluded = env''
-        { envVars = M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env'' }
+  let s'' = s' `compose` s
+      envWithVarsExcluded = setVars env'' $
+        M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $
+          envVars env''
 
       ps' = apply s'' ps
       t'  = apply s'' tv
 
-  (ds, rs', sFinal) <- generalize isLet env area s'' envWithVarsExcluded t' ps' (apply s'' tv)
-  extSubst sFinal
+  let patternDefaults = numericDefaultsForMatchedScrutinee e ps'
+      sForGeneralization = patternDefaults `compose` s''
+      envForGeneralization = apply patternDefaults envWithVarsExcluded
+      psForGeneralization = apply patternDefaults ps'
+      tForGeneralization = apply patternDefaults t'
 
-  let bindingName = Can.getExpName exp
-  bindingMutated <- case bindingName of
-    Just n  -> isMutated n
-    Nothing -> return False
+  (ds, rs', sFinal) <- generalize
+    isLet env area sForGeneralization envForGeneralization
+    tForGeneralization psForGeneralization (apply sForGeneralization tv)
 
-  let vs = if isLet then ftvForLetGen t' else ftvList t'
-      fsSet = ftv (apply sFinal envWithVarsExcluded)
-      fs = S.toList fsSet
+  let vs = if isLet then ftvForLetGen tForGeneralization else ftvList tForGeneralization
+      fsSet = ftv (apply sFinal envForGeneralization)
       gs = filter (not . (`S.member` fsSet)) vs
       sc =
-        if bindingMutated then
-          -- Mutated bindings are monomorphic (value-restriction-style).
-          apply sFinal $ quantify [] (rs' :=> t')
-        else if isLet && not (Slv.isNamedAbs e) then
-          apply sFinal $ quantify [] (rs' :=> t')
+        if isLet && not (Slv.isNamedAbs e) then
+          apply sFinal $ quantify [] (rs' :=> tForGeneralization)
         else
           -- TODO: consider if the apply sFinal should not happen before quantifying
           -- because right now we might miss the defaulted types in the generated
           -- scheme
-          apply sFinal $ quantify gs (rs' :=> t')
+          apply sFinal $ quantify gs (rs' :=> tForGeneralization)
 
-  when (not isLet && not discardError && bindingMutated && not (Slv.isNamedAbs e)) $ do
-    throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
+  extSubst sFinal
 
-  case bindingName of
+  case Can.getExpName exp of
     Just n  ->
-      return ((ds, rs'), extendVars env (n, sc), updateQualType e (apply sFinal $ rs' :=> t'))
+      return ((ds, rs'), extendVars env (n, sc), updateQualType e (apply sFinal $ rs' :=> tForGeneralization))
 
     Nothing ->
-      return ((ds, rs'), env, updateQualType e (apply sFinal $ rs' :=> t'))
+      return ((ds, rs'), env, updateQualType e (apply sFinal $ rs' :=> tForGeneralization))
 
 
 -- | Phase 1 migrated: 3-tuple. extSubsts the cumulative substitution at
@@ -1276,7 +1353,15 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
 
   (s, (ps, t, e)) <- captureDelta (infer options env' { envNamesInScope = envVars env } exp)
   psFull        <- concat <$> mapM (gatherInstPreds env') ps
-  let sNorm = s `compose` s -- resolve internal substitution chains
+  let sNorm0 = s `compose` s -- resolve internal substitution chains
+      inferred0 = apply sNorm0 t
+      -- A closed declared result must not solve a numeric implementation
+      -- variable by fiat (for example, binding Number a to Unit in `main`).
+      -- Apply Madlib's numeric default before checking that boundary.  A
+      -- genuinely polymorphic/qualified result remains governed by its
+      -- declared variables and givens.
+      signatureDefaults = numericDefaultsForClosedResult t' inferred0 (apply sNorm0 psFull)
+      sNorm = signatureDefaults `compose` sNorm0
   let tInferred = apply sNorm t
       -- When annotation and implementation are functions of equal arity that
       -- differ only in their return type, report just the two return types
@@ -1287,61 +1372,58 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
       -- structural comparison.
       retagReturnMismatch err = case (err, Can.getExpName exp) of
         (CompilationError (UnificationError tm) errCtx, Just name)
-          | isFunctionType (tmFound tm)
-          , isFunctionType (tmExpected tm)
-          , getParamTypes (tmFound tm) == getParamTypes (tmExpected tm)
-          , getReturnType (tmFound tm) /= getReturnType (tmExpected tm) ->
+          | FromFunctionReturn _ <- tmOrigin tm ->
             CompilationError
-              (UnificationError tm { tmFound    = getReturnType (tmFound tm)
-                                   , tmExpected = getReturnType (tmExpected tm)
-                                   , tmOrigin   = FromFunctionReturn name
-                                   })
+              (UnificationError tm { tmOrigin = FromFunctionReturn name })
+              errCtx
+
+        (CompilationError (UnificationError tm) errCtx, Just name)
+          | isFunctionType t'
+          , isFunctionType tInferred
+          , getParamTypes t' == getParamTypes tInferred
+          , getReturnType t' /= getReturnType tInferred ->
+            CompilationError
+              (UnificationError tm { tmOrigin = FromFunctionReturn name })
               errCtx
 
         _ ->
           err
-  s'' <- catchError (contextualUnifyWithOrigin (if discardError then Discard else Strict) FromTypeAnnotation env canExp t' tInferred) (throwError . limitContextArea 2 . retagReturnMismatch)
+  s'' <- catchError
+    (signatureUnify t' tInferred)
+    (\err ->
+      if discardError
+        then return (gentleUnify t' tInferred)
+        else addContext env canExp (limitContextArea 2 (retagReturnMismatch err)))
   let s' = s'' `compose` sNorm
 
-  let envWithVarsExcluded =
-        env'
-          {
-            envVars =
-              if isLet then
-                M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $ envVars env'
-              else
-                envVars env'
-          }
+  let varsForGeneralization =
+        if isLet then
+          M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $
+            envVars env'
+        else
+          envVars env'
+      envWithVarsExcluded = setVars env' varsForGeneralization
       qs'  = apply s' qs
       t''  = apply s' t
-      t''' = mergeRecords (apply s' t') t''
   ps'      <- filterM ((not <$>) . entail env' qs') (apply s' psFull)
   (ds, rs, substDefaultResolution) <- generalize False env area s' envWithVarsExcluded (apply s' t') ps' t
 
-  let bindingName = Can.getExpName exp
-  bindingMutated <- case bindingName of
-    Just n  -> isMutated n
-    Nothing -> return False
-
-  when (not isLet && not discardError && bindingMutated && not (Slv.isNamedAbs e)) $ do
-    throwError $ CompilationError MutationRestriction (Context (envCurrentPath env) area)
-
   let qs'' = dedupePreds qs'
-      fsSet = ftv (apply s' envWithVarsExcluded)
-      fs = S.toList fsSet
-      gs = filter (not . (`S.member` fsSet)) (ftvList (apply s' t'))
-      scCheck  = quantify (ftvList (apply s' t')) (qs' :=> apply substDefaultResolution (apply s' t'))
+      scCheck = quantify (ftvList (apply s' t'))
+        (qs' :=> apply substDefaultResolution (apply s' t'))
   sigCheckResult <- if sc /= scCheck then
     -- The inferred scheme differs from the declared scheme. Unify a fresh
     -- instance of each and inspect how the annotation's variables were bound:
-    -- only an injective renaming — with row variables allowed to absorb extra
-    -- record fields (see collectRowVars) — means the annotation matches the
+    -- only an injective renaming means the annotation matches the
     -- implementation's generality. Anything else means it is too general.
     catchError (do
       (_ :=> t1) <- instantiate sc
       (_ :=> t2) <- instantiate scCheck
-      s <- unify t1 t2
-      return (isInjectiveRenaming t1 s)
+      -- Re-run the same boundary check on fresh instances.  Ordinary
+      -- unification rejects a lawful implementation that accepts a wider
+      -- record input than its advertised closed record contract.
+      sCheck <- signatureUnify t1 t2
+      return (isInjectiveRenaming t1 sCheck)
     ) (const $ return False)
   else
     return True
@@ -1351,21 +1433,21 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   else if not (null rs) then
     throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area)
   else do
-    let e'   = updateQualType e (ds :=> t''')
-
-    let qt'  = qs'' :=> t'''
-    let sc'' = quantify gs qt'
-    let env'' = case Can.getExpName exp of
+    -- Keep the implementation's fully-zonked type in solved metadata.  The
+    -- public environment still receives the user-declared scheme below.
+    let e' = updateQualType e
+          (apply substDefaultResolution ds :=> apply substDefaultResolution t'')
+        env'' = case Can.getExpName exp of
           Just n  ->
-            extendVars env' (n, sc'')
-          Nothing ->
-            env'
+            -- A successful annotation check publishes the declared scheme,
+            -- not a subtly narrowed scheme reconstructed from the body.
+            extendVars env' (n, sc)
+          Nothing -> env'
 
     extSubst (substDefaultResolution `compose` s')
     return (qs'', env'', Slv.Typed (qs :=> t') area (Slv.TypedExp e' (updateTyping typing) sc))
 
 inferExplicitlyTyped _ _ _ _ = error "inferExplicitlyTyped: unreachable case"
-
 
 inferExps :: Options -> Env -> [Can.Exp] -> Infer ([Slv.Exp], Env)
 inferExps _ env []       = return ([], env)

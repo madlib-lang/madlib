@@ -43,6 +43,10 @@ errorKind e = case e of
   NotCapitalizedConstructorName{}      -> 22
   TypingHasWrongKind{}                 -> 23
   WrongAliasArgCount{}                 -> 24
+  WrongInterfaceArgCount{}             -> 71
+  InstanceResolutionCycle{}            -> 72
+  SuperclassCycle{}                    -> 73
+  InvalidInstanceContext{}             -> 74
   UnknownType{}                        -> 25
   WrongSpreadType{}                    -> 26
   ImportNotFound{}                     -> 27

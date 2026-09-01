@@ -33,11 +33,16 @@ instance Instantiate Type where
   inst ts (TApp l r) =
     TApp (inst ts l) (inst ts r)
 
+  inst _ TRowEmpty = TRowEmpty
+
+  inst ts (TRowExtend name fieldType tail) =
+    TRowExtend name (inst ts fieldType) (inst ts tail)
+
+  inst ts (TRecordRow row optionalFields) =
+    TRecordRow (inst ts row) (M.map (inst ts) optionalFields)
+
   inst ts (TGen n) =
     ts !! n
-
-  inst ts (TRecord fields base optionalFields) =
-    TRecord (M.map (inst ts) fields) (inst ts <$> base) (M.map (inst ts) optionalFields)
 
   inst _  t                     =
     t

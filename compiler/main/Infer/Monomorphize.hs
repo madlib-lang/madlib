@@ -44,32 +44,30 @@ genType s t =
 -- and removing row variables that haven't been substituted (free variables)
 resolveRowVariables :: Type -> Type
 resolveRowVariables t = case t of
-  TRecord fields (Just base) optionalFields -> do
-    let resolvedFields = resolveRowVariables <$> fields
-        resolvedOptionalFields = resolveRowVariables <$> optionalFields
-        resolvedBase = resolveRowVariables base
-    
-    case resolvedBase of
-      -- If the base was substituted with a record, merge its fields
-      TRecord baseFields baseBase baseOptionalFields ->
-        TRecord (Map.union resolvedFields baseFields) baseBase (resolvedOptionalFields <> baseOptionalFields)
-      
-      -- If the base is still a type variable (free), remove it (no additional fields)
-      TVar _ ->
-        TRecord resolvedFields Nothing resolvedOptionalFields
-      
-      -- If the base is something else (shouldn't happen, but handle gracefully)
-      _ ->
-        TRecord resolvedFields Nothing resolvedOptionalFields
+  TRecordRow row optionalFields ->
+    TRecordRow (resolveRow row) (resolveRowVariables <$> optionalFields)
 
-  TRecord fields Nothing optionalFields ->
-    TRecord (resolveRowVariables <$> fields) Nothing (resolveRowVariables <$> optionalFields)
+  TRowEmpty ->
+    TRowEmpty
+
+  TRowExtend label fieldType tail ->
+    TRowExtend label (resolveRowVariables fieldType) (resolveRow tail)
 
   TApp l r ->
     TApp (resolveRowVariables l) (resolveRowVariables r)
 
   _ ->
     t
+  where
+    -- Code generation only sees monomorphic types.  Any remaining row
+    -- variable is therefore an unconstrained extension and contributes no
+    -- concrete runtime fields; preserve scoped extensions on the way down.
+    resolveRow row = case row of
+      TVar tv | kind tv == Row -> TRowEmpty
+      TRowEmpty -> TRowEmpty
+      TRowExtend label fieldType tail ->
+        TRowExtend label (resolveRowVariables fieldType) (resolveRow tail)
+      other -> resolveRowVariables other
 
 
 findCtorForeignModulePath :: (Rock.MonadFetch Query m, MonadIO m) => FilePath -> String -> m String
