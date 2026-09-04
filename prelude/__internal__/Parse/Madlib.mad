@@ -1,0 +1,792 @@
+import type { Maybe } from "Maybe"
+import type { Parser } from "Parse"
+
+import IO from "IO"
+import List from "List"
+import { Just, Nothing } from "Maybe"
+import Parse from "Parse"
+import String from "String"
+
+
+
+alias State = SourceTarget
+
+alias Ref a = { read :: {} -> a, write :: a -> {} }
+
+createState :: {} -> { read :: {} -> State, write :: State -> {} }
+createState = () => {
+  state = TargetAll
+
+  write = (s) => {
+    state = s
+  }
+
+  read = () => state
+
+  return { read, write }
+}
+
+
+
+// ----------- Metadata -----------------------------------
+
+type Loc = Loc(Integer, Integer)
+
+type Area = Area(Loc, Loc)
+
+type SourceTarget = TargetLLVM | TargetJS | TargetAll
+
+
+type Source a = Source(Area, SourceTarget, a)
+
+
+alias Constructor = Source _Constructor
+type _Constructor = Constructor(String, List Typing)
+
+
+alias TypeDeclaration = Source _TypeDeclaration
+type _TypeDeclaration
+  = ADT({
+    constructors :: List Constructor,
+    exported :: Boolean,
+    name :: String,
+    params :: List String,
+  })
+  | Alias({ exported :: Boolean, name :: String, params :: List String, typing :: Typing })
+
+
+alias Import = Source _Import
+type _Import
+  = NamedImport(List (Source String), String, String)
+  | TypeImport(List (Source String), String, String)
+  | DefaultImport(Source String, String, String)
+
+
+alias Interface = Source _Interface
+type _Interface = Interface(List Typing, String, List String, Dictionary String Typing)
+
+
+alias Instance = Source _Instance
+type _Instance = Instance(List Typing, String, List Typing, Dictionary String Exp)
+
+
+alias Typing = Source _Typing
+type _Typing
+  = TRSingle(String)
+  | TRComp(String, List Typing)
+  | TRArr(Typing, Typing)
+  | TRRecord(Dictionary String #[Area, Typing], Maybe Typing)
+  | TRTuple(List Typing)
+  | TRConstrained(List Typing, Typing)
+
+
+alias Field = Source _Field
+type _Field = Field(String, Exp) | FieldShortHand(String) | FieldSpread(Exp)
+
+
+alias ListItem = Source _ListItem
+type _ListItem = ListItem(Exp) | ListItemSpread(Exp)
+
+
+alias DictItem = Source _DictItem
+type _DictItem = DictItem(Exp, Exp)
+
+
+type PatternField = PatternField(Source String, Pattern) | PatternFieldShorthand(Source String)
+
+alias Pattern = Source _Pattern
+type _Pattern
+  = PVar(String)
+  | PNum(String)
+  | PFloat(String)
+  | PStr(String)
+  | PChar(Char)
+  | PBool(String)
+  | PAny
+  | PCon(Source String, List Pattern)
+  | PNullaryCon(Source String)
+  | PRecord(List PatternField)
+  | PList(List Pattern)
+  | PTuple(List Pattern)
+  | PSpread(Pattern)
+
+
+alias Is = Source _Is
+type _Is = Is(Pattern, Exp)
+
+
+alias JsxProp = Source _JsxProp
+type _JsxProp = JsxProp(String, Exp)
+
+type JsxChild = JsxChild(Exp) | JsxExpChild(Exp) | JsxSpreadChild(Exp)
+
+alias Exp = Source _Exp
+type _Exp
+  = LString(String)
+  | TemplateString(List Exp)
+  | LNumber(String)
+  | LFloat(String)
+  | LChar(String)
+  | LUnit
+  | LBoolean(String)
+  | Var(String)
+  | UnOp(Exp, Exp)
+  | BinOp(Exp, Exp, Exp)
+  | App(Exp, List Exp)
+  | Abs(List (Source String), Exp)
+  | AbsWithMultilineBody(List (Source String), List Exp)
+  | Return(Exp)
+  | Access(Exp, Exp)
+  | Assignment(String, Exp)
+  | Record(List Field)
+  | If(Exp, Exp, Exp)
+  | Ternary(Exp, Exp, Exp)
+  | Where(Exp, List Is)
+  | WhereAbs(List Is)
+  | Do(List Exp)
+  | DoAssignment(String, Exp)
+  | Export(Exp)
+  | NameExport(String)
+  | TypeExport(String)
+  | TypedExp(Exp, Typing)
+  | NamedTypedExp(String, Exp, Typing)
+  | ListConstructor(List ListItem)
+  | DictionaryConstructor(List DictItem)
+  | TupleConstructor(List Exp)
+  | Pipe(List Exp)
+  | JSExp(String)
+  | JsxTag(String, List JsxProp, List JsxChild)
+  | JsxAutoClosedTag(String, List JsxProp)
+  | Parenthesized(Exp)
+  | Extern(Typing, String, String)
+  | IfTarget(SourceTarget)
+  | ElseIfTarget(SourceTarget)
+  | EndIfTarget
+  | TypedHole
+
+
+alias AST = {
+  exps :: List Exp,
+  imports :: List Import,
+  instances :: List Instance,
+  interfaces :: List Interface,
+  typeDeclarations :: List TypeDeclaration,
+}
+
+
+// -------- AST functions ---------------------------------
+
+getArea :: Source a -> Area
+getArea = (source) => where(source) {
+  Source(area, _, _) =>
+    area
+}
+
+
+getStartLoc :: Area -> Loc
+getStartLoc = (area) => where(area) {
+  Area(start, _) =>
+    start
+}
+
+
+getEndLoc :: Area -> Loc
+getEndLoc = (area) => where(area) {
+  Area(_, end) =>
+    end
+}
+
+
+mergeAreas :: Area -> Area -> Area
+mergeAreas = (a1, a2) => Area(getStartLoc(a1), getEndLoc(a2))
+
+
+// -------- Parser utilities ------------------------------
+
+asSource :: Parser a -> Ref State -> Parser (Source a)
+asSource = (expParser, stateRef) => do {
+  locStart <- Parse.location
+  e <- expParser
+  locEnd <- Parse.location
+  area = locsToArea(locStart, locEnd)
+
+  return pipe(
+    Source(area, stateRef.read()),
+    of,
+  )(e)
+}
+
+EMPTY_AST :: AST
+EMPTY_AST = { exps: [], imports: [], instances: [], interfaces: [], typeDeclarations: [] }
+
+
+maybeSpaces :: Parser (List Char)
+maybeSpaces = alt(Parse.spaces, of([]))
+
+
+alphaNumericalName :: Parser String
+alphaNumericalName = do {
+  firstChar <- Parse.letter
+  rest <- Parse.many(Parse.choice([Parse.letter, Parse.digit]))
+
+  return pipe(
+    String.fromList,
+    of,
+  )([firstChar, ...rest])
+}
+
+
+parserLocationToLoc :: Parse.Location -> Loc
+parserLocationToLoc = (parserLocation) => where(parserLocation) {
+  Parse.Loc(_, l, c) =>
+    Loc(l, c)
+}
+
+
+locsToArea :: Parse.Location -> Parse.Location -> Area
+locsToArea = (start, end) => where(#[start, end]) {
+  #[Parse.Loc(_, l1, c1), Parse.Loc(_, l2, c2)] =>
+    Area(Loc(l1, c1), Loc(l2, c2))
+}
+
+
+EMPTY_AREA :: Area
+EMPTY_AREA = Area(Loc(0, 0), Loc(0, 0))
+
+
+// -------- Assignment ------------------------------------
+
+_assignment :: Ref State -> Parser _Exp
+_assignment = (stateRef) => do {
+  name <- Parse.token(alphaNumericalName)
+  _ <- Parse.symbol("=")
+  e <- exp(stateRef)
+
+
+  return pipe(
+    Assignment(name),
+    of,
+  )(e)
+}
+
+assignment = (stateRef) => asSource(_assignment(stateRef), stateRef)
+
+
+// -------- Unit ------------------------------------------
+
+_unit :: Parser _Exp
+_unit = do {
+  _ <- Parse.symbol("{}")
+
+  return pipe(
+    of,
+  )(LUnit)
+}
+
+unit = asSource(_unit)
+
+
+// -------- String ----------------------------------------
+
+escapedChar :: Parser String
+escapedChar = do {
+  backslash <- Parse.char('\\')
+  escaped <- Parse.anyChar
+
+  return pipe(
+    String.fromList,
+    of,
+  )([backslash, escaped])
+}
+
+
+_string :: Parser _Exp
+_string = do {
+  _ <- Parse.char('"')
+  content <- pipe(
+    map(String.singleton),
+    alt($, escapedChar),
+    Parse.many,
+    map(List.reduce(mconcat, "")),
+    map((s) => `"${s}"`),
+  )(Parse.notOneOf(['"', '\\']))
+  _ <- Parse.char('"')
+
+  return pipe(
+    LString,
+    of,
+  )(content)
+}
+
+string = asSource(_string)
+
+
+// -------- Char ------------------------------------------
+
+_char :: Parser _Exp
+_char = do {
+  _ <- Parse.char('\'')
+  c <- pipe(
+    map((c) => inspect(c)),
+    alt($, map((c) => `'${c}'`, escapedChar)),
+  )(Parse.notOneOf(['\'', '\\']))
+
+  _ <- Parse.char('\'')
+
+  return pipe(
+    LChar,
+    of,
+  )(c)
+}
+
+char = asSource(_char)
+
+
+// -------- Boolean ---------------------------------------
+
+_boolean :: Parser _Exp
+_boolean = pipe(
+  alt(Parse.string("false")),
+  map(LBoolean),
+)(Parse.string("true"))
+
+boolean = asSource(_boolean)
+
+
+// -------- Number ----------------------------------------
+
+_number :: Parser _Exp
+_number = do {
+  digits <- Parse.some(Parse.digit)
+  return pipe(
+    String.fromList,
+    LNumber,
+    of,
+  )(digits)
+}
+
+number = asSource(_number)
+
+
+// -------- Float -----------------------------------------
+
+_float :: Parser _Exp
+_float = do {
+  before <- Parse.some(Parse.digit)
+  dot <- Parse.char('.')
+  after <- Parse.some(Parse.digit)
+
+  return pipe(
+    String.fromList,
+    LFloat,
+    of,
+  )([...before, dot, ...after])
+}
+
+float = asSource(_float)
+
+
+// -------- Var -------------------------------------------
+
+_var :: Parser _Exp
+_var = do {
+  n <- Parse.token(alphaNumericalName)
+
+  return pipe(
+    Var,
+    of,
+  )(n)
+}
+
+var = asSource(_var)
+
+
+// -------- Parenthesized ---------------------------------
+
+_parenthesized :: Ref State -> Parser _Exp
+_parenthesized = (stateRef) => do {
+  _ <- Parse.symbol("(")
+  e <- exp(stateRef)
+  _ <- Parse.symbol(")")
+
+  return pipe(
+    Parenthesized,
+    of,
+  )(e)
+}
+
+parenthesized = (stateRef) => asSource(_parenthesized(stateRef), stateRef)
+
+
+// -------- Abs -------------------------------------------
+
+defaultReturn :: Ref State -> Exp
+defaultReturn = (stateRef) => Source(EMPTY_AREA, stateRef.read(), LUnit)
+
+
+_returnExp :: Ref State -> Parser _Exp
+_returnExp = (stateRef) => do {
+  _ <- Parse.symbol("return")
+  e <- exp(stateRef)
+
+  return pipe(
+    Return,
+    of,
+  )(e)
+}
+
+returnExp = (stateRef) => asSource(_returnExp(stateRef), stateRef)
+
+
+param = asSource(alphaNumericalName)
+
+_abs :: Ref State -> Parser _Exp
+_abs = (stateRef) => do {
+  _ <- Parse.symbol("(")
+  params <- Parse.maybeSepBy(param(stateRef), Parse.symbol(","))
+  _ <- Parse.symbol(")")
+  _ <- Parse.symbol("=>")
+  body <- exp(stateRef)
+
+  return pipe(
+    Abs(params),
+    of,
+  )(body)
+}
+
+abs = (stateRef) => asSource(_abs(stateRef), stateRef)
+
+
+_absWithMultilineBody :: Ref State -> Parser _Exp
+_absWithMultilineBody = (stateRef) => do {
+  _ <- Parse.symbol("(")
+  params <- Parse.maybeSepBy(param(stateRef), Parse.symbol(","))
+  _ <- Parse.symbol(")")
+  _ <- Parse.symbol("=>")
+  _ <- Parse.symbol("{")
+  body <- Parse.maybeSepBy(exp(stateRef), Parse.spaces)
+  maybeReturn <- alt(returnExp(stateRef), of(defaultReturn(stateRef)))
+  _ <- Parse.symbol("}")
+
+  return pipe(
+    of,
+    mconcat(body),
+    AbsWithMultilineBody(params),
+    of,
+  )(maybeReturn)
+}
+
+absWithMultilineBody = (stateRef) => asSource(_absWithMultilineBody(stateRef), stateRef)
+
+
+// -------- App -------------------------------------------
+
+appArgs :: Ref State -> Parser (List Exp)
+appArgs = (stateRef) => do {
+  _ <- Parse.symbol("(")
+  args <- Parse.maybeSepBy(exp(stateRef), Parse.symbol(","))
+  _ <- Parse.symbol(")")
+
+  return of(args)
+}
+
+
+deepApp :: Ref State -> Exp -> Parser Exp
+deepApp = (stateRef, prevF) => do {
+  maybeArgs <- alt(map(Just, appArgs(stateRef)), pure(Nothing))
+
+  return where(maybeArgs) {
+    Just(args) =>
+      do {
+        parserLoc <- Parse.location
+        loc = parserLocationToLoc(parserLoc)
+        prevFArea = getArea(prevF)
+        startLoc = getStartLoc(prevFArea)
+        nextApp = Source(Area(startLoc, loc), stateRef.read(), App(prevF, args))
+        withDeepAccess <- deepAccess(stateRef, nextApp)
+        withDeepApp <- deepApp(stateRef, withDeepAccess)
+        return of(withDeepApp)
+      }
+
+    Nothing =>
+      of(prevF)
+  }
+}
+
+
+appStartExp :: Ref State -> Parser Exp
+appStartExp = (stateRef) => Parse.choice([
+  absWithMultilineBody(stateRef),
+  abs(stateRef),
+  parenthesized(stateRef),
+  var(stateRef),
+])
+
+
+_appStart :: Ref State -> Parser _Exp
+_appStart = (stateRef) => do {
+  f <- appStartExp(stateRef)
+  args <- appArgs(stateRef)
+
+  return pipe(
+    App(f),
+    of,
+  )(args)
+}
+
+appStart = (stateRef) => asSource(_appStart(stateRef), stateRef)
+
+
+app :: Ref State -> Parser Exp
+app = (stateRef) => do {
+  start <- appStart(stateRef)
+  withDeepAccess <- deepAccess(stateRef, start)
+
+  return deepApp(stateRef, withDeepAccess)
+}
+
+
+// -------- Access ----------------------------------------
+
+fieldAccess :: Ref State -> Parser Exp
+fieldAccess = (stateRef) => do {
+  locStart <- Parse.location
+  _ <- Parse.char('.')
+  fieldName <- alphaNumericalName
+  locEnd <- Parse.location
+
+  return pipe(
+    String.pushChar('.'),
+    Var,
+    Source(locsToArea(locStart, locEnd), stateRef.read()),
+    of,
+  )(fieldName)
+}
+
+
+accessStartExp :: Ref State -> Parser Exp
+accessStartExp = (stateRef) => Parse.choice([
+  absWithMultilineBody(stateRef),
+  abs(stateRef),
+  parenthesized(stateRef),
+  var(stateRef),
+])
+
+
+_accessStart :: Ref State -> Parser _Exp
+_accessStart = (stateRef) => do {
+  base <- accessStartExp(stateRef)
+  fieldExp <- fieldAccess(stateRef)
+
+  return pipe(
+    Access(base),
+    of,
+  )(fieldExp)
+}
+
+accessStart :: Ref State -> Parser Exp
+accessStart = (stateRef) => asSource(_accessStart(stateRef), stateRef)
+
+
+deepAccess :: Ref State -> Exp -> Parser Exp
+deepAccess = (stateRef, prevAccess) => do {
+  maybeFieldAccess <- alt(map(Just, fieldAccess(stateRef)), pure(Nothing))
+
+  return where(maybeFieldAccess) {
+    Just(f) =>
+      do {
+        parserLoc <- Parse.location
+        loc = parserLocationToLoc(parserLoc)
+        prevFArea = getArea(prevAccess)
+        startLoc = getStartLoc(prevFArea)
+        nextApp = Source(Area(startLoc, loc), stateRef.read(), Access(prevAccess, f))
+        withDeepApp <- deepApp(stateRef, nextApp)
+        withDeepAccess <- deepAccess(stateRef, withDeepApp)
+        return of(withDeepAccess)
+      }
+
+    Nothing =>
+      of(prevAccess)
+  }
+}
+
+
+access :: Ref State -> Parser Exp
+access = (stateRef) => do {
+  firstAccess <- accessStart(stateRef)
+  withDeepApp <- deepApp(stateRef, firstAccess)
+  
+  return deepAccess(stateRef, withDeepApp)
+  // withDeepAccess <- deepAccess(stateRef, firstAccess)
+  // return deepApp(stateRef, withDeepAccess)
+}
+
+
+// -------- Operators -------------------------------------
+
+_operator :: String -> Parser _Exp
+_operator = (op) => do {
+  opStr <- Parse.symbol(op)
+
+  return pipe(
+    Var,
+    of,
+  )(opStr)
+}
+
+operator = (stateRef, op) => pipe(
+  _operator,
+  asSource($, stateRef),
+)(op)
+
+
+toBinOp :: Ref State -> Exp -> Exp -> Exp -> Exp
+toBinOp = (stateRef, l, op, r) => {
+  startArea = getArea(l)
+  endArea = getArea(r)
+  fullArea = mergeAreas(startArea, endArea)
+
+  return Source(fullArea, stateRef.read(), BinOp(l, op, r))
+}
+
+
+toUnOp :: Ref State -> Exp -> Exp -> Exp
+toUnOp = (stateRef, op, r) => {
+  startArea = getArea(op)
+  endArea = getArea(r)
+  fullArea = mergeAreas(startArea, endArea)
+
+  return Source(fullArea, stateRef.read(), UnOp(op, r))
+}
+
+
+operation :: Ref State -> Parser Exp
+operation = (stateRef) => Parse.prattExpression({
+  andThenOneOf: [
+    Parse.infixLeft(1, operator(stateRef, "+"), toBinOp(stateRef)),
+    Parse.infixLeft(1, operator(stateRef, "-"), toBinOp(stateRef)),
+    Parse.infixLeft(2, operator(stateRef, "*"), toBinOp(stateRef)),
+    Parse.infixLeft(2, operator(stateRef, "/"), toBinOp(stateRef)),
+  ],
+  oneOf: [
+    () => access(stateRef),
+    () => app(stateRef),
+    () => parenthesized(stateRef),
+    () => var(stateRef),
+    () => float(stateRef),
+    () => number(stateRef),
+    Parse.prefix(3, operator(stateRef, "-"), toUnOp(stateRef)),
+  ],
+  spaces: map(() => ({}), maybeSpaces),
+})
+
+
+// -------- Exp -------------------------------------------
+
+exp :: Ref State -> Parser Exp
+exp = (stateRef) => Parse.choice([
+  operation(stateRef),
+  assignment(stateRef),
+  access(stateRef),
+  absWithMultilineBody(stateRef),
+  abs(stateRef),
+  app(stateRef),
+  parenthesized(stateRef),
+  var(stateRef),
+  boolean(stateRef),
+  unit(stateRef),
+  float(stateRef),
+  number(stateRef),
+  char(stateRef),
+  string(stateRef),
+])
+
+
+ifTarget :: Ref State -> Parser AST
+ifTarget = (stateRef) => do {
+  _ <- Parse.symbol("#iftarget")
+  target <- alt(Parse.string("js"), Parse.string("llvm"))
+
+  if (target == "js") { stateRef.write(TargetJS) } else {
+    if (target == "llvm") { stateRef.write(TargetLLVM) }
+  }
+
+  return of(EMPTY_AST)
+}
+
+elseIfTarget :: Ref State -> Parser AST
+elseIfTarget = (stateRef) => do {
+  _ <- Parse.symbol("#elseif")
+  target <- alt(Parse.string("js"), Parse.string("llvm"))
+
+  if (target == "js") { stateRef.write(TargetJS) } else {
+    if (target == "llvm") { stateRef.write(TargetLLVM) }
+  }
+
+  return of(EMPTY_AST)
+}
+
+
+endIf :: Ref State -> Parser AST
+endIf = (stateRef) => do {
+  _ <- Parse.symbol("#endif")
+  stateRef.write(TargetAll)
+  return of(EMPTY_AST)
+}
+
+
+topLevelExp :: Ref State -> Parser AST
+topLevelExp = (stateRef) => do {
+  ass <- assignment(stateRef)
+
+  return of({ ...EMPTY_AST, exps: [ass] })
+}
+
+
+topLevel :: Ref State -> Parser AST
+topLevel = (stateRef) => Parse.choice([
+  map(() => EMPTY_AST, Parse.spaces),
+  ifTarget(stateRef),
+  elseIfTarget(stateRef),
+  endIf(stateRef),
+  topLevelExp(stateRef),
+])
+
+
+mergeASTs :: AST -> AST -> AST
+mergeASTs = (left, right) => (
+  {
+    exps: [...left.exps, ...right.exps],
+    imports: [...left.imports, ...right.imports],
+    typeDeclarations: [...left.typeDeclarations, ...right.typeDeclarations],
+    interfaces: [...left.interfaces, ...right.interfaces],
+    instances: [...left.instances, ...right.instances],
+  }
+)
+
+
+ast :: Ref State -> Parser AST
+ast = (stateRef) => do {
+  asts <- Parse.many(Parse.choice([topLevel(stateRef)]))
+
+  return of(List.reduce(mergeASTs, EMPTY_AST, asts))
+}
+
+
+parse = (code) => {
+  stateRef = createState()
+  return Parse.runParser(ast(stateRef), code)
+}
+
+
+main = (args) => {
+  where(args) {
+    [_, input] =>
+      do {
+        IO.cLog(parse(input))
+      }
+
+    _ =>
+      IO.cLog("missing code")
+  }
+}
