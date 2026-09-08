@@ -13,6 +13,9 @@ import           Error.Context
 import           Explain.Location
 import           Infer.Type
 import           Run.LanguageServer.Diagnostics  ( errorToDiagnostic )
+import           Run.LanguageServer.State        ( languageServerOptions )
+import qualified Run.Options                     as Options
+import           Run.Target                      ( Target(TNode) )
 
 
 makeCtx :: Context
@@ -27,20 +30,25 @@ relatedInfoOf (Diagnostic _ _ _ _ _ _ related) = related
 
 
 spec :: Spec
-spec = describe "errorToDiagnostic" $ do
-  it "has no relatedInformation when the error carries no secondary marker" $ do
-    let err = CompilationError (UnificationError (TypeMismatch tStr tFloat NoOrigin [])) makeCtx
-    diag <- errorToDiagnostic err
-    relatedInfoOf diag `shouldBe` Nothing
+spec = do
+  describe "errorToDiagnostic" $ do
+    it "has no relatedInformation when the error carries no secondary marker" $ do
+      let err = CompilationError (UnificationError (TypeMismatch tStr tFloat NoOrigin [])) makeCtx
+      diag <- errorToDiagnostic err
+      relatedInfoOf diag `shouldBe` Nothing
 
-  it "populates relatedInformation from a secondary marker" $ do
-    let err = CompilationError
-          (UnificationError (TypeMismatch tStr tFloat (FromFunctionArgument "f" 1 Nothing) [secondaryLoc]))
-          makeCtx
-    diag <- errorToDiagnostic err
-    case relatedInfoOf diag of
-      Just (List xs) -> do
-        length xs `shouldSatisfy` (> 0)
-        let messages = map (\(DiagnosticRelatedInformation _ msg) -> msg) xs
-        messages `shouldSatisfy` any (\m -> T.pack "applied here" `T.isInfixOf` m)
-      _ -> error "expected populated relatedInformation"
+    it "populates relatedInformation from a secondary marker" $ do
+      let err = CompilationError
+            (UnificationError (TypeMismatch tStr tFloat (FromFunctionArgument "f" 1 Nothing) [secondaryLoc]))
+            makeCtx
+      diag <- errorToDiagnostic err
+      case relatedInfoOf diag of
+        Just (List xs) -> do
+          length xs `shouldSatisfy` (> 0)
+          let messages = map (\(DiagnosticRelatedInformation _ msg) -> msg) xs
+          messages `shouldSatisfy` any (\m -> T.pack "applied here" `T.isInfixOf` m)
+        _ -> error "expected populated relatedInformation"
+
+  describe "language-server inference options" $ do
+    it "enables structural Eq and Show instance resolution" $ do
+      Options.optGenerateDerivedInstances (languageServerOptions "." TNode) `shouldBe` True

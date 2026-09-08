@@ -346,12 +346,20 @@ inferAbsWithExpectedParam _ _ _ _ = error "inferAbsWithExpectedParam: expected a
 -- inside the action, so we can use applyCurrentSubst to get the cumulative
 -- subst at any point.
 inferBody :: Options -> Env -> [Can.Exp] -> Infer ([Pred], Type, [Slv.Exp])
+inferBody options env [e@(Can.Canonical _ Can.TypedExp{})]
+  | Just _ <- Can.getExpName e = do
+  (ps, _, e') <- inferExplicitlyTyped options True env e
+  return (ps, Slv.getType e', [e'])
 inferBody options env [e] = do
   (ps, t, e') <- infer options env e
   return (ps, t, [e'])
 
 inferBody options env (e : es) = do
-  ((returnPreds, _), env', e') <- inferImplicitlyTyped options True env e
+  ((returnPreds, _), env', e') <- case e of
+    Can.Canonical _ Can.TypedExp{} | Just _ <- Can.getExpName e -> do
+      (ps, env', e') <- inferExplicitlyTyped options True env e
+      return ((ps, []), env', e')
+    _ -> inferImplicitlyTyped options True env e
   envApplied <- applyCurrentSubst env'
   (ps', tb, eb) <- inferBody options envApplied es
 
@@ -510,6 +518,17 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
   -- At each curried application level, funcType is the *remaining* function type,
   -- so the expected param is always the 1st parameter of funcType (not the idx-th).
   funcType <- applyCurrentSubst t1
+  t2Before <- applyCurrentSubst t2
+  let missingMaybeFields = case (argContent, getParamTypes funcType, recordVisibleFields t2Before) of
+        (Can.JsxRecord _, expected : _, Just supplied) | isClosedRecord t2Before ->
+          maybe M.empty (M.filter isMaybeType . (`M.difference` supplied)) (recordVisibleFields expected)
+        _ -> M.empty
+  -- JSX call sites must satisfy closed component props before ordinary row
+  -- unification can absorb omissions into an open argument tail.
+  when (isJsxRecord argContent) $
+    case getParamTypes funcType of
+      (expected : _) -> validateJsxProps env arg expected t2Before
+      _ -> return ()
   let baseOrigin = getAppOrigin abs
       origin = case baseOrigin of
         FromFunctionArgument fn idx _ ->
@@ -534,7 +553,10 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
   -- Note: legacy passed `apply s2 t1` and `apply s1 t2 `fn` tv`. With state-
   -- based subst, both have already had their relevant prior substs applied.
   t1Applied <- applyCurrentSubst t1
-  t2Applied <- applyCurrentSubst t2
+  let withDefaults = case t2Before of
+        TRecordRow row optional -> TRecordRow (rowFromFields missingMaybeFields row) optional
+        _ -> t2Before
+  t2Applied <- applyCurrentSubst withDefaults
   s3 <- catchError
     (contextualUnifyWithOriginAndSecondary (if discardError then Discard else Strict) origin secondaryLoc env expForContext t1Applied (t2Applied `fn` tv))
     (\err -> case err of
@@ -564,34 +586,34 @@ inferApp options env (Can.Canonical area (Can.App abs@(Can.Canonical absArea _) 
   t <- applyCurrentSubst tv
 
   -- For JSX records: fill missing Maybe-typed fields with Nothing
-  earg' <- case argContent of
-    Can.JsxRecord jsxFields -> do
-      let explicitNames = S.fromList [ n | Can.Canonical _ (Can.Field (n, _)) <- jsxFields ]
-      resolvedArgType <- applyCurrentSubst t2
-      case recordVisibleFields resolvedArgType of
-        Just allFields -> do
-          let missingFields = M.filterWithKey (\k _ -> k `S.notMember` explicitNames) allFields
-          let allMaybe = all isMaybeType (M.elems missingFields)
-          if M.null missingFields || not allMaybe then
-            return earg
-          else do
-            -- Synthesize Nothing fields for missing Maybe-typed props
-            let nothingFields = map (\(name, fieldType) ->
-                  Slv.Typed ([] :=> fieldType) argArea
-                    (Slv.Field (name, Slv.Typed ([] :=> fieldType) argArea (Slv.Var "Nothing" True)))
-                  ) (M.toList missingFields)
-            case earg of
-              Slv.Typed qt a (Slv.Record existingFields) ->
-                return $ Slv.Typed qt a (Slv.Record (existingFields ++ nothingFields))
-              _ -> return earg
-        _ -> return earg
-    _ -> return earg
+  let nothingFields =
+        [ Slv.Typed ([] :=> fieldType) argArea
+            (Slv.Field (name, Slv.Typed ([] :=> fieldType) argArea (Slv.Var "Nothing" True)))
+        | (name, fieldType) <- M.toList missingMaybeFields
+        ]
+      earg' = case earg of
+        Slv.Typed qt a (Slv.Record existingFields) ->
+          Slv.Typed qt a (Slv.Record (existingFields ++ nothingFields))
+        _ -> earg
 
   s <- getSubst
-  let solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs (updateQualType earg' $ apply s (ps1 ++ ps2) :=> apply s t2) final
+  let solved = Slv.Typed (apply s (ps1 ++ ps2) :=> apply s t) area $ Slv.App eabs (updateQualType earg' $ apply s (ps1 ++ ps2) :=> apply s withDefaults) final
 
   return (ps1 ++ ps2, t, solved)
   where
+    isJsxRecord (Can.JsxRecord _) = True
+    isJsxRecord _                 = False
+
+    validateJsxProps env' argExp expected actual = case recordVisibleParts expected of
+      Just (required, _, _) -> case recordVisibleFields actual of
+        Just supplied | isClosedRecord actual -> do
+          let needed = M.keys (M.filter (not . isMaybeType) (M.difference required supplied))
+          unless (null needed) $
+            throwError $ CompilationError (RecordMissingFields needed (M.keys supplied))
+              (Context (envCurrentPath env') (Can.getArea argExp))
+        _ -> return ()
+      Nothing -> return ()
+
     originWantsOperandPair o = case o of
       FromFunctionArgument{} -> True
       FromOperator{}         -> True
@@ -933,36 +955,28 @@ inferJsxRecord options env exp = do
   let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
   let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
 
-  let allFieldTypes = concat fieldTypes
-  let fieldTypes' = filter (\(k, _) -> k /= "...") allFieldTypes
-  let spreads     = snd <$> filter (\(k, _) -> k == "...") allFieldTypes
-  let base = case spreads of
-        (x : _) -> Just x
-        _       -> Nothing
-
-  baseApplied <- maybe (return Nothing) (fmap Just . applyCurrentSubst) base
-  recordType <- case baseApplied of
-    Just (TRecordRow spreadRow optionalFields) ->
-      return $ TRecordRow (rowFromFields (M.fromList fieldTypes') spreadRow) optionalFields
-
-    Just tBase -> do
-      baseVar <- newTVar Row
-      let recordWithBase = recordRow baseVar
-      s <- contextualUnify' env discardError exp tBase recordWithBase
-      extSubst s
-      return (recordRow (rowFromFields (M.fromList fieldTypes') baseVar))
-
-    Nothing -> do
-      -- JSX record without spread: create an EXTENSIBLE record with a base type variable.
-      -- This allows unification to absorb missing fields into the base, which we later
-      -- check are all Maybe-typed and fill with Nothing.
-      baseVar <- newTVar Row
-      return (recordRow (rowFromFields (M.fromList fieldTypes') baseVar))
+  row <- foldM (\prior (name, ty) ->
+    if name /= "..." then return (TRowExtend name ty prior) else do
+      spread <- applyCurrentSubst ty
+      spreadRow <- case spread of
+        TRecordRow r _ -> return r
+        _ -> do
+          r <- newTVar Row
+          s <- contextualUnify' env discardError exp spread (recordRow r)
+          extSubst s
+          return r
+      return (appendRow spreadRow prior)
+    ) TRowEmpty (concat fieldTypes)
+  let recordType = recordRow row
 
   let allPS = concat fieldPS
   recordType' <- applyCurrentSubst recordType
 
   return (allPS, recordType', Slv.Typed (allPS :=> recordType') area (Slv.Record fieldEXPS))
+  where
+    appendRow TRowEmpty tail = tail
+    appendRow (TRowExtend name ty rest) tail = TRowExtend name ty (appendRow rest tail)
+    appendRow row _ = row
 
 
 -- | Phase 1 migrated: 3-tuple. extSubst-s the inner inference into state.
@@ -1352,15 +1366,15 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
           return env
 
   (s, (ps, t, e)) <- captureDelta (infer options env' { envNamesInScope = envVars env } exp)
-  psFull        <- concat <$> mapM (gatherInstPreds env') ps
   let sNorm0 = s `compose` s -- resolve internal substitution chains
-      inferred0 = apply sNorm0 t
+  psFull <- concat <$> mapM (gatherInstPreds env') (apply sNorm0 ps)
+  let inferred0 = apply sNorm0 t
       -- A closed declared result must not solve a numeric implementation
       -- variable by fiat (for example, binding Number a to Unit in `main`).
       -- Apply Madlib's numeric default before checking that boundary.  A
       -- genuinely polymorphic/qualified result remains governed by its
       -- declared variables and givens.
-      signatureDefaults = numericDefaultsForClosedResult t' inferred0 (apply sNorm0 psFull)
+      signatureDefaults = numericDefaultsForClosedResult t' inferred0 psFull
       sNorm = signatureDefaults `compose` sNorm0
   let tInferred = apply sNorm t
       -- When annotation and implementation are functions of equal arity that
@@ -1396,6 +1410,12 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
         else addContext env canExp (limitContextArea 2 (retagReturnMismatch err)))
   let s' = s'' `compose` sNorm
 
+  let declaredPreds = apply s' qs
+  neededPreds <- filterM
+    (\p -> if p `elem` declaredPreds then return False else not <$> entail env' declaredPreds p)
+    (apply s' ps)
+  requiredPs <- concat <$> mapM (gatherInstPreds env') neededPreds
+
   let varsForGeneralization =
         if isLet then
           M.filterWithKey (\k _ -> fromMaybe "" (Can.getExpName exp) /= k) $
@@ -1406,7 +1426,9 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
       qs'  = apply s' qs
       t''  = apply s' t
   ps'      <- filterM ((not <$>) . entail env' qs') (apply s' psFull)
-  (ds, rs, substDefaultResolution) <- generalize False env area s' envWithVarsExcluded (apply s' t') ps' t
+  (ds, _, substDefaultResolution) <- generalize False env area s' envWithVarsExcluded (apply s' t') ps' t
+  requiredPs' <- filterM ((not <$>) . entail env' qs') (apply s' requiredPs)
+  (_, requiredRs, _) <- generalize False env area s' envWithVarsExcluded (apply s' t') requiredPs' t
 
   let qs'' = dedupePreds qs'
       scCheck = quantify (ftvList (apply s' t'))
@@ -1428,10 +1450,13 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   else
     return True
 
-  if not sigCheckResult then
+  let capturedVars = ftv (apply s' envWithVarsExcluded)
+      signatureVars = ftv (apply s' t')
+      escapesCapture = isLet && not (S.null (capturedVars `S.intersection` signatureVars))
+  if not sigCheckResult || escapesCapture then
     throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area)
-  else if not (null rs) then
-    throwError $ CompilationError (ContextTooWeak rs) (Context (envCurrentPath env) area)
+  else if not (null requiredRs) then
+    throwError $ CompilationError (ContextTooWeak requiredRs) (Context (envCurrentPath env) area)
   else do
     -- Keep the implementation's fully-zonked type in solved metadata.  The
     -- public environment still receives the user-declared scheme below.

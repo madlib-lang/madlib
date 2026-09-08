@@ -9,6 +9,7 @@ module Run.LanguageServer.State
   , areaToRange
   , noRange
   , buildOptions
+  , languageServerOptions
   , runTask
   , safeRunTask
   , typeCheckFileTask
@@ -104,7 +105,11 @@ buildOptions :: Target -> LspM () Options.Options
 buildOptions target = do
   maybeRootPath <- getRootPath
   let rootPath = Maybe.fromMaybe "./" maybeRootPath
-  return
+  return $ languageServerOptions rootPath target
+
+
+languageServerOptions :: FilePath -> Target -> Options.Options
+languageServerOptions rootPath target =
     Options.Options
       { Options.optEntrypoint = ""
       , Options.optTarget = target
@@ -114,7 +119,10 @@ buildOptions target = do
       , Options.optPathUtils = PathUtils.defaultPathUtils
       , Options.optBundle = False
       , Options.optCoverage = False
-      , Options.optGenerateDerivedInstances = False
+      -- SolvedASTWithEnv consults these structural Eq/Show instances while
+      -- resolving predicates.  The LSP does not emit their method bodies, but
+      -- it still needs the instance heads in its inference environment.
+      , Options.optGenerateDerivedInstances = True
       , Options.optInsertInstancePlaholders = False
       , Options.optMustHaveMain = False
       , Options.optParseOnly = False

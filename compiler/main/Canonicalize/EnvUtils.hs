@@ -15,6 +15,11 @@ import           Error.Error
 import           Error.Context
 import           Utils.EditDistance      ( findSimilar )
 
+lookupInterfaceDefinition :: Env -> String -> CanonicalM (Maybe Interface)
+lookupInterfaceDefinition env name = case Map.lookup name (envInterfaces env) of
+  Just found -> return (Just found)
+  Nothing -> Rock.fetch $ Query.CanonicalizedInterface (envCurrentPath env) name
+
 
 addADT :: Env -> String -> Type -> Env
 addADT env name adt =

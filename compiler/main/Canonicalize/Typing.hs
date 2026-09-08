@@ -114,32 +114,32 @@ qualTypingToQualType env t@(Src.Source _ _ typing) = case typing of
 
 
 constraintToPredicate :: Env -> Type -> Src.Typing -> CanonicalM Pred
-constraintToPredicate env t (Src.Source _ _ (Src.TRComp n typings)) = do
-  -- Imported interfaces are resolved lazily during canonicalisation.  Check
-  -- arity whenever the interface is already available locally; otherwise
-  -- retain the predicate and let the normal resolved-interface path validate
-  -- it later.
-  case M.lookup n (envInterfaces env) of
-    Just (Interface tvs _ _) -> when (length typings /= length tvs) $
-      throwError $ CompilationError
-        (WrongInterfaceArgCount n (length tvs) (length typings))
-        NoContext
-    Nothing -> return ()
+constraintToPredicate env t (Src.Source area _ (Src.TRComp n typings)) = do
   let s = buildVarSubsts t
-  ts <- mapM
-    (\case
-      Src.Source _ _ (Src.TRSingle var)                   -> return $ apply s $ TVar $ TV (hash var) Star
-
-      fullTyping@(Src.Source _ _ (Src.TRComp _ _)) -> do
-        apply s <$> typingToType env (KindRequired Star) fullTyping
-
-      _ -> undefined
-    )
-    typings
+  interface <- lookupInterfaceDefinition env n
+  ts <- case interface of
+    Just (Interface tvs _ _) -> do
+      when (length typings /= length tvs) $
+        throwError $ CompilationError
+          (WrongInterfaceArgCount n (length tvs) (length typings))
+          (Context (envCurrentPath env) area)
+      mapM (constraintArg env s) (zip typings tvs)
+    Nothing -> throwError $ CompilationError (InterfaceNotExisting n)
+      (Context (envCurrentPath env) area)
 
   return $ IsIn n ts Nothing
 
-constraintToPredicate _ _ _ = undefined
+constraintToPredicate env _ (Src.Source area _ _) =
+  throwError $ CompilationError (UnknownType "invalid constraint" [])
+    (Context (envCurrentPath env) area)
+
+constraintArg :: Env -> Substitution -> (Src.Typing, TVar) -> CanonicalM Type
+constraintArg env subst (Src.Source area _ (Src.TRSingle var), TV _ k)
+  | isLower (head var) = validateKind env area (KindRequired k) $
+      M.findWithDefault (TVar (TV (hash var) k)) (TV (hash var) Star) subst
+  | otherwise = typingToType env (KindRequired k) (Src.Source area Src.TargetAll (Src.TRSingle var))
+constraintArg env subst (typing, TV _ k) =
+  typingToType env (KindRequired k) typing >>= validateKind env (Src.getArea typing) (KindRequired k) . apply subst
 
 
 data KindRequirement
@@ -164,6 +164,7 @@ typeAsRow :: Type -> Maybe Type
 typeAsRow ty = case ty of
   TRowEmpty -> Just TRowEmpty
   TRowExtend{} -> Just ty
+  TRowWithout{} -> Just ty
   TVar tv | kind tv == Row -> Just ty
   TRecordRow row optionalFields -> Just (rowFromFields optionalFields row)
   TAlias _ _ _ inner -> typeAsRow inner
@@ -286,6 +287,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRRecord fields base)) = do
     asRowTail ty = case ty of
       TRowEmpty -> return TRowEmpty
       TRowExtend{} -> return ty
+      TRowWithout{} -> return ty
       TVar tv | kind tv == Row -> return ty
       TRecordRow row optionalFields ->
         return (rowFromFields optionalFields row)
@@ -299,8 +301,9 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRTuple elems)) = do
   let tupleT = getTupleCtor (length elems)
   validateKind env area kindNeeded (foldl' TApp tupleT elems')
 
--- Never happens as it's handled in the qualTypingToQualType function
-typingToType _ _ (Src.Source _ _ (Src.TRConstrained _ _)) = undefined
+typingToType env _ (Src.Source area _ (Src.TRConstrained _ _)) =
+  throwError $ CompilationError (UnknownType "nested constrained type" [])
+    (Context (envCurrentPath env) area)
 
 
 getConstructorArgs :: Type -> [Type]
@@ -347,6 +350,8 @@ updateAliasVars t args = do
               tail' <- update tail
               return $ TRowExtend label fieldType' tail'
 
+            TRowWithout labels row -> removeRowLabels labels <$> update row
+
             TRecordRow row optionalFields -> do
               row' <- update row
               optionalFields' <- mapM update optionalFields
@@ -355,7 +360,11 @@ updateAliasVars t args = do
             TCon _ _ _ ->
               return ty
 
-            _ -> undefined
+            TGen _ ->
+              return ty
+
+            TAlias path name params inner ->
+              TAlias path name params <$> update inner
       in  update t'
 
     _ -> return t

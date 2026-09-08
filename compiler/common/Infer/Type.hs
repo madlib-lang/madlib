@@ -67,6 +67,9 @@ data Type
   | TApp Type Type                 -- Arrow type
   | TRowEmpty
   | TRowExtend Id Type Type
+  | TRowWithout (S.Set Id) Type
+  -- ^ Persistent row subtraction. Unlike deleting known labels, this also
+  -- hides labels learned when an open tail is instantiated later.
   -- ^ A scoped row label.  The tail is a type of kind `Row`; equal labels in
   -- the tail are deliberately not collapsed, because the outer label shadows
   -- them (the semantics of record spread/update).
@@ -89,6 +92,8 @@ instance Show Type where
   showsPrec p (TApp l r)             = showParen (p > 10) $
     showString "TApp " . showsPrec 11 l . showChar ' ' . showsPrec 11 r
   showsPrec _ TRowEmpty              = showString "TRowEmpty"
+  showsPrec p (TRowWithout labels row) = showParen (p > 10) $
+    showString "TRowWithout " . showsPrec 11 labels . showChar ' ' . showsPrec 11 row
   showsPrec p (TRowExtend n t tail)  = showParen (p > 10) $
     showString "TRowExtend " . showsPrec 11 n . showChar ' ' . showsPrec 11 t . showChar ' ' . showsPrec 11 tail
   showsPrec p (TRecordRow row o)     = showParen (p > 10) $
@@ -101,6 +106,9 @@ visibleRow :: Type -> (M.Map Id Type, Maybe Type)
 visibleRow = go
   where
     go TRowEmpty = (M.empty, Nothing)
+    go (TRowWithout labels row) =
+      let (fields, base) = go row
+      in (M.withoutKeys fields labels, removeRowLabels labels <$> base)
     go (TRowExtend name fieldType tail) =
       let (fields, base) = go tail
       in  (M.insert name fieldType fields, base)
@@ -147,11 +155,13 @@ isClosedRecord _ = False
 removeRowLabels :: S.Set Id -> Type -> Type
 removeRowLabels labels = go
   where
+    go row | S.null labels = row
     go TRowEmpty = TRowEmpty
+    go (TRowWithout more row) = removeRowLabels (labels <> more) row
     go (TRowExtend name fieldType tail)
       | name `S.member` labels = go tail
       | otherwise = TRowExtend name fieldType (go tail)
-    go tail = tail
+    go tail = TRowWithout labels tail
 
 
 removeRecordLabels :: S.Set Id -> Type -> Type
@@ -181,6 +191,7 @@ instance Eq Type where
   TGen a       == TGen b        = a == b
   TApp l1 r1   == TApp l2 r2    = l1 == l2 && r1 == r2
   TRowEmpty    == TRowEmpty     = True
+  TRowWithout a r == TRowWithout b s = a == b && r == s
   TRowExtend n1 t1 r1 == TRowExtend n2 t2 r2 = n1 == n2 && t1 == t2 && r1 == r2
   TRecordRow r1 o1 == TRecordRow r2 o2 = r1 == r2 && o1 == o2
   TAlias p1 n1 vs1 t1 == TAlias p2 n2 vs2 t2 = p1 == p2 && n1 == n2 && vs1 == vs2 && t1 == t2
@@ -192,6 +203,7 @@ instance Ord Type where
   compare (TGen a)            (TGen b)             = compare a b
   compare (TApp l1 r1)        (TApp l2 r2)         = compare l1 l2 <> compare r1 r2
   compare TRowEmpty TRowEmpty = EQ
+  compare (TRowWithout a r) (TRowWithout b s) = compare a b <> compare r s
   compare (TRowExtend n1 t1 r1) (TRowExtend n2 t2 r2) = compare n1 n2 <> compare t1 t2 <> compare r1 r2
   compare (TRecordRow r1 o1)  (TRecordRow r2 o2)  = compare r1 r2 <> compare o1 o2
   compare (TAlias p1 n1 vs1 t1) (TAlias p2 n2 vs2 t2) = compare p1 p2 <> compare n1 n2 <> compare vs1 vs2 <> compare t1 t2
@@ -206,6 +218,7 @@ instance Ord Type where
       typeTag TRowExtend{} = 5
       typeTag TRecordRow{} = 6
       typeTag TAlias{} = 7
+      typeTag TRowWithout{} = 8
 
 instance Hashable Type where
   hashWithSalt s (TVar tv)         = s `hashWithSalt` (0 :: Int) `hashWithSalt` tv
@@ -213,6 +226,7 @@ instance Hashable Type where
   hashWithSalt s (TGen n)          = s `hashWithSalt` (2 :: Int) `hashWithSalt` n
   hashWithSalt s (TApp l r)        = s `hashWithSalt` (3 :: Int) `hashWithSalt` l `hashWithSalt` r
   hashWithSalt s TRowEmpty         = s `hashWithSalt` (4 :: Int)
+  hashWithSalt s (TRowWithout labels r) = s `hashWithSalt` (8 :: Int) `hashWithSalt` S.toList labels `hashWithSalt` r
   hashWithSalt s (TRowExtend n t r) = s `hashWithSalt` (5 :: Int) `hashWithSalt` n `hashWithSalt` t `hashWithSalt` r
   hashWithSalt s (TRecordRow r o)  = s `hashWithSalt` (6 :: Int) `hashWithSalt` r `hashWithSalt` o
   hashWithSalt s (TAlias p n vs t) = s `hashWithSalt` (7 :: Int) `hashWithSalt` p `hashWithSalt` n `hashWithSalt` vs `hashWithSalt` t
@@ -573,6 +587,7 @@ instance HasKind Type where
     k          -> k
   kind TRowEmpty = Row
   kind (TRowExtend _ _ _) = Row
+  kind (TRowWithout _ _) = Row
   kind _ = Star
 
 buildKind :: Int -> Kind
@@ -611,6 +626,7 @@ searchVarInType id t = case t of
 
   TRowExtend _ fieldType tail ->
     searchVarInType id fieldType <|> searchVarInType id tail
+  TRowWithout _ row -> searchVarInType id row
 
   TRecordRow row optionalFields ->
     searchVarInType id row
@@ -662,6 +678,7 @@ collectVars t = case t of
 
   TRowExtend _ fieldType tail ->
     collectVars fieldType `union` collectVars tail
+  TRowWithout _ row -> collectVars row
 
   TRecordRow row optionalFields ->
     nub $ collectVars row ++ concatMap collectVars (M.elems optionalFields)
@@ -794,6 +811,7 @@ getTypeVarsInType t = case t of
 
   TRowExtend _ fieldType tail ->
     getTypeVarsInType fieldType ++ getTypeVarsInType tail
+  TRowWithout _ row -> getTypeVarsInType row
 
   TRecordRow row optionalFields ->
     getTypeVarsInType row
@@ -848,6 +866,7 @@ findTypeVarInType tvName t = case t of
 
   TRowExtend _ fieldType tail ->
     findTypeVarInType tvName fieldType <|> findTypeVarInType tvName tail
+  TRowWithout _ row -> findTypeVarInType tvName row
 
   TRecordRow row optionalFields ->
     findTypeVarInType tvName row

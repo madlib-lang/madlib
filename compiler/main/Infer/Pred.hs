@@ -8,6 +8,7 @@ module Infer.Pred where
 import           Infer.Type
 import           Infer.Env
 import           Infer.Substitute
+import           Infer.Instantiate (Instantiate(..))
 import           Infer.Unify
 import           Infer.Infer
 import           Error.Error
@@ -32,8 +33,11 @@ getParentPreds env = go Set.empty
       | Set.member (predKey p) seen = return []
       | otherwise = do
           (Interface tvs parents _) <- lookupInterface env cls
-          s <- unify (TVar <$> tvs) ts
-          let parents' = (\(IsIn parentCls parentTs _) -> IsIn parentCls (apply s parentTs) maybeArea) <$> parents
+          when (length tvs /= length ts) $
+            throwWithContext (WrongInterfaceArgCount cls (length tvs) (length ts))
+          let parameters = M.fromList (zip tvs (TGen <$> [0..]))
+              parents' = (\(IsIn parentCls parentTs _) -> IsIn parentCls parentTs maybeArea)
+                <$> inst ts (apply parameters parents)
           nested <- concat <$> mapM (go (Set.insert (predKey p) seen)) parents'
           return (p : parents' ++ nested)
 
@@ -80,10 +84,10 @@ bySuper env = go Set.empty
           Just (Interface vars supers _)
             | length vars == length ts ->
                 let seen' = Set.insert (predKey p) seen
-                    subst = M.fromList (zip vars ts)
+                    subst = M.fromList (zip vars (TGen <$> [0..]))
                     supers' = map (\(IsIn cls args inheritedArea) ->
                       IsIn cls
-                        (apply subst args)
+                        (inst ts (apply subst args))
                         (if Maybe.isNothing inheritedArea then maybeArea else inheritedArea)
                       ) supers
                 in p : concatMap (go seen') supers'

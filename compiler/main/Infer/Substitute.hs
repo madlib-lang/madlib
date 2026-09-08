@@ -63,6 +63,7 @@ instance Substitutable Type where
 
   apply s (TRowExtend name fieldType tail) =
     TRowExtend name (apply s fieldType) (apply s tail)
+  apply s (TRowWithout labels row) = removeRowLabels labels (apply s row)
 
   -- Rows are substituted structurally.  Do not flatten through the legacy
   -- record view: doing so would erase an outer label that shadows the same
@@ -85,6 +86,7 @@ instance Substitutable Type where
 
   ftv (TRowExtend _ fieldType tail) =
     ftv fieldType `S.union` ftv tail
+  ftv (TRowWithout _ row) = ftv row
 
   ftv (TRecordRow row optionalFields) =
     ftv row `S.union` foldMap ftv (M.elems optionalFields)
@@ -148,6 +150,7 @@ occursCheck tv = go
     go (TApp l r)        = go l || go r
     go TRowEmpty         = False
     go (TRowExtend _ t r) = go t || go r
+    go (TRowWithout _ r) = go r
     go (TRecordRow row optionalFields) =
       go row || any go optionalFields
     go _                 = False
@@ -163,6 +166,7 @@ instance FtvOrdered Type where
   ftvList (t1 `TApp` t2)                = ftvList t1 ++ ftvList t2
   ftvList TRowEmpty                      = []
   ftvList (TRowExtend _ t r)             = ftvList t ++ ftvList r
+  ftvList (TRowWithout _ r)             = ftvList r
   ftvList (TRecordRow row optionalFields) =
     ftvList row ++ concatMap ftvList (M.elems optionalFields)
   ftvList _                              = []
@@ -225,6 +229,7 @@ buildVarSubsts t = case t of
 
   TRowExtend _ fieldType tail ->
     buildVarSubsts fieldType `compose` buildVarSubsts tail
+  TRowWithout _ row -> buildVarSubsts row
 
   TRecordRow row optionalFields ->
     foldr

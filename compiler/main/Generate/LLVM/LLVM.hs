@@ -1541,11 +1541,10 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
 
       return (symbolTable, list, Nothing)
 
-  Core.Typed qt@(_ IT.:=> recType) area metadata (Core.Record fields) -> do
-    let (base, fields') = List.partition isSpreadField fields
+  Core.Typed (_ IT.:=> recType) area metadata (Core.Record fields) -> do
+    let fields' = List.filter (not . isSpreadField) fields
     let sortedFields = List.sortOn (Maybe.fromMaybe "" . Core.getFieldName) fields'
     -- Use the result record type to determine the struct size (not just explicit fields)
-    let allFieldNames = maybe [] Map.keys (IT.recordVisibleFields recType)
     let allFieldTypes = maybe [] Map.elems (IT.recordVisibleFields recType)
     let fieldLLVMTypes = (primitiveTupleFieldType . ([] IT.:=>)) <$> allFieldTypes
     let structType = Type.StructureType False fieldLLVMTypes
@@ -1555,23 +1554,35 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     recordPtr  <- allocateStruct env area metadata structType mallocFn
     recordPtr' <- safeBitcast recordPtr (Type.ptr structType)
 
-    -- If there's a spread base, copy its fields into the result struct
-    case base of
-      [Core.Typed _ _ _ (Core.FieldSpread exp)] -> do
+    -- Copy only the last source-order provider for each spread field.  Type
+    -- equality cannot identify shadowing here: aliases and instantiated row
+    -- variables can describe the same storage with syntactically different
+    -- types.  Skipping such a field leaves its result slot uninitialized.
+    let suppliedNames field = case field of
+          Core.Typed _ _ _ (Core.Field (name, _)) -> [name]
+          Core.Typed _ _ _ (Core.FieldSpread exp) ->
+            let (_ IT.:=> spreadType) = Core.getQualType exp
+            in maybe [] Map.keys (IT.recordVisibleFields spreadType)
+          _ -> []
+    Monad.forM_ (zip [0 :: Int ..] fields) $ \(fieldIndex, baseField) -> case baseField of
+      Core.Typed _ _ _ (Core.FieldSpread exp) -> do
         (_, baseOperand, _) <- generateExp env symbolTable exp
         let baseRecType     = let (_ IT.:=> bt) = Core.getQualType exp in bt
-        let baseFieldNames  = maybe [] Map.keys (IT.recordVisibleFields baseRecType)
-        let baseFieldTypes' = maybe [] Map.elems (IT.recordVisibleFields baseRecType)
+        let baseFields      = Maybe.fromMaybe Map.empty (IT.recordVisibleFields baseRecType)
+        let baseFieldNames  = Map.keys baseFields
+        let baseFieldTypes' = Map.elems baseFields
         let baseStructType  = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> baseFieldTypes')
         basePtr <- safeBitcast baseOperand (Type.ptr baseStructType)
-        -- Copy each base field to its position in the result struct (field types are preserved)
+        let laterNames = concatMap suppliedNames (drop (fieldIndex + 1) fields)
+        -- Copy each surviving base field to its position in the result struct.
         Monad.forM_ baseFieldNames $ \fieldName -> do
-          let srcIndex = recordFieldIndex fieldName baseRecType
-          let dstIndex = recordFieldIndex fieldName recType
-          srcPtr <- gep basePtr [i32ConstOp 0, i32ConstOp srcIndex]
-          srcVal <- load srcPtr 0
-          dstPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp dstIndex]
-          store dstPtr 0 srcVal
+          Monad.when (fieldName `notElem` laterNames) $ do
+            let srcIndex = recordFieldIndex fieldName baseRecType
+            let dstIndex = recordFieldIndex fieldName recType
+            srcPtr <- gep basePtr [i32ConstOp 0, i32ConstOp srcIndex]
+            srcVal <- load srcPtr 0
+            dstPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp dstIndex]
+            store dstPtr 0 srcVal
 
       _ -> return ()
 

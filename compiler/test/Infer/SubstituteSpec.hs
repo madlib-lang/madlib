@@ -53,8 +53,28 @@ spec = do
             (TRowExtend "x" tInteger
               (TRowExtend "y" tBool
                 (TRowExtend "x" tStr (TVar tailVar))))
-          expected = recordRow (TRowExtend "y" tBool (TVar tailVar))
+          expected = recordRow
+            (TRowExtend "y" tBool (TRowWithout (S.singleton "x") (TVar tailVar)))
       removeRecordLabels (S.singleton "x") source `shouldBe` expected
+
+    it "keeps an excluded label absent when the open tail is substituted" $ do
+      let tailVar = TV 4 Row
+          source = recordRow (TRowWithout (S.singleton "x") (TVar tailVar))
+          substitution = M.singleton tailVar
+            (TRowExtend "x" tInteger (TRowExtend "y" tBool TRowEmpty))
+      apply substitution source `shouldBe`
+        recordRow (TRowExtend "y" tBool TRowEmpty)
+
+    it "combines nested exclusions and lets an outer field reintroduce a label" $ do
+      let tailVar = TV 5 Row
+          hidden = removeRowLabels (S.singleton "x")
+            (removeRowLabels (S.singleton "y") (TVar tailVar))
+          source = recordRow (TRowExtend "x" tStr hidden)
+          substitution = M.singleton tailVar
+            (TRowExtend "x" tInteger
+              (TRowExtend "y" tBool (TRowExtend "z" tStr TRowEmpty)))
+      apply substitution source `shouldBe`
+        recordRow (TRowExtend "x" tStr (TRowExtend "z" tStr TRowEmpty))
 
   describe "environment free-variable caches" $ do
     it "removes stale free variables when an open binding is replaced" $ do

@@ -733,7 +733,6 @@ export concatMap = (project, source) => Stream(
         }
       }
 
-      innerSink :: Integer -> Message a b -> {}
       innerSink = (t, d) => {
         if (t == 0) do {
           innerTalkback := d

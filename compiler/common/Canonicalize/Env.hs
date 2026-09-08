@@ -73,6 +73,9 @@ initialEnv = Env { envTypeDecls = M.fromList [("List", tList), ("Array", tArray)
                  , envInterfaces =
                     M.fromList
                       [ ("Eq", Interface [TV 0 Star] [] ["=="])
+                      , ("Number", Interface [TV 0 Star] [] [])
+                      , ("Bits", Interface [TV 0 Star]
+                          [IsIn "Number" [TVar $ TV 0 Star] Nothing] [])
                       , ("Comparable", Interface [TV 0 Star] [IsIn "Eq" [TVar $ TV 0 Star] Nothing] ["compare"])
                       , ("Show", Interface [TV 0 Star] [] ["show"])
                       , ("Json", Interface [TV 0 Star] [] ["toJson", "fromJson"])

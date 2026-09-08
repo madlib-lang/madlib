@@ -6,6 +6,7 @@ import           Test.Hspec                     ( describe
                                                 , Spec
                                                 , expectationFailure
                                                 , shouldBe
+                                                , shouldSatisfy
                                                 )
 import           Test.Hspec.Golden              ( Golden(..) )
 import qualified Data.Text.IO                  as T
@@ -41,7 +42,7 @@ import qualified Rock
 import qualified Driver.Query as Query
 import           GHC.IO (unsafePerformIO)
 import           Control.Monad (forM)
-import           System.FilePath (normalise)
+import           System.FilePath (isAbsolute, normalise)
 import Explain.Location
 import Explain.Format.TypeDiff (renderType)
 import Infer.Type (Kind(..), Type(..), TCon(..))
@@ -73,7 +74,10 @@ buildOptions entrypoint pathUtils =
               then return p
               else Dir.canonicalizePath p
         , getExecutablePath = return "./madlib-test"
-        , normalisePath = \p -> if "__BUILTINS__.mad" `List.isSuffixOf` p then normalise p else (("./"++) . normalise) p
+        , normalisePath = \p ->
+            if "__BUILTINS__.mad" `List.isSuffixOf` p || isAbsolute p
+              then normalise p
+              else ("./" ++) (normalise p)
         }
     , optEntrypoint = entrypoint
     , optRootPath = "./"
@@ -2275,3 +2279,74 @@ spec = do
             ]
           actual = unsafePerformIO $ inferModule code
       snapshotTest "should infer constrained polymorphic function" actual
+
+    it "rejects JSX with a missing required prop" $ do
+      let code = unlines
+            [ "component :: { name :: String, children :: List String } -> String"
+            , "component = (props) => props.name"
+            , "value = <component />"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      errors `shouldSatisfy` any (\(CompilationError e _) -> case e of
+        RecordMissingFields _ _ -> True
+        _                       -> False)
+
+    it "checks all JSX spreads in source order" $ do
+      let code = unlines
+            [ "component :: { name :: String, children :: List String } -> String"
+            , "component = (props) => props.name"
+            , "value = <component {...{ name: \"ok\" }} {...{ name: true }} />"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      errors `shouldSatisfy` any (\(CompilationError e _) -> case e of
+        UnificationError _ -> True
+        _ -> False)
+
+    it "accepts JSX explicit required props" $ do
+      (_, _, errors) <- inferModuleWithoutMain $ unlines
+        [ "component :: { name :: String, children :: List String } -> String"
+        , "component = (props) => props.name"
+        , "value = <component name=\"ok\" />"
+        ]
+      errors `shouldBe` []
+
+    it "accepts JSX later spread overriding an earlier incompatible prop" $ do
+      (_, _, errors) <- inferModuleWithoutMain $ unlines
+        [ "component :: { name :: String, children :: List String } -> String"
+        , "component = (props) => props.name"
+        , "value = <component {...{name: true}} {...{name: \"ok\"}} />"
+        ]
+      errors `shouldBe` []
+
+    it "does not crash on compound constraint arguments" $ do
+      let code = unlines
+            [ "f :: Eq (a -> a) => a -> a"
+            , "f = (x) => x"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      errors `shouldBe` []
+
+    it "does not crash on compound superclass arguments" $ do
+      let code = unlines
+            [ "interface Parent a {"
+            , "  parent :: a -> Boolean"
+            , "}"
+            , "interface Parent (List a) => Child a {"
+            , "  child :: a -> Boolean"
+            , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      errors `shouldBe` []
+
+    it "rejects a local annotation whose implementation is too general" $ do
+      let code = unlines
+            [ "f = () => {"
+            , "  bad :: a -> a"
+            , "  bad = (x) => true"
+            , "  return bad(false)"
+            , "}"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+      errors `shouldSatisfy` any (\(CompilationError e _) -> case e of
+        SignatureTooGeneral _ _ -> True
+        _                       -> False)

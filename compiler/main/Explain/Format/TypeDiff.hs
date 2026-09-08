@@ -4,6 +4,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Explain.Format.TypeDiff where
 
+
 import           Infer.Type
 import           Data.List                      ( intercalate
                                                 , foldl'
@@ -1060,6 +1061,8 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
 
   row@TRowExtend{} ->
     prettyPrintRow rewrite (vars, hkVars) row M.empty
+  TRowWithout _ row ->
+    prettyPrintType' rewrite (vars, hkVars) row
 
   TRecordRow row optionalFields ->
     prettyPrintRow rewrite (vars, hkVars) row optionalFields
@@ -1443,6 +1446,8 @@ typeToDoc (vars, hkVars) t = case t of
 
   row@TRowExtend{} ->
     rowToDoc (vars, hkVars) row M.empty
+  TRowWithout _ row ->
+    typeToDoc (vars, hkVars) row
 
   TRecordRow row optionalFields ->
     rowToDoc (vars, hkVars) row optionalFields

@@ -206,6 +206,9 @@ lowerTypeToRuntimeValue builtinsPath area ty =
       TRowExtend _ _ _ ->
         go names next (TRecordRow t M.empty)
 
+      TRowWithout _ row ->
+        go names next row
+
       TAlias _ _ _ inner ->
         go names next inner
 

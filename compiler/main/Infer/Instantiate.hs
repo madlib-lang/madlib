@@ -37,6 +37,7 @@ instance Instantiate Type where
 
   inst ts (TRowExtend name fieldType tail) =
     TRowExtend name (inst ts fieldType) (inst ts tail)
+  inst ts (TRowWithout labels row) = removeRowLabels labels (inst ts row)
 
   inst ts (TRecordRow row optionalFields) =
     TRecordRow (inst ts row) (M.map (inst ts) optionalFields)

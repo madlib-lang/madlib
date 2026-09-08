@@ -416,7 +416,6 @@ export parallelN = (concurrent, wishes) => Wish(
     cancelationFunctions :: List #[Integer, {} -> {}]
     cancelationFunctions = []
 
-    fork :: Integer -> List (Wish e a) -> {}
     fork = (index, ws) => where(ws) {
       [wish, ...nextWishes] =>
         do {
@@ -508,7 +507,6 @@ export raceN = (concurrent, wishes) => Wish(
     cancelationFunctions :: List #[Integer, {} -> {}]
     cancelationFunctions = []
 
-    fork :: Integer -> List (Wish e a) -> {}
     fork = (index, ws) => where(ws) {
       [wish, ...nextWishes] =>
         do {

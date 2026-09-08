@@ -49,6 +49,7 @@ resolveRowVariables t = case t of
 
   TRowEmpty ->
     TRowEmpty
+  TRowWithout labels row -> removeRowLabels labels (resolveRow row)
 
   TRowExtend label fieldType tail ->
     TRowExtend label (resolveRowVariables fieldType) (resolveRow tail)
@@ -65,6 +66,7 @@ resolveRowVariables t = case t of
     resolveRow row = case row of
       TVar tv | kind tv == Row -> TRowEmpty
       TRowEmpty -> TRowEmpty
+      TRowWithout labels base -> removeRowLabels labels (resolveRow base)
       TRowExtend label fieldType tail ->
         TRowExtend label (resolveRowVariables fieldType) (resolveRow tail)
       other -> resolveRowVariables other

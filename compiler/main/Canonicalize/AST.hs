@@ -362,8 +362,8 @@ canonicalizeAST dictionaryModulePath options env sourceAst@Src.AST{ Src.apath = 
 
   (env''', typeDecls)   <- canonicalizeTypeDecls env'' astPath importedTypeNames $ Src.atypedecls sourceAst
   imports               <- mapM (canonicalize env''' (optTarget options)) $ Src.aimports sourceAst
-  exps                  <- mapM (canonicalize env''' (optTarget options)) $ expandPatternAssignments (Src.aexps sourceAst)
   (env'''', interfaces) <- canonicalizeInterfaces env''' $ Src.ainterfaces sourceAst
+  exps                  <- mapM (canonicalize env'''' (optTarget options)) $ expandPatternAssignments (Src.aexps sourceAst)
   instances             <- canonicalizeInstances env'''' (optTarget options) $ Src.ainstances sourceAst
   derivedInstances      <- deriveInstances env'''' typeDecls $ Src.aderived sourceAst
 
@@ -462,4 +462,3 @@ findAST table path = case M.lookup path table of
 
   Nothing ->
     Left $ CompilationError (ImportNotFound path) NoContext
-

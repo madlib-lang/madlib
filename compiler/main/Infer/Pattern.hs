@@ -181,7 +181,7 @@ inferPattern env p@(Can.Canonical area pat) = case pat of
         -- back into the input row.
         when (M.member restVarName vars) $
           throwError $ CompilationError (NameAlreadyDefined restVarName) (Context (envCurrentPath env) area)
-        let restType = openRecord mempty baseRowVar
+        let restType = recordRow (removeRowLabels (M.keysSet tsMap) baseRowVar)
         let restVar = M.singleton restVarName (toScheme restType)
         return (restVar, [])
       Nothing ->

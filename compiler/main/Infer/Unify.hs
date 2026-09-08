@@ -15,12 +15,26 @@ import           Infer.Infer
 import           Infer.Env
 import           Control.Monad.Except
 import qualified Data.Map                      as M
+import qualified Data.Set                      as S
 import qualified AST.Canonical                 as Can
 
 
 
 varBind :: TVar -> Type -> Infer Substitution
 varBind tv t | t == TVar tv        = return M.empty
+             | kind tv == Row
+             , let (fields, tail) = visibleRow t
+             , tail == Just (TVar tv)
+             , not (any (occursCheck tv) (M.elems fields)) = do
+                 residual <- newTVar Row
+                 return $ M.singleton tv (rowFromFields fields residual)
+             | kind tv == Row
+             , let (fields, tail) = visibleRow t
+             , Just (TRowWithout labels (TVar tailVar)) <- tail
+             , tailVar == tv
+             , not (any (occursCheck tv) (M.elems fields)) = do
+                 residual <- newTVar Row
+                 return $ M.singleton tv (rowFromFields fields (removeRowLabels labels residual))
              | occursCheck tv t    = throwError $ CompilationError (InfiniteType tv t) NoContext
              | kind tv /= kind t   = throwError $ CompilationError (KindError (TVar tv, kind tv) (t, kind t)) NoContext
              | otherwise           = return $ M.singleton tv t
@@ -62,6 +76,7 @@ instance Unify Type where
 -- what makes `{ ...r, x: a }` lawful even when `r` itself has an `x`: the
 -- outer occurrence is selected and the tail stays intact.
 unifyRows :: Type -> Type -> Infer Substitution
+unifyRows left right | left == right = return M.empty
 unifyRows left right = case left of
   TRowEmpty -> case right of
     TRowEmpty -> return M.empty
@@ -69,6 +84,19 @@ unifyRows left right = case left of
     _ -> unifyRows right TRowEmpty
 
   TVar tv | kind tv == Row -> varBind tv right
+
+  TRowWithout labels row -> case right of
+    TVar tv | kind tv == Row -> varBind tv left
+    TRowEmpty -> unifyRows row TRowEmpty
+    TRowExtend{} -> unifyRows right left
+    TRowWithout more other
+      | labels == more -> unifyRows row other
+      | otherwise -> do
+          residual <- newTVar Row
+          s <- unifyRows row (removeRowLabels (labels <> more) residual)
+          s' <- unifyRows (apply s other) (apply s (removeRowLabels (labels <> more) residual))
+          return (s' `compose` s)
+    _ -> throwError $ CompilationError FatalError NoContext
 
   TRowExtend label fieldType tail -> do
     (otherFieldType, residual, rewriteSubst) <- rewriteRow label right
@@ -87,6 +115,12 @@ unifyRows left right = case left of
 
 rewriteRow :: Id -> Type -> Infer (Type, Type, Substitution)
 rewriteRow label row = case row of
+  TRowWithout labels base
+    | label `S.member` labels ->
+        throwError $ CompilationError (RecordMissingFields [label] (M.keys (fst (visibleRow row)))) NoContext
+    | otherwise -> do
+        (fieldType, residual, subst) <- rewriteRow label base
+        return (fieldType, removeRowLabels labels residual, subst)
   TRowExtend name fieldType tail
     | name == label -> return (fieldType, maskRowLabel label tail, M.empty)
     | otherwise -> do
@@ -244,6 +278,13 @@ matchRows :: Type -> Type -> Infer Substitution
 matchRows (TVar tv) row
   | kind tv == Row = return (M.singleton tv row)
 matchRows TRowEmpty TRowEmpty = return M.empty
+matchRows (TRowWithout labels row) (TRowWithout more other)
+  | labels == more = matchRows row other
+matchRows patternRow@(TRowWithout labels row) goalRow
+  | let (fields, tail) = visibleRow goalRow
+  , tail == Nothing
+  , S.null (labels `S.intersection` M.keysSet fields) = matchRows row goalRow
+  | otherwise = rowMatchError patternRow goalRow
 matchRows patternRow@(TRowExtend label fieldType tail) goalRow =
   case rewriteKnownRow label goalRow of
     Nothing -> rowMatchError patternRow goalRow
@@ -397,6 +438,7 @@ cleanBase t = case t of
 
   TRowExtend label fieldType tail ->
     TRowExtend label (cleanBase fieldType) (cleanBase tail)
+  TRowWithout labels row -> removeRowLabels labels (cleanBase row)
 
   _ ->
     t
@@ -470,6 +512,11 @@ rewriteKnownRow label = go
       | otherwise = do
           (foundType, residual) <- go tail
           return (foundType, TRowExtend name fieldType residual)
+    go (TRowWithout labels row)
+      | label `S.member` labels = Nothing
+      | otherwise = do
+          (fieldType, residual) <- go row
+          return (fieldType, removeRowLabels labels residual)
     go _ = Nothing
 
 

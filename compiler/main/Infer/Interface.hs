@@ -69,6 +69,7 @@ addInstance env ps p@(IsIn cls ts _) isDerived = do
         TApp l r                  -> 1 + typeSize l + typeSize r
         TRowEmpty                 -> 1
         TRowExtend _ field tail   -> 1 + typeSize field + typeSize tail
+        TRowWithout _ row        -> 1 + typeSize row
         TRecordRow row extra      -> 1 + typeSize row
                                       + sum (typeSize <$> M.elems extra)
         TAlias _ _ _ t'           -> 1 + typeSize t'

@@ -1,0 +1,18 @@
+import IO from "IO"
+
+alias Wrapped = { kept :: String, replaced :: Boolean }
+
+Component = (props) => props.name ++ (props.optional ?? "!")
+remove = (r) => where(r) { {x, ...rest} => rest }
+choose = (r) => if (true) { {...r, x: "s"} } else { {...r, y: true} }
+updateAlias :: Wrapped -> { kept :: String, replaced :: String }
+updateAlias = (r) => ({...r, replaced: "new"})
+
+main = () => {
+  IO.log(<Component {...{name: true}} {...{name: "later"}} />)
+  IO.log(<Component {...{name: "saved", optional: Just("?")}} />)
+  IO.log(<Component {...{name: "before"}} name="explicit" />)
+  IO.log(remove({x: true, y: "remaining"}).y)
+  IO.log(choose({x: "old", y: true}).x)
+  IO.log(updateAlias({kept: "alias", replaced: true}).kept)
+}

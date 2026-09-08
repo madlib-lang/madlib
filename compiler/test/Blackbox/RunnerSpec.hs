@@ -291,6 +291,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/maybe-operators"
         , "compiler/test/Blackbox/test-cases/jsx-maybe-props"
         , "compiler/test/Blackbox/test-cases/jsx-children"
+        , "compiler/test/Blackbox/test-cases/typechecker-audit"
         , "compiler/test/Blackbox/test-cases/signature-too-general"
         , "compiler/test/Blackbox/test-cases/signature-too-general-collapsed-vars"
         , "compiler/test/Blackbox/test-cases/signature-too-general-concrete-var"

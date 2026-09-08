@@ -6,6 +6,7 @@ module Canonicalize.Interface where
 import qualified AST.Source                    as Src
 import qualified AST.Canonical                 as Can
 import           Canonicalize.Env
+import           Canonicalize.EnvUtils (lookupInterfaceDefinition)
 import           Canonicalize.CanonicalM
 import           Canonicalize.Typing
 import           Canonicalize.Canonicalize
@@ -27,10 +28,26 @@ import qualified Driver.Query                  as Query
 import           Explain.Location (emptyArea)
 import           Error.Warning
 import Data.Hashable (hash)
+import Data.Char (isLower)
 
 
 canonicalizeInterfaces :: Env -> [Src.Interface] -> CanonicalM (Env, [Can.Interface])
 canonicalizeInterfaces env interfaces = do
+  let graph = M.fromList
+        [ (name, [parent | Src.Source _ _ (Src.TRComp parent _) <- parents])
+        | Src.Source _ _ (Src.Interface parents name _ _) <- interfaces
+        ]
+      cycleFrom name = walk [] name
+        where
+          walk path current
+            | current `elem` path = Just (dropWhile (/= current) path ++ [current])
+            | otherwise = listToMaybe $ mapMaybe (walk (path ++ [current]))
+                (M.findWithDefault [] current graph)
+  forM_ interfaces $ \(Src.Source area _ (Src.Interface _ name _ _)) ->
+    case cycleFrom name of
+      Just cycle -> throwError $ CompilationError (SuperclassCycle cycle)
+        (Context (envCurrentPath env) area)
+      Nothing -> return ()
   (env', rev) <- foldM
     (\(env, acc) interface -> do
       (env'', interface') <- canonicalizeInterface env interface
@@ -59,15 +76,7 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
     let ts' = addConstraints n vars' <$> ts
     let tvs = removeDuplicates $ catMaybes $ concat $ mapM searchVarInType vars' <$> M.elems ts
 
-    -- Superinterface canonicalisation currently runs before imported
-    -- interfaces are guaranteed to be present in this environment.  Keep the
-    -- established deferred unary representation here; exact arity validation
-    -- is performed for all resolved instance/constraint heads below.
-    let supers = mapMaybe
-          (\(Src.Source _ _ (Src.TRComp interface' [Src.Source _ _ (Src.TRSingle v)])) ->
-            (\tv -> IsIn interface' [tv] Nothing) <$> findTypeVar tvs (hash v)
-          )
-          constraints
+    supers <- mapM (canonicalizeSuperclass env tvs) constraints
 
     let reaches target start = go S.empty start
           where
@@ -102,6 +111,30 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
     canMs <- mapM canonicalizeTyping ms
     return (env', Can.Canonical area $ Can.Interface n supers tvs' scs canMs)
 
+canonicalizeSuperclass :: Env -> [Type] -> Src.Typing -> CanonicalM Pred
+canonicalizeSuperclass env vars (Src.Source area _ (Src.TRComp parent args)) = do
+  Interface parentVars _ _ <- lookupInterface env parent
+  when (length args /= length parentVars) $
+    throwError $ CompilationError
+      (WrongInterfaceArgCount parent (length parentVars) (length args))
+      (Context (envCurrentPath env) area)
+  let as = zipWith (superArg env vars) args parentVars
+  IsIn parent <$> mapM id as <*> pure Nothing
+canonicalizeSuperclass env _ (Src.Source area _ _) =
+  throwError $ CompilationError (UnknownType "invalid superclass constraint" [])
+    (Context (envCurrentPath env) area)
+
+superArg :: Env -> [Type] -> Src.Typing -> TVar -> CanonicalM Type
+superArg env vars (Src.Source area _ (Src.TRSingle name)) (TV _ k)
+  | isLower (head name) =
+      case findTypeVar vars (hash name) of
+        Just tv -> validateKind env area (KindRequired k) tv
+        _ -> throwError $ CompilationError (UnboundUnknownTypeVariable)
+          (Context (envCurrentPath env) area)
+  | otherwise = typingToType env (KindRequired k)
+      (Src.Source area Src.TargetAll (Src.TRSingle name))
+superArg env _ typing (TV _ k) = typingToType env (KindRequired k) typing
+
 
 findTypeVar :: [Type] -> Int -> Maybe Type
 findTypeVar []       _ = Nothing
@@ -133,7 +166,7 @@ lookupInterface env name = case M.lookup name (envInterfaces env) of
     return found
 
   Nothing -> do
-    maybeInterface <- Rock.fetch $ Query.CanonicalizedInterface (envCurrentPath env) name
+    maybeInterface <- lookupInterfaceDefinition env name
     case maybeInterface of
       Just found ->
         return found
