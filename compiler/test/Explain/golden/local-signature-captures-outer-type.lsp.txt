@@ -1,0 +1,9 @@
+Local signature cannot name an outer type variable
+This annotation introduces fresh type variables, but the implementation
+uses a value whose type is fixed by the surrounding function.
+Local signature:
+  a -> a
+Note: A type variable such as 'a' in a local annotation is fresh. It does not
+refer to an 'a' used by an enclosing annotation.
+Note: Madlib does not currently support explicit forall with scoped type variables. This case does not require rank-N polymorphism.
+Hint: Pass the captured value or function as an explicit parameter of the local helper, or remove the local annotation.

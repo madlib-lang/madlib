@@ -32,7 +32,7 @@ $identchar = [a-zA-Z0-9_\']
 @decimal   = $digit+
 @hexnum    = "0x" $hexdigit+
 @float     = $digit+ "." $digit+ ([eE] [\+\-]? $digit+)?
-@escape    = \\ ([\"\\\/bfnrt\`\'] | "u" "{" $hexdigit+ "}" | "u" $hexdigit{4} | "x" $hexdigit{2} | $digit)
+@escape    = \\ ([\"\\\/bfnrt\'] | "`" | "u" "{" $hexdigit+ "}" | "u" $hexdigit{4} | "x" $hexdigit{2} | $digit)
 
 tokens :-
 

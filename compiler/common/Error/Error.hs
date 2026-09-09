@@ -102,6 +102,7 @@ data TypeError
   | IllegalSkipAccess
   | NotInScope String Loc
   | SignatureTooGeneral Scheme Scheme
+  | LocalSignatureCapturesOuterType Scheme
   | NameAlreadyExported String
   | ShouldBeTypedOrAbove String
   | ContextTooWeak [Pred]

@@ -1453,7 +1453,9 @@ inferExplicitlyTyped options isLet env canExp@(Can.Canonical area (Can.TypedExp 
   let capturedVars = ftv (apply s' envWithVarsExcluded)
       signatureVars = ftv (apply s' t')
       escapesCapture = isLet && not (S.null (capturedVars `S.intersection` signatureVars))
-  if not sigCheckResult || escapesCapture then
+  if escapesCapture then
+    throwError $ CompilationError (LocalSignatureCapturesOuterType sc) (Context (envCurrentPath env') area)
+  else if not sigCheckResult then
     throwError $ CompilationError (SignatureTooGeneral sc scCheck) (Context (envCurrentPath env') area)
   else if not (null requiredRs) then
     throwError $ CompilationError (ContextTooWeak requiredRs) (Context (envCurrentPath env) area)

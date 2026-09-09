@@ -58,6 +58,7 @@ errorKind e = case e of
   IllegalSkipAccess{}                  -> 33
   NotInScope{}                         -> 34
   SignatureTooGeneral{}                -> 35
+  LocalSignatureCapturesOuterType{}    -> 75
   NameAlreadyExported{}                -> 36
   ShouldBeTypedOrAbove{}               -> 37
   ContextTooWeak{}                     -> 38

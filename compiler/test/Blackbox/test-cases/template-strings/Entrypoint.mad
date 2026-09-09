@@ -21,6 +21,10 @@ main = () => {
   // Template string with no interpolation
   IO.putLine(`plain string`)
 
+  // Escaped backticks should be preserved by both output helpers.
+  IO.putLine(`escaped backtick: \`putLine\``)
+  IO.log(`escaped backtick: \`log\``)
+
   // Numbers in interpolation
   x = 42
   IO.putLine(`The answer is ${show(x)}`)

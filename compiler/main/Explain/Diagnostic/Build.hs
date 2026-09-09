@@ -599,6 +599,20 @@ errorDiagnostic context typeError = case typeError of
       , hint "Update the type annotation to match the inferred type shown above."
       ]
 
+  LocalSignatureCapturesOuterType sc ->
+    mkErr "Local signature cannot name an outer type variable" context
+      [ P $
+          "This annotation introduces fresh type variables, but the implementation\n"
+          <> "uses a value whose type is fixed by the surrounding function."
+      , Verbatim $ "Local signature:\n  " <> renderSchemeOneLine sc
+      ]
+      [ note $
+          "A type variable such as 'a' in a local annotation is fresh. It does not\n"
+          <> "refer to an 'a' used by an enclosing annotation."
+      , note "Madlib does not currently support explicit forall with scoped type variables. This case does not require rank-N polymorphism."
+      , hint "Pass the captured value or function as an explicit parameter of the local helper, or remove the local annotation."
+      ]
+
   NoInstanceFound cls ts chain ->
     let typeStr    = unwords (prettyPrintType True <$> ts)
         predStr    = lst (predToStr True (mempty, mempty) (IsIn cls ts Nothing))

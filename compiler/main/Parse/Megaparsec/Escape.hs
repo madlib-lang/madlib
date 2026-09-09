@@ -86,6 +86,12 @@ processEscapes input = case input of
   '\\':'x':_ ->
     Left $ "BadEscape: incomplete hex escape"
 
+  -- Backticks delimit template strings, so they need an explicit escape.
+  -- Haskell's readLitChar does not recognize \`.
+  '\\':'`':more -> do
+    next <- processEscapes more
+    Right $ '`' : next
+
   -- Standard one-character escapes (\n, \t, \r, \\, \", \', etc.)
   '\\':c:more -> do
     case interpretChars ['\\', c] of

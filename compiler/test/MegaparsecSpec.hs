@@ -469,6 +469,9 @@ spec = describe "Megaparsec parser" $ do
       , "G = \"hello\""
       ]) `shouldSatisfy` isRight
 
+  it "parses escaped backticks in template strings" $
+    parse "message = `escaped backticks: \\`here\\``" `shouldSatisfy` isRight
+
   it "parses uppercase constant with type annotation" $
     parse (unlines
       [ "PREFIX_RUNS :: String"

@@ -60,6 +60,11 @@ spec = do
       result `contains` "given"
       result `contains` "inferred"
 
+    it "LocalSignatureCapturesOuterType explains scoped variables" $ do
+      result <- fmt (LocalSignatureCapturesOuterType (Forall [Star] ([] :=> (TGen 0 `fn` TGen 0)))) makeCtx
+      result `contains` "scoped type variables"
+      result `contains` "fresh"
+
     it "ContextTooWeak names the missing constraints" $ do
       result <- fmt (ContextTooWeak [IsIn "Eq" [tStr] Nothing]) makeCtx
       result `contains` "Eq"

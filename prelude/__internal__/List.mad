@@ -685,9 +685,10 @@ export sortBy = (compareFn, list) => {
       as
   }
 
-  mergePairs = (l) => where(l) {
+  mergePairs :: (List a -> List a -> List a) -> List (List a) -> List (List a)
+  mergePairs = (mergeFn, l) => where(l) {
     [a, b, ...xs] =>
-      [merge(a, b), ...mergePairs(xs)]
+      [mergeFn(a, b), ...mergePairs(mergeFn, xs)]
 
     xs =>
       xs
@@ -698,7 +699,7 @@ export sortBy = (compareFn, list) => {
       x
 
     xs =>
-      mergeAll(mergePairs(xs))
+      mergeAll(mergePairs(merge, xs))
   }
 
   return pipe(

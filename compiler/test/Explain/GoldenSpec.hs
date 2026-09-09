@@ -83,6 +83,7 @@ goldenCases =
   -- Type errors
   , ("infinite-type", InfiniteType tvA (tListOf (TVar tvA)), makeCtx)
   , ("signature-too-general", SignatureTooGeneral (Forall [Star] ([] :=> TGen 0)) (Forall [] ([] :=> tFloat)), makeCtx)
+  , ("local-signature-captures-outer-type", LocalSignatureCapturesOuterType (Forall [Star] ([] :=> (TGen 0 `fn` TGen 0))), makeCtx)
   , ("context-too-weak", ContextTooWeak [IsIn "Eq" [tStr] Nothing], makeCtx)
   , ("ambiguous-type-constrained", AmbiguousType (tvA, [IsIn "Show" [TVar tvA] Nothing]), makeCtx)
   , ("ambiguous-type-bare", AmbiguousType (TV 5 Star, []), makeCtx)

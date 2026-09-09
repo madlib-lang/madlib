@@ -53,7 +53,7 @@ spec = describe "typechecker audit" $ do
       , "}"
       ]
     errors `shouldSatisfy` any (\(CompilationError e _) -> case e of
-      SignatureTooGeneral _ _ -> True
+      LocalSignatureCapturesOuterType _ -> True
       _ -> False)
   it "preserves a valid polymorphic local identity" $ do
     (_, _, errors) <- inferModuleWithoutMain $ unlines
@@ -62,6 +62,18 @@ spec = describe "typechecker audit" $ do
       , "  identity = (x) => x"
       , "  first = identity(false)"
       , "  return identity(\"ok\")"
+      , "}"
+      ]
+    errors `shouldBe` []
+  it "accepts a polymorphic local helper when its outer dependency is explicit" $ do
+    (_, _, errors) <- inferModuleWithoutMain $ unlines
+      [ "f = (combine, values) => {"
+      , "  pairs :: (a -> a -> a) -> List a -> List a"
+      , "  pairs = (combineFn, xs) => where(xs) {"
+      , "    [x, y, ...rest] => [combineFn(x, y), ...pairs(combineFn, rest)]"
+      , "    remaining => remaining"
+      , "  }"
+      , "  return pairs(combine, values)"
       , "}"
       ]
     errors `shouldBe` []
