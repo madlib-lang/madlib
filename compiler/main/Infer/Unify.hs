@@ -86,6 +86,28 @@ unifyRows (TRowOverlay left right) (TRowOverlay left' right') = do
   s1 <- unifyRows left left'
   s2 <- unifyRows (apply s1 right) (apply s1 right')
   return (s2 `compose` s1)
+-- A JSX/record overlay with an unknown right operand can be checked against a
+-- closed row by first consuming the fields known to come from the left.  The
+-- remaining target fields are precisely what the spread must supply.  Without
+-- this rule, valid `{ fixed: x, ...r }` props reach the generic fallback and
+-- fail with FatalError; flattening the overlay instead makes `r` incorrectly
+-- require `fixed`.
+unifyRows (TRowOverlay left (TVar spreadVar)) target
+  | kind spreadVar == Row
+  , (leftFields, Nothing) <- visibleRow left
+  , (_, Nothing) <- visibleRow target = do
+      (fieldSubst, residual) <- consumeKnownFields M.empty (M.toAscList leftFields) target
+      spreadSubst <- varBind spreadVar (apply fieldSubst residual)
+      return (spreadSubst `compose` fieldSubst)
+  where
+    consumeKnownFields subst [] residual = return (subst, residual)
+    consumeKnownFields subst ((label, fieldType) : rest) residual = do
+      (targetFieldType, targetResidual, rewriteSubst) <- rewriteRow label (apply subst residual)
+      fieldSubst <- unify (apply rewriteSubst (apply subst fieldType)) targetFieldType
+      let nextSubst = fieldSubst `compose` rewriteSubst `compose` subst
+      consumeKnownFields nextSubst rest (apply fieldSubst (apply rewriteSubst targetResidual))
+unifyRows target (TRowOverlay left (TVar spreadVar))
+  | kind spreadVar == Row = unifyRows (TRowOverlay left (TVar spreadVar)) target
 unifyRows left right = case left of
   TRowEmpty -> case right of
     TRowEmpty -> return M.empty

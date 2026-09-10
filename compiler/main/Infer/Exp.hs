@@ -951,13 +951,16 @@ inferJsxRecord options env exp = do
     if name /= "..." then return (TRowExtend name ty prior) else do
       spread <- applyCurrentSubst ty
       spreadRow <- case spread of
-        TRecordRow r _ -> return r
+        TRecordRow r optional -> return $ rowFromFields optional r
         _ -> do
           r <- newTVar Row
           s <- contextualUnify' env discardError exp spread (recordRow r)
           extSubst s
-          return r
-      return (appendRow spreadRow prior)
+          applyCurrentSubst r
+      -- Keep an open spread symbolic.  Flattening it here would discard props
+      -- written before the spread, and later unification would wrongly make
+      -- callers provide those already-specified JSX props themselves.
+      return (overlayRow prior spreadRow)
     ) TRowEmpty (concat fieldTypes)
   let recordType = recordRow row
 
@@ -965,12 +968,6 @@ inferJsxRecord options env exp = do
   recordType' <- applyCurrentSubst recordType
 
   return (allPS, recordType', Slv.Typed (allPS :=> recordType') area (Slv.Record fieldEXPS))
-  where
-    appendRow TRowEmpty tail = tail
-    appendRow (TRowExtend name ty rest) tail = TRowExtend name ty (appendRow rest tail)
-    appendRow row _ = row
-
-
 -- | Phase 1 migrated: 3-tuple. extSubst-s the inner inference into state.
 inferRecordField :: Options -> Env -> Can.Field -> Infer ([Pred], [(Slv.Name, Type)], Slv.Field)
 inferRecordField options env (Can.Canonical area field) = do

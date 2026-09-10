@@ -57,7 +57,7 @@ import           Generate.LLVM.Emit           (emitGEP)
 import           Generate.LLVM.WithMetadata   (functionWithMetadata, callWithMetadata, callFastWithMetadata, callMallocWithMetadata, storeWithMetadata, declareWithAttributes, callWithAttributes)
 import           Generate.LLVM.Debug
 import           Generate.LLVM.Helper
-import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, tupleFieldLLVMType, primitiveTupleFieldType, retrieveConstructorStructType, retrieveConstructorMaxArity, isNewtypeADT, isSingleConstructorADT, adtSymbol, flatRecordType, recordFieldLLVMTypes, recordFieldIndex)
+import           Generate.LLVM.Types          (boxType, listType, stringType, papType, recordType, tConExclude, sizeof', buildLLVMType, buildLLVMType', buildLLVMParamType, tupleFieldLLVMType, primitiveTupleFieldType, retrieveConstructorStructType, retrieveConstructorMaxArity, isNewtypeADT, isSingleConstructorADT, adtSymbol, flatRecordType, recordFieldLLVMTypes, recordFieldIndex, RecordLayout(..), requireRecordLayout)
 import           Generate.LLVM.Boxing         (box, unbox)
 import           Generate.LLVM.Builtins
 import qualified Generate.LLVM.Operators      as Ops
@@ -804,11 +804,9 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             fieldType = primitiveTupleFieldType expQt
 
         case recType of
-          IT.TRecordRow row optionalFields -> do
-            let allFields   = Map.union (fst $ IT.visibleRow row) optionalFields
-                bareTypes   = Map.elems allFields
-                structType  = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> bareTypes)
-                index       = recordFieldIndex fieldName recType
+          IT.TRecordRow _ _ -> do
+            let RecordLayout _ structType = requireRecordLayout recType
+                index                     = recordFieldIndex fieldName recType
             storeVal <-
               if fieldType == boxType
                 then box exp'
@@ -1545,9 +1543,8 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     let fields' = List.filter (not . isSpreadField) fields
     let sortedFields = List.sortOn (Maybe.fromMaybe "" . Core.getFieldName) fields'
     -- Use the result record type to determine the struct size (not just explicit fields)
-    let allFieldTypes = maybe [] Map.elems (IT.recordVisibleFields recType)
-    let fieldLLVMTypes = (primitiveTupleFieldType . ([] IT.:=>)) <$> allFieldTypes
-    let structType = Type.StructureType False fieldLLVMTypes
+    let RecordLayout resultFields structType = requireRecordLayout recType
+        allFieldTypes = Map.elems resultFields
 
     -- Allocate a single flat struct for the record (stack or heap based on escape analysis)
     let mallocFn = chooseMalloc allFieldTypes
@@ -1568,10 +1565,8 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
       Core.Typed _ _ _ (Core.FieldSpread exp) -> do
         (_, baseOperand, _) <- generateExp env symbolTable exp
         let baseRecType     = let (_ IT.:=> bt) = Core.getQualType exp in bt
-        let baseFields      = Maybe.fromMaybe Map.empty (IT.recordVisibleFields baseRecType)
-        let baseFieldNames  = Map.keys baseFields
-        let baseFieldTypes' = Map.elems baseFields
-        let baseStructType  = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> baseFieldTypes')
+        let RecordLayout baseFields baseStructType = requireRecordLayout baseRecType
+            baseFieldNames = Map.keys baseFields
         basePtr <- safeBitcast baseOperand (Type.ptr baseStructType)
         let laterNames = concatMap suppliedNames (drop (fieldIndex + 1) fields)
         -- Copy each surviving base field to its position in the result struct.
@@ -1649,11 +1644,9 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
   Core.Typed qt _ _ (Core.Access record@(Core.Typed (_ IT.:=> recType) _ _ _) (Core.Typed _ area _ (Core.Var ('.' : fieldName) _))) -> do
     (_, recordOperand, _) <- generateExp env symbolTable record
     value <- case recType of
-      IT.TRecordRow row optionalFields -> do
-        let allFields  = Map.union (fst $ IT.visibleRow row) optionalFields
-            bareTypes  = Map.elems allFields
-            structType = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> bareTypes)
-            index      = recordFieldIndex fieldName recType
+      IT.TRecordRow _ _ -> do
+        let RecordLayout _ structType = requireRecordLayout recType
+            index                     = recordFieldIndex fieldName recType
         recordOperand' <- safeBitcast recordOperand (Type.ptr structType)
         fieldPtr       <- gep recordOperand' [i32ConstOp 0, i32ConstOp index]
         load fieldPtr 0

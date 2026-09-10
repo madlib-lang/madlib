@@ -1,0 +1,13 @@
+import IO from "IO"
+
+component :: { before :: String, name :: String, children :: List String } -> String
+component = (props) => props.before ++ props.name
+
+// `r` is open while this JSX record is inferred.  `before` and `children`
+// are already provided by the JSX expression and must not become requirements
+// of r merely because it is spread afterwards.
+render = (r) => <component before="fixed" {...r} />
+
+main = () => {
+  IO.log(render({ name: "ok" }))
+}

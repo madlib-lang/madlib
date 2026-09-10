@@ -35,7 +35,15 @@ genType :: Substitution -> Type -> Type
 genType s t =
   let t' = apply s t
       tvs = ftvList t'
-      sWithGens = Map.fromList $ zipWith (curry (\(_, TV initial k) -> (TV initial k, tUnit))) [0..] tvs
+      -- Free row variables have no runtime fields after monomorphization.
+      -- Replacing them with Unit (as we do for ordinary type variables)
+      -- leaves an ill-kinded `{ ...Unit }` tail behind, which looks like an
+      -- open record to codegen despite having no possible layout.
+      sWithGens = Map.fromList $
+        (\(TV initial k) ->
+          ( TV initial k
+          , if k == Row then TRowEmpty else tUnit
+          )) <$> tvs
       -- sWithGens = Map.fromList $ zipWith (curry (\(index, TV initial k) -> (TV initial k, TVar $ TV (index - 1000) k))) [0..] tvs
   in  resolveRowVariables $ apply s $ apply sWithGens t'
 
@@ -188,9 +196,10 @@ data Env
 -- TODO: it's possibly not fully complete
 applyAndCleanQt :: Substitution -> Qual Type -> Qual Type
 applyAndCleanQt subst (ps :=> t) =
-  let ps' = apply subst ps
+  let normalize = resolveRowVariables . apply subst
+      ps' = (\(IsIn interface ts area) -> IsIn interface (normalize <$> ts) area) <$> ps
       filteredPs = filter (\(IsIn _ ts _) -> not $ null (ftv ts)) ps'
-  in  filteredPs :=> apply subst t
+  in  filteredPs :=> normalize t
 
 
 updateName :: String -> Exp -> Exp

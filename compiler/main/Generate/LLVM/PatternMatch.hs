@@ -46,7 +46,7 @@ import           Data.ByteString.Short        (ShortByteString)
 
 import           Generate.LLVM.SymbolTable
 import           Generate.LLVM.Env
-import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex, isEnumADT, isNewtypeADT, isSingleConstructorADT, retrieveConstructorMaxArity, buildLLVMType, primitiveTupleFieldType)
+import           Generate.LLVM.Types          (boxType, listType, stringType, recordType, sizeof', recordFieldIndex, isEnumADT, isNewtypeADT, isSingleConstructorADT, retrieveConstructorMaxArity, buildLLVMType, primitiveTupleFieldType, RecordLayout(..), requireRecordLayout)
 import           Generate.LLVM.Builtins       (i32ConstOp, i64ConstOp, true, areStringsEqual, madlistHasMinLength, madlistHasLength, selectField, buildRecord, gcMalloc)
 import           Generate.LLVM.Boxing         (unbox)
 import           Generate.LLVM.Debug          (makeDILocation)
@@ -482,13 +482,12 @@ generateSymbolTableForPattern ctx env symbolTable baseExp pat = case pat of
     case restName of
       Just restVarName -> do
         case recType of
-          IT.TRecordRow row optionalFields -> do
-            let allFieldMap = Map.union (fst $ IT.visibleRow row) optionalFields
+          IT.TRecordRow _ _ -> do
+            let RecordLayout allFieldMap srcStructType = requireRecordLayout recType
             let matchedFieldNames = Map.keys fieldPatterns
             let restFieldNames = List.filter (`List.notElem` matchedFieldNames) (Map.keys allFieldMap)
-            let restCount = List.length restFieldNames
-            let srcStructType = Type.StructureType False (List.replicate (Map.size allFieldMap) boxType)
-            let restStructType = Type.StructureType False (List.replicate restCount boxType)
+            let restFieldMap = Map.filterWithKey (\name _ -> name `elem` restFieldNames) allFieldMap
+            let restStructType = recordLayoutStruct $ requireRecordLayout (IT.closedRecord restFieldMap)
 
             -- Allocate a flat struct for the rest record
             restPtr <- callMallocWithMetadata (makeDILocation env (Core.getArea pat)) gcMalloc [(Operand.ConstantOperand $ sizeof' restStructType, [])]
@@ -742,11 +741,9 @@ getFieldPattern :: (MonadIO m, MonadIRBuilder m, MonadFix.MonadFix m, MonadModul
                => PatternCtx m -> Env -> SymbolTable -> IT.Type -> Operand -> (String, Core.Pattern) -> m (Operand, Core.Pattern)
 getFieldPattern ctx env symbolTable recType record (fieldName, fieldPattern) = do
   field <- case recType of
-    IT.TRecordRow row optionalFields -> do
-      let allFields  = Map.union (fst $ IT.visibleRow row) optionalFields
-          bareTypes  = Map.elems allFields
-          structType = Type.StructureType False ((primitiveTupleFieldType . ([] IT.:=>)) <$> bareTypes)
-          index      = recordFieldIndex fieldName recType
+    IT.TRecordRow _ _ -> do
+      let RecordLayout _ structType = requireRecordLayout recType
+          index                     = recordFieldIndex fieldName recType
       recordPtr <- ctxSafeBitcast ctx record (Type.ptr structType)
       fieldPtr  <- gep recordPtr [i32ConstOp 0, i32ConstOp index]
       load fieldPtr 0

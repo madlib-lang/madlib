@@ -18,6 +18,14 @@ getOther = (record) => where(record) {
     rest
 }
 
+// Test 4: Rest fields must retain the native LLVM layout of packed primitives.
+// Matching the middle field makes an incorrect pointer-per-field layout read
+// c from b's byte offset.
+getPackedRestC = (record) => where(record) {
+  { b, ...rest } =>
+    rest.c
+}
+
 main = () => {
   // Test 1
   r1 = { x: 1, y: 2, z: 3, w: 4 }
@@ -33,4 +41,6 @@ main = () => {
   r3 = { x: 10, y: 20, z: 30, a: 40, b: 50 }
   rest3 = getOther(r3)
   IO.log(rest3)
+
+  IO.log(getPackedRestC({ a: (1 :: Byte), b: (2 :: Byte), c: (3 :: Byte) }))
 }

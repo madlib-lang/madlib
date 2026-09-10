@@ -18,6 +18,8 @@ module Generate.LLVM.Types
     -- * Tuple/record field type (native storage type for primitive elements)
   , tupleFieldLLVMType
   , primitiveTupleFieldType
+  , RecordLayout(..)
+  , requireRecordLayout
   , recordFieldLLVMTypes
     -- * Constructor helpers
   , retrieveConstructorStructType
@@ -394,30 +396,48 @@ getTupleElemTypes t = reverse (go t)
 
 -- Record helpers
 
+-- | The only flat LLVM representation of a monomorphized record.  Keeping
+-- the fields and struct type together prevents individual codegen paths from
+-- accidentally rebuilding incompatible layouts (for example, treating native
+-- Byte fields as boxed pointers in record-rest patterns).
+data RecordLayout = RecordLayout
+  { recordLayoutFields :: Map.Map String IT.Type
+  , recordLayoutStruct :: Type.Type
+  }
+
+-- | Codegen must see a concrete, closed record here: monomorphization has
+-- already resolved row variables.  An open row would have no fixed ABI.
+requireRecordLayout :: IT.Type -> RecordLayout
+requireRecordLayout recordType = case recordType of
+  IT.TRecordRow _ _
+    | IT.isClosedRecord recordType
+    , Just fields <- IT.recordVisibleFields recordType ->
+        RecordLayout fields $
+          Type.StructureType False
+            ((primitiveTupleFieldType . ([] IT.:=>)) <$> Map.elems fields)
+  _ -> error $ "flat record codegen requires a closed record type, got " <> show recordType
+
 -- | Build a flat struct type for a record with known fields.
 -- Fields are ordered alphabetically by name (Map.keys ordering).
 -- Primitive fields use their native LLVM type (i64, double, etc.); others use boxType.
 flatRecordType :: IT.Type -> Type.Type
-flatRecordType (IT.TRecordRow row optionalFields) =
-  let allFields  = Map.union (fst $ IT.visibleRow row) optionalFields
-      fieldTypes = Map.elems allFields
-  in  if null fieldTypes then recordType
-      else Type.ptr $ Type.StructureType False (primitiveTupleFieldType . ([] IT.:=>) <$> fieldTypes)
+flatRecordType record@(IT.TRecordRow _ _) =
+  let structType = recordLayoutStruct (requireRecordLayout record)
+  in  if structType == Type.StructureType False [] then recordType else Type.ptr structType
 flatRecordType _ = recordType
 
 -- | Ordered list of LLVM field types for a record type (same ordering as Map.keys).
 -- Used when constructing or accessing record fields with native primitive types.
 recordFieldLLVMTypes :: IT.Type -> [Type.Type]
-recordFieldLLVMTypes (IT.TRecordRow row optionalFields) =
-  (primitiveTupleFieldType . ([] IT.:=>)) <$> Map.elems (Map.union (fst $ IT.visibleRow row) optionalFields)
+recordFieldLLVMTypes record@(IT.TRecordRow _ _) =
+  (primitiveTupleFieldType . ([] IT.:=>)) <$> Map.elems (recordLayoutFields (requireRecordLayout record))
 recordFieldLLVMTypes _ = []
 
 -- | Get the index of a field in a flat record struct.
 -- Fields are ordered alphabetically by name (Map.keys ordering).
 recordFieldIndex :: String -> IT.Type -> Integer
-recordFieldIndex fieldName (IT.TRecordRow row optionalFields) =
-  let allFields = Map.union (fst $ IT.visibleRow row) optionalFields
-  in  case List.elemIndex fieldName (Map.keys allFields) of
+recordFieldIndex fieldName record@(IT.TRecordRow _ _) =
+  case List.elemIndex fieldName (Map.keys (recordLayoutFields (requireRecordLayout record))) of
         Just i  -> fromIntegral i
         Nothing -> error $ "Record field '" <> fieldName <> "' not found in record type"
 recordFieldIndex fieldName _ = error $ "recordFieldIndex called on non-record type for field '" <> fieldName <> "'"
