@@ -63,10 +63,10 @@
                                 ] :=>
                                   TRecordRow
                                     (TRowExtend
-                                       "x"
+                                       "y"
                                        (TCon (TC "Integer" Star) "prelude")
                                        (TRowExtend
-                                          "y" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
+                                          "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                     (fromList []))
                                (Area (Loc 17 2 3) (Loc 35 2 21))
                                (Assignment
@@ -77,10 +77,10 @@
                                       ] :=>
                                         TRecordRow
                                           (TRowExtend
-                                             "x"
+                                             "y"
                                              (TCon (TC "Integer" Star) "prelude")
                                              (TRowExtend
-                                                "y" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
+                                                "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                           (fromList []))
                                      (Area (Loc 21 2 7) (Loc 35 2 21))
                                      (Record
@@ -362,10 +362,10 @@
                                       ] :=>
                                         TRecordRow
                                           (TRowExtend
-                                             "x"
+                                             "y"
                                              (TCon (TC "Integer" Star) "prelude")
                                              (TRowExtend
-                                                "y" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
+                                                "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                           (fromList []))
                                      (Area (Loc 75 4 10) (Loc 76 4 11))
                                      (Var "a" False))

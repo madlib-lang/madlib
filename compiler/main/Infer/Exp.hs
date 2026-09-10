@@ -900,38 +900,30 @@ inferRecord options env exp = do
   let fieldTypes  = (\(_, t, _) -> t) <$> inferredFields
   let fieldEXPS   = (\(_, _, es) -> es) <$> inferredFields
 
-  let allFieldTypes = concat fieldTypes
-  let fieldTypes' = filter (\(k, _) -> k /= "...") allFieldTypes
-  let spreads     = snd <$> filter (\(k, _) -> k == "...") allFieldTypes
-  let base = case spreads of
-        (x : _) -> Just x
-        _       -> Nothing
-
-  baseApplied <- maybe (return Nothing) (fmap Just . applyCurrentSubst) base
-  recordType <- case baseApplied of
-    Just (TRecordRow spreadRow optionalFields) ->
-      -- Keep the base row verbatim.  `rowFromFields` places explicit fields
-      -- outside it, so an equal tail label is shadowed rather than merged.
-      return $ TRecordRow (rowFromFields (M.fromList fieldTypes') spreadRow) optionalFields
-
-    Just tBase -> do
-      -- Constrain the spread operand to be a record, but do not put the
-      -- fields being written into its input row.  Spread is an overwrite:
-      -- `{ ...r, x: value }` accepts both rows with x and rows without x;
-      -- the outer x shadows any x in the base row.
-      baseVar <- newTVar Row
-      let recordWithBase = recordRow baseVar
-      s <- contextualUnify' env discardError exp tBase recordWithBase
-      extSubst s
-      return (recordRow (rowFromFields (M.fromList fieldTypes') baseVar))
-
-    Nothing ->
-      return (recordRow (rowFromFields (M.fromList fieldTypes') TRowEmpty))
+  -- Fold in source order.  A spread overlays everything accumulated so far;
+  -- an explicit field is a one-field overlay.  `overlayRow` keeps open rows
+  -- symbolic, which is what gives `(a, b) => ({ ...a, ...b })` its real
+  -- polymorphic result rather than accidentally retaining only `a`.
+  row <- foldM (addItem env discardError exp) TRowEmpty (concat fieldTypes)
+  let recordType = recordRow row
 
   let allPS = concat fieldPS
   recordType' <- applyCurrentSubst recordType
 
   return (allPS, recordType', Slv.Typed (allPS :=> recordType') area (Slv.Record fieldEXPS))
+  where
+    addItem inferEnv disc whole prior (name, ty)
+      | name /= "..." = return $ rowFromFields (M.singleton name ty) prior
+      | otherwise = do
+          spread <- applyCurrentSubst ty
+          spreadRow <- case spread of
+            TRecordRow r optional -> return $ rowFromFields optional r
+            _ -> do
+              freshRow <- newTVar Row
+              s <- contextualUnify' inferEnv disc whole spread (recordRow freshRow)
+              extSubst s
+              applyCurrentSubst freshRow
+          return $ overlayRow prior spreadRow
 
 
 -- | Phase 1 migrated: 3-tuple. Like inferRecord but creates an extensible
@@ -1326,17 +1318,20 @@ inferImplicitlyTyped options isLet env exp@(Can.Canonical area _) = do
     isLet env area sForGeneralization envForGeneralization
     tForGeneralization psForGeneralization (apply sForGeneralization tv)
 
-  let vs = if isLet then ftvForLetGen tForGeneralization else ftvList tForGeneralization
+  let finalType = apply sFinal tForGeneralization
+      finalPreds = apply sFinal rs'
+      vs = if isLet then ftvForLetGen finalType else ftvList finalType
       fsSet = ftv (apply sFinal envForGeneralization)
       gs = filter (not . (`S.member` fsSet)) vs
       sc =
         if isLet && not (Slv.isNamedAbs e) then
-          apply sFinal $ quantify [] (rs' :=> tForGeneralization)
+          quantify [] (finalPreds :=> finalType)
         else
-          -- TODO: consider if the apply sFinal should not happen before quantifying
-          -- because right now we might miss the defaulted types in the generated
-          -- scheme
-          apply sFinal $ quantify gs (rs' :=> tForGeneralization)
+          -- Apply defaulting before quantifying.  Quantifying first turns a
+          -- numeric field variable into TGen, which substitutions cannot
+          -- subsequently reach; that was the source of Unit dictionaries for
+          -- top-level merged records.
+          quantify gs (finalPreds :=> finalType)
 
   extSubst sFinal
 

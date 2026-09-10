@@ -45,7 +45,7 @@ import Explain.Location (emptyArea)
 import Run.Options
 import qualified Infer.ExhaustivePatterns as ExhaustivePatterns
 import Utils.List (removeDuplicates)
-import Canonicalize.Derive (deriveEqInstance, deriveShowInstance)
+import Canonicalize.Derive (deriveEqInstance, deriveShowInstance, deriveStructuralRecordInstance)
 
 
 {-|
@@ -431,10 +431,6 @@ searchTypeInConstructor id t = case t of
     Nothing
 
 
-chars :: [String]
-chars = (:"") <$> ['a'..]
-
-
 -- TODO: Move to Infer.Derive
 buildEnvForDerivedInstance :: Env -> InstanceToDerive -> Env
 buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case instanceToDerive of
@@ -475,27 +471,11 @@ buildEnvForDerivedInstance env@Env{ envInterfaces } instanceToDerive = case inst
     in  env { envInterfaces = updatedInterfaces }
 
   RecordToDerive fieldNames ->
-    let fieldNamesWithVars = zip (Set.toList fieldNames) chars
-        fields             = TVar . ((`TV` Star) . hash) <$> M.fromList fieldNamesWithVars
-        recordType         = closedRecord fields
-        instPreds interfaceName = (\var -> IsIn interfaceName [var] Nothing) <$> M.elems fields
-        showInstPreds = instPreds "Show"
-        eqInstanceForEnv = Instance (instPreds "Eq" :=> IsIn "Eq" [recordType] Nothing) mempty
-        showInstanceForEnv = Instance (showInstPreds :=> IsIn "Show" [recordType] Nothing) mempty
-        newEqInterface = case M.lookup "Eq" envInterfaces of
-                          Just (Interface vars preds instances) ->
-                            Interface vars preds (eqInstanceForEnv : instances)
-
-                          _ ->
-                            undefined
-        newShowInterface = case M.lookup "Show" envInterfaces of
-                          Just (Interface vars preds instances) ->
-                            Interface vars preds (showInstanceForEnv : instances)
-
-                          _ ->
-                            undefined
-        updatedInterfaces = M.insert "Show" newShowInterface $ M.insert "Eq" newEqInterface envInterfaces
-    in  env { envInterfaces = updatedInterfaces }
+    -- Record instances are no longer predeclared from their labels.  Their
+    -- exact field types are only known when a concrete predicate is solved.
+    -- Keeping this branch as a no-op preserves the canonicalizer's existing
+    -- bookkeeping while avoiding an unsound generic dictionary in the LSP.
+    env
 
 -- We need this for the LSP because we don't actually generate them!
 buildEnvForDerivedInstances :: Env -> [InstanceToDerive] -> Env
@@ -554,7 +534,18 @@ deriveExtra options env derivedTypes extra = do
           []
       allInstances = derivedEqInstances ++ derivedShowInstances
 
-  resolveInstances options env allInstances
+  (env', declaredInstances) <- resolveInstances options env allInstances
+  drainStructuralInstances env' Set.empty declaredInstances
+  where
+    drainStructuralInstances currentEnv seen generated = do
+      pending <- gets structuralRecordInstancesToDerive
+      let fresh = Set.toList (pending `Set.difference` seen)
+          structural = mapMaybe deriveStructuralRecordInstance fresh
+      if null structural then
+        return (currentEnv, generated)
+      else do
+        (nextEnv, nextGenerated) <- resolveInstances options currentEnv structural
+        drainStructuralInstances nextEnv (seen <> pending) (generated <> nextGenerated)
 
 
 inferAST :: Options -> Env -> [InstanceToDerive] -> Can.AST -> Infer (Slv.AST, Env)
@@ -573,7 +564,7 @@ inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.a
   (env''        , inferredInstances)  <- resolveInstances options env' ainstances
 
   extraToDerive <- gets extensibleRecordsToDerive
-  (_, extraDerivedInstances) <- deriveExtra options env'' instancesToDerive extraToDerive
+  (envFinal, extraDerivedInstances) <- deriveExtra options env'' instancesToDerive extraToDerive
 
   let updatedInterfaces = updateInterface <$> ainterfaces
   updatedADTs <- mapM updateADT atypedecls
@@ -606,6 +597,6 @@ inferAST options env instancesToDerive ast@Can.AST { Can.aexps, Can.apath, Can.a
           }
 
   checkAST initialEnv ast'
-  ExhaustivePatterns.check env'' ast'
+  ExhaustivePatterns.check envFinal ast'
 
-  return (ast' , env'')
+  return (ast' , envFinal)

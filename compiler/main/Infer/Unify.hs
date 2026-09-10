@@ -51,6 +51,11 @@ instance Unify Type where
   unify (TRecordRow row optionalFields) (TRecordRow row' optionalFields') =
     unifyRows (rowFromFields optionalFields row) (rowFromFields optionalFields' row')
 
+  unify (TRowOverlay left right) (TRowOverlay left' right') = do
+    s1 <- unifyRows left left'
+    s2 <- unifyRows (apply s1 right) (apply s1 right')
+    return (s2 `compose` s1)
+
   unify (TVar tv) t         = varBind tv t
   unify t         (TVar tv) = varBind tv t
   unify t1@(TCon a fpa _) t2@(TCon b fpb _)
@@ -77,6 +82,10 @@ instance Unify Type where
 -- outer occurrence is selected and the tail stays intact.
 unifyRows :: Type -> Type -> Infer Substitution
 unifyRows left right | left == right = return M.empty
+unifyRows (TRowOverlay left right) (TRowOverlay left' right') = do
+  s1 <- unifyRows left left'
+  s2 <- unifyRows (apply s1 right) (apply s1 right')
+  return (s2 `compose` s1)
 unifyRows left right = case left of
   TRowEmpty -> case right of
     TRowEmpty -> return M.empty
@@ -268,6 +277,10 @@ instance Match Type where
   match (TRecordRow row optionalFields) (TRecordRow row' optionalFields') =
     matchRows (rowFromFields optionalFields row)
               (rowFromFields optionalFields' row')
+  match (TRowOverlay left right) (TRowOverlay left' right') = do
+    s1 <- match left left'
+    s2 <- match (apply s1 right) (apply s1 right')
+    return (s2 `compose` s1)
   match t1 t2 = throwError $ CompilationError (UnificationError TypeMismatch { tmFound = t2, tmExpected = t1, tmOrigin = NoOrigin, tmSecondaries = [] }) NoContext
 
 

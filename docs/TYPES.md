@@ -277,6 +277,18 @@ Use the spread syntax to create a new record based on an existing one:
 updated = { ...user, age: 31 }
 ```
 
+Multiple spreads and fields are evaluated from left to right. When a field is
+provided more than once, the last value wins:
+```madlib
+merged = { ...defaults, color: "blue", ...overrides }
+```
+
+This also works with extensible records:
+```madlib
+merge :: { ...a } -> { ...b } -> { ...a, ...b }
+merge = (a, b) => ({ ...a, ...b })
+```
+
 ### Extensible records (open row types)
 Functions can accept any record that has at least a given set of fields using the
 row-polymorphism syntax `{ ...a }`:

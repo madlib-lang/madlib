@@ -876,18 +876,6 @@ pRecord = do
     Just TkRightCurly -> do
       (endArea, _) <- withArea (void pRightCurly)
       return $ Src.Source (mergeAreas startArea endArea) target Src.LUnit
-    Just TkSpread -> do
-      pSpread
-      spreadExpr <- pExp
-      fields <- option [] $ try $ do
-        pComma
-        rets
-        pRecordFields
-      _ <- optional pComma
-      rets
-      (endArea, _) <- withArea (void pRightCurly)
-      let spreadField = Src.Source (mergeAreas startArea (Src.getArea spreadExpr)) target (Src.FieldSpread spreadExpr)
-      return $ Src.Source (mergeAreas startArea endArea) target (Src.Record (spreadField : fields))
     _ -> do
       fields <- pRecordFields
       _ <- optional pComma
@@ -898,14 +886,24 @@ pRecord = do
 
 pRecordFields :: Parser [Src.Field]
 pRecordFields = option [] $ do
-  first <- pRecordField
+  first <- pRecordItem
   rest <- many $ try $ do
     rets
     pComma
     rets
-    pRecordField
+    pRecordItem
   return $ first : rest
   where
+    pRecordItem = do
+      mt <- peekTok
+      case mt of
+        Just TkSpread -> do
+          (startArea, _) <- withArea pSpread
+          spreadExpr <- pExp
+          target <- pSourceTarget
+          return $ Src.Source (mergeAreas startArea (Src.getArea spreadExpr)) target (Src.FieldSpread spreadExpr)
+        _ -> pRecordField
+
     -- Parse name once, then peek at next token to decide field:value vs shorthand.
     pRecordField = do
       (nameArea, name) <- withArea pFieldName

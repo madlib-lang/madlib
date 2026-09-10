@@ -696,6 +696,11 @@ typingToDoc canBreak comments typing = case typing of
         , comments''
         )
 
+  Source _ _ (TRRowOverlay left right) ->
+    let (left', comments') = typingToDoc canBreak comments left
+        (right', comments'') = typingToDoc canBreak comments' right
+    in (Pretty.lbrace <> Pretty.pretty " ..." <> left' <> Pretty.pretty ", ..." <> right' <> Pretty.pretty " ", comments'')
+
   Source _ _ (TRConstrained constraints typing) ->
     let (constraints', comments') = typingListToDoc canBreak comments constraints
         constraints'' =

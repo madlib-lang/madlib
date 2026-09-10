@@ -705,7 +705,7 @@ emptySlvAST = Slv.AST { Slv.aimports = [], Slv.aexps = [], Slv.atypedecls = [], 
 
 runInfer :: StateT InferState (ExceptT e m) a -> m (Either e (a, InferState))
 runInfer a =
-  runExceptT (runStateT a InferState { extensibleRecordsToDerive = mempty, count = 0, errors = [], Slv.warnings = [], mutatedNames = mempty, currentSubst = mempty, discardErrors = False, currentSpan = Nothing })
+  runExceptT (runStateT a InferState { extensibleRecordsToDerive = mempty, structuralRecordInstancesToDerive = mempty, count = 0, errors = [], Slv.warnings = [], mutatedNames = mempty, currentSubst = mempty, discardErrors = False, currentSpan = Nothing })
 
 
 mergedMainAST :: Rock.MonadFetch Query m => FilePath -> m Core.AST

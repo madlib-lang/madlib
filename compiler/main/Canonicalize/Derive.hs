@@ -259,6 +259,27 @@ deriveShowInstance astPath toDerive = case toDerive of
   _ ->
     undefined
 
+-- | Build a structural record instance from the predicate that asked for it.
+-- This is intentionally separate from 'RecordToDerive': a set of labels is
+-- not enough information to type a call to 'show' (or '==') on a field.
+deriveStructuralRecordInstance :: Pred -> Maybe Instance
+deriveStructuralRecordInstance (IsIn interface [recordType] _) = do
+  fields <- recordVisibleFields recordType
+  let names = Map.keys fields
+      constraints = [IsIn interface [fieldType] Nothing | fieldType <- Map.elems fields]
+      recordPredicate = IsIn interface [recordType] Nothing
+      assignment name body = ec $ Assignment name body
+      binary body = ec $ Abs (ec "__$a__") [ec $ Abs (ec "__$b__") [body]]
+      instanceFor methods = ec $ Instance interface constraints recordPredicate methods True
+  case interface of
+    "Eq" -> Just $ instanceFor $ Map.singleton "==" (assignment "==" (binary (buildFieldConditions names)))
+    "Show" -> Just $ instanceFor $ Map.singleton "show" (assignment "show" (ec $ Abs (ec "__$a__") [showFields names]))
+    "Comparable" ->
+      Just $ instanceFor $ Map.singleton "compare"
+        (assignment "compare" (binary (buildFieldComparisons 0 names)))
+    _ -> Nothing
+deriveStructuralRecordInstance _ = Nothing
+
 
 
 builtinsAccess :: String -> Exp

@@ -1,0 +1,40 @@
+import IO from "IO"
+
+interface Merged a {
+  describeMerged :: a -> String
+}
+
+instance Merged { onlyLeft :: Integer, onlyRight :: Boolean, shared :: Integer } {
+  describeMerged = (record) => `merged ${show(record.shared)}`
+}
+
+merge :: { ...a } -> { ...b } -> { ...a, ...b }
+merge = (a, b) => ({ ...a, ...b })
+
+renderMerge = (a, b) => show(merge(a, b))
+equalMerges = (a, b, c, d) => merge(a, b) == merge(c, d)
+orderedMerges = (a, b, c, d) => merge(a, b) < merge(c, d)
+
+main = () => {
+  left = { shared: "left", onlyLeft: 1 }
+  right = { shared: 2, onlyRight: true }
+  result = merge(left, right)
+  ordered = { x: 0, ...left, x: 1, ...right }
+  anotherShape = merge({ only: "left" }, { answer: 42 })
+  nested = merge({ nested: { kept: 1 } }, { nested: { kept: 2 }, flag: false })
+  IO.log(result.onlyLeft)
+  IO.log(result.shared)
+  IO.log(result.onlyRight)
+  IO.log(ordered.x)
+  IO.log(result)
+  IO.log(result == { onlyLeft: 1, onlyRight: true, shared: 2 })
+  IO.log(result < { onlyLeft: 1, onlyRight: true, shared: 3 })
+  IO.log(describeMerged(result))
+  IO.log(left.shared)
+  IO.log(right.shared)
+  IO.log(anotherShape)
+  IO.log(nested)
+  IO.log(renderMerge(left, right))
+  IO.log(equalMerges(left, right, { onlyLeft: 1, shared: "ignored" }, { onlyRight: true, shared: 2 }))
+  IO.log(orderedMerges(left, right, { onlyLeft: 1, shared: "ignored" }, { onlyRight: true, shared: 3 }))
+}

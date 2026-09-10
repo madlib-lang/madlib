@@ -92,6 +92,7 @@ data Typing_
   -- (Area, Typing) <- Area of the name
   -- Maybe typing for the possible extension
   | TRRecord (M.Map Name (Area, Typing)) (Maybe Typing)
+  | TRRowOverlay Typing Typing
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
   deriving(Eq, Show, Generic, Hashable)

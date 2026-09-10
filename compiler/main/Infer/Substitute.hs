@@ -20,6 +20,20 @@ class Substitutable a where
   apply :: Substitution -> a -> a
   ftv   :: a -> S.Set TVar
 
+-- | Normalize the pieces of a type whose shape matters to instance lookup.
+-- An overlay remains symbolic while its right operand is open because that
+-- operand may still override an otherwise visible field on the left.
+normalizeRecordForInstance :: Type -> Type
+normalizeRecordForInstance = go
+  where
+    go (TApp l r) = TApp (go l) (go r)
+    go (TRowExtend label fieldType tail) = TRowExtend label (go fieldType) (go tail)
+    go (TRowWithout labels row) = removeRowLabels labels (go row)
+    go (TRowOverlay left right) = overlayRow (go left) (go right)
+    go (TRecordRow row optionalFields) = TRecordRow (go row) (go <$> optionalFields)
+    go (TAlias path name vars inner) = TAlias path name vars (go inner)
+    go other = other
+
 {-# SPECIALIZE apply :: Substitution -> Type -> Type #-}
 {-# SPECIALIZE apply :: Substitution -> Scheme -> Scheme #-}
 {-# SPECIALIZE apply :: Substitution -> Pred -> Pred #-}
@@ -63,6 +77,7 @@ instance Substitutable Type where
 
   apply s (TRowExtend name fieldType tail) =
     TRowExtend name (apply s fieldType) (apply s tail)
+  apply s (TRowOverlay left right) = overlayRow (apply s left) (apply s right)
   apply s (TRowWithout labels row) = removeRowLabels labels (apply s row)
 
   -- Rows are substituted structurally.  Do not flatten through the legacy
@@ -86,6 +101,7 @@ instance Substitutable Type where
 
   ftv (TRowExtend _ fieldType tail) =
     ftv fieldType `S.union` ftv tail
+  ftv (TRowOverlay left right) = ftv left `S.union` ftv right
   ftv (TRowWithout _ row) = ftv row
 
   ftv (TRecordRow row optionalFields) =
@@ -150,6 +166,7 @@ occursCheck tv = go
     go (TApp l r)        = go l || go r
     go TRowEmpty         = False
     go (TRowExtend _ t r) = go t || go r
+    go (TRowOverlay l r) = go l || go r
     go (TRowWithout _ r) = go r
     go (TRecordRow row optionalFields) =
       go row || any go optionalFields
@@ -166,6 +183,7 @@ instance FtvOrdered Type where
   ftvList (t1 `TApp` t2)                = ftvList t1 ++ ftvList t2
   ftvList TRowEmpty                      = []
   ftvList (TRowExtend _ t r)             = ftvList t ++ ftvList r
+  ftvList (TRowOverlay l r)               = ftvList l ++ ftvList r
   ftvList (TRowWithout _ r)             = ftvList r
   ftvList (TRecordRow row optionalFields) =
     ftvList row ++ concatMap ftvList (M.elems optionalFields)
@@ -229,6 +247,7 @@ buildVarSubsts t = case t of
 
   TRowExtend _ fieldType tail ->
     buildVarSubsts fieldType `compose` buildVarSubsts tail
+  TRowOverlay left right -> buildVarSubsts left `compose` buildVarSubsts right
   TRowWithout _ row -> buildVarSubsts row
 
   TRecordRow row optionalFields ->

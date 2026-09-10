@@ -233,6 +233,9 @@ prettyPrintTyping' paren (Slv.Untyped _ typing) = case typing of
         fields' = intercalate ", " fields
     in  "{ " <> fields' <> " }"
 
+  Slv.TRRowOverlay left right ->
+    "{ ..." <> prettyPrintTyping' False left <> ", ..." <> prettyPrintTyping' False right <> " }"
+
 
 isTRArrOrTRCompWithArgs :: Slv.Typing -> Bool
 isTRArrOrTRCompWithArgs (Slv.Typed _ _ _) = undefined

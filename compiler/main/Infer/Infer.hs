@@ -14,13 +14,17 @@ import Driver.Query
 import Error.Warning
 import Canonicalize.InstanceToDerive
 import Canonicalize.CanonicalM (pushRecordToDerive)
-import Infer.Type (Substitution)
+import Infer.Type (Substitution, Pred)
 
 type Infer a = forall m . (Rock.MonadFetch Query m, MonadIO m, MonadError CompilationError m, MonadState InferState m) => m a
 
 data InferState
   = InferState
   { extensibleRecordsToDerive :: !(Set.Set InstanceToDerive)
+  -- Exact structural predicates requested by instance solving.  Keeping the
+  -- complete predicate prevents record fields from being replaced by fresh
+  -- variables and later defaulted to Unit.
+  , structuralRecordInstancesToDerive :: !(Set.Set Pred)
   , count :: !Int
   , errors :: [CompilationError]
   , warnings :: [CompilationWarning]
@@ -88,6 +92,15 @@ pushExtensibleRecordToDerive fieldNames = do
             Set.singleton (RecordToDerive (Set.fromList fieldNames))
             <> extensibleRecordsToDerive s
         }
+
+
+pushStructuralRecordInstanceToDerive :: Pred -> Infer ()
+pushStructuralRecordInstanceToDerive predicate = do
+  s <- get
+  put s
+    { structuralRecordInstancesToDerive =
+        Set.insert predicate (structuralRecordInstancesToDerive s)
+    }
 
 
 markMutated :: String -> Infer ()

@@ -278,6 +278,9 @@ findNodeInTypeAnnotation loc maybeRoot typing =
               foldl' (<|>) Nothing (findNodeInRecordFieldTypeAnnotation loc <$> Map.toList fields)
               <|> foldl' (<|>) Nothing (findNodeInTypeAnnotation loc Nothing <$> Map.elems (snd <$> fields))
 
+            Slv.TRRowOverlay left right ->
+              findNodeInTypeAnnotation loc Nothing left <|> findNodeInTypeAnnotation loc Nothing right
+
             Slv.TRTuple items ->
               foldl' (<|>) Nothing $ findNodeInTypeAnnotation loc Nothing <$> items
 

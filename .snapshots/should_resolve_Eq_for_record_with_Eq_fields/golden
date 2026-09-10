@@ -40,9 +40,9 @@
                              "Eq"
                              [ TRecordRow
                                  (TRowExtend
-                                    "x"
-                                    (TCon (TC "Integer" Star) "prelude")
-                                    (TRowExtend "y" (TCon (TC "String" Star) "prelude") TRowEmpty))
+                                    "y"
+                                    (TCon (TC "String" Star) "prelude")
+                                    (TRowExtend "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                  (fromList [])
                              ]
                              (Just (Area (Loc 79 4 17) (Loc 81 4 19)))
@@ -65,10 +65,10 @@
                                    "Eq"
                                    [ TRecordRow
                                        (TRowExtend
-                                          "x"
-                                          (TCon (TC "Integer" Star) "prelude")
+                                          "y"
+                                          (TCon (TC "String" Star) "prelude")
                                           (TRowExtend
-                                             "y" (TCon (TC "String" Star) "prelude") TRowEmpty))
+                                             "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                        (fromList [])
                                    ]
                                    (Just (Area (Loc 79 4 17) (Loc 81 4 19)))
@@ -83,10 +83,10 @@
                                 ] :=>
                                   TRecordRow
                                     (TRowExtend
-                                       "x"
-                                       (TCon (TC "Integer" Star) "prelude")
+                                       "y"
+                                       (TCon (TC "String" Star) "prelude")
                                        (TRowExtend
-                                          "y" (TCon (TC "String" Star) "prelude") TRowEmpty))
+                                          "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                     (fromList []))
                                (Area (Loc 17 2 3) (Loc 38 2 24))
                                (Assignment
@@ -96,10 +96,10 @@
                                       ] :=>
                                         TRecordRow
                                           (TRowExtend
-                                             "x"
-                                             (TCon (TC "Integer" Star) "prelude")
+                                             "y"
+                                             (TCon (TC "String" Star) "prelude")
                                              (TRowExtend
-                                                "y" (TCon (TC "String" Star) "prelude") TRowEmpty))
+                                                "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                           (fromList []))
                                      (Area (Loc 22 2 8) (Loc 38 2 24))
                                      (Record
@@ -139,10 +139,10 @@
                                 ] :=>
                                   TRecordRow
                                     (TRowExtend
-                                       "x"
-                                       (TCon (TC "Integer" Star) "prelude")
+                                       "y"
+                                       (TCon (TC "String" Star) "prelude")
                                        (TRowExtend
-                                          "y" (TCon (TC "String" Star) "prelude") TRowEmpty))
+                                          "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                     (fromList []))
                                (Area (Loc 41 3 3) (Loc 62 3 24))
                                (Assignment
@@ -152,10 +152,10 @@
                                       ] :=>
                                         TRecordRow
                                           (TRowExtend
-                                             "x"
-                                             (TCon (TC "Integer" Star) "prelude")
+                                             "y"
+                                             (TCon (TC "String" Star) "prelude")
                                              (TRowExtend
-                                                "y" (TCon (TC "String" Star) "prelude") TRowEmpty))
+                                                "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                           (fromList []))
                                      (Area (Loc 46 3 8) (Loc 62 3 24))
                                      (Record
@@ -199,11 +199,11 @@
                                           "Eq"
                                           [ TRecordRow
                                               (TRowExtend
-                                                 "x"
-                                                 (TCon (TC "Integer" Star) "prelude")
+                                                 "y"
+                                                 (TCon (TC "String" Star) "prelude")
                                                  (TRowExtend
-                                                    "y"
-                                                    (TCon (TC "String" Star) "prelude")
+                                                    "x"
+                                                    (TCon (TC "Integer" Star) "prelude")
                                                     TRowEmpty))
                                               (fromList [])
                                           ]
@@ -219,11 +219,11 @@
                                                 (TC "(->)" (Kfun Star (Kfun Star Star))) "prelude")
                                              (TRecordRow
                                                 (TRowExtend
-                                                   "x"
-                                                   (TCon (TC "Integer" Star) "prelude")
+                                                   "y"
+                                                   (TCon (TC "String" Star) "prelude")
                                                    (TRowExtend
-                                                      "y"
-                                                      (TCon (TC "String" Star) "prelude")
+                                                      "x"
+                                                      (TCon (TC "Integer" Star) "prelude")
                                                       TRowEmpty))
                                                 (fromList [])))
                                           (TCon (TC "Boolean" Star) "prelude"))
@@ -234,11 +234,11 @@
                                                 "Eq"
                                                 [ TRecordRow
                                                     (TRowExtend
-                                                       "x"
-                                                       (TCon (TC "Integer" Star) "prelude")
+                                                       "y"
+                                                       (TCon (TC "String" Star) "prelude")
                                                        (TRowExtend
-                                                          "y"
-                                                          (TCon (TC "String" Star) "prelude")
+                                                          "x"
+                                                          (TCon (TC "Integer" Star) "prelude")
                                                           TRowEmpty))
                                                     (fromList [])
                                                 ]
@@ -251,11 +251,11 @@
                                                       "prelude")
                                                    (TRecordRow
                                                       (TRowExtend
-                                                         "x"
-                                                         (TCon (TC "Integer" Star) "prelude")
+                                                         "y"
+                                                         (TCon (TC "String" Star) "prelude")
                                                          (TRowExtend
-                                                            "y"
-                                                            (TCon (TC "String" Star) "prelude")
+                                                            "x"
+                                                            (TCon (TC "Integer" Star) "prelude")
                                                             TRowEmpty))
                                                       (fromList [])))
                                                 (TApp
@@ -265,11 +265,11 @@
                                                          "prelude")
                                                       (TRecordRow
                                                          (TRowExtend
-                                                            "x"
-                                                            (TCon (TC "Integer" Star) "prelude")
+                                                            "y"
+                                                            (TCon (TC "String" Star) "prelude")
                                                             (TRowExtend
-                                                               "y"
-                                                               (TCon (TC "String" Star) "prelude")
+                                                               "x"
+                                                               (TCon (TC "Integer" Star) "prelude")
                                                                TRowEmpty))
                                                          (fromList [])))
                                                    (TCon (TC "Boolean" Star) "prelude")))
@@ -280,11 +280,11 @@
                                                       "Eq"
                                                       [ TRecordRow
                                                           (TRowExtend
-                                                             "x"
-                                                             (TCon (TC "Integer" Star) "prelude")
+                                                             "y"
+                                                             (TCon (TC "String" Star) "prelude")
                                                              (TRowExtend
-                                                                "y"
-                                                                (TCon (TC "String" Star) "prelude")
+                                                                "x"
+                                                                (TCon (TC "Integer" Star) "prelude")
                                                                 TRowEmpty))
                                                           (fromList [])
                                                       ]
@@ -292,11 +292,11 @@
                                                   ] :=>
                                                     TRecordRow
                                                       (TRowExtend
-                                                         "x"
-                                                         (TCon (TC "Integer" Star) "prelude")
+                                                         "y"
+                                                         (TCon (TC "String" Star) "prelude")
                                                          (TRowExtend
-                                                            "y"
-                                                            (TCon (TC "String" Star) "prelude")
+                                                            "x"
+                                                            (TCon (TC "Integer" Star) "prelude")
                                                             TRowEmpty))
                                                       (fromList []))
                                                  (Area (Loc 67 4 5) (Loc 68 4 6))
@@ -306,11 +306,12 @@
                                                        "Eq"
                                                        [ TRecordRow
                                                            (TRowExtend
-                                                              "x"
-                                                              (TCon (TC "Integer" Star) "prelude")
+                                                              "y"
+                                                              (TCon (TC "String" Star) "prelude")
                                                               (TRowExtend
-                                                                 "y"
-                                                                 (TCon (TC "String" Star) "prelude")
+                                                                 "x"
+                                                                 (TCon
+                                                                    (TC "Integer" Star) "prelude")
                                                                  TRowEmpty))
                                                            (fromList [])
                                                        ]
@@ -324,12 +325,12 @@
                                                              "prelude")
                                                           (TRecordRow
                                                              (TRowExtend
-                                                                "x"
-                                                                (TCon (TC "Integer" Star) "prelude")
+                                                                "y"
+                                                                (TCon (TC "String" Star) "prelude")
                                                                 (TRowExtend
-                                                                   "y"
+                                                                   "x"
                                                                    (TCon
-                                                                      (TC "String" Star) "prelude")
+                                                                      (TC "Integer" Star) "prelude")
                                                                    TRowEmpty))
                                                              (fromList [])))
                                                        (TCon (TC "Boolean" Star) "prelude"))
@@ -340,14 +341,13 @@
                                                              "Eq"
                                                              [ TRecordRow
                                                                  (TRowExtend
-                                                                    "x"
+                                                                    "y"
                                                                     (TCon
-                                                                       (TC "Integer" Star)
-                                                                       "prelude")
+                                                                       (TC "String" Star) "prelude")
                                                                     (TRowExtend
-                                                                       "y"
+                                                                       "x"
                                                                        (TCon
-                                                                          (TC "String" Star)
+                                                                          (TC "Integer" Star)
                                                                           "prelude")
                                                                        TRowEmpty))
                                                                  (fromList [])
@@ -357,12 +357,12 @@
                                                          ] :=>
                                                            TRecordRow
                                                              (TRowExtend
-                                                                "x"
-                                                                (TCon (TC "Integer" Star) "prelude")
+                                                                "y"
+                                                                (TCon (TC "String" Star) "prelude")
                                                                 (TRowExtend
-                                                                   "y"
+                                                                   "x"
                                                                    (TCon
-                                                                      (TC "String" Star) "prelude")
+                                                                      (TC "Integer" Star) "prelude")
                                                                    TRowEmpty))
                                                              (fromList []))
                                                         (Area (Loc 70 4 8) (Loc 71 4 9))
@@ -372,14 +372,14 @@
                                                               "Eq"
                                                               [ TRecordRow
                                                                   (TRowExtend
-                                                                     "x"
+                                                                     "y"
                                                                      (TCon
-                                                                        (TC "Integer" Star)
+                                                                        (TC "String" Star)
                                                                         "prelude")
                                                                      (TRowExtend
-                                                                        "y"
+                                                                        "x"
                                                                         (TCon
-                                                                           (TC "String" Star)
+                                                                           (TC "Integer" Star)
                                                                            "prelude")
                                                                         TRowEmpty))
                                                                   (fromList [])
@@ -395,14 +395,14 @@
                                                                     "Eq"
                                                                     [ TRecordRow
                                                                         (TRowExtend
-                                                                           "x"
+                                                                           "y"
                                                                            (TCon
-                                                                              (TC "Integer" Star)
+                                                                              (TC "String" Star)
                                                                               "prelude")
                                                                            (TRowExtend
-                                                                              "y"
+                                                                              "x"
                                                                               (TCon
-                                                                                 (TC "String" Star)
+                                                                                 (TC "Integer" Star)
                                                                                  "prelude")
                                                                               TRowEmpty))
                                                                         (fromList [])
@@ -423,15 +423,16 @@
                                                                           "prelude")
                                                                        (TRecordRow
                                                                           (TRowExtend
-                                                                             "x"
+                                                                             "y"
                                                                              (TCon
-                                                                                (TC "Integer" Star)
+                                                                                (TC "String" Star)
                                                                                 "prelude")
                                                                              (TRowExtend
-                                                                                "y"
+                                                                                "x"
                                                                                 (TCon
                                                                                    (TC
-                                                                                      "String" Star)
+                                                                                      "Integer"
+                                                                                      Star)
                                                                                    "prelude")
                                                                                 TRowEmpty))
                                                                           (fromList [])))
@@ -445,17 +446,17 @@
                                                                           "Eq"
                                                                           [ TRecordRow
                                                                               (TRowExtend
-                                                                                 "x"
+                                                                                 "y"
                                                                                  (TCon
                                                                                     (TC
-                                                                                       "Integer"
+                                                                                       "String"
                                                                                        Star)
                                                                                     "prelude")
                                                                                  (TRowExtend
-                                                                                    "y"
+                                                                                    "x"
                                                                                     (TCon
                                                                                        (TC
-                                                                                          "String"
+                                                                                          "Integer"
                                                                                           Star)
                                                                                        "prelude")
                                                                                     TRowEmpty))
@@ -476,17 +477,17 @@
                                                                                 "prelude")
                                                                              (TRecordRow
                                                                                 (TRowExtend
-                                                                                   "x"
+                                                                                   "y"
                                                                                    (TCon
                                                                                       (TC
-                                                                                         "Integer"
+                                                                                         "String"
                                                                                          Star)
                                                                                       "prelude")
                                                                                    (TRowExtend
-                                                                                      "y"
+                                                                                      "x"
                                                                                       (TCon
                                                                                          (TC
-                                                                                            "String"
+                                                                                            "Integer"
                                                                                             Star)
                                                                                          "prelude")
                                                                                       TRowEmpty))
@@ -504,17 +505,17 @@
                                                                                    "prelude")
                                                                                 (TRecordRow
                                                                                    (TRowExtend
-                                                                                      "x"
+                                                                                      "y"
                                                                                       (TCon
                                                                                          (TC
-                                                                                            "Integer"
+                                                                                            "String"
                                                                                             Star)
                                                                                          "prelude")
                                                                                       (TRowExtend
-                                                                                         "y"
+                                                                                         "x"
                                                                                          (TCon
                                                                                             (TC
-                                                                                               "String"
+                                                                                               "Integer"
                                                                                                Star)
                                                                                             "prelude")
                                                                                          TRowEmpty))
@@ -530,17 +531,17 @@
                                                                           "Eq"
                                                                           [ TRecordRow
                                                                               (TRowExtend
-                                                                                 "x"
+                                                                                 "y"
                                                                                  (TCon
                                                                                     (TC
-                                                                                       "Integer"
+                                                                                       "String"
                                                                                        Star)
                                                                                     "prelude")
                                                                                  (TRowExtend
-                                                                                    "y"
+                                                                                    "x"
                                                                                     (TCon
                                                                                        (TC
-                                                                                          "String"
+                                                                                          "Integer"
                                                                                           Star)
                                                                                        "prelude")
                                                                                     TRowEmpty))
@@ -553,15 +554,16 @@
                                                                       ] :=>
                                                                         TRecordRow
                                                                           (TRowExtend
-                                                                             "x"
+                                                                             "y"
                                                                              (TCon
-                                                                                (TC "Integer" Star)
+                                                                                (TC "String" Star)
                                                                                 "prelude")
                                                                              (TRowExtend
-                                                                                "y"
+                                                                                "x"
                                                                                 (TCon
                                                                                    (TC
-                                                                                      "String" Star)
+                                                                                      "Integer"
+                                                                                      Star)
                                                                                    "prelude")
                                                                                 TRowEmpty))
                                                                           (fromList []))
@@ -574,14 +576,14 @@
                                                                     "Eq"
                                                                     [ TRecordRow
                                                                         (TRowExtend
-                                                                           "x"
+                                                                           "y"
                                                                            (TCon
-                                                                              (TC "Integer" Star)
+                                                                              (TC "String" Star)
                                                                               "prelude")
                                                                            (TRowExtend
-                                                                              "y"
+                                                                              "x"
                                                                               (TCon
-                                                                                 (TC "String" Star)
+                                                                                 (TC "Integer" Star)
                                                                                  "prelude")
                                                                               TRowEmpty))
                                                                         (fromList [])
@@ -593,14 +595,14 @@
                                                                 ] :=>
                                                                   TRecordRow
                                                                     (TRowExtend
-                                                                       "x"
+                                                                       "y"
                                                                        (TCon
-                                                                          (TC "Integer" Star)
+                                                                          (TC "String" Star)
                                                                           "prelude")
                                                                        (TRowExtend
-                                                                          "y"
+                                                                          "x"
                                                                           (TCon
-                                                                             (TC "String" Star)
+                                                                             (TC "Integer" Star)
                                                                              "prelude")
                                                                           TRowEmpty))
                                                                     (fromList []))
@@ -614,11 +616,11 @@
                                                 "Eq"
                                                 [ TRecordRow
                                                     (TRowExtend
-                                                       "x"
-                                                       (TCon (TC "Integer" Star) "prelude")
+                                                       "y"
+                                                       (TCon (TC "String" Star) "prelude")
                                                        (TRowExtend
-                                                          "y"
-                                                          (TCon (TC "String" Star) "prelude")
+                                                          "x"
+                                                          (TCon (TC "Integer" Star) "prelude")
                                                           TRowEmpty))
                                                     (fromList [])
                                                 ]
@@ -630,11 +632,11 @@
                                             ] :=>
                                               TRecordRow
                                                 (TRowExtend
-                                                   "x"
-                                                   (TCon (TC "Integer" Star) "prelude")
+                                                   "y"
+                                                   (TCon (TC "String" Star) "prelude")
                                                    (TRowExtend
-                                                      "y"
-                                                      (TCon (TC "String" Star) "prelude")
+                                                      "x"
+                                                      (TCon (TC "Integer" Star) "prelude")
                                                       TRowEmpty))
                                                 (fromList []))
                                            (Area (Loc 86 4 24) (Loc 88 4 26))
@@ -645,11 +647,11 @@
                                           "Eq"
                                           [ TRecordRow
                                               (TRowExtend
-                                                 "x"
-                                                 (TCon (TC "Integer" Star) "prelude")
+                                                 "y"
+                                                 (TCon (TC "String" Star) "prelude")
                                                  (TRowExtend
-                                                    "y"
-                                                    (TCon (TC "String" Star) "prelude")
+                                                    "x"
+                                                    (TCon (TC "Integer" Star) "prelude")
                                                     TRowEmpty))
                                               (fromList [])
                                           ]
@@ -665,10 +667,10 @@
                                       ] :=>
                                         TRecordRow
                                           (TRowExtend
-                                             "x"
-                                             (TCon (TC "Integer" Star) "prelude")
+                                             "y"
+                                             (TCon (TC "String" Star) "prelude")
                                              (TRowExtend
-                                                "y" (TCon (TC "String" Star) "prelude") TRowEmpty))
+                                                "x" (TCon (TC "Integer" Star) "prelude") TRowEmpty))
                                           (fromList []))
                                      (Area (Loc 90 4 28) (Loc 92 4 30))
                                      (Var "r2" False))

@@ -19,7 +19,6 @@ import           Data.List
 import qualified Data.Map                      as M
 import qualified Data.Set                      as Set
 import Infer.EnvUtils
-import Utils.Record (generateRecordPredsAndType)
 import qualified Data.Maybe as Maybe
 
 
@@ -97,36 +96,50 @@ bySuper env = go Set.empty
           _ -> [p]
 
 
+normalizePredForInstance :: Pred -> Infer Pred
+normalizePredForInstance (IsIn interface ts area) = do
+  subst <- getSubst
+  return $ IsIn interface (normalizeRecordForInstance <$> apply subst ts) area
+
+
 findInst :: Env -> Pred -> Infer (Maybe Instance)
-findInst env p@(IsIn interface ts _) =
+findInst env requested = normalizePredForInstance requested >>= findInstNormalized env
+
+
+findInstNormalized :: Env -> Pred -> Infer (Maybe Instance)
+findInstNormalized env p@(IsIn interface ts _) =
   catchError
     (Just <$> tryInsts candidates)
     (const $ case ts of
       [TRecordRow row optionalFields]
-        | interface == "Eq" || interface == "Show"
+        | interface == "Eq" || interface == "Show" || interface == "Comparable"
         , (requiredFields, Nothing) <- visibleRow row -> do
         let fields = requiredFields <> optionalFields
-        let (fieldsPreds, tRec) = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
-            qp = fieldsPreds :=> IsIn interface [tRec] Nothing
+        -- Use the field types from the wanted record itself.  The old helper
+        -- manufactured fresh variables for the same labels, which meant a
+        -- deferred polymorphic record merge could later default those
+        -- variables to Unit even after its rows had specialized to numbers.
+        let fieldsPreds = [IsIn interface [fieldType] Nothing | fieldType <- M.elems fields]
+            qp = fieldsPreds :=> IsIn interface [TRecordRow row optionalFields] Nothing
         return $ Just (Instance qp mempty)
 
       _ ->
         return Nothing
     )
- where
-  candidates
-    | isOpenRecordWanted interface ts = []
-    | otherwise = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
-  tryInst i@(Instance (_ :=> h) _) = do
-    isInstanceOf h p
-    return i
-  tryInsts []          =
-    case p of
-        IsIn _ _ (Just area) ->
-          throwError $ CompilationError (NoInstanceFound interface ts []) (Context (envCurrentPath env) area)
-        _ ->
-          throwWithContext (NoInstanceFound interface ts [])
-  tryInsts (inst : is) = catchError (tryInst inst) (\_ -> tryInsts is)
+   where
+    candidates
+      | isOpenRecordWanted interface ts = []
+      | otherwise = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
+    tryInst i@(Instance (_ :=> h) _) = do
+      isInstanceOf h p
+      return i
+    tryInsts []          =
+      case p of
+          IsIn _ _ (Just area) ->
+            throwError $ CompilationError (NoInstanceFound interface ts []) (Context (envCurrentPath env) area)
+          _ ->
+            throwWithContext (NoInstanceFound interface ts [])
+    tryInsts (inst : is) = catchError (tryInst inst) (\_ -> tryInsts is)
 
 gatherInstPreds :: Env -> Pred -> Infer [Pred]
 gatherInstPreds env p =
@@ -173,40 +186,42 @@ isInstanceOf (IsIn interface ts _) (IsIn interface' ts' _)
 
 
 byInst :: Env -> Pred -> Infer [Pred]
-byInst env p@(IsIn interface ts maybeArea) =
+byInst env requested = normalizePredForInstance requested >>= byInstNormalized env
+
+
+byInstNormalized :: Env -> Pred -> Infer [Pred]
+byInstNormalized env p@(IsIn interface ts maybeArea) =
   catchError
     (tryInsts candidates)
     (\err -> case ts of
       [TRecordRow row optionalFields]
-        | interface == "Eq" || interface == "Show"
+        | interface == "Eq" || interface == "Show" || interface == "Comparable"
         , (requiredFields, Nothing) <- visibleRow row -> do
         let fields = requiredFields <> optionalFields
-        pushExtensibleRecordToDerive (M.keys fields)
-        let (fieldsPreds, ts') = generateRecordPredsAndType (envCurrentPath env) interface (M.keys fields)
-        u <- isInstanceOf (IsIn interface [ts'] Nothing) p
-        return $ apply u fieldsPreds
+        pushStructuralRecordInstanceToDerive p
+        return [IsIn interface [fieldType] Nothing | fieldType <- M.elems fields]
 
       _ ->
         throwError err
     )
- where
-  candidates
-    | isOpenRecordWanted interface ts = []
-    | otherwise = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
-  tryInst (Instance (ps :=> h) _) = do
-    u <- isInstanceOf h p
-    return $ apply u <$> ps
-  tryInsts [] =
-    if all isConcrete $ predTypes p then
-      case maybeArea of
-        Just area ->
-          throwError $ CompilationError (NoInstanceFound interface ts []) (Context (envCurrentPath env) area)
-        _ ->
-          throwWithContext (NoInstanceFound interface ts [])
-    else
-      throwWithContext FatalError
+   where
+    candidates
+      | isOpenRecordWanted interface ts = []
+      | otherwise = filter (\(Instance (_ :=> h) _) -> quickMatchPred h p) (insts env interface)
+    tryInst (Instance (ps :=> h) _) = do
+      u <- isInstanceOf h p
+      return $ apply u <$> ps
+    tryInsts [] =
+      if all isConcrete $ predTypes p then
+        case maybeArea of
+          Just area ->
+            throwError $ CompilationError (NoInstanceFound interface ts []) (Context (envCurrentPath env) area)
+          _ ->
+            throwWithContext (NoInstanceFound interface ts [])
+      else
+        throwWithContext FatalError
 
-  tryInsts (inst : is) = catchError (tryInst inst) (const $ tryInsts is)
+    tryInsts (inst : is) = catchError (tryInst inst) (const $ tryInsts is)
 
 
 -- A closed, shape-specific record instance is not evidence for an open
@@ -214,7 +229,7 @@ byInst env p@(IsIn interface ts maybeArea) =
 -- silently discard constraints for fields supplied later by a caller.
 isOpenRecordWanted :: Id -> [Type] -> Bool
 isOpenRecordWanted interface ts =
-  (interface == "Eq" || interface == "Show")
+  (interface == "Eq" || interface == "Show" || interface == "Comparable")
   && case ts of
     [TRecordRow row _] -> case visibleRow row of
       (_, Just _) -> True

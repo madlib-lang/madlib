@@ -95,6 +95,7 @@ data Typing_
   | TRComp Name [Typing]
   | TRArr Typing Typing
   | TRRecord (M.Map Name (Area, Typing)) (Maybe Typing)
+  | TRRowOverlay Typing Typing
   | TRTuple [Typing]
   | TRConstrained Constraints Typing -- List of constrains and the typing it applies to
   deriving(Eq, Show, Ord, Generic, Hashable)

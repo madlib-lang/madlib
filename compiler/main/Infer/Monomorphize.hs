@@ -51,6 +51,8 @@ resolveRowVariables t = case t of
     TRowEmpty
   TRowWithout labels row -> removeRowLabels labels (resolveRow row)
 
+  TRowOverlay left right -> overlayRow (resolveRow left) (resolveRow right)
+
   TRowExtend label fieldType tail ->
     TRowExtend label (resolveRowVariables fieldType) (resolveRow tail)
 

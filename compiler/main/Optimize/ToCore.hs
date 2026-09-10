@@ -297,6 +297,10 @@ instance Processable Slv.Typing Core.Typing where
       fields' <- mapM (toCore enabled) (snd <$> fields)
       base'   <- mapM (toCore enabled) base
       return $ Core.Untyped area [] $ Core.TRRecord fields' base'
+    Slv.TRRowOverlay left right -> do
+      left' <- toCore enabled left
+      right' <- toCore enabled right
+      return $ Core.Untyped area [] $ Core.TRRowOverlay left' right'
 
     Slv.TRTuple typings -> do
       typings' <- mapM (toCore enabled) typings

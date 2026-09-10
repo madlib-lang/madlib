@@ -304,12 +304,6 @@ instance Canonicalizable Src.Exp Can.Exp where
       fields' <- mapM (canonicalize env target) fields
 
       let fieldNames = Maybe.mapMaybe Can.getFieldName fields'
-      let uniqFieldNames = Set.toList $ Set.fromList fieldNames
-      let fieldDiff = fieldNames List.\\ uniqFieldNames
-      unless (null fieldDiff) $
-        throwError $ CompilationError (RecordDuplicateFields fieldDiff) (Context (Env.envCurrentPath env) area)
-
-
       unless (Can.hasSpread fields') $ do
         pushRecordToDerive fieldNames
       return $ Can.Canonical area (Can.Record fields')

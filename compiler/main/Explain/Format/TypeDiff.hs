@@ -1064,6 +1064,14 @@ prettyPrintType' rewrite (vars, hkVars) t = case t of
   TRowWithout _ row ->
     prettyPrintType' rewrite (vars, hkVars) row
 
+  TRowOverlay left right ->
+    let (varsLeft, hkVarsLeft, renderedLeft) = prettyPrintType' rewrite (vars, hkVars) left
+        (varsRight, hkVarsRight, renderedRight) = prettyPrintType' rewrite (varsLeft, hkVarsLeft) right
+    in (varsRight, hkVarsRight, "{ ..." <> renderedLeft <> ", ..." <> renderedRight <> " }")
+
+  TRecordRow (TRowOverlay left right) optionalFields ->
+    prettyPrintOverlayRecord rewrite (vars, hkVars) left right optionalFields
+
   TRecordRow row optionalFields ->
     prettyPrintRow rewrite (vars, hkVars) row optionalFields
 
@@ -1102,6 +1110,14 @@ prettyPrintRow rewrite (vars, hkVars) row optionalFields =
         Nothing -> (finalVars, finalHkVars, "")
       compiled = "{ " <> formattedBase <> intercalate ", " compiledFields' <> " }"
   in (varsWithBase, hkVarsWithBase, compiled)
+
+prettyPrintOverlayRecord :: Bool -> (M.Map Int Int, M.Map Int Int) -> Type -> Type -> M.Map Id Type -> (M.Map Int Int, M.Map Int Int, String)
+prettyPrintOverlayRecord rewrite (vars, hkVars) left right optionalFields =
+  let (varsLeft, hkVarsLeft, left') = prettyPrintType' rewrite (vars, hkVars) left
+      (varsRight, hkVarsRight, right') = prettyPrintType' rewrite (varsLeft, hkVarsLeft) right
+      fieldParts = [name <> " :: " <> prettyPrintType rewrite ty | (name, ty) <- M.toAscList optionalFields]
+      suffix = if null fieldParts then "" else ", " <> intercalate ", " fieldParts
+  in (varsRight, hkVarsRight, "{ ..." <> left' <> ", ..." <> right' <> suffix <> " }")
 
 
 gatherAllFnArgs :: Type -> [Type]
@@ -1449,6 +1465,18 @@ typeToDoc (vars, hkVars) t = case t of
   TRowWithout _ row ->
     typeToDoc (vars, hkVars) row
 
+  TRowOverlay left right ->
+    let (varsLeft, hkVarsLeft, renderedLeft) = typeToDoc (vars, hkVars) left
+        (varsRight, hkVarsRight, renderedRight) = typeToDoc (varsLeft, hkVarsLeft) right
+    in  ( varsRight
+        , hkVarsRight
+        , Pretty.lbrace <> Pretty.pretty " ..." <> renderedLeft
+            <> Pretty.pretty ", ..." <> renderedRight <> Pretty.pretty " }"
+        )
+
+  TRecordRow (TRowOverlay left right) optionalFields ->
+    overlayRecordToDoc (vars, hkVars) left right optionalFields
+
   TRecordRow row optionalFields ->
     rowToDoc (vars, hkVars) row optionalFields
 
@@ -1463,6 +1491,29 @@ typeToDoc (vars, hkVars) t = case t of
       Nothing ->
         let newIndex = M.size vars
         in  (M.insert (n - 1000) newIndex vars, hkVars, Pretty.pretty (renderIndexedLetter newIndex))
+
+
+-- Keep the record wrapper outside an overlay's row operands.  Rendering the
+-- operands through 'rowToDoc' used to produce `{ ...{ ...a, ...b }, }` in
+-- hover and type-diff output instead of the source-level row notation.
+overlayRecordToDoc :: (M.Map Int Int, M.Map Int Int) -> Type -> Type -> M.Map Id Type -> (M.Map Int Int, M.Map Int Int, Pretty.Doc ann)
+overlayRecordToDoc (vars, hkVars) left right optionalFields =
+  let (varsLeft, hkVarsLeft, leftDoc) = typeToDoc (vars, hkVars) left
+      (varsRight, hkVarsRight, rightDoc) = typeToDoc (varsLeft, hkVarsLeft) right
+      (finalVars, finalHkVars, fieldDocs) =
+        foldl'
+          (\(vars', hkVars', docs) (name, fieldType) ->
+            let (vars'', hkVars'', doc) = typeToDoc (vars', hkVars') fieldType
+            in (vars'', hkVars'', docs ++ [Pretty.pretty name <> Pretty.pretty " :: " <> doc]))
+          (varsRight, hkVarsRight, [])
+          (M.toAscList optionalFields)
+      pieces = [Pretty.pretty "..." <> leftDoc, Pretty.pretty "..." <> rightDoc] ++ fieldDocs
+  in ( finalVars
+     , finalHkVars
+     , Pretty.group (Pretty.lbrace <> Pretty.nest indentationSize
+         (Pretty.line <> Pretty.hcat (List.intersperse (Pretty.comma <> Pretty.line) pieces))
+         <> Pretty.line <> Pretty.rbrace)
+     )
 
 
 rowToDoc :: (M.Map Int Int, M.Map Int Int) -> Type -> M.Map Id Type -> (M.Map Int Int, M.Map Int Int, Pretty.Doc ann)

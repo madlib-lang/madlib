@@ -289,26 +289,19 @@ pRecordOrUnitTyping = do
       (endArea, _) <- withArea (void pRightCurly)
       target <- pSourceTarget
       return $ Src.Source (mergeAreas startArea endArea) target (Src.TRSingle "{}")
-    Just TkSpread -> do   -- spread extension
-      pSpread
-      extName <- pName
-      target <- pSourceTarget
-      fields <- option M.empty $ try $ do
-        pComma
-        rets
-        pRecordTypingArgs
-      _ <- optional pComma
-      rets
-      (endArea, _) <- withArea (void pRightCurly)
-      let ext = Src.Source (mergeAreas startArea endArea) target (Src.TRSingle extName)
-      return $ Src.Source (mergeAreas startArea endArea) target (Src.TRRecord fields (Just ext))
-    _ -> do    -- regular record fields
-      fields <- pRecordTypingArgs
+    _ -> do
+      items <- pRecordTypingItems
       _ <- optional pComma
       rets
       (endArea, _) <- withArea (void pRightCurly)
       target <- pSourceTarget
-      return $ Src.Source (mergeAreas startArea endArea) target (Src.TRRecord fields Nothing)
+      let empty = Src.Source startArea target (Src.TRRecord M.empty Nothing)
+          add prior item = case item of
+            Left spread -> Src.Source (mergeAreas (Src.getArea prior) (Src.getArea spread)) target (Src.TRRowOverlay prior spread)
+            Right (name, nameArea, fieldType) ->
+              Src.Source (mergeAreas (Src.getArea prior) (Src.getArea fieldType)) target
+                (Src.TRRecord (M.singleton name (nameArea, fieldType)) (Just prior))
+      return $ foldl add empty items
 
 
 -- | Parse record typing args: name :: typings (, name :: typings)*
@@ -326,6 +319,24 @@ pRecordTypingArgs = do
       pDoubleColon
       t <- pTypings
       return (name, (nameArea, t))
+
+-- | Type records use the same ordered, right-biased item model as values.
+-- The old map-shaped parser could represent only one leading row tail.
+pRecordTypingItems :: Parser [Either Src.Typing (Src.Name, Area, Src.Typing)]
+pRecordTypingItems = do
+  first <- item
+  rest <- many $ try (pComma *> rets *> item)
+  return (first : rest)
+  where
+    item = do
+      mt <- peekTok
+      case mt of
+        Just TkSpread -> pSpread *> (Left <$> pTypings)
+        _ -> do
+          (nameArea, name) <- withArea pFieldName
+          pDoubleColon
+          fieldType <- pTypings
+          return (Right (name, nameArea, fieldType))
 
 
 -- | Parse tuple typing items

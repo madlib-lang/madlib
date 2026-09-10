@@ -67,6 +67,10 @@ data Type
   | TApp Type Type                 -- Arrow type
   | TRowEmpty
   | TRowExtend Id Type Type
+  | TRowOverlay Type Type
+  -- ^ Right-biased row merge.  The right row supplies a label when both rows
+  -- contain it.  It deliberately remains symbolic while either operand is
+  -- open; specialization turns it into ordinary scoped extensions.
   | TRowWithout (S.Set Id) Type
   -- ^ Persistent row subtraction. Unlike deleting known labels, this also
   -- hides labels learned when an open tail is instantiated later.
@@ -96,6 +100,8 @@ instance Show Type where
     showString "TRowWithout " . showsPrec 11 labels . showChar ' ' . showsPrec 11 row
   showsPrec p (TRowExtend n t tail)  = showParen (p > 10) $
     showString "TRowExtend " . showsPrec 11 n . showChar ' ' . showsPrec 11 t . showChar ' ' . showsPrec 11 tail
+  showsPrec p (TRowOverlay l r) = showParen (p > 10) $
+    showString "TRowOverlay " . showsPrec 11 l . showChar ' ' . showsPrec 11 r
   showsPrec p (TRecordRow row o)     = showParen (p > 10) $
     showString "TRecordRow " . showsPrec 11 row . showChar ' ' . showsPrec 11 o
   showsPrec p (TAlias fp n vs t)     = showParen (p > 10) $
@@ -112,7 +118,31 @@ visibleRow = go
     go (TRowExtend name fieldType tail) =
       let (fields, base) = go tail
       in  (M.insert name fieldType fields, base)
+    go (TRowOverlay left right) =
+      let (leftFields, leftTail) = go left
+          (rightFields, rightTail) = go right
+      in case rightTail of
+          -- A closed right operand has a fully-known set of shadowing labels,
+          -- even if the overlay itself was constructed before substitution.
+          -- Exposing those fields is essential for Eq/Show derivation and
+          -- LLVM record layout after monomorphization.
+          Nothing ->
+            ( rightFields <> M.withoutKeys leftFields (M.keysSet rightFields)
+            , removeRowLabels (M.keysSet rightFields) <$> leftTail
+            )
+          -- An open right tail could still hide any field from the left. Keep
+          -- the whole overlay opaque until it becomes concrete.
+          Just _ -> (rightFields, Just (TRowOverlay left right))
     go tail = (M.empty, Just tail)
+
+-- | Build a right-biased overlay.  A closed right operand can be reduced
+-- immediately; an open operand must remain a recipe until it is instantiated.
+overlayRow :: Type -> Type -> Type
+overlayRow TRowEmpty right = right
+overlayRow left TRowEmpty = left
+overlayRow left right = case visibleRow right of
+  (rightFields, Nothing) -> rowFromFields rightFields (removeRowLabels (M.keysSet rightFields) left)
+  _                      -> TRowOverlay left right
 
 
 recordRow :: Type -> Type
@@ -193,6 +223,7 @@ instance Eq Type where
   TRowEmpty    == TRowEmpty     = True
   TRowWithout a r == TRowWithout b s = a == b && r == s
   TRowExtend n1 t1 r1 == TRowExtend n2 t2 r2 = n1 == n2 && t1 == t2 && r1 == r2
+  TRowOverlay l1 r1 == TRowOverlay l2 r2 = l1 == l2 && r1 == r2
   TRecordRow r1 o1 == TRecordRow r2 o2 = r1 == r2 && o1 == o2
   TAlias p1 n1 vs1 t1 == TAlias p2 n2 vs2 t2 = p1 == p2 && n1 == n2 && vs1 == vs2 && t1 == t2
   _ == _ = False
@@ -205,6 +236,7 @@ instance Ord Type where
   compare TRowEmpty TRowEmpty = EQ
   compare (TRowWithout a r) (TRowWithout b s) = compare a b <> compare r s
   compare (TRowExtend n1 t1 r1) (TRowExtend n2 t2 r2) = compare n1 n2 <> compare t1 t2 <> compare r1 r2
+  compare (TRowOverlay l1 r1) (TRowOverlay l2 r2) = compare l1 l2 <> compare r1 r2
   compare (TRecordRow r1 o1)  (TRecordRow r2 o2)  = compare r1 r2 <> compare o1 o2
   compare (TAlias p1 n1 vs1 t1) (TAlias p2 n2 vs2 t2) = compare p1 p2 <> compare n1 n2 <> compare vs1 vs2 <> compare t1 t2
   compare x y = compare (typeTag x) (typeTag y)
@@ -216,6 +248,7 @@ instance Ord Type where
       typeTag TApp{}   = 3
       typeTag TRowEmpty = 4
       typeTag TRowExtend{} = 5
+      typeTag TRowOverlay{} = 9
       typeTag TRecordRow{} = 6
       typeTag TAlias{} = 7
       typeTag TRowWithout{} = 8
@@ -228,6 +261,7 @@ instance Hashable Type where
   hashWithSalt s TRowEmpty         = s `hashWithSalt` (4 :: Int)
   hashWithSalt s (TRowWithout labels r) = s `hashWithSalt` (8 :: Int) `hashWithSalt` S.toList labels `hashWithSalt` r
   hashWithSalt s (TRowExtend n t r) = s `hashWithSalt` (5 :: Int) `hashWithSalt` n `hashWithSalt` t `hashWithSalt` r
+  hashWithSalt s (TRowOverlay l r) = s `hashWithSalt` (9 :: Int) `hashWithSalt` l `hashWithSalt` r
   hashWithSalt s (TRecordRow r o)  = s `hashWithSalt` (6 :: Int) `hashWithSalt` r `hashWithSalt` o
   hashWithSalt s (TAlias p n vs t) = s `hashWithSalt` (7 :: Int) `hashWithSalt` p `hashWithSalt` n `hashWithSalt` vs `hashWithSalt` t
 
@@ -587,6 +621,7 @@ instance HasKind Type where
     k          -> k
   kind TRowEmpty = Row
   kind (TRowExtend _ _ _) = Row
+  kind (TRowOverlay _ _) = Row
   kind (TRowWithout _ _) = Row
   kind _ = Star
 
@@ -626,6 +661,7 @@ searchVarInType id t = case t of
 
   TRowExtend _ fieldType tail ->
     searchVarInType id fieldType <|> searchVarInType id tail
+  TRowOverlay left right -> searchVarInType id left <|> searchVarInType id right
   TRowWithout _ row -> searchVarInType id row
 
   TRecordRow row optionalFields ->
@@ -678,6 +714,7 @@ collectVars t = case t of
 
   TRowExtend _ fieldType tail ->
     collectVars fieldType `union` collectVars tail
+  TRowOverlay left right -> collectVars left `union` collectVars right
   TRowWithout _ row -> collectVars row
 
   TRecordRow row optionalFields ->
@@ -811,6 +848,7 @@ getTypeVarsInType t = case t of
 
   TRowExtend _ fieldType tail ->
     getTypeVarsInType fieldType ++ getTypeVarsInType tail
+  TRowOverlay left right -> getTypeVarsInType left ++ getTypeVarsInType right
   TRowWithout _ row -> getTypeVarsInType row
 
   TRecordRow row optionalFields ->
@@ -866,6 +904,7 @@ findTypeVarInType tvName t = case t of
 
   TRowExtend _ fieldType tail ->
     findTypeVarInType tvName fieldType <|> findTypeVarInType tvName tail
+  TRowOverlay left right -> findTypeVarInType tvName left <|> findTypeVarInType tvName right
   TRowWithout _ row -> findTypeVarInType tvName row
 
   TRecordRow row optionalFields ->

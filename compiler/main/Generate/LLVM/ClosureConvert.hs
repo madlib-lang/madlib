@@ -756,6 +756,11 @@ convertTyping env (Untyped area metadata typing) = case typing of
     base'   <- mapM (convertTyping env) base
     return $ Untyped area metadata $ TRRecord fields' base'
 
+  TRRowOverlay left right -> do
+    left' <- convertTyping env left
+    right' <- convertTyping env right
+    return $ Untyped area metadata $ TRRowOverlay left' right'
+
   TRTuple typings -> do
     typings' <- mapM (convertTyping env) typings
     return $ Untyped area metadata $ TRTuple typings'

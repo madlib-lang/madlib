@@ -56,6 +56,11 @@ canonicalizeTyping (Src.Source area _ t) = case t of
     base'   <- mapM canonicalizeTyping base
     return $ Can.Canonical area (Can.TRRecord fields' base')
 
+  Src.TRRowOverlay left right -> do
+    left' <- canonicalizeTyping left
+    right' <- canonicalizeTyping right
+    return $ Can.Canonical area (Can.TRRowOverlay left' right')
+
   Src.TRTuple typings -> do
     typings' <- mapM canonicalizeTyping typings
     return $ Can.Canonical area (Can.TRTuple typings')
@@ -84,6 +89,9 @@ canonicalizeTyping' (Src.Source area _ t) = case t of
     let fields' = (\(area, t) -> (area, canonicalizeTyping' t)) <$> fields
         base'   = canonicalizeTyping' <$> base
     in  Can.Canonical area (Can.TRRecord fields' base')
+
+  Src.TRRowOverlay left right ->
+    Can.Canonical area (Can.TRRowOverlay (canonicalizeTyping' left) (canonicalizeTyping' right))
 
   Src.TRTuple typings -> 
     let typings' = canonicalizeTyping' <$> typings
@@ -295,6 +303,14 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRRecord fields base)) = do
       _ -> throwError $ CompilationError
         (TypingHasWrongKind ty Row (kind ty))
         (Context (envCurrentPath env) area)
+
+typingToType env kindNeeded (Src.Source area _ (Src.TRRowOverlay left right)) = do
+  left' <- typingToType env (KindRequired Row) left
+  right' <- typingToType env (KindRequired Row) right
+  let row = overlayRow left' right'
+  case kindNeeded of
+    KindRequired Row -> return row
+    _ -> validateKind env area kindNeeded (recordRow row)
 
 typingToType env kindNeeded (Src.Source area _ (Src.TRTuple elems)) = do
   elems' <- mapM (typingToType env (KindRequired Star)) elems

@@ -19,6 +19,9 @@ updateTyping typing = case typing of
   Can.Canonical area (Can.TRRecord fields base) ->
     Slv.Untyped area $ Slv.TRRecord ((\(area, t) -> (area, updateTyping t)) <$> fields) (updateTyping <$> base)
 
+  Can.Canonical area (Can.TRRowOverlay left right) ->
+    Slv.Untyped area $ Slv.TRRowOverlay (updateTyping left) (updateTyping right)
+
   Can.Canonical area (Can.TRTuple elems) ->
     Slv.Untyped area $ Slv.TRTuple (updateTyping <$> elems)
 

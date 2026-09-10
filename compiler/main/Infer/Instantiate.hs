@@ -37,6 +37,8 @@ instance Instantiate Type where
 
   inst ts (TRowExtend name fieldType tail) =
     TRowExtend name (inst ts fieldType) (inst ts tail)
+  inst ts (TRowOverlay left right) =
+    overlayRow (inst ts left) (inst ts right)
   inst ts (TRowWithout labels row) = removeRowLabels labels (inst ts row)
 
   inst ts (TRecordRow row optionalFields) =
