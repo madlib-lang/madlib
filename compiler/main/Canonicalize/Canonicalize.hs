@@ -66,6 +66,29 @@ updateMainFunction env target initialArea (Src.Source assignmentArea _ (Src.Assi
     )) canTyping sc)
 
 
+-- | Lower an optional-access chain. The outermost access maps over its
+-- receiver, whereas every preceding access binds over it. Consequently,
+-- @x?.a?.b@ requires @a@ to be a Maybe-valued field, but leaves @b@ as a
+-- regular field and produces @Maybe b@.
+canonicalizeOptionalAccess :: Env.Env -> Target -> Bool -> Src.Exp -> CanonicalM Can.Exp
+canonicalizeOptionalAccess env target wrapResult (Src.Source area _ (Src.OptionalAccess maybeExp field)) = do
+  maybeExp' <- case maybeExp of
+    Src.Source _ _ (Src.OptionalAccess _ _) -> canonicalizeOptionalAccess env target False maybeExp
+    _                                    -> canonicalize env target maybeExp
+  field' <- canonicalize env target field
+  let vName = "__optChain__"
+      accessExp = Can.Canonical area $ Can.Access (Can.Canonical area $ Can.Var vName) field'
+      justResult
+        | wrapResult = Can.Canonical area $ Can.App (Can.Canonical area $ Can.Var "Just") accessExp True
+        | otherwise  = accessExp
+      justBranch = Can.Canonical area $
+        Can.Is (Can.Canonical area $ Can.PCon "Just" [Can.Canonical area $ Can.PVar vName]) justResult
+      nothingBranch = Can.Canonical area $
+        Can.Is (Can.Canonical area Can.PAny) (Can.Canonical area $ Can.Var "Nothing")
+  return $ Can.Canonical area (Can.Where maybeExp' [justBranch, nothingBranch])
+canonicalizeOptionalAccess _ _ _ _ = error "canonicalizeOptionalAccess called with a non-optional-access expression"
+
+
 instance Canonicalizable Src.Exp Can.Exp where
   canonicalize env target fullExp@(Src.Source area sourceTarget e) = case e of
     Src.NamedTypedExp _ (Src.Source _ _ (Src.Export mainAssignment@(Src.Source _ _ (Src.Assignment "main" _)))) typing | Env.envIsMainModule env ->
@@ -319,17 +342,8 @@ instance Canonicalizable Src.Exp Can.Exp where
             Can.Is (Can.Canonical area Can.PAny) defaultExp'
       return $ Can.Canonical area (Can.Where maybeExp' [justBranch, defaultBranch])
 
-    Src.OptionalAccess maybeExp field -> do
-      maybeExp' <- canonicalize env target maybeExp
-      field'    <- canonicalize env target field
-      let vName = "__optChain__"
-          accessExp = Can.Canonical area $ Can.Access (Can.Canonical area $ Can.Var vName) field'
-          justResult = Can.Canonical area $ Can.App (Can.Canonical area $ Can.Var "Just") accessExp True
-          justBranch = Can.Canonical area $
-            Can.Is (Can.Canonical area $ Can.PCon "Just" [Can.Canonical area $ Can.PVar vName]) justResult
-          nothingBranch = Can.Canonical area $
-            Can.Is (Can.Canonical area Can.PAny) (Can.Canonical area $ Can.Var "Nothing")
-      return $ Can.Canonical area (Can.Where maybeExp' [justBranch, nothingBranch])
+    Src.OptionalAccess _ _ ->
+      canonicalizeOptionalAccess env target True fullExp
 
     Src.Do exps -> do
       -- TODO: merge the logic with the one in processAbs

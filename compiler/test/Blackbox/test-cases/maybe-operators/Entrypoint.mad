@@ -20,6 +20,11 @@ main = () => {
   IO.log(Just({ value: 5 })?.value ?? 0)
   IO.log(getName(Nothing) ?? "default")
 
+  // Chained ?. binds intermediate Maybe fields.
+  IO.log(Just({ a: Just({ x: 4 }) })?.a?.x)
+  IO.log(Just({ a: Nothing })?.a?.x)
+  IO.log(Nothing?.a?.x)
+
   // ?? in map
   xs = map((x) => x ?? 0, [Just(1), Nothing, Just(3)])
   IO.log(xs)

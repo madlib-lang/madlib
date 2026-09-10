@@ -250,6 +250,28 @@ spec = do
           actual = unsafePerformIO $ inferModuleWithoutMain code
       snapshotTest "should infer an empty source" actual
 
+    it "should infer chained optional access through Maybe-valued fields" $ do
+      let code = unlines
+            [ "import { Just, Nothing } from \"Maybe\""
+            , "import type { Maybe } from \"Maybe\""
+            , "r :: Maybe { ...c, a :: Maybe { ...b, x :: a } } -> Maybe a"
+            , "r = (x) => x?.a?.x"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+
+      errors `shouldBe` []
+
+    it "should reject chained optional access through non-Maybe fields" $ do
+      let code = unlines
+            [ "import { Just, Nothing } from \"Maybe\""
+            , "import type { Maybe } from \"Maybe\""
+            , "r :: Maybe { ...c, a :: { ...b, x :: a } } -> Maybe a"
+            , "r = (x) => x?.a?.x"
+            ]
+          (_, _, errors) = unsafePerformIO $ inferModuleWithoutMain code
+
+      length errors `shouldBe` 1
+
     it "should fail for unbound variables" $ do
       let code   = "main = () => { x }"
           actual = unsafePerformIO $ inferModule code
