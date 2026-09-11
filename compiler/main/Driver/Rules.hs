@@ -359,17 +359,9 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (Just found, (mempty, mempty))
 
   SolvedMethodNode methodName methodCallType -> nonInput $ do
-    -- Do not depend on one aggregate of every solved module.  The existing
-    -- per-module ForeignMethod query has a narrow result hash, allowing an
-    -- unrelated implementation edit to validate this lookup unchanged.
-    modulePaths <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
-    candidates <- mapM
-      (\modulePath -> do
-        found <- Rock.fetch $ ForeignMethod modulePath methodName methodCallType
-        return $ fmap (, modulePath) found
-      )
-      modulePaths
-    return (Maybe.listToMaybe (Maybe.catMaybes candidates), (mempty, mempty))
+    astTable <- Rock.fetch AllSolvedASTsWithEnvs
+    found <- findMethodByNameAndType (Map.elems astTable) methodName methodCallType
+    return (found, (mempty, mempty))
 
   DefinesInterfaceForMethod modulePath methodName -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
