@@ -60,7 +60,7 @@ madlib__list__Node_t *madlib__array__toList(madlib__array__Array_t *arr) {
 madlib__array__Array_t *madlib__array__concat(madlib__array__Array_t *a, madlib__array__Array_t *b) {
   madlib__array__Array_t *result = (madlib__array__Array_t *)GC_MALLOC(sizeof(madlib__array__Array_t));
   result->length = a->length + b->length;
-  result->capacity = result->length * 2;
+  result->capacity = result->length;
   result->items = (void **)GC_MALLOC(result->capacity * sizeof(void *));
 
   memcpy(result->items, a->items, a->length * sizeof(void *));
@@ -107,7 +107,7 @@ madlib__array__Array_t *madlib__array__pushBackWithMutation(void *item, madlib__
 
 
 madlib__array__Array_t *madlib__array__removeWithMutation(int64_t index, madlib__array__Array_t *a) {
-  if (index > a->length - 1) {
+  if (index < 0 || index >= a->length) {
     return a;
   }
 

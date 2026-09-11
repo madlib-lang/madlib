@@ -1,5 +1,5 @@
 import ByteArray from "ByteArray"
-import { Just } from "Maybe"
+import { Just, Nothing } from "Maybe"
 import { assertEquals, test } from "Test"
 
 
@@ -64,6 +64,21 @@ test(
     )([1, 2, 3]),
     Just(2),
   ),
+)
+
+test("at - first element", () =>
+  assertEquals(ByteArray.at(0, ByteArray.fromList([1, 2, 3])), Just(1))
+)
+
+test("at - negative index", () =>
+  assertEquals(ByteArray.at(-1, ByteArray.fromList([1, 2, 3])), Nothing)
+)
+
+test("set - negative index leaves byte array unchanged", () =>
+  assertEquals(
+    ByteArray.set(-1, 33, ByteArray.fromList([1, 2, 3])),
+    ByteArray.fromList([1, 2, 3]),
+  )
 )
 
 

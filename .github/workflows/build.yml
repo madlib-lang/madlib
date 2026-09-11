@@ -6,6 +6,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: pkg/package-lock.json
+
+      - name: Test npm installer
+        run: |
+          cd pkg
+          npm ci --ignore-scripts
+          npm test
+
       - name: Install haskell
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh

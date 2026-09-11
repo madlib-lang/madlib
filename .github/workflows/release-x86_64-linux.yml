@@ -32,11 +32,14 @@ jobs:
           cp -R prelude ./madlib-x86_64-unknown-linux-gnu/
           cp ./package-installer.js ./madlib-x86_64-unknown-linux-gnu/
           tar -czvf madlib-x86_64-unknown-linux-gnu.tar.gz madlib-x86_64-unknown-linux-gnu
+          sha256sum madlib-x86_64-unknown-linux-gnu.tar.gz > madlib-x86_64-unknown-linux-gnu.tar.gz.sha256
 
       - name: Upload unknown build
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
-          files: ./madlib-x86_64-unknown-linux-gnu.tar.gz
+          files: |
+            ./madlib-x86_64-unknown-linux-gnu.tar.gz
+            ./madlib-x86_64-unknown-linux-gnu.tar.gz.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

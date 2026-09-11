@@ -156,7 +156,9 @@ export concat = (array1, array2) => #- array1.concat(array2) -#
 
 weld :: Array a -> Array a -> Array a
 export weld = (a, b) => #- {
-  a.push(...b)
+  // Avoid spreading a large array into the call; V8 imposes an argument-count
+  // limit and the operation should work for arrays of any practical size.
+  for (let i = 0; i < b.length; i++) a.push(b[i])
   return a
 } -#
 
@@ -241,7 +243,7 @@ export unsafeSet = (index, a, arr) => {
  * at(3, fromList([1, 2, 3])) // Nothing
  */
 at :: Integer -> Array a -> Maybe a
-export at = (index, arr) => index > 0 && index < length(arr) ? Just(arr[index]) : Nothing
+export at = (index, arr) => index >= 0 && index < length(arr) ? Just(arr[index]) : Nothing
 
 
 /**
@@ -257,7 +259,7 @@ export at = (index, arr) => index > 0 && index < length(arr) ? Just(arr[index]) 
  */
 set :: Integer -> a -> Array a -> Array a
 export set = (index, v, arr) => {
-  if (index < length(arr)) do {
+  if (index >= 0 && index < length(arr)) do {
     arr[index] := v
   }
 

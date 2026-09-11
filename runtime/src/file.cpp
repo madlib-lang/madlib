@@ -37,12 +37,29 @@ static void appendReadChunk(ReadData_t *data, const char *chunk, int64_t chunkSi
   data->fileContent[data->currentSize] = '\0';
 }
 
+// Cancellation still results in a libuv completion callback. Release all
+// request-owned state from that callback instead of returning early and
+// retaining the 256 KiB read buffer (and any accumulated file contents).
+static void releaseReadData(ReadData_t *data) {
+  if (data->opened && !data->closed && data->openRequest->result >= 0) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, data->openRequest->result, NULL);
+    data->closed = true;
+  }
+  GC_FREE(data->dataBuffer);
+  GC_FREE(data->fileContent);
+  GC_FREE(data->openRequest);
+  GC_FREE(data->readRequest);
+  GC_FREE(data);
+}
+
 
 
 void onReadError(uv_fs_t *req) {
-  ((ReadData_t *)req->data)->closed = true;
+  ReadData_t *data = (ReadData_t *)req->data;
 
-  if (((ReadData_t *)req->data)->canceled) {
+  if (data->canceled) {
+    releaseReadData(data);
     return;
   }
 
@@ -57,7 +74,7 @@ void onReadError(uv_fs_t *req) {
   char *dataBuffer = ((ReadData_t *)req->data)->dataBuffer;
   uv_fs_t *openRequest = ((ReadData_t *)req->data)->openRequest;
   uv_fs_t *readRequest = ((ReadData_t *)req->data)->readRequest;
-  void *data = (ReadData_t *)req->data;
+  void *readData = (ReadData_t *)req->data;
 
   if (openRequest->result >= 0) {
     uv_fs_t closeReq;
@@ -65,7 +82,7 @@ void onReadError(uv_fs_t *req) {
   }
 
   GC_FREE(dataBuffer);
-  GC_FREE(data);
+  GC_FREE(readData);
   GC_FREE(openRequest);
   GC_FREE(readRequest);
 
@@ -76,6 +93,7 @@ void onRead(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
 
   if (((ReadData_t *)req->data)->canceled) {
+    releaseReadData((ReadData_t *)req->data);
     return;
   }
 
@@ -132,6 +150,7 @@ void onRead(uv_fs_t *req) {
 void onReadFileOpen(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
   if (((ReadData_t *)req->data)->canceled) {
+    releaseReadData((ReadData_t *)req->data);
     return;
   }
 
@@ -193,11 +212,24 @@ void madlib__file__cancelRead(ReadData_t *req) {
   }
 }
 
+static void releaseBufferedReadData(BufferedReadData_t *data) {
+  if (data->opened && !data->closed && data->openRequest->result >= 0) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, data->openRequest->result, NULL);
+    data->closed = true;
+  }
+  GC_FREE(data->dataBuffer);
+  GC_FREE(data->openRequest);
+  GC_FREE(data->readRequest);
+  GC_FREE(data);
+}
+
 
 void onBufferedReadError(uv_fs_t *req) {
   ((BufferedReadData_t *)req->data)->closed = true;
 
   if (((BufferedReadData_t *)req->data)->canceled) {
+    releaseBufferedReadData((BufferedReadData_t *)req->data);
     return;
   }
 
@@ -231,6 +263,7 @@ void onBufferedRead(uv_fs_t *req) {
   data->reading = false;
 
   if (data->canceled) {
+    releaseBufferedReadData(data);
     return;
   }
 
@@ -282,6 +315,7 @@ void onBufferedReadFileOpen(uv_fs_t *req) {
   BufferedReadData_t *handle = (BufferedReadData_t *)req->data;
 
   if (handle->canceled) {
+    releaseBufferedReadData(handle);
     return;
   }
 
@@ -378,10 +412,21 @@ ReadData_t *madlib__file__readBytes(char *filepath, PAP_t *callback) {
 
 // write file
 
+static void releaseWriteData(WriteData_t *data) {
+  if (data->opened && !data->closed && data->openRequest->result >= 0) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, data->openRequest->result, NULL);
+    data->closed = true;
+  }
+  GC_FREE(data->openRequest);
+  GC_FREE(data->writeRequest);
+  GC_FREE(data);
+}
 
 void onWriteError(uv_fs_t *req) {
   ((WriteData_t *)req->data)->closed = true;
   if (((WriteData_t *)req->data)->canceled) {
+    releaseWriteData((WriteData_t *)req->data);
     return;
   }
 
@@ -410,6 +455,7 @@ void onWrite(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
 
   if (((WriteData_t *)req->data)->canceled) {
+    releaseWriteData((WriteData_t *)req->data);
     return;
   }
 
@@ -442,6 +488,7 @@ void onWrite(uv_fs_t *req) {
 void onWriteFileOpen(uv_fs_t *req) {
   uv_fs_req_cleanup(req);
   if (((WriteData_t *)req->data)->canceled) {
+    releaseWriteData((WriteData_t *)req->data);
     return;
   }
   if (req->result >= 0) {
@@ -522,11 +569,22 @@ void madlib__file__cancelWrite(WriteData_t *req) {
   }
 }
 
+static void releaseBufferedWriteData(BufferedWriteData_t *data) {
+  if (data->opened && !data->closed && data->openRequest->result >= 0) {
+    uv_fs_t closeReq;
+    uv_fs_close(getLoop(), &closeReq, data->openRequest->result, NULL);
+    data->closed = true;
+  }
+  GC_FREE(data->openRequest);
+  GC_FREE(data->writeRequest);
+  GC_FREE(data);
+}
 
 void onBufferedWriteError(uv_fs_t *req) {
   BufferedWriteData_t *handle = (BufferedWriteData_t *) req->data;
   handle->closed = true;
   if (handle->canceled) {
+    releaseBufferedWriteData(handle);
     return;
   }
 
@@ -552,6 +610,7 @@ void onBufferedWrite(uv_fs_t *req) {
   handle->writing = false;
 
   if (handle->canceled) {
+    releaseBufferedWriteData(handle);
     return;
   }
 
@@ -580,6 +639,7 @@ void onBufferedWriteFileOpen(uv_fs_t *req) {
   BufferedWriteData_t *handle = (BufferedWriteData_t *) req->data;
 
   if (handle->canceled) {
+    releaseBufferedWriteData(handle);
     return;
   }
 

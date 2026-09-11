@@ -19,6 +19,7 @@ double unboxDouble(void *x);
 void *boxDouble(double x);
 
 char *madlib__number__internal__showFloat(double d);
+char *madlib__number__formatDecimal(int64_t digits, double value);
 
 madlib__maybe__Maybe_t *madlib__number__scanFloat(char *s);
 

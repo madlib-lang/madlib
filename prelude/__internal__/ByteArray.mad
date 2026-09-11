@@ -214,7 +214,7 @@ export init = () => #- new Uint8Array() -#
  */
 unsafeAt :: Integer -> ByteArray -> Byte
 export unsafeAt = (index, byteArray) => #- {
-  if (index >= byteArray.length) {
+  if (index < 0 || index >= byteArray.length) {
     throw `Array out of bounds access\\nYou accessed the index '${index}' but the array currently has length '${byteArray.length}'`
   }
   return byteArray[index]
@@ -235,7 +235,7 @@ export unsafeAt = (index, byteArray) => #- {
  */
 unsafeSet :: Integer -> Byte -> ByteArray -> ByteArray
 export unsafeSet = (index, byte, byteArray) => #- {
-  if (index >= byteArray.length) {
+  if (index < 0 || index >= byteArray.length) {
     throw `Array out of bounds access\\nYou accessed the index '${index}' but the array currently has length '${byteArray.length}'`
   }
 
@@ -422,7 +422,7 @@ export empty = () => fromList([])
  * at(3, fromList([1, 2, 3])) // Nothing
  */
 at :: Integer -> ByteArray -> Maybe Byte
-export at = (index, arr) => index > 0 && index < length(arr) ? Just(unsafeAt(index, arr)) : Nothing
+export at = (index, arr) => index >= 0 && index < length(arr) ? Just(unsafeAt(index, arr)) : Nothing
 
 
 /**
@@ -437,7 +437,7 @@ export at = (index, arr) => index > 0 && index < length(arr) ? Just(unsafeAt(ind
  * )([1, 2, 3]) // Array.fromList([1, 33, 3])
  */
 set :: Integer -> Byte -> ByteArray -> ByteArray
-export set = (index, arr, byteArray) => index < length(byteArray)
+export set = (index, arr, byteArray) => index >= 0 && index < length(byteArray)
   ? unsafeSet(index, arr, byteArray)
   : byteArray
 

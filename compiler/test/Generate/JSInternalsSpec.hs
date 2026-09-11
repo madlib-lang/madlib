@@ -11,7 +11,7 @@ import           Data.Text                      ( Text
                                                 , replace
                                                 , unpack
                                                 )
-import           Generate.JSInternals
+import           Generate.Javascript.Internals
 import           Run.Target
 
 snapshotTest :: String -> String -> Golden Text

@@ -59,6 +59,27 @@ char *madlib__number__internal__showFloat(double d) {
   return stripTrailingZeros(tmp);
 }
 
+char *madlib__number__formatDecimal(int64_t digits, double value) {
+  if (!isfinite(value)) {
+    char *result = madlib__string__alloc_bytes(1);
+    memcpy(result, "0", 1);
+    result[1] = '\0';
+    return result;
+  }
+  if (digits < 0) digits = 0;
+  if (digits > 100) digits = 100;
+  int required = snprintf(NULL, 0, "%.*f", (int)digits, value);
+  if (required < 0) {
+    char *result = madlib__string__alloc_bytes(1);
+    memcpy(result, "0", 1);
+    result[1] = '\0';
+    return result;
+  }
+  char *result = madlib__string__alloc_bytes((uint32_t)required);
+  snprintf(result, (size_t)required + 1, "%.*f", (int)digits, value);
+  return result;
+}
+
 
 double unboxDouble(void *x) {
   return *(double*)&x;

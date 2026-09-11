@@ -17,6 +17,29 @@
 extern "C" {
 #endif
 
+// gmtime uses shared process state on several supported platforms. The runtime
+// can execute user work on multiple threads, so keep conversion request-local
+// and normalize negative millisecond timestamps like JS Date.
+static bool splitEpochMilliseconds(int64_t epochMilliseconds, time_t *seconds, int *milliseconds) {
+  int64_t seconds64 = epochMilliseconds / 1000;
+  int64_t remainder = epochMilliseconds % 1000;
+  if (remainder < 0) {
+    remainder += 1000;
+    seconds64 -= 1;
+  }
+  *seconds = (time_t)seconds64;
+  *milliseconds = (int)remainder;
+  return (int64_t)*seconds == seconds64;
+}
+
+static bool utcTime(time_t seconds, struct tm *out) {
+#ifdef _WIN32
+  return gmtime_s(out, &seconds) == 0;
+#else
+  return gmtime_r(&seconds, out) != NULL;
+#endif
+}
+
 int64_t madlib__date__now() {
   struct timeval time_now {};
   gettimeofday(&time_now, nullptr);
@@ -26,10 +49,12 @@ int64_t madlib__date__now() {
 
 // YYYY-MM-DDTHH:mm:ss.sssZ
 char *madlib__date__toISOString(int64_t epochMilliseconds) {
-  time_t epochSeconds = trunc(epochMilliseconds / 1000);
-  struct tm timeInfo = *gmtime(&epochSeconds);
-
-  int milliseconds = epochMilliseconds - epochSeconds * 1000;
+  time_t epochSeconds;
+  int milliseconds;
+  struct tm timeInfo {};
+  if (!splitEpochMilliseconds(epochMilliseconds, &epochSeconds, &milliseconds) || !utcTime(epochSeconds, &timeInfo)) {
+    return madlib__string__alloc_bytes(0);
+  }
   int seconds = timeInfo.tm_sec;
   int minutes = timeInfo.tm_min;
   int hours = timeInfo.tm_hour;
@@ -55,13 +80,16 @@ char *madlib__date__toISOString(int64_t epochMilliseconds) {
 #define DATEINFO_FIELD_COUNT  7
 
 void **madlib__date__toDateInfo(int64_t epochMilliseconds) {
-  time_t epochSeconds = trunc(epochMilliseconds / 1000);
-  struct tm timeInfo = *gmtime(&epochSeconds);
+  time_t epochSeconds;
+  int milliseconds;
+  struct tm timeInfo {};
+  splitEpochMilliseconds(epochMilliseconds, &epochSeconds, &milliseconds);
+  utcTime(epochSeconds, &timeInfo);
 
   void **result = (void **)GC_MALLOC(sizeof(void *) * DATEINFO_FIELD_COUNT);
   result[DATEINFO_DAY]          = (void *)(int64_t)timeInfo.tm_mday;
   result[DATEINFO_HOURS]        = (void *)(int64_t)timeInfo.tm_hour;
-  result[DATEINFO_MILLISECONDS] = (void *)(epochMilliseconds - epochSeconds * 1000);
+  result[DATEINFO_MILLISECONDS] = (void *)(int64_t)milliseconds;
   result[DATEINFO_MINUTES]      = (void *)(int64_t)timeInfo.tm_min;
   result[DATEINFO_MONTH]        = (void *)(int64_t)(timeInfo.tm_mon + 1);
   result[DATEINFO_SECONDS]      = (void *)(int64_t)timeInfo.tm_sec;

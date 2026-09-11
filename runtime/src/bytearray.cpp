@@ -26,7 +26,7 @@ madlib__bytearray__ByteArray_t *madlib__bytearray__initWithCapacity(int64_t capa
 
 
 unsigned char madlib__bytearray__unsafeAt(int64_t index, madlib__bytearray__ByteArray_t *array) {
-  if (index >= array->length) {
+  if (index < 0 || index >= array->length) {
     fprintf(stderr, "Array out of bounds access\nYou accessed the index '%lld' but the array currently has length '%lld'.\n", index, array->length);
     exit(1);
   }
@@ -35,7 +35,7 @@ unsigned char madlib__bytearray__unsafeAt(int64_t index, madlib__bytearray__Byte
 
 
 madlib__bytearray__ByteArray_t *madlib__bytearray__unsafeSet(int64_t index, unsigned char byte, madlib__bytearray__ByteArray_t *array) {
-  if (index >= array->length) {
+  if (index < 0 || index >= array->length) {
     fprintf(stderr, "Array out of bounds access\nYou accessed the index '%lld' but the array currently has length '%lld'.\n", index, array->length);
     exit(1);
   }

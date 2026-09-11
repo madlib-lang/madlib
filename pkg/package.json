@@ -7,15 +7,18 @@
   },
   "scripts": {
     "postinstall": "node ./src/install.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test src/*.test.js"
   },
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@rollup/plugin-node-resolve": "^11.2.0",
-    "binary-install": "1.0.6",
     "esbuild": "0.20.0",
-    "rollup": "^2.33.2"
+    "rollup": "^2.33.2",
+    "tar": "^7.5.22"
   },
   "description": ""
 }

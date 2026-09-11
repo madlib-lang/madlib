@@ -1,0 +1,5 @@
+import Number from "Number"
+import { assertEquals, test } from "Test"
+
+test("formatDecimal", () => assertEquals(Number.formatDecimal(2, 3.14159), "3.14"))
+test("formatDecimal - zero digits", () => assertEquals(Number.formatDecimal(0, 3.9), "4"))

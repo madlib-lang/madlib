@@ -129,11 +129,14 @@ jobs:
           cp -R prelude ./madlib-x86_64-pc-windows-mingw32/
           cp ./tools/package-installer/dist/package-installer.js ./madlib-x86_64-pc-windows-mingw32/
           tar -czvf madlib-x86_64-pc-windows-mingw32.tar.gz madlib-x86_64-pc-windows-mingw32
+          sha256sum madlib-x86_64-pc-windows-mingw32.tar.gz > madlib-x86_64-pc-windows-mingw32.tar.gz.sha256
 
       - name: Upload build
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version }}
-          files: ./madlib-x86_64-pc-windows-mingw32.tar.gz
+          files: |
+            ./madlib-x86_64-pc-windows-mingw32.tar.gz
+            ./madlib-x86_64-pc-windows-mingw32.tar.gz.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

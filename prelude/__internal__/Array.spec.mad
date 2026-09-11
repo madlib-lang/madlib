@@ -1,6 +1,6 @@
 import Array from "Array"
 import { assertEquals, test } from "Test"
-import { Nothing } from "Maybe"
+import { Just, Nothing } from "Maybe"
 
 
 
@@ -140,6 +140,21 @@ test(
     )([1, 2, 3]),
     Nothing,
   ),
+)
+
+test("at - first element", () =>
+  assertEquals(Array.at(0, Array.fromList([1, 2, 3])), Just(1))
+)
+
+test("at - negative index", () =>
+  assertEquals(Array.at(-1, Array.fromList([1, 2, 3])), Nothing)
+)
+
+test("set - negative index leaves array unchanged", () =>
+  assertEquals(
+    Array.set(-1, 33, Array.fromList([1, 2, 3])),
+    Array.fromList([1, 2, 3]),
+  )
 )
 
 test(

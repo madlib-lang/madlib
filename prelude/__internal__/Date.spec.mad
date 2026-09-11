@@ -43,6 +43,13 @@ test("toDateInfo", () =>
   )
 )
 
+test("toDateInfo - pre epoch timestamp", () =>
+  assertEquals(
+    Date.toDateInfo(Date.DateTime(-1)),
+    { year: 1969, month: 12, day: 31, hours: 23, minutes: 59, seconds: 59, milliseconds: 999 },
+  )
+)
+
 test("addMilliseconds", () =>
   assertEquals(
     pipe(

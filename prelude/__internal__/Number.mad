@@ -1,16 +1,27 @@
-#iftarget js
+#iftarget llvm
 
-// TODO: implement for llvm backend
 /**
- * Formats a a number given as the first parameter to a string containing the
- * amount of numbers after the . given by the second parameter.
+ * Formats a number given as the second parameter to a string containing the
+ * number of digits after the decimal point given by the first parameter.
  * @since 0.4.0
  * @example
- * formatDecimal(3.14159, 2) // "3.14"
+ * formatDecimal(2, 3.14159) // "3.14"
  */
-formatDecimal :: Number a => a -> Float -> String
-export formatDecimal = (a, x) => #-{
-  const n = x.toFixed(a)
+formatDecimal :: Integer -> Float -> String
+export formatDecimal = extern "madlib__number__formatDecimal"
+
+#elseif js
+
+/**
+ * Formats a number given as the second parameter to a string containing the
+ * number of digits after the decimal point given by the first parameter.
+ * @since 0.4.0
+ * @example
+ * formatDecimal(2, 3.14159) // "3.14"
+ */
+formatDecimal :: Integer -> Float -> String
+export formatDecimal = (digits, value) => #-{
+  const n = value.toFixed(digits)
   return isNaN(n) ? "0" : n
 }-#
 
