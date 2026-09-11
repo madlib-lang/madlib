@@ -2,11 +2,17 @@ module Generate.Javascript.SourceMap
   ( Mapping(..)
   , buildSourceMapJSON
   , base64Encode
+  , sourceFileLineCount
+  , filterMappingsBySourceFile
+  , makeExternalSourceMap
+  , makeInlineSourceMap
   ) where
 
 import Data.Bits  (shiftL, shiftR, (.&.), (.|.))
 import Data.List  (intercalate, sortOn)
 import Data.Char  (ord, chr)
+import System.FilePath (takeFileName, dropFileName)
+import Utils.Path (makeRelativeEx)
 
 
 -- | A single source mapping entry.
@@ -16,6 +22,41 @@ data Mapping = Mapping
   , mappingSrcLine  :: Int  -- 0-based source line
   , mappingSrcCol   :: Int  -- 0-based source column
   } deriving (Eq, Show)
+
+
+-- | Return the number of lines in a source file (used to filter mappings).
+sourceFileLineCount :: FilePath -> IO Int
+sourceFileLineCount path = do
+  content <- readFile path
+  return $! length (lines content)
+
+
+-- | Drop mappings whose source line exceeds the source file's line count.
+-- Monomorphization and inlining can produce Core nodes with areas from other
+-- modules; those produce line numbers that are out-of-range for the current
+-- source file and would confuse source map consumers.
+filterMappingsBySourceFile :: Int -> [Mapping] -> [Mapping]
+filterMappingsBySourceFile lineCount = filter (\m -> mappingSrcLine m < lineCount)
+
+
+-- | Attach a //# sourceMappingURL comment and build the external map JSON.
+makeExternalSourceMap :: FilePath -> FilePath -> [Mapping] -> String -> (String, String)
+makeExternalSourceMap sourcePath outputPath mappings jsContent =
+  let outFileName = takeFileName outputPath
+      relSource   = makeRelativeEx (dropFileName outputPath) sourcePath
+      mapJson     = buildSourceMapJSON outFileName relSource mappings Nothing
+      annotated   = jsContent <> "\n//# sourceMappingURL=" <> outFileName <> ".map\n"
+  in  (annotated, mapJson)
+
+
+-- | Attach an inline Base64 source map to a generated module.
+makeInlineSourceMap :: FilePath -> FilePath -> [Mapping] -> String -> String
+makeInlineSourceMap sourcePath outputPath mappings jsContent =
+  let outFileName = takeFileName outputPath
+      relSource   = makeRelativeEx (dropFileName outputPath) sourcePath
+      mapJson     = buildSourceMapJSON outFileName relSource mappings Nothing
+      encoded     = base64Encode mapJson
+  in  jsContent <> "\n//# sourceMappingURL=data:application/json;base64," <> encoded <> "\n"
 
 
 -- ---------------------------------------------------------------------------

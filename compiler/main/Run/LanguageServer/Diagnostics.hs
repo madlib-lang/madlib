@@ -105,19 +105,18 @@ generateDiagnostics invalidatePath state autocompletionState uri fileUpdates = d
         _ -> return True
     else return False
 
-  -- When a file changes and its exported interface changed, re-check all known
-  -- module paths so that diagnostics for dependent modules get updated.
-  -- Rock's cache has already been invalidated for reverse dependencies, so
-  -- re-running typeCheckFileTask for them will recompute as needed; modules
-  -- whose cache is still valid will be a fast no-op.
+  -- When a file changes and its exported interface changed, re-check only its
+  -- known dependents. The index is built from each project's module closure
+  -- during background warm-up, so this avoids walking every module per edit.
+  -- Rock's cache has already been invalidated for reverse dependencies.
   (depWarnings, depErrors) <- if invalidatePath && interfaceChanged
     then do
       bgDone <- liftIO $ readIORef (_backgroundDone state)
       if bgDone
         then do
-          allPaths <- liftIO $ Set.toList <$> readIORef (_allModulePaths state)
-          let otherPaths = filter (/= path) allPaths
-          depResults <- forM otherPaths $ \depPath -> do
+          reverseModulePaths <- liftIO $ readIORef (_reverseModulePaths state)
+          let dependentPaths = Set.toList $ Map.findWithDefault Set.empty path reverseModulePaths
+          depResults <- forM dependentPaths $ \depPath -> do
             (_, w, e) <- runTypeCheck False state TNode depPath mempty
             return (w, e)
           let (ws, es) = unzip depResults

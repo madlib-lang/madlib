@@ -38,7 +38,7 @@ import           Infer.Type
 import           Generate.Javascript.Internals
 import           Generate.Javascript.Doc
 import           Generate.Javascript.ModuleDoc
-import           Generate.Javascript.SourceMap  (Mapping(..), buildSourceMapJSON, base64Encode)
+import           Generate.Javascript.SourceMap
 import           Explain.Location               (Area)
 import           Run.Target
 import           Run.SourceMapMode
@@ -2436,52 +2436,6 @@ generateMainCallFromAST options astPath ast =
         Nothing ->
           fallbackMainCall
 
-
-
--- | Return the number of lines in a source file (used to filter mappings).
-sourceFileLineCount :: FilePath -> IO Int
-sourceFileLineCount path = do
-  content <- readFile path
-  return $! length (lines content)
-
-
--- | Drop mappings whose source line exceeds the source file's line count.
--- Monomorphization and inlining can produce Core nodes with areas from other
--- modules; those produce line numbers that are out-of-range for the current
--- source file and would confuse source map consumers.
-filterMappingsBySourceFile :: Int -> [Mapping] -> [Mapping]
-filterMappingsBySourceFile lineCount = filter (\m -> mappingSrcLine m < lineCount)
-
-
--- | Attach a //# sourceMappingURL comment and optionally write the map JSON.
--- Returns (annotated JS string, map JSON string).
-makeExternalSourceMap
-  :: FilePath   -- absolute path to .mad source file
-  -> FilePath   -- absolute path to output .mjs file
-  -> [Mapping]
-  -> String     -- JS module content
-  -> (String, String)
-makeExternalSourceMap sourcePath outputPath mappings jsContent =
-  let outFileName    = takeFileName outputPath
-      -- relative path from the .mjs directory to the .mad source
-      relSource      = makeRelativeEx (dropFileName outputPath) sourcePath
-      mapJson        = buildSourceMapJSON outFileName relSource mappings Nothing
-      annotated      = jsContent <> "\n//# sourceMappingURL=" <> outFileName <> ".map\n"
-  in  (annotated, mapJson)
-
-makeInlineSourceMap
-  :: FilePath   -- absolute path to .mad source file
-  -> FilePath   -- absolute path to output .mjs file
-  -> [Mapping]
-  -> String     -- JS module content
-  -> String
-makeInlineSourceMap sourcePath outputPath mappings jsContent =
-  let outFileName = takeFileName outputPath
-      relSource   = makeRelativeEx (dropFileName outputPath) sourcePath
-      mapJson     = buildSourceMapJSON outFileName relSource mappings Nothing
-      encoded     = base64Encode mapJson
-      annotated   = jsContent <> "\n//# sourceMappingURL=data:application/json;base64," <> encoded <> "\n"
-  in  annotated
 
 
 generateJSModule :: Options -> [FilePath] -> Core.AST -> IO (String, [Mapping])

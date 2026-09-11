@@ -53,6 +53,7 @@ import           Run.Target
 import qualified Data.Maybe as Maybe
 import           Run.Options (Options(optEntrypoint))
 import           Control.Monad.Trans.Control
+import           Run.LanguageServer.Workspace (getWorkspaceSymbols, refreshWorkspaceSymbols, refreshReverseModulePaths)
 import           Control.Concurrent
 import           Data.Foldable (toList)
 import           Control.Concurrent.Async
@@ -77,7 +78,7 @@ import Data.Maybe (isJust)
 import GHC.Base (when)
 import Language.LSP.VFS (virtualFileText)
 import qualified Infer.Env as SlvEnv
-import Data.Char (isAlphaNum, isDigit, isUpper, toLower)
+import Data.Char (isAlphaNum, isDigit, isUpper)
 import qualified System.Directory as Dir
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Aeson as Aeson
@@ -129,7 +130,7 @@ handlers state autocompletionState = mconcat
         let fileContent = T.unpack . virtualFileText <$> file
         case fileContent of
           Just content -> do
-            suggestions <- getAutocompletionSuggestions autocompletionState (Loc 0 (line + 1) (col + 1)) (uriToPath uri) content
+            suggestions <- getAutocompletionSuggestions state autocompletionState (Loc 0 (line + 1) (col + 1)) (uriToPath uri) content
             let completionItems = map (\(s, typing, kind) -> CompletionItem (T.pack s) (Just kind) Nothing (Just $ T.pack typing) Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing) suggestions
             responder $ Right $ InR (CompletionList True (List completionItems))
 
@@ -151,8 +152,12 @@ handlers state autocompletionState = mconcat
         latest <- readIORef (_debounceRef state)
         case latest of
           Just t | t == currentTime ->
-            runLspT env $ recordAndPrintDuration "file change" $
+            runLspT env $ recordAndPrintDuration "file change" $ do
               generateDiagnostics True state autocompletionState uri fileUpdates
+              -- Keep the read-only workspace index current without making a
+              -- workspace-symbol request re-type-check every module.
+              refreshWorkspaceSymbols state [uriToPath uri]
+              refreshReverseModulePaths state (uriToPath uri)
           _ -> return ()
   , requestHandler STextDocumentDocumentSymbol $ \(RequestMessage _ _ _ (DocumentSymbolParams _ _ (TextDocumentIdentifier uri))) responder ->
       recordAndPrintDuration "documentSymbol" $ do
@@ -421,70 +426,6 @@ mkDocSymbol name detail symbolKind range selRange =
 mkDocSymbolWithChildren :: T.Text -> Maybe T.Text -> SymbolKind -> Area -> Area -> Maybe (List DocumentSymbol) -> DocumentSymbol
 mkDocSymbolWithChildren name detail symbolKind range selRange children =
   DocumentSymbol name detail symbolKind Nothing Nothing (areaToRange range) (areaToRange selRange) children
-
-
--- Workspace Symbols --
-
-getWorkspaceSymbols :: State -> String -> LspM () [SymbolInformation]
-getWorkspaceSymbols state query = do
-  bgDone <- liftIO $ readIORef (_backgroundDone state)
-  if not bgDone || null query then return []
-  else do
-    allPaths <- liftIO $ Set.toList <$> readIORef (_allModulePaths state)
-    options <- buildOptions TNode
-    results <- forM allPaths $ \modPath -> do
-      result <- liftIO $ safeRunTask state options { optEntrypoint = modPath }
-                  Driver.Don'tPrune mempty mempty (workspaceSymbolsTask query modPath)
-      case result of
-        Just (syms, _, _) -> return syms
-        Nothing           -> return []
-    return $ concat results
-
-
-workspaceSymbolsTask :: String -> FilePath -> Rock.Task Query.Query [SymbolInformation]
-workspaceSymbolsTask query modPath = do
-  (typedAst, _) <- Rock.fetch $ Query.SolvedASTWithEnv modPath
-  let queryLower = map toLower query
-      matchesQuery name = queryLower `List.isInfixOf` map toLower name
-      fileUri = Uri (T.pack $ "file://" ++ modPath)
-  let expSyms = Maybe.mapMaybe (expToSymbolInfo fileUri matchesQuery) (Slv.aexps typedAst)
-  let typeSyms = Maybe.mapMaybe (typeDeclToSymbolInfo fileUri matchesQuery) (Slv.atypedecls typedAst)
-  return $ expSyms ++ typeSyms
-
-
-expToSymbolInfo :: Uri -> (String -> Bool) -> Slv.Exp -> Maybe SymbolInformation
-expToSymbolInfo fileUri matchesQuery exp = case exp of
-  Slv.Typed _ area (Slv.Assignment name _) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
-  Slv.Typed _ area (Slv.TypedExp (Slv.Typed _ _ (Slv.Assignment name _)) _ _) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
-  Slv.Typed _ area (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _))) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
-  Slv.Typed _ area (Slv.TypedExp (Slv.Typed _ _ (Slv.Export (Slv.Typed _ _ (Slv.Assignment name _)))) _ _) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
-  Slv.Typed _ area (Slv.Extern _ name _) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
-  Slv.Typed _ area (Slv.Export (Slv.Typed _ _ (Slv.Extern _ name _))) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkFunction area fileUri
-  _ -> Nothing
-
-
-typeDeclToSymbolInfo :: Uri -> (String -> Bool) -> Slv.TypeDecl -> Maybe SymbolInformation
-typeDeclToSymbolInfo fileUri matchesQuery td = case td of
-  Slv.Untyped area (Slv.ADT { Slv.adtname = name }) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkEnum area fileUri
-  Slv.Typed _ area (Slv.ADT { Slv.adtname = name }) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkEnum area fileUri
-  Slv.Untyped area (Slv.Alias { Slv.aliasname = name }) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkClass area fileUri
-  Slv.Typed _ area (Slv.Alias { Slv.aliasname = name }) | matchesQuery name ->
-    Just $ mkSymInfo (T.pack name) SkClass area fileUri
-  _ -> Nothing
-
-
-mkSymInfo :: T.Text -> SymbolKind -> Area -> Uri -> SymbolInformation
-mkSymInfo name symbolKind area fileUri =
-  SymbolInformation name symbolKind Nothing Nothing (Location fileUri (areaToRange area)) Nothing
 
 
 -- Inlay Hints --
@@ -1589,17 +1530,26 @@ backgroundCompileProject state autocompletionState env = do
   -- Build the full set of known module paths (including transitive deps and prelude)
   compiled <- readIORef compiledPaths
   allPaths <- newIORef compiled
+  reverseModulePaths <- newIORef Map.empty
   forM_ (Set.toList compiled) $ \modPath -> do
     options <- runLspT env $ buildOptions TNode
     result <- try $ runTask state options { optEntrypoint = modPath }
                 Driver.Don'tPrune mempty mempty (Rock.fetch $ Query.ModulePathsToBuild modPath)
               :: IO (Either SomeException ([FilePath], [CompilationWarning], [CompilationError]))
     case result of
-      Right (paths, _, _) -> atomicModifyIORef' allPaths (\s -> (Set.union s (Set.fromList paths), ()))
+      Right (paths, _, _) -> do
+        atomicModifyIORef' allPaths (\s -> (Set.union s (Set.fromList paths), ()))
+        atomicModifyIORef' reverseModulePaths $ \index ->
+          let addDependent dependents dependency
+                | dependency == modPath = dependents
+                | otherwise = Map.insertWith Set.union dependency (Set.singleton modPath) dependents
+          in (foldl' addDependent index paths, ())
       Left _ -> return ()
 
   finalPaths <- readIORef allPaths
   atomicWriteIORef (_allModulePaths state) finalPaths
+  readIORef reverseModulePaths >>= atomicWriteIORef (_reverseModulePaths state)
+  runLspT env $ refreshWorkspaceSymbols state (Set.toList finalPaths)
   atomicWriteIORef (_backgroundDone state) True
 
   -- Copy to autocompletion state
@@ -1627,7 +1577,9 @@ runLanguageServer = do
   allModulePaths <- newIORef Set.empty
   backgroundDone <- newIORef False
   interfaceSnapshots <- newIORef Map.empty
-  let state = State jsDriverState llvmDriverState openFiles mempty debounceRef stateLock allModulePaths backgroundDone interfaceSnapshots
+  workspaceSymbols <- newIORef Map.empty
+  reverseModulePaths <- newIORef Map.empty
+  let state = State jsDriverState llvmDriverState openFiles mempty debounceRef stateLock allModulePaths backgroundDone interfaceSnapshots workspaceSymbols reverseModulePaths
 
   autocompletionJsDriverState <- Driver.initialState
   autocompletionLlvmDriverState <- Driver.initialState
@@ -1637,7 +1589,9 @@ runLanguageServer = do
   autocompletionAllModulePaths <- newIORef Set.empty
   autocompletionBackgroundDone <- newIORef False
   autocompletionInterfaceSnapshots <- newIORef Map.empty
-  let autocompletionState = State autocompletionJsDriverState autocompletionLlvmDriverState autocompletionOpenFiles mempty autocompletionDebounceRef autocompletionStateLock autocompletionAllModulePaths autocompletionBackgroundDone autocompletionInterfaceSnapshots
+  autocompletionWorkspaceSymbols <- newIORef Map.empty
+  autocompletionReverseModulePaths <- newIORef Map.empty
+  let autocompletionState = State autocompletionJsDriverState autocompletionLlvmDriverState autocompletionOpenFiles mempty autocompletionDebounceRef autocompletionStateLock autocompletionAllModulePaths autocompletionBackgroundDone autocompletionInterfaceSnapshots autocompletionWorkspaceSymbols autocompletionReverseModulePaths
   runServer $ ServerDefinition
     { defaultConfig = ()
     , onConfigurationChange = const $ pure $ Right ()

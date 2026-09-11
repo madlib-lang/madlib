@@ -62,6 +62,10 @@ data State = State
   , _allModulePaths :: IORef (Set.Set FilePath)
   , _backgroundDone :: IORef Bool
   , _interfaceSnapshots :: IORef (Map.Map FilePath (SlvEnv.Vars, SlvEnv.Methods))
+  , _workspaceSymbols :: IORef (Map.Map FilePath [SymbolInformation])
+  -- | Transitive reverse dependencies discovered during the background warm-up.
+  -- A changed module maps directly to every project entrypoint that imports it.
+  , _reverseModulePaths :: IORef (Map.Map FilePath (Set.Set FilePath))
   }
 
 

@@ -108,14 +108,26 @@ getLocalNames loc exp = case exp of
     []
 
 
-getAutocompletionSuggestions :: State -> Loc -> FilePath -> String -> LspM () [(String, String, CompletionItemKind)]
-getAutocompletionSuggestions autocompletionState loc path moduleContent = do
-  -- Use single target for completion — types are target-independent for the vast majority of code
+getAutocompletionSuggestions :: State -> State -> Loc -> FilePath -> String -> LspM () [(String, String, CompletionItemKind)]
+getAutocompletionSuggestions state autocompletionState loc path moduleContent = do
+  -- First use the current virtual document. Completion requests commonly arrive
+  -- between diagnostics updates, so relying solely on the copied last-valid
+  -- state makes names in the file appear missing or stale.
   jsOptions <- buildOptions TNode
-  jsResult <- liftIO $ safeRunTask autocompletionState jsOptions { optEntrypoint = path } Driver.Don'tPrune mempty mempty (completionSuggestionsTask loc path moduleContent)
-  return $ case jsResult of
-    Just (suggestions, _, _) -> suggestions
-    Nothing                  -> []
+  currentResult <- liftIO $ safeRunTask state jsOptions { optEntrypoint = path }
+    Driver.Don'tPrune [path] (Map.singleton path moduleContent)
+    (completionSuggestionsTask loc path moduleContent)
+  case currentResult of
+    Just (suggestions, _, _) -> return suggestions
+    Nothing -> do
+      -- An incomplete expression can legitimately fail to solve while the user
+      -- is typing. Keep completions useful by falling back to the isolated
+      -- last successful compiler snapshot.
+      snapshotResult <- liftIO $ safeRunTask autocompletionState jsOptions { optEntrypoint = path }
+        Driver.Don'tPrune mempty mempty (completionSuggestionsTask loc path moduleContent)
+      return $ case snapshotResult of
+        Just (suggestions, _, _) -> suggestions
+        Nothing                  -> []
 
 
 completionSuggestionsTask :: Loc -> FilePath -> String -> Rock.Task Query.Query [(String, String, CompletionItemKind)]
