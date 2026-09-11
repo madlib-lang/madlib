@@ -477,12 +477,8 @@ compileModule mkCtx safeBitcastFn options ast@Core.AST { Core.apath = Just modul
     createDirectoryIfMissing True $ takeDirectory irPath
     ByteString.writeFile irPath irContent
 
-  pathsToBuild <- Rock.fetch $ Query.ModulePathsToBuild (optEntrypoint options)
-  let rest = List.dropWhile (/= modulePath) pathsToBuild
-  let total = List.length pathsToBuild
-  let curr = total - List.length rest + 1
-  let currStr = if curr < 10 then " " <> show curr else show curr
-  liftIO $ SystemIO.hPutStrLn SystemIO.stdout $ "[" <> currStr <> " of "<> show total<>"] Compiled '" <> modulePath <> "'"
+  -- Progress reporting must not create a full-program dependency for each
+  -- object query.  The build driver already reports module progress.
 
   return (table, env, objectContent)
 

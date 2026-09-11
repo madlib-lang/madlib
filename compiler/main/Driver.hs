@@ -15,6 +15,7 @@ import           Data.Constraint.Extras           (has')
 import           Data.Dependent.HashMap           (DHashMap)
 import qualified Data.Dependent.HashMap           as DHashMap
 import           Data.Dependent.Sum               (DSum ((:=>)))
+import           Data.Some                        (Some(Some))
 import           Data.HashMap.Lazy                (HashMap)
 import qualified Data.HashMap.Lazy                as HashMap
 import           Data.HashSet                     (HashSet)
@@ -55,6 +56,7 @@ import           System.FSNotify
 import           Data.Time.Clock
 import qualified AST.Source as Src
 import Data.Maybe (isJust)
+import           System.Environment               (lookupEnv)
 
 
 
@@ -62,6 +64,9 @@ data State err = State
   { _startedVar :: !(IORef (DHashMap Query MemoEntry))
   , _hashesVar :: !(IORef (DHashMap Query (Const Int)))
   , _reverseDependenciesVar :: !(IORef (ReverseDependencies Query))
+  -- The current forward edges let us replace, rather than accumulate, reverse
+  -- edges whenever a query is recomputed.  Rock's stock tracker is additive.
+  , _forwardDependenciesVar :: !(IORef (HashMap (Some Query) (HashSet (Some Query))) )
   , _tracesVar :: !(IORef (Traces Query (Const Int)))
   , _errorsVar :: !(IORef (DHashMap Query (Const [err])))
   , _warningsVar :: !(IORef (DHashMap Query (Const [CompilationWarning])))
@@ -73,6 +78,7 @@ initialState = do
   startedVar             <- newIORef mempty
   hashesVar              <- newIORef mempty
   reverseDependenciesVar <- newIORef mempty
+  forwardDependenciesVar <- newIORef mempty
   tracesVar              <- newIORef mempty
   errorsVar              <- newIORef mempty
   warningsVar            <- newIORef mempty
@@ -81,6 +87,7 @@ initialState = do
       { _startedVar             = startedVar
       , _hashesVar              = hashesVar
       , _reverseDependenciesVar = reverseDependenciesVar
+      , _forwardDependenciesVar = forwardDependenciesVar
       , _tracesVar              = tracesVar
       , _errorsVar              = errorsVar
       , _warningsVar            = warningsVar
@@ -99,6 +106,7 @@ resetState state = do
   atomicWriteIORef (_startedVar state) mempty
   atomicWriteIORef (_hashesVar state) mempty
   atomicWriteIORef (_reverseDependenciesVar state) mempty
+  atomicWriteIORef (_forwardDependenciesVar state) mempty
   atomicWriteIORef (_tracesVar state) mempty
   atomicWriteIORef (_errorsVar state) mempty
   atomicWriteIORef (_warningsVar state) mempty
@@ -118,6 +126,8 @@ runIncrementalTask ::
   Task Query a ->
   IO (a, [CompilationWarning], [CompilationError])
 runIncrementalTask state options changedFiles fileUpdates prune task = handleException $ do
+  enabledMetrics <- (== Just "1") <$> lookupEnv "MADLIB_ROCK_METRICS"
+  metricsVar <- newIORef Map.empty
   reverseDependencies <- readIORef $ _reverseDependenciesVar state
   started             <- readIORef $ _startedVar state
   hashes              <- readIORef $ _hashesVar state
@@ -175,7 +185,9 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
       rules :: Rules Query
       rules =
         memoiseWithCycleDetection (_startedVar state) threadDepsVar $
-          trackReverseDependencies (_reverseDependenciesVar state) $
+          trackCurrentReverseDependencies
+            (_reverseDependenciesVar state)
+            (_forwardDependenciesVar state) $
             verifyTraces
               (_tracesVar state)
               ( \query value -> do
@@ -192,14 +204,15 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
               )
               $ traceFetch_
               $ writer writeErrorsAndWarnings
-              $ Rules.rules
-                  options
+              $ profileRules metricsVar
+              $ Rules.rules options
                     { optPathUtils = (optPathUtils options)
                         { PathUtils.readFile = readSourceFile_
                         , PathUtils.strictByteStringReadFile = readSourceFileBS_
                         } }
 
   result    <- Rock.runTask rules task
+  printMetrics enabledMetrics metricsVar (length $ DHashMap.toList keysToInvalidate) (_reverseDependenciesVar state)
   started   <- readIORef $ _startedVar state
   errorsMap <- case prune of
     Don'tPrune ->
@@ -253,6 +266,87 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
 
 ignoreTaskKind :: Rock.GenRules (Rock.Writer Rock.TaskKind f) f -> Rock.Rules f
 ignoreTaskKind rs key = fst <$> rs (Rock.Writer key)
+
+
+-- | Rock's 'trackReverseDependencies' only ever adds edges.  That is safe but
+-- makes the graph increasingly conservative after imports are removed.  Keep
+-- the current forward edge set for each query so a recomputation atomically
+-- replaces its old reverse edges with the observed ones.
+trackCurrentReverseDependencies
+  :: IORef (ReverseDependencies Query)
+  -> IORef (HashMap (Some Query) (HashSet (Some Query)))
+  -> Rock.Rules Query
+  -> Rock.Rules Query
+trackCurrentReverseDependencies reverseVar forwardVar rules key = do
+  (result, deps) <- Rock.track (\_ _ -> Const ()) (rules key)
+  let parent = Some key
+      children = HashSet.fromList
+        [ Some child
+        | child :=> Const () <- DHashMap.toList deps
+        ]
+  oldChildren <- atomicModifyIORef' forwardVar $ \forward ->
+    let old = HashMap.lookupDefault mempty parent forward
+        forward' =
+          if HashSet.null children
+            then HashMap.delete parent forward
+            else HashMap.insert parent children forward
+    in (forward', old)
+  atomicModifyIORef' reverseVar $ \reverseDeps ->
+    let withoutOld = HashSet.foldl'
+          (\acc child ->
+            HashMap.update
+              (\parents ->
+                let parents' = HashSet.delete parent parents
+                in if HashSet.null parents' then Nothing else Just parents'
+              )
+              child
+              acc
+          )
+          reverseDeps
+          oldChildren
+        withCurrent = HashSet.foldl'
+          (\acc child -> HashMap.insertWith (<>) child (HashSet.singleton parent) acc)
+          withoutOld
+          children
+    in (withCurrent, ())
+  return result
+
+
+type QueryMetrics = Map.Map String (Int, NominalDiffTime)
+
+
+profileRules
+  :: IORef QueryMetrics
+  -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
+  -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
+profileRules metrics rules key@(Rock.Writer (Rock.Writer query)) = do
+  started <- liftIO getCurrentTime
+  result <- rules key
+  finished <- liftIO getCurrentTime
+  liftIO $ atomicModifyIORef' metrics $ \entries ->
+    let name = queryTag query
+        (count, elapsed) = Map.findWithDefault (0, 0) name entries
+    in (Map.insert name (count + 1, elapsed + diffUTCTime finished started) entries, ())
+  return result
+
+
+queryTag :: Query a -> String
+queryTag = filter (/= '(') . takeWhile (/= ' ') . drop 5 . show . Some
+
+
+printMetrics :: Bool -> IORef QueryMetrics -> Int -> IORef (ReverseDependencies Query) -> IO ()
+printMetrics enabled metrics invalidated reverseVar = when enabled $ do
+  entries <- readIORef metrics
+  reverseDeps <- readIORef reverseVar
+  let sorted = List.sortOn (negate . realToFrac . snd . snd) (Map.toList entries)
+      topFanout = take 5 $ List.sortOn (negate . HashSet.size . snd) (HashMap.toList reverseDeps)
+  putStrLn $ "Rock metrics: invalidated=" <> show invalidated
+  forM_ (take 12 sorted) $ \(name, (count, elapsed)) ->
+    putStrLn $ "  " <> name <> ": " <> show count <> " run(s), " <> show (round (elapsed * 1000) :: Integer) <> "ms"
+  unless (null topFanout) $ do
+    putStrLn "  highest reverse fan-out:"
+    forM_ topFanout $ \(Some query, parents) ->
+      putStrLn $ "    " <> queryTag query <> ": " <> show (HashSet.size parents)
 
 
 typeCheckFileTask :: FilePath -> Rock.Task Query.Query ()

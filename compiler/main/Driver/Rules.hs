@@ -96,7 +96,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     dictModulePath <- liftIO $ Utils.Path.resolveAbsoluteSrcPath (optPathUtils options) (optRootPath options) "Dictionary"
     return (Maybe.fromMaybe "" dictModulePath, (mempty, mempty))
 
-  ModulePathsToBuild entrypoint -> input $ do
+  DirectModulePaths entrypoint -> nonInput $ do
     Src.AST { Src.aimports } <- Rock.fetch $ ParsedAST entrypoint
     let importPaths = Src.getImportAbsolutePath <$> aimports
     importPaths' <-
@@ -120,8 +120,12 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
               return $ trackingModulePath : importPaths
           else
             return importPaths
-    fromImports <- mapM (Rock.fetch . ModulePathsToBuild) importPaths'
-    return $ removeDuplicates $ List.concat fromImports ++ importPaths' ++ [entrypoint]
+    return (importPaths', (mempty, mempty))
+
+  ModulePathsToBuild entrypoint -> nonInput $ do
+    importPaths <- Rock.fetch $ DirectModulePaths entrypoint
+    fromImports <- mapM (Rock.fetch . ModulePathsToBuild) importPaths
+    return (removeDuplicates (List.concat fromImports ++ importPaths ++ [entrypoint]), (mempty, mempty))
 
   DetectImportCycle _ path -> nonInput $ do
     r <- detectCycle [] path
@@ -355,9 +359,17 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
         return (Just found, (mempty, mempty))
 
   SolvedMethodNode methodName methodCallType -> nonInput $ do
-    astTable <- Rock.fetch AllSolvedASTsWithEnvs
-    found <- findMethodByNameAndType (Map.elems astTable) methodName methodCallType
-    return (found, (mempty, mempty))
+    -- Do not depend on one aggregate of every solved module.  The existing
+    -- per-module ForeignMethod query has a narrow result hash, allowing an
+    -- unrelated implementation edit to validate this lookup unchanged.
+    modulePaths <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+    candidates <- mapM
+      (\modulePath -> do
+        found <- Rock.fetch $ ForeignMethod modulePath methodName methodCallType
+        return $ fmap (, modulePath) found
+      )
+      modulePaths
+    return (Maybe.listToMaybe (Maybe.catMaybes candidates), (mempty, mempty))
 
   DefinesInterfaceForMethod modulePath methodName -> nonInput $ do
     (slvAst, _) <- Rock.fetch $ SolvedASTWithEnv modulePath
@@ -585,7 +597,12 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     return (jsModule, (mempty, mempty))
 
   BuiltJSModule path -> nonInput $ do
-    paths    <- Rock.fetch $ ModulePathsToBuild (optEntrypoint options)
+    -- Only the entrypoint emits initialisers for the whole closure.  Fetching
+    -- that closure for every module made unrelated graph changes invalidate all
+    -- JS emission queries.
+    paths    <- if path == optEntrypoint options
+                  then Rock.fetch $ ModulePathsToBuild path
+                  else return [path]
     coreAst  <- Rock.fetch $ CoreAST path
     let coreAstWithPath  = coreAst { Core.apath = Just path }
         computedOutputPath = computeTargetPath (optOutputPath options) (optRootPath options) path
@@ -617,7 +634,11 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     paths <- Rock.fetch $ ModulePathsToBuild path
 
     if optTarget options == TLLVM then do
-      moduleResults <- mapM (Rock.fetch . BuiltObjectFile) paths
+      let totalModules = length paths
+      moduleResults <- forM (zip [(1 :: Int) ..] paths) $ \(moduleIndex, modulePath) -> do
+        built <- Rock.fetch $ BuiltObjectFile modulePath
+        liftIO $ putStrLn $ "[" <> show moduleIndex <> " of " <> show totalModules <> "] Compiled '" <> modulePath <> "'"
+        return built
       let moduleEnvs = (\(_, env, _) -> env) <$> moduleResults
 
       if any (null . LLVMEnv.envASTPath) moduleEnvs then

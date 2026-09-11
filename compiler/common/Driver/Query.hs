@@ -35,6 +35,10 @@ import           Infer.MonomorphizationState
 
 
 data Query a where
+  -- Direct dependencies are intentionally separate from the transitive closure.
+  -- Most per-module work should depend on the former; the latter is reserved for
+  -- linking and entrypoint initialisation.
+  DirectModulePaths :: FilePath -> Query [FilePath]
   ModulePathsToBuild :: FilePath -> Query [FilePath]
   AbsolutePreludePath :: FilePath -> Query FilePath
   DictionaryModuleAbsolutePath :: Query FilePath
@@ -106,6 +110,9 @@ deriveArgDict ''Query
 
 instance Hashable (Query a) where
   hashWithSalt salt query = case query of
+    DirectModulePaths path ->
+      hashWithSalt salt (path, (-1) :: Int)
+
     ModulePathsToBuild path ->
       hashWithSalt salt (path, 0 :: Int)
 

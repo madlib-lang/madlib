@@ -117,7 +117,10 @@ runCompilationTask watchMode state options invalidatedPaths = do
         (_, _, _) <- Driver.runIncrementalTask
           state
           options
-          invalidatedPaths
+          -- The preceding type-check already invalidated this watch event and
+          -- repopulated the shared Rock state.  Invalidating again here throws
+          -- away precisely the frontend work compilation should reuse.
+          []
           mempty
           Don'tPrune
           (Driver.compilationTask $ optEntrypoint options)
