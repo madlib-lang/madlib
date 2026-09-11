@@ -1,0 +1,23 @@
+import IO from "IO"
+
+emit = (label, value) => {
+  IO.log(label)
+  return value
+}
+
+makeBase = () => {
+  IO.log("spread")
+  return { x: "from spread", b: 2 }
+}
+
+main = () => {
+  record = {
+    z: emit("z", 0),
+    x: emit("first x", "shadowed explicit value"),
+    ...makeBase(),
+    a: emit("a", 1),
+    x: emit("final x", 3),
+  }
+  IO.log(record.x)
+  IO.log(record.b)
+}

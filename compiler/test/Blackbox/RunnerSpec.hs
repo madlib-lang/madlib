@@ -246,6 +246,7 @@ spec = do
         , "compiler/test/Blackbox/test-cases/pattern-matching-advanced"
         , "compiler/test/Blackbox/test-cases/record-spread-update"
         , "compiler/test/Blackbox/test-cases/record-merge"
+        , "compiler/test/Blackbox/test-cases/record-evaluation-order"
         , "compiler/test/Blackbox/test-cases/list-operations"
         , "compiler/test/Blackbox/test-cases/extern-ffi"
         , "compiler/test/Blackbox/test-cases/derived-instances-extended"

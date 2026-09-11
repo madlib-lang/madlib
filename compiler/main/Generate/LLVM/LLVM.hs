@@ -1540,8 +1540,6 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
       return (symbolTable, list, Nothing)
 
   Core.Typed (_ IT.:=> recType) area metadata (Core.Record fields) -> do
-    let fields' = List.filter (not . isSpreadField) fields
-    let sortedFields = List.sortOn (Maybe.fromMaybe "" . Core.getFieldName) fields'
     -- Use the result record type to determine the struct size (not just explicit fields)
     let RecordLayout resultFields structType = requireRecordLayout recType
         allFieldTypes = Map.elems resultFields
@@ -1551,27 +1549,31 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
     recordPtr  <- allocateStruct env area metadata structType mallocFn
     recordPtr' <- safeBitcast recordPtr (Type.ptr structType)
 
-    -- Copy only the last source-order provider for each spread field.  Type
-    -- equality cannot identify shadowing here: aliases and instantiated row
-    -- variables can describe the same storage with syntactically different
-    -- types.  Skipping such a field leaves its result slot uninitialized.
+    -- A record literal is evaluated left-to-right, independently from the
+    -- alphabetical field order used by its flat LLVM layout.  Determine the
+    -- labels supplied by each item so shadowed providers can still be
+    -- evaluated for their effects without being stored into a result slot
+    -- whose final provider may have a different LLVM type.
     let suppliedNames field = case field of
           Core.Typed _ _ _ (Core.Field (name, _)) -> [name]
           Core.Typed _ _ _ (Core.FieldSpread exp) ->
             let (_ IT.:=> spreadType) = Core.getQualType exp
             in maybe [] Map.keys (IT.recordVisibleFields spreadType)
           _ -> []
-    Monad.forM_ (zip [0 :: Int ..] fields) $ \(fieldIndex, baseField) -> case baseField of
+
+        isFinalProvider fieldIndex name =
+          name `notElem` concatMap suppliedNames (drop (fieldIndex + 1) fields)
+
+    Monad.forM_ (zip [0 :: Int ..] fields) $ \(fieldIndex, field) -> case field of
       Core.Typed _ _ _ (Core.FieldSpread exp) -> do
         (_, baseOperand, _) <- generateExp env symbolTable exp
         let baseRecType     = let (_ IT.:=> bt) = Core.getQualType exp in bt
         let RecordLayout baseFields baseStructType = requireRecordLayout baseRecType
             baseFieldNames = Map.keys baseFields
         basePtr <- safeBitcast baseOperand (Type.ptr baseStructType)
-        let laterNames = concatMap suppliedNames (drop (fieldIndex + 1) fields)
         -- Copy each surviving base field to its position in the result struct.
         Monad.forM_ baseFieldNames $ \fieldName -> do
-          Monad.when (fieldName `notElem` laterNames) $ do
+          Monad.when (isFinalProvider fieldIndex fieldName) $ do
             let srcIndex = recordFieldIndex fieldName baseRecType
             let dstIndex = recordFieldIndex fieldName recType
             srcPtr <- gep basePtr [i32ConstOp 0, i32ConstOp srcIndex]
@@ -1579,27 +1581,22 @@ generateExp env symbolTable exp = case normalizeDoWrappers exp of
             dstPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp dstIndex]
             store dstPtr 0 srcVal
 
-      _ -> return ()
-
-    -- Store each field value at its index in the flat struct.
-    -- For primitive fields, store the native value directly (avoids inttoptr/ptrtoint round-trips).
-    -- For boxed fields, box the value first as before.
-    Monad.forM_ sortedFields $ \field -> case field of
       Core.Typed _ _ _ (Core.Field (name, value)) -> do
         (_, val, maybeBoxed) <- generateExp env symbolTable value
-        let qt        = Core.getQualType value
-            fieldType = primitiveTupleFieldType qt
-            index     = recordFieldIndex name recType
-        fieldVal <-
-          if fieldType == boxType
-            then case maybeBoxed of
-                   Just boxed -> return boxed
-                   Nothing    -> box val
-            else if typeOf val == fieldType
-                   then return val
-                   else unbox env symbolTable qt val
-        fieldPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp index]
-        store fieldPtr 0 fieldVal
+        Monad.when (isFinalProvider fieldIndex name) $ do
+          let qt        = Core.getQualType value
+              fieldType = primitiveTupleFieldType qt
+              index     = recordFieldIndex name recType
+          fieldVal <-
+            if fieldType == boxType
+              then case maybeBoxed of
+                     Just boxed -> return boxed
+                     Nothing    -> box val
+              else if typeOf val == fieldType
+                     then return val
+                     else unbox env symbolTable qt val
+          fieldPtr <- gep recordPtr' [i32ConstOp 0, i32ConstOp index]
+          store fieldPtr 0 fieldVal
 
       _ -> return ()
 
