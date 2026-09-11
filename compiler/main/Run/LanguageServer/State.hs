@@ -230,6 +230,7 @@ copyStateTo from to = do
   _hashesVar <- readIORef (Driver._hashesVar from)
   _reverseDependenciesVar <- readIORef (Driver._reverseDependenciesVar from)
   _forwardDependenciesVar <- readIORef (Driver._forwardDependenciesVar from)
+  _monomorphizationSnapshotVar <- readIORef (Driver._monomorphizationSnapshotVar from)
   _tracesVar <- readIORef (Driver._tracesVar from)
   _errorsVar <- readIORef (Driver._errorsVar from)
   _warningsVar <- readIORef (Driver._warningsVar from)
@@ -238,6 +239,7 @@ copyStateTo from to = do
   atomicWriteIORef (Driver._hashesVar to) _hashesVar
   atomicWriteIORef (Driver._reverseDependenciesVar to) _reverseDependenciesVar
   atomicWriteIORef (Driver._forwardDependenciesVar to) _forwardDependenciesVar
+  atomicWriteIORef (Driver._monomorphizationSnapshotVar to) _monomorphizationSnapshotVar
   atomicWriteIORef (Driver._tracesVar to) _tracesVar
   atomicWriteIORef (Driver._errorsVar to) _errorsVar
   atomicWriteIORef (Driver._warningsVar to) _warningsVar

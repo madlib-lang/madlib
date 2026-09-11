@@ -57,6 +57,7 @@ import           Data.Time.Clock
 import qualified AST.Source as Src
 import Data.Maybe (isJust)
 import           System.Environment               (lookupEnv)
+import qualified Infer.MonomorphizationState      as Mono
 
 
 
@@ -67,6 +68,7 @@ data State err = State
   -- The current forward edges let us replace, rather than accumulate, reverse
   -- edges whenever a query is recomputed.  Rock's stock tracker is additive.
   , _forwardDependenciesVar :: !(IORef (HashMap (Some Query) (HashSet (Some Query))) )
+  , _monomorphizationSnapshotVar :: !(IORef MonomorphizationSnapshot)
   , _tracesVar :: !(IORef (Traces Query (Const Int)))
   , _errorsVar :: !(IORef (DHashMap Query (Const [err])))
   , _warningsVar :: !(IORef (DHashMap Query (Const [CompilationWarning])))
@@ -79,6 +81,7 @@ initialState = do
   hashesVar              <- newIORef mempty
   reverseDependenciesVar <- newIORef mempty
   forwardDependenciesVar <- newIORef mempty
+  monomorphizationSnapshotVar <- newIORef emptyMonomorphizationSnapshot
   tracesVar              <- newIORef mempty
   errorsVar              <- newIORef mempty
   warningsVar            <- newIORef mempty
@@ -88,6 +91,7 @@ initialState = do
       , _hashesVar              = hashesVar
       , _reverseDependenciesVar = reverseDependenciesVar
       , _forwardDependenciesVar = forwardDependenciesVar
+      , _monomorphizationSnapshotVar = monomorphizationSnapshotVar
       , _tracesVar              = tracesVar
       , _errorsVar              = errorsVar
       , _warningsVar            = warningsVar
@@ -107,6 +111,7 @@ resetState state = do
   atomicWriteIORef (_hashesVar state) mempty
   atomicWriteIORef (_reverseDependenciesVar state) mempty
   atomicWriteIORef (_forwardDependenciesVar state) mempty
+  atomicWriteIORef (_monomorphizationSnapshotVar state) emptyMonomorphizationSnapshot
   atomicWriteIORef (_tracesVar state) mempty
   atomicWriteIORef (_errorsVar state) mempty
   atomicWriteIORef (_warningsVar state) mempty
@@ -132,15 +137,23 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
   started             <- readIORef $ _startedVar state
   hashes              <- readIORef $ _hashesVar state
 
-  let (keysToInvalidate, reverseDependencies') =
+  -- A program-wide monomorphization traversal is a coordination query, not a
+  -- useful invalidation boundary.  Keep its outgoing edges while walking the
+  -- source change; after it recomputes we invalidate only module projections
+  -- whose generated specialization/import data changed.
+  let monoKey = Some Query.MonomorphizedProgram
+      monoParents = HashMap.lookupDefault mempty monoKey reverseDependencies
+      reverseForInvalidation = HashMap.delete monoKey reverseDependencies
+      (keysToInvalidate, reverseDependenciesWithoutMono) =
         List.foldl'
           ( \(keysToInvalidate_, reverseDependencies_) file ->
               let (inv1, rd1) = reachableReverseDependencies (Query.File file) reverseDependencies_
                   (inv2, rd2) = reachableReverseDependencies (Query.FileBS file) rd1
               in  first (<> keysToInvalidate_ <> inv2) (inv1, rd2)
           )
-          (mempty, reverseDependencies)
+          (mempty, reverseForInvalidation)
           changedFiles
+      reverseDependencies' = HashMap.insert monoKey monoParents reverseDependenciesWithoutMono
   let started' = DHashMap.difference started keysToInvalidate
       hashes'  = DHashMap.difference hashes keysToInvalidate
 
@@ -204,7 +217,7 @@ runIncrementalTask state options changedFiles fileUpdates prune task = handleExc
               )
               $ traceFetch_
               $ writer writeErrorsAndWarnings
-              $ profileRules metricsVar
+              $ profileRules state metricsVar
               $ Rules.rules options
                     { optPathUtils = (optPathUtils options)
                         { PathUtils.readFile = readSourceFile_
@@ -315,11 +328,72 @@ trackCurrentReverseDependencies reverseVar forwardVar rules key = do
 type QueryMetrics = Map.Map String (Int, NominalDiffTime)
 
 
+-- | The monomorphizer is currently stateful, but its consumers are modular.
+-- These fingerprints bridge that gap until specialization itself becomes a
+-- pure per-module query: only a changed module projection is evicted.
+data MonomorphizationSnapshot = MonomorphizationSnapshot
+  { monoModuleFingerprints :: !(Map.Map FilePath Int)
+  , monoMethodsFingerprint :: !Int
+  }
+
+
+emptyMonomorphizationSnapshot :: MonomorphizationSnapshot
+emptyMonomorphizationSnapshot = MonomorphizationSnapshot mempty 0
+
+
+captureMonomorphizationSnapshot :: IO MonomorphizationSnapshot
+captureMonomorphizationSnapshot = do
+  byModule <- readIORef Mono.monomorphizationStateByModule
+  imports <- readIORef Mono.monomorphizationImports
+  methods <- readIORef Mono.monomorphicMethods
+  let paths = Set.toList $ Set.union (Map.keysSet byModule) (Map.keysSet imports)
+      fingerprints = Map.fromList
+        [ (path, hash (show (Map.lookup path byModule), show (Map.lookup path imports)))
+        | path <- paths
+        ]
+  return $ MonomorphizationSnapshot fingerprints (hash $ show methods)
+
+
+invalidateQueryClosure :: State err -> [Some Query] -> IO ()
+invalidateQueryClosure state roots = do
+  reverseDeps <- readIORef (_reverseDependenciesVar state)
+  started <- readIORef (_startedVar state)
+  hashes <- readIORef (_hashesVar state)
+  let (keys, reverseDeps') = List.foldl'
+        (\(invalidated, graph) (Some query) ->
+          let (more, graph') = reachableReverseDependencies query graph
+          in (invalidated <> more, graph')
+        )
+        (mempty, reverseDeps)
+        roots
+  atomicWriteIORef (_startedVar state) $ DHashMap.difference started keys
+  atomicWriteIORef (_hashesVar state) $ DHashMap.difference hashes keys
+  atomicWriteIORef (_reverseDependenciesVar state) reverseDeps'
+
+
+refreshMonomorphizationModules :: State err -> IO ()
+refreshMonomorphizationModules state = do
+  current <- captureMonomorphizationSnapshot
+  previous <- atomicModifyIORef' (_monomorphizationSnapshotVar state) (\old -> (current, old))
+  let methodsChanged = monoMethodsFingerprint previous /= monoMethodsFingerprint current
+      oldFingerprints = monoModuleFingerprints previous
+      newFingerprints = monoModuleFingerprints current
+      changedPaths
+        | methodsChanged = Map.keys newFingerprints
+        | otherwise =
+            [ path
+            | path <- Set.toList $ Set.union (Map.keysSet oldFingerprints) (Map.keysSet newFingerprints)
+            , Map.lookup path oldFingerprints /= Map.lookup path newFingerprints
+            ]
+  invalidateQueryClosure state (Some . Query.MonomorphizedAST <$> changedPaths)
+
+
 profileRules
-  :: IORef QueryMetrics
+  :: State err
+  -> IORef QueryMetrics
   -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
   -> Rock.GenRules (Rock.Writer ([CompilationWarning], [CompilationError]) (Rock.Writer Rock.TaskKind Query)) Query
-profileRules metrics rules key@(Rock.Writer (Rock.Writer query)) = do
+profileRules state metrics rules key@(Rock.Writer (Rock.Writer query)) = do
   started <- liftIO getCurrentTime
   result <- rules key
   finished <- liftIO getCurrentTime
@@ -327,6 +401,9 @@ profileRules metrics rules key@(Rock.Writer (Rock.Writer query)) = do
     let name = queryTag query
         (count, elapsed) = Map.findWithDefault (0, 0) name entries
     in (Map.insert name (count + 1, elapsed + diffUTCTime finished started) entries, ())
+  case query of
+    Query.MonomorphizedProgram -> liftIO $ refreshMonomorphizationModules state
+    _ -> return ()
   return result
 
 
