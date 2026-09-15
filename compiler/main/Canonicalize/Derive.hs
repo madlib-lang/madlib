@@ -21,6 +21,7 @@ import           Utils.Record (generateRecordPredsAndType)
 import qualified Rock
 import qualified Driver.Query as Query
 import           Control.Monad.Except (throwError, MonadError (catchError))
+import           Control.Applicative ((<|>))
 import           Error.Error
 import           Error.Context
 import           Canonicalize.EnvUtils (lookupADT)
@@ -48,8 +49,34 @@ searchTypeInConstructor id t = case t of
           (_     , Just x) -> Just x
           _                -> Nothing
 
+  TRowExtend _ fieldType tail ->
+    searchTypeInConstructor id fieldType <|> searchTypeInConstructor id tail
+
+  TRowOverlay left right ->
+    searchTypeInConstructor id left <|> searchTypeInConstructor id right
+
+  TRowWithout _ row ->
+    searchTypeInConstructor id row
+
+  TRecordRow row optionalFields ->
+    -- Derived methods consume a record constructor argument as one value
+    -- (for example `toJson record`), so its evidence must be for the whole
+    -- record, not merely for a field nested inside it.
+    if Maybe.isJust (searchTypeInConstructor id row <|>
+         firstJust (searchTypeInConstructor id) (Map.elems optionalFields))
+      then Just t
+      else Nothing
+
+  TAlias _ _ _ aliased ->
+    searchTypeInConstructor id aliased
+
   _ ->
     Nothing
+
+
+firstJust :: (a -> Maybe b) -> [a] -> Maybe b
+firstJust _ []       = Nothing
+firstJust f (x : xs) = f x <|> firstJust f xs
 
 
 -- utility to create an empty canonical node

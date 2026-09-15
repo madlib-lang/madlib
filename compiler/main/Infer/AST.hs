@@ -26,6 +26,7 @@ import qualified Data.IntMap.Strict                         as IM
 import           Data.Hashable (hash, hashWithSalt)
 import           Control.Monad.State
 import           Control.Monad.Except
+import           Control.Applicative ((<|>))
 import qualified Data.Map                                   as M
 import qualified Data.HashMap.Strict                        as HM
 import qualified Data.Set                                   as S
@@ -427,8 +428,34 @@ searchTypeInConstructor id t = case t of
           _                ->
             Nothing
 
+  TRowExtend _ fieldType tail ->
+    searchTypeInConstructor id fieldType <|> searchTypeInConstructor id tail
+
+  TRowOverlay left right ->
+    searchTypeInConstructor id left <|> searchTypeInConstructor id right
+
+  TRowWithout _ row ->
+    searchTypeInConstructor id row
+
+  TRecordRow row optionalFields ->
+    -- Derived methods consume a record constructor argument as one value
+    -- (for example `toJson record`), so its evidence must be for the whole
+    -- record, not merely for a field nested inside it.
+    if isJust (searchTypeInConstructor id row <|>
+         firstJust (searchTypeInConstructor id) (M.elems optionalFields))
+      then Just t
+      else Nothing
+
+  TAlias _ _ _ aliased ->
+    searchTypeInConstructor id aliased
+
   _ ->
     Nothing
+
+
+firstJust :: (a -> Maybe b) -> [a] -> Maybe b
+firstJust _ []       = Nothing
+firstJust f (x : xs) = f x <|> firstJust f xs
 
 
 -- TODO: Move to Infer.Derive

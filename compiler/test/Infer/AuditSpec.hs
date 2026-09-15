@@ -193,6 +193,32 @@ spec = describe "typechecker audit" $ do
       , "result = read({x: \"ok\", y: true, z: 1})"
       ]
     errors `shouldBe` []
+  it "requires Json evidence for a derived ADT record field" $ do
+    (_, _, errors) <- inferModuleWithoutMain $ unlines
+      [ "import Json from \"Json\""
+      , "type Box a = Box({ value :: a })"
+      , "derive Json Box"
+      , "function :: Integer -> Integer"
+      , "function = (x) => x"
+      , "bad = Json.encode(Box({value: function}))"
+      ]
+    errors `shouldSatisfy` any (\(CompilationError e _) -> case e of
+      NoInstanceFound "Json" _ _ -> True
+      _ -> False)
+  it "retains Json evidence for supported derived ADT record fields" $ do
+    (_, _, errors) <- inferModuleWithoutMain $ unlines
+      [ "import Json from \"Json\""
+      , "type Box a = Box({ value :: a })"
+      , "derive Json Box"
+      , "good = Json.encode(Box({value: 1}))"
+      ]
+    errors `shouldBe` []
+  it "rejects an ADT parameter used at inconsistent kinds" $ do
+    (_, _, errors) <- inferModuleWithoutMain $ unlines
+      [ "type Bad a = Value(a) | Record({ ...a })" ]
+    errors `shouldSatisfy` any (\(CompilationError e _) -> case e of
+      TypingHasWrongKind _ _ _ -> True
+      _ -> False)
   where
     missingX (CompilationError (RecordMissingFields labels _) (Context "Module.mad" area)) =
       "x" `elem` labels && getLineFromStart area > 0

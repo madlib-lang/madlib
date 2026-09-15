@@ -171,6 +171,27 @@ canonicalizeConstructors env astPath (Src.Source area _ adt@Src.ADT{}) = do
       importedNames = map iiName $ filter (not . isTypeImport) (envImportInfo env)
   is <- mapM (resolveADTConstructorParams env astPath name params) ctors
 
+  -- `typingToType` is run independently for each constructor, so the same
+  -- declared parameter can otherwise acquire different kinds in different
+  -- branches (for example `A(a) | B({ ...a })`).  Composing those per-ctor
+  -- substitutions used to retain one arbitrary binding and postpone the
+  -- error until derived Eq/Show predicates became ambiguous.
+  forM_ params $ \paramName -> do
+    let paramId = hash paramName
+        kinds = nub
+          [ kind tv
+          | (_, types, _, _) <- is
+          , ty <- types
+          , tv@(TV variableId _) <- collectVars ty
+          , variableId == paramId
+          ]
+    case kinds of
+      expected : found : _ ->
+        throwError $ CompilationError
+          (TypingHasWrongKind (TVar $ TV paramId found) expected found)
+          (Context astPath area)
+      _ -> return ()
+
   let s = foldl' (\s' -> compose s' . getSubstitution) mempty is
   let rt = foldl' TApp
                   (mkTCon (TC name (buildKind $ length params)) astPath)
