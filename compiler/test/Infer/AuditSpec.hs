@@ -176,6 +176,23 @@ spec = describe "typechecker audit" $ do
     errors `shouldSatisfy` any (\(CompilationError e context) -> case (e, context) of
       (RecordMissingFields ["name"] _, Context "Module.mad" area) -> getLineFromStart area == 4
       _ -> False)
+  it "instantiates aliases containing two row spreads" $ do
+    (_, _, errors) <- inferModuleWithoutMain $ unlines
+      [ "alias Combine left right = { ...left, ...right }"
+      , "read :: Combine { x :: String } { y :: Boolean } -> String"
+      , "read = (value) => value.x"
+      , "result = read({x: \"ok\", y: true})"
+      ]
+    errors `shouldBe` []
+  it "uses a row-overlay alias as the base of another record alias" $ do
+    (_, _, errors) <- inferModuleWithoutMain $ unlines
+      [ "alias Combine left right = { ...left, ...right }"
+      , "alias Extend left right = { ...Combine left right, z :: Integer }"
+      , "read :: Extend { x :: String } { y :: Boolean } -> String"
+      , "read = (value) => value.x"
+      , "result = read({x: \"ok\", y: true, z: 1})"
+      ]
+    errors `shouldBe` []
   where
     missingX (CompilationError (RecordMissingFields labels _) (Context "Module.mad" area)) =
       "x" `elem` labels && getLineFromStart area > 0

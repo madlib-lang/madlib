@@ -295,6 +295,7 @@ typingToType env kindNeeded (Src.Source area _ (Src.TRRecord fields base)) = do
     asRowTail ty = case ty of
       TRowEmpty -> return TRowEmpty
       TRowExtend{} -> return ty
+      TRowOverlay{} -> return ty
       TRowWithout{} -> return ty
       TVar tv | kind tv == Row -> return ty
       TRecordRow row optionalFields ->
@@ -365,6 +366,11 @@ updateAliasVars t args = do
               fieldType' <- update fieldType
               tail' <- update tail
               return $ TRowExtend label fieldType' tail'
+
+            TRowOverlay left right -> do
+              left' <- update left
+              right' <- update right
+              return $ overlayRow left' right'
 
             TRowWithout labels row -> removeRowLabels labels <$> update row
 

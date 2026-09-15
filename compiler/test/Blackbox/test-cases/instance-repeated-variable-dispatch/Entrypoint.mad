@@ -1,0 +1,19 @@
+import IO from "IO"
+
+type Pair a b = Pair(a, b)
+
+interface Label a {
+  label :: a -> String
+}
+
+instance Label (Pair a a) {
+  label = (_) => "same"
+}
+
+instance Label (Pair Integer String) {
+  label = (_) => "mixed"
+}
+
+main = () => {
+  IO.putLine(label(Pair(1, "x")))
+}

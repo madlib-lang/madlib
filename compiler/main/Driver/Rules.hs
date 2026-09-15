@@ -3,6 +3,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use list comprehension" #-}
 module Driver.Rules where
@@ -811,7 +812,11 @@ findSlvInterface name paths = case paths of
             findSlvInterface name importedModulePaths
 
 
-findMethod :: String -> Type -> [Slv.Instance] -> Maybe Slv.Exp
+-- Method lookup is a semantic dictionary-selection step, not a prefilter.
+-- `quickMatch` deliberately ignores repeated-variable equalities, so using it
+-- here can select `C (Pair a a)` for a `Pair Integer String` call even when a
+-- non-overlapping concrete instance is the one inference resolved.
+findMethod :: (Rock.MonadFetch Query m, MonadIO m) => String -> Type -> [Slv.Instance] -> m (Maybe Slv.Exp)
 findMethod methodName typeItsCalledWith instances = case instances of
   (Slv.Untyped _ (Slv.Instance _ _ _ methods)) : next ->
     case Map.lookup methodName methods of
@@ -820,19 +825,18 @@ findMethod methodName typeItsCalledWith instances = case instances of
 
       Just (method, _) ->
         let t = Slv.getType method
-        in  if Unify.quickMatch t typeItsCalledWith then
-              Just method
-            else
-              findMethod methodName typeItsCalledWith next
+        in  runInfer (Unify.unify t typeItsCalledWith) >>= \case
+              Right _ -> return (Just method)
+              Left _  -> findMethod methodName typeItsCalledWith next
 
   _ ->
-    Nothing
+    return Nothing
 
 
 findMethodByNameAndType :: (Rock.MonadFetch Query m, MonadIO m) => [(Slv.AST, SlvEnv.Env)] -> String -> Type -> m (Maybe (Slv.Exp, FilePath))
 findMethodByNameAndType asts methodName typeItsCalledWith = case asts of
   (slvAst, _) : more ->
-    case findMethod methodName typeItsCalledWith (Slv.ainstances slvAst) of
+    findMethod methodName typeItsCalledWith (Slv.ainstances slvAst) >>= \case
       Just found ->
         return $ Just (found, Maybe.fromMaybe undefined (Slv.apath slvAst))
 

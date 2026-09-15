@@ -209,6 +209,13 @@ lowerTypeToRuntimeValue builtinsPath area ty =
       TRowWithout _ row ->
         go names next row
 
+      -- An open right-hand spread can shadow any label supplied by the left
+      -- side. Runtime type reflection has no row-overlay constructor, so its
+      -- stable, conservative representation is the right-hand row; this is
+      -- the same visible-row projection used by inference for an open overlay.
+      TRowOverlay _ right ->
+        go names next right
+
       TAlias _ _ _ inner ->
         go names next inner
 

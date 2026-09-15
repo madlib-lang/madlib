@@ -1,0 +1,10 @@
+import IO from "IO"
+
+alias Combine left right = { ...left, ...right }
+
+read :: Combine { x :: String } { y :: Boolean } -> String
+read = (value) => value.x
+
+main = () => {
+  IO.log(read({x: "ok", y: true}))
+}

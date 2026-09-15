@@ -1,0 +1,8 @@
+import IO from "IO"
+import Madlib from "Madlib"
+
+merge = (left, right) => ({ ...left, ...right })
+
+main = () => {
+  IO.putLine(Madlib.printType(typeof merge))
+}

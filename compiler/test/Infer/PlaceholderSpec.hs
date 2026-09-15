@@ -105,6 +105,12 @@ spec = do
 
       expectRuntimeTVar exp_ "a" Row
 
+    it "lowers an open row overlay without crashing" $ do
+      let exp_ = lowerTypeToRuntimeValue builtinsPath emptyArea
+            (TRowOverlay (TVar (TV 42 Row)) (TVar (TV 43 Row)))
+
+      expectRuntimeTVar exp_ "a" Row
+
     it "lowers TCon with normalized name, kind, and origin path" $ do
       let arrowKind = Kfun Star (Kfun Star Star)
           exp_ = lowerTypeToRuntimeValue builtinsPath emptyArea (mkTCon (TC "(->)" arrowKind) "prelude")
