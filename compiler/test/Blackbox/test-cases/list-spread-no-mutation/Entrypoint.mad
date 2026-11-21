@@ -1,0 +1,12 @@
+import IO from "IO"
+
+// Regression test for #174: spreading a list into a new list literal must not
+// mutate the spread list (the JS runtime shared the source cells).
+main = () => {
+  xs = [1, 2, 3]
+  ys = [...xs, 4, 5]
+  zs = [0, ...xs, ...xs]
+  IO.putLine(show(ys))
+  IO.putLine(show(zs))
+  IO.putLine(show(xs))
+}
