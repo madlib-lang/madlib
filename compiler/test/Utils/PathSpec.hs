@@ -34,6 +34,14 @@ spec = do
 
       resolved `shouldBe` Just expected
 
+    it "resolves a module whose file name contains several dots (#205)" $ do
+      rootPath <- canonicalizePath fixturePath
+      expected <- canonicalizePath $ joinPath [fixturePath, "src", "Dotted.file.name.mad"]
+
+      resolved <- resolveAbsoluteSrcPath PathUtils.defaultPathUtils (joinPath [rootPath, "Entrypoint.mad"]) "./src/Dotted.file.name"
+
+      resolved `shouldBe` Just expected
+
     it "does not resolve a missing aliased import" $ do
       rootPath <- canonicalizePath fixturePath
 

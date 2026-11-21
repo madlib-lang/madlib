@@ -141,7 +141,11 @@ resolveAbsoluteSrcPath' pathUtils rootPath path = do
 
       case path' of
         Just p -> do
-          let sourcePath = replaceExtension (joinPath [dropFileName rootPath, p]) ext
+          -- Append the extension instead of replacing it: `replaceExtension` treats the
+          -- last dot-segment of "./Whatever.additional.details" as an extension and
+          -- would look for "Whatever.additional.mad" (#205).
+          let withExt = if takeExtension p `elem` [".mad", ".json"] then p else addExtension p ext
+          let sourcePath = joinPath [dropFileName rootPath, withExt]
           absPath <- normalisePath pathUtils <$> canonicalizePath pathUtils sourcePath
           exists <- doesFileExist pathUtils absPath
           return $ if exists then Just absPath else Nothing
