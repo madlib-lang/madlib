@@ -295,7 +295,12 @@ addTrackersToExp options astPath exp = case exp of
 
   Canonical area (App f arg final) -> do
     arg' <- addTrackersToExp options astPath arg
-    f'   <- addTrackersToExp options astPath f
+    -- A variable in function position (`f(x)`, or the `+` of `a + b`) must stay a plain
+    -- reference. Wrapping it in a tracker Do-block, which happens when the operator sits
+    -- on its own line, emitted `(() => { track(); return +; })()` (#206).
+    f'   <- case f of
+      Canonical _ (Var _) -> return f
+      _                   -> addTrackersToExp options astPath f
     return $ Canonical area (App f' arg' final)
 
   Canonical area (TypedExp e ty sc) -> do
