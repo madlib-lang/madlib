@@ -1,0 +1,28 @@
+import IO from "IO"
+
+// A `where` used as a value inside a self-recursive (tail-call-eliminated) function.
+// The JS backend omitted `return` in every where branch of a TCE'd body, so the
+// where-IIFE evaluated to undefined and the sum below was NaN.
+go :: List Integer -> Integer -> Integer
+go = (xs, acc) => {
+  h = where(xs) {
+    [a, ...rest] =>
+      a
+
+    [] =>
+      0
+  }
+
+  return where(xs) {
+    [_, ...rest] =>
+      go(rest, acc + h)
+
+    [] =>
+      acc
+  }
+}
+
+main = () => {
+  IO.putLine(show(go([1, 2, 3], 0)))
+  IO.putLine(show(go([], 42)))
+}
