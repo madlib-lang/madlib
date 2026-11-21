@@ -1,0 +1,8 @@
+import IO from "IO"
+import Dotted from "./Whatever.additional.extension.details"
+
+// Regression test for #205: a module file with several dots in its name
+// must resolve from an import that spells the name without the .mad extension.
+main = () => {
+  IO.putLine(Dotted.greeting)
+}
