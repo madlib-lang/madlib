@@ -1,0 +1,26 @@
+import IO from "IO"
+import List from "List"
+
+// Regression test for #206: with coverage enabled, an operator that starts a line
+// (the formatter's output for long expressions) was wrapped in a line-tracker block
+// and the generated code became `return +;`.
+options :: List #[String, List String]
+options = [#["a", ["x", "y"]], #["b", []]]
+
+count :: {} -> Integer
+count = () => {
+  totalMenuLines = 6
+    + List.reduce(
+      (sum, opt) => where(opt) {
+        #[_, chains] =>
+          sum + 1 + List.length(chains)
+      },
+      0,
+      options,
+    )
+  return totalMenuLines
+}
+
+main = () => {
+  IO.putLine(show(count({})))
+}

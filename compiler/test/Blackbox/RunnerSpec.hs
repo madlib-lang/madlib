@@ -348,6 +348,7 @@ spec = do
 
   let coverageCases =
         [ "compiler/test/Blackbox/test-cases/hocp-coverage-tce"
+        , "compiler/test/Blackbox/test-cases/coverage-operator-on-own-line"
         , "compiler/test/Blackbox/test-cases/tce-addition-with-coverage"
         ]
 
