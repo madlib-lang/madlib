@@ -89,6 +89,7 @@ errorKind e = case e of
   ShortOutOfBounds{}                   -> 68
   IntOutOfBounds{}                     -> 69
   NegatedByte{}                        -> 70
+  InterfaceTypeVariableUnused{}        -> 71
 
 
 -- | True when the span of `outer` strictly contains the span of `inner`

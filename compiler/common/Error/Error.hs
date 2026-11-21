@@ -77,6 +77,7 @@ data TypeError
   | NoInstanceFound String [Type] [Pred]  -- ^ interface, types, required-by chain (innermost first)
   | InterfaceAlreadyDefined String
   | InterfaceNotExisting String
+  | InterfaceTypeVariableUnused String String  -- ^ interface name, type variable that no method mentions
   | OverlappingInstances Pred Pred
   | SelfReferentialInstance Pred
   | AmbiguousType (TVar, [Pred])

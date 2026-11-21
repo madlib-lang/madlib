@@ -503,6 +503,13 @@ searchVarInType id t = case t of
           (_     , Just x) -> Just x
           _                -> Nothing
 
+  TRecord fields base optionalFields ->
+    let candidates = M.elems fields ++ M.elems optionalFields ++ maybe [] (: []) base
+    in  foldr (\t' acc -> case searchVarInType id t' of { Just x -> Just x; Nothing -> acc }) Nothing candidates
+
+  TAlias _ _ _ aliased ->
+    searchVarInType id aliased
+
   _ ->
     Nothing
 

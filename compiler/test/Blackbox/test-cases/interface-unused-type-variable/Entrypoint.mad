@@ -1,0 +1,9 @@
+import type { Maybe } from "Maybe"
+
+// Regression test for #209: an interface type variable that no method mentions
+// used to crash the compiler with "Internal compiler error".
+interface Breaks m {
+  fails :: a -> String -> Maybe a
+}
+
+main = () => {}
