@@ -367,13 +367,14 @@ monomorphizeGlobalDefinition target isMain env@Env{ envCurrentModulePath } fnNam
                   else
                     monomorphicName
 
+            freshLocalState <- liftIO makeLocalMonomorphizationState
             monomorphized <-
               monomorphize
                 target
                 env
                   { envSubstitution = s
                   , envCurrentModulePath = fnModulePath
-                  , envLocalState = makeLocalMonomorphizationState ()
+                  , envLocalState = freshLocalState
                   , envLocalBindingsToExclude = mempty
                   }
                 (updateName nameToUse fnDefinition)
@@ -428,13 +429,14 @@ monomorphizeMethodDefinition target env@Env{ envCurrentModulePath } state fnName
                   Typed ([] :=> (tUnit `fn` t)) area (Assignment n (Typed ([] :=> (tUnit `fn` t)) area (Abs (Typed ([] :=> tUnit) area "_") [method])))
           let methodExp'' = Typed (getQualType methodExp') (getArea methodExp') (Export methodExp')
 
+          freshLocalState <- liftIO makeLocalMonomorphizationState
           monomorphized <-
             monomorphize
               target
               env
                 { envSubstitution = s
                 , envCurrentModulePath = methodModulePath
-                , envLocalState = makeLocalMonomorphizationState ()
+                , envLocalState = freshLocalState
                 , envLocalBindingsToExclude = mempty
                 }
               (updateName monomorphicName methodExp'')

@@ -56,9 +56,14 @@ data ScopeState
 -- Each item in the list is a full state for a given scope
 -- the last one is the current scope and the first one is
 -- the one in the highest level in the function body.
-makeLocalMonomorphizationState :: () -> IORef [ScopeState]
-{-# NOINLINE makeLocalMonomorphizationState #-}
-makeLocalMonomorphizationState _ = unsafePerformIO $ newIORef []
+--
+-- A fresh state must be allocated with `newIORef []` in IO at every use. The previous
+-- `makeLocalMonomorphizationState :: () -> IORef [ScopeState]` built on unsafePerformIO
+-- let GHC float the closed expression `makeLocalMonomorphizationState ()` to a CAF, so
+-- every global definition shared one scope stack and a user's local `get` leaked into
+-- the monomorphization of the prelude's recursive `Dictionary.get` (#207).
+makeLocalMonomorphizationState :: IO (IORef [ScopeState])
+makeLocalMonomorphizationState = newIORef []
 
 data MonomorphizationRequest
   = MonomorphizationRequest
