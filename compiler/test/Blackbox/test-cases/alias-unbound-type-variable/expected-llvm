@@ -1,0 +1,10 @@
+     ╭──▶ compiler/test/Blackbox/test-cases/alias-unbound-type-variable/Entrypoint.mad@5:1-5:62
+     │
+   5 │ export alias RecordWithAMissingTypeVar = { deets :: Maybe a }
+     • ┬────────────────────────────────────────────────────────────
+     • ╰╸ I don't recognize this type variable here.
+     •
+     │ Hint: Type variables used in a constructor or in an alias body must also appear in the type's own parameter list.
+     │ Note: Type variables are lowercase; a capitalized name here is treated as a concrete type instead, which is a common source of this error.
+─────╯
+

@@ -520,7 +520,7 @@ errorDiagnostic context typeError = case typeError of
   UnboundUnknownTypeVariable ->
     mkErr "This type variable isn't declared" context
       [P "I don't recognize this type variable here."]
-      [ hint "Type variables in a constructor must also appear in the type's own parameter list."
+      [ hint "Type variables used in a constructor or in an alias body must also appear in the type's own parameter list."
       , note "Type variables are lowercase; a capitalized name here is treated as a concrete type instead, which is a common source of this error."
       ]
 
