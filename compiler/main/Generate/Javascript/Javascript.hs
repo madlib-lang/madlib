@@ -514,6 +514,32 @@ class Compilable a where
 instance Compilable Exp where
   emit = emitExp
 
+-- | True when the expression ends, in tail position, in a marker the TCE pass added
+-- (RecursionEnd / RecursiveCall): its emitted statements then assign `$_result_` or
+-- update the loop parameters themselves and must not be `return`ed. A `where` whose
+-- branches carry no marker — e.g. `h = where(xs) { ... }` followed by the recursive
+-- call — is an ordinary value and needs `return` even inside a TCE'd body; without it
+-- the IIFE evaluated to undefined.
+hasTailRecursionMarker :: Exp -> Bool
+hasTailRecursionMarker (Typed _ _ metadata e) =
+  any isRecursionMarker metadata || case e of
+    Do exps ->
+      not (null exps) && hasTailRecursionMarker (last exps)
+
+    Where _ iss ->
+      any (\(Typed _ _ _ (Is _ branch)) -> hasTailRecursionMarker branch) iss
+
+    If _ truthy falsy ->
+      hasTailRecursionMarker truthy || hasTailRecursionMarker falsy
+
+    _ ->
+      False
+  where
+    isRecursionMarker (RecursionEnd _)  = True
+    isRecursionMarker (RecursiveCall _) = True
+    isRecursionMarker _                 = False
+
+
 emitExp :: Env -> CompilationConfig -> Exp -> JSDoc
 emitExp _ _ Untyped{} = mempty
 emitExp env config (Typed qt area metadata exp) =
@@ -1393,7 +1419,7 @@ emitExp env config (Typed qt area metadata exp) =
                 varDecls = filter (not . null) (dropWhile isSpace <$> lines (buildVars "__x__" pat))
                 varDocs = docText <$> varDecls
                 returnStmt =
-                  if Maybe.isJust (recursionData env) then
+                  if Maybe.isJust (recursionData env) && hasTailRecursionMarker exp then
                     emitExp branchEnv config exp <> ";"
                   else
                     "return " <> emitExp branchEnv config exp <> ";"
@@ -1470,7 +1496,7 @@ emitExp env config (Typed qt area metadata exp) =
                 branchEnv = env { varsRewritten = M.filterWithKey (\k _ -> k `S.notMember` patVarNames) (varsRewritten env) }
                 varDecls = filter (not . null) (dropWhile isSpace <$> lines (buildVars "__x__" pat))
                 varDocs = docText <$> varDecls
-                isRec = Maybe.isJust (recursionData env)
+                isRec = Maybe.isJust (recursionData env) && hasTailRecursionMarker exp
                 returnStmt =
                   if isRec then
                     emitExp branchEnv config exp <> ";"
@@ -1600,7 +1626,7 @@ emitExp env config (Typed qt area metadata exp) =
                 varDecls = filter (not . null) (dropWhile isSpace <$> lines (buildVars "__x__" pat))
                 varDocs = docText <$> varDecls
                 returnStmt =
-                  if Maybe.isJust (recursionData env) then
+                  if Maybe.isJust (recursionData env) && hasTailRecursionMarker exp then
                     emitExp branchEnv config exp <> ";"
                   else
                     "return " <> emitExp branchEnv config exp <> ";"
