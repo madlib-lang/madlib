@@ -56,7 +56,16 @@ canonicalizeInterface env (Src.Source area _ interface) = case interface of
     ts <- mapM (typingToType env AnyKind) ms
 
     let ts' = addConstraints n vars' <$> ts
-    let tvs = removeDuplicates $ catMaybes $ concat $ mapM searchVarInType vars' <$> M.elems ts
+
+    -- Each declared type variable must be mentioned by at least one method. Previously the
+    -- variables were collected with `mapM searchVarInType vars'` in the Maybe monad, so a
+    -- method only contributed when it mentioned *every* variable, and an interface whose
+    -- variable no method used ended in a FatalError ("Internal compiler error", #209).
+    let findVar v = listToMaybe $ mapMaybe (searchVarInType v) (M.elems ts)
+    let unusedVars = [ name | (name, v) <- zip vars vars', isNothing (findVar v) ]
+    unless (null unusedVars) $
+      throwError $ CompilationError (InterfaceTypeVariableUnused n (head unusedVars)) (Context (envCurrentPath env) area)
+    let tvs = removeDuplicates $ mapMaybe findVar vars'
 
     let supers = mapMaybe
           (\(Src.Source _ _ (Src.TRComp interface' [Src.Source _ _ (Src.TRSingle v)])) ->

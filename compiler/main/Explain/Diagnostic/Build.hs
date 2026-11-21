@@ -660,6 +660,13 @@ errorDiagnostic context typeError = case typeError of
     mkErr "Interface not found" context [P $ "The interface '" <> cls <> "' is not defined.\n"]
       [hint "Make sure you imported the module defining it,\nor a module that imports it."]
 
+  InterfaceTypeVariableUnused interfaceName var ->
+    mkErr "Unused interface type variable" context
+      [P $ "The type variable '" <> var <> "' declared by 'interface " <> interfaceName <> "' does not appear in any of its methods."]
+      [ hint "Every type variable in an interface head must be used by at least one method signature; otherwise no instance can be selected when the method is called."
+      , note $ "Use '" <> var <> "' in a method signature, or remove it from the interface head."
+      ]
+
   KindError (t, k) (t', k') ->
     let arity k0 = case k0 of { Kfun _ rest -> 1 + arity rest; _ -> 0 :: Int }
         headName = prettyPrintType True t'
