@@ -405,7 +405,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
     case mainFn of
       Just (fn, modulePath) -> do
         liftIO $ putStrLn "Running monomorphization.."
-        let localState = makeLocalMonomorphizationState ()
+        localState <- liftIO makeLocalMonomorphizationState
         MM.monomorphizeDefinition
           (optTarget options)
           True
@@ -432,7 +432,7 @@ rules options (Rock.Writer (Rock.Writer query)) = case query of
   MonomorphizedAST path -> nonInput $ do
     Rock.fetch MonomorphizedProgram
     (ast, _) <- Rock.fetch $ SolvedASTWithEnv path
-    let localState = makeLocalMonomorphizationState ()
+    localState <- liftIO makeLocalMonomorphizationState
     merged <- MM.mergeResult (optTarget options) MM.Env
                 { MM.envCurrentModulePath = path
                 , MM.envSubstitution = mempty

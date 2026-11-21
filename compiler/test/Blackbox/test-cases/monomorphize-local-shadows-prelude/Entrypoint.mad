@@ -1,0 +1,48 @@
+import Dict from "Dictionary"
+import IO from "IO"
+import Math from "Math"
+import Maybe from "Maybe"
+
+// Regression test for #207: a local function named like a recursive prelude
+// function (`get`) that calls that prelude function. The monomorphizer shared one
+// local scope stack across definitions, so Dictionary.get's recursive call was
+// resolved to the user's local `get`.
+memoizeWithDictionary = (dict, fun) => {
+  saved = dict
+  record = () => saved
+  get = (xx) => pipe(
+    Dict.get($, record()),
+    where {
+      Maybe.Just(x) =>
+        x
+
+      Maybe.Nothing =>
+        do {
+          yy = fun(xx)
+          saved := Dict.insert(xx, yy, saved)
+          return yy
+        }
+    },
+  )(xx)
+  return { record, get }
+}
+
+memoize = pipe(
+  memoizeWithDictionary(Dict.empty),
+  .get,
+)
+
+binary :: (a -> b -> c) -> #[a, b] -> c
+binary = (fn, pair) => where(pair) {
+  #[a, b] =>
+    fn(a, b)
+}
+
+threeze :: #[Float, Float] -> Float
+threeze = memoize(binary(Math.pow))
+
+main = () => {
+  IO.putLine(show(threeze(#[2, 2])))
+  IO.putLine(show(threeze(#[2, 4])))
+  IO.putLine(show(threeze(#[2, 4])))
+}
