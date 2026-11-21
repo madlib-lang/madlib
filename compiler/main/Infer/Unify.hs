@@ -370,7 +370,12 @@ gentleUnify (TRecord fields base _) (TRecord fields' base' _) = case (base, base
     in  s3 `compose` s2 `compose` s1
 
   (Just tBase, Nothing) ->
-    let s1 = gentleUnify tBase (TRecord fields' Nothing mempty)
+    -- The row variable stands for the fields the open record does *not* list, so bind it
+    -- to the concrete record minus the matched fields, as `unify` does. Binding it to the
+    -- whole record typed `{ a, ...rest }`'s `rest` as the full record once the function
+    -- was monomorphized, and the derived Show instance then read a missing field (#208).
+    let remainingFields = if M.null fields then fields' else M.difference fields' fields
+        s1 = gentleUnify tBase (TRecord remainingFields Nothing mempty)
     in  if not $ M.null (M.difference fields fields') then
           M.empty
         else
@@ -380,7 +385,8 @@ gentleUnify (TRecord fields base _) (TRecord fields' base' _) = case (base, base
           in  s2 `compose` s1
 
   (Nothing, Just tBase') ->
-    let s1 = gentleUnify tBase' (TRecord fields Nothing mempty)
+    let remainingFields = if M.null fields' then fields else M.difference fields fields'
+        s1 = gentleUnify tBase' (TRecord remainingFields Nothing mempty)
     in  if not $ M.null (M.difference fields' fields) then
           M.empty
         else
