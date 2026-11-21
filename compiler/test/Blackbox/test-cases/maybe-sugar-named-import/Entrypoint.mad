@@ -1,0 +1,13 @@
+import IO from "IO"
+import List from "List"
+import { Nothing } from "Maybe"
+
+// Regression test for #204: using `??` while explicitly importing one of the
+// Maybe constructors must not produce an import collision.
+main = () => {
+  x = List.nth(4, List.range(0, 20)) ?? 2
+  y = List.nth(40, List.range(0, 20)) ?? 2
+  IO.putLine(show(x))
+  IO.putLine(show(y))
+  IO.putLine(show(List.nth(1, []) == Nothing))
+}
