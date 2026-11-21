@@ -1,4 +1,4 @@
-on: [push]
+on: [push, pull_request]
 name: build
 jobs:
   test:
@@ -66,7 +66,11 @@ jobs:
         name: Cache ~/.stack
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-8.10.7-stack
+          # Key on the lock file so a dependency bump refreshes the cache;
+          # actions/cache only saves on a miss, so a constant key is saved once and reused forever.
+          key: ${{ runner.os }}-8.10.7-stack-${{ hashFiles('stack.yaml.lock', 'package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-8.10.7-stack-
 
       - name: build runtime libs
         run: TARGET="LINUX_X64" ./scripts/build-runtime-libs

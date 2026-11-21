@@ -1,6 +1,6 @@
 ![build](https://github.com/madlib-lang/madlib/workflows/build/badge.svg)
-[![codecov](https://codecov.io/gh/madlib-lang/madlib/branch/master/graph/badge.svg?token=4L2SE3380B)](https://codecov.io/gh/madlib-lang/madlib)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
+[![codecov](https://codecov.io/gh/madlib-lang/madlib/branch/master/graph/badge.svg)](https://codecov.io/gh/madlib-lang/madlib)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md)
 
 [![Discord](https://img.shields.io/discord/530598289813536771?label=discord%20madlib%20channel)](https://discord.com/channels/530598289813536771/932841899914571787)
 
@@ -13,8 +13,9 @@ There are currently two ways to install the madlib compiler.
 ### Npm package
 You can install it globally with the command `npm i -g @madlib-lang/madlib`. You can then compile code in the following way:
 ```
-madlib -i "entryFile.mad" -o "outputFolder"
+madlib compile -i "entryFile.mad" -o "outputFolder"
 ```
+or compile and run a module directly with `madlib run entryFile.mad`. Run `madlib --help` for the full list of commands.
 
 ### Download the release assets
 You can also download the archive of the build directly from the releases [releases](https://github.com/madlib-lang/madlib/releases) and install it wherever you want in your filesystem. You would then need to make sure that the location is in your PATH environment variable to make it available from everywhere.
@@ -364,7 +365,7 @@ node build/HelloWorld.mjs
 Your system should be setup with the following:
 - [Stack](https://docs.haskellstack.org/en/stable/README/) and [GHC](https://www.haskell.org/ghc/) `8.10.7`
 - [Node.js](https://nodejs.org/) ( > v14 is recommended )
-- [Rollup](https://rollupjs.org/) with the package `@rollup/plugin-node-resolve` installed globally if you want to enable bundling or use the build script located at `/scripts/build`
+- [esbuild](https://esbuild.github.io/) (`npm i -g esbuild`) if you want to enable bundling or use the build script located at `/scripts/build` (bundling moved from Rollup to esbuild; `ESBUILD_PATH` can point at a specific binary)
 
 ### Scripts
 
