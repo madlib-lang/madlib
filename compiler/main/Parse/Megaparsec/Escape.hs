@@ -86,6 +86,16 @@ processEscapes input = case input of
   '\\':'x':_ ->
     Left $ "BadEscape: incomplete hex escape"
 
+  -- Escapes the lexer accepts (see @escape in Lexer.x) that Haskell's readLitChar
+  -- does not know: a backtick inside a template string and an escaped slash (#202).
+  '\\':'`':more -> do
+    next <- processEscapes more
+    Right $ '`' : next
+
+  '\\':'/':more -> do
+    next <- processEscapes more
+    Right $ '/' : next
+
   -- Standard one-character escapes (\n, \t, \r, \\, \", \', etc.)
   '\\':c:more -> do
     case interpretChars ['\\', c] of
