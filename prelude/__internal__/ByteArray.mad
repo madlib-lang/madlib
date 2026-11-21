@@ -422,7 +422,7 @@ export empty = () => fromList([])
  * at(3, fromList([1, 2, 3])) // Nothing
  */
 at :: Integer -> ByteArray -> Maybe Byte
-export at = (index, arr) => index > 0 && index < length(arr) ? Just(unsafeAt(index, arr)) : Nothing
+export at = (index, arr) => index >= 0 && index < length(arr) ? Just(unsafeAt(index, arr)) : Nothing
 
 
 /**

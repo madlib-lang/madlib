@@ -213,8 +213,13 @@ test("drop - empty", () => assertEquals(drop(2, []), []))
 test("dropLast", () => assertEquals(dropLast(2, [1, 2, 3, 4, 5, 6]), [1, 2, 3, 4]))
 
 test("take", () => assertEquals(take(2, [1, 2, 3, 4, 5, 6]), [1, 2]))
+test("take - zero", () => assertEquals(take(0, [1, 2, 3]), []))
+test("take - negative", () => assertEquals(take(-1, [1, 2, 3]), []))
+test("take - more than length", () => assertEquals(take(5, [1, 2, 3]), [1, 2, 3]))
 
 test("takeLast", () => assertEquals(takeLast(2, [1, 2, 3, 4, 5, 6]), [5, 6]))
+test("takeLast - zero", () => assertEquals(takeLast(0, [1, 2, 3]), []))
+test("takeLast - negative", () => assertEquals(takeLast(-1, [1, 2, 3]), []))
 
 test("dropWhile", () => assertEquals(dropWhile((x) => x < 5, [1, 2, 3, 4, 5, 6]), [5, 6]))
 

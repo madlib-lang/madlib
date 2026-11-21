@@ -1,6 +1,6 @@
 import Array from "Array"
 import { assertEquals, test } from "Test"
-import { Nothing } from "Maybe"
+import { Just, Nothing } from "Maybe"
 
 
 
@@ -137,6 +137,28 @@ test(
     pipe(
       Array.fromList,
       Array.at(3),
+    )([1, 2, 3]),
+    Nothing,
+  ),
+)
+
+test(
+  "at - first index",
+  () => assertEquals(
+    pipe(
+      Array.fromList,
+      Array.at(0),
+    )([1, 2, 3]),
+    Just(1),
+  ),
+)
+
+test(
+  "at - negative index",
+  () => assertEquals(
+    pipe(
+      Array.fromList,
+      Array.at(-1),
     )([1, 2, 3]),
     Nothing,
   ),

@@ -837,7 +837,7 @@ export dropLast = (n, list) => slice(0, -n, list)
  * take(2, [1, 2, 3, 4, 5, 6]) // [1, 2]
  */
 take :: Integer -> List a -> List a
-export take = (n, list) => slice(0, n - 1, list)
+export take = (n, list) => n <= 0 ? [] : slice(0, n - 1, list)
 
 
 /**
@@ -848,7 +848,7 @@ export take = (n, list) => slice(0, n - 1, list)
  * takeLast(2, [1, 2, 3, 4, 5, 6]) // [5, 6]
  */
 takeLast :: Integer -> List a -> List a
-export takeLast = (n, list) => slice(-n, 0, list)
+export takeLast = (n, list) => n <= 0 ? [] : slice(-n, 0, list)
 
 
 /**

@@ -29,7 +29,7 @@ export GeneralError
 
 prettyCase :: (String -> String) -> String -> String
 prettyCase = (color, str) => pipe(
-  (x) => isEmpty(x) ? x : "",
+  (x) => isEmpty(x) ? "" : x,
   split(" "),
   mapWithIndex((x, i) => when((_) => equals(i, 0), color)(x)),
   join(" "),

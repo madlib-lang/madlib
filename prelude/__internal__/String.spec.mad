@@ -101,8 +101,12 @@ test(
 )
 
 test("take", () => assertEquals(String.take(3, "abcde"), "abc"))
+test("take - zero", () => assertEquals(String.take(0, "abcde"), ""))
+test("take - negative", () => assertEquals(String.take(-1, "abcde"), ""))
 
 test("takeLast", () => assertEquals(String.takeLast(3, "abcde"), "cde"))
+test("takeLast - zero", () => assertEquals(String.takeLast(0, "abcde"), ""))
+test("takeLast - negative", () => assertEquals(String.takeLast(-1, "abcde"), ""))
 
 test(
   "takeWhile",

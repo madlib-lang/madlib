@@ -1,6 +1,9 @@
 import type { Value } from "Json/Value"
 
 import Tuple from "Tuple"
+import Char from "Char"
+import Short from "Short"
+import Maybe from "Maybe"
 import {} from "Number"
 import Dictionary from "Dictionary"
 import PP from "PrettyPrint"
@@ -71,7 +74,7 @@ export jsonToDoc = (value) => where(value) {
               PP.hcat([PP.comma, PP.line]),
               map(
                 (f) => PP.hcat([
-                  PP.text(`"${Tuple.fst(f)}"`),
+                  PP.text(`"${escapeString(Tuple.fst(f))}"`),
                   PP.colon,
                   PP.space,
                   jsonToDoc(Tuple.snd(f))
@@ -88,12 +91,22 @@ export jsonToDoc = (value) => where(value) {
 }
 
 
+hexDigit :: Short -> Char
+hexDigit = (n) => Maybe.fromMaybe('0', String.charAt(Short.toInteger(n), "0123456789abcdef"))
+
+
+// Escapes a string according to RFC 8259 section 7: `"`, `\\` and every
+// control character below U+0020 must be escaped; the short forms are used
+// where JSON defines one and \u00XX otherwise.
 escapeString :: String -> String
 escapeString = (s) => {
   go :: List Char -> List Char
   go = (chars) => where(chars) {
     ['"', ...cs] =>
       ['\\', '"', ...go(cs)]
+
+    ['\\', ...cs] =>
+      ['\\', '\\', ...go(cs)]
 
     ['\n', ...cs] =>
       ['\\', 'n', ...go(cs)]
@@ -105,7 +118,18 @@ escapeString = (s) => {
       ['\\', 'r', ...go(cs)]
 
     [c, ...cs] =>
-      [c, ...go(cs)]
+      do {
+        code = Char.toShort(c)
+        return if (code == 8_s) {
+          ['\\', 'b', ...go(cs)]
+        } else if (code == 12_s) {
+          ['\\', 'f', ...go(cs)]
+        } else if (code < 32_s) {
+          ['\\', 'u', '0', '0', hexDigit(code >= 16_s ? 1_s : 0_s), hexDigit(code % 16_s), ...go(cs)]
+        } else {
+          [c, ...go(cs)]
+        }
+      }
 
     [] =>
       []
