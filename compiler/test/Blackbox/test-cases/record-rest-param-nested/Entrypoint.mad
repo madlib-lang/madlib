@@ -1,0 +1,19 @@
+import IO from "IO"
+
+// Regression test for #208: a record pattern with a rest binding in a function
+// parameter. `rest` was typed as the whole record after monomorphization, so the
+// derived Show instance read a field that the runtime value did not have.
+flat = ({ a, ...rest }, key) => IO.putLine(key ++ " " ++ show(#[a, rest]))
+
+nested = ({ a: { b: c }, ...rest }, key) => IO.putLine(key ++ " " ++ show(#[c, rest]))
+
+inWhere = (r) => where(r) {
+  { a: { b: c }, ...rest } =>
+    IO.putLine("where " ++ show(#[c, rest]))
+}
+
+main = () => {
+  flat({ a: 1, other: "x" }, "flat")
+  nested({ a: { b: "oh yeah" }, theOtherStuff: { here: "yes" } }, "nested")
+  inWhere({ a: { b: "oh yeah" }, theOtherStuff: { here: "yes" } })
+}
