@@ -1,0 +1,14 @@
+import IO from "IO"
+
+// Regression test for #202: a backtick and a slash can be escaped inside a
+// template string (the lexer already accepted them, processEscapes rejected them).
+name = "world"
+withBacktick = `code: \`hello ${name}\``
+withSlash = `a\/b`
+inPlainString = "a\/b"
+
+main = () => {
+  IO.putLine(withBacktick)
+  IO.putLine(withSlash)
+  IO.putLine(inPlainString)
+}
