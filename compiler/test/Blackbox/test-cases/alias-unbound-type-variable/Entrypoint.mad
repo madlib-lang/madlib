@@ -1,0 +1,7 @@
+import type { Maybe } from "Maybe"
+
+// Regression test for #203: a type variable in an alias body that is not declared
+// in the alias head must be reported, like it is for ADT constructors.
+export alias RecordWithAMissingTypeVar = { deets :: Maybe a }
+
+main = () => {}

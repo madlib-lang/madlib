@@ -133,6 +133,15 @@ canonicalizeTypeDecl env astPath typeNamesInScope td@(Src.Source area _ typeDecl
     let params = ((`TV` Star) . hash) <$> Src.aliasparams alias
     let typing = Src.aliastype alias
     typingType <- typingToType env (KindRequired Star) typing
+
+    -- Like ADT constructors (resolveADTConstructorParams), an alias body may only mention
+    -- the type variables declared in its head. Previously `alias R = { deets :: Maybe a }`
+    -- compiled and left a dangling type variable that unified with anything (#203).
+    let declaredParams = S.fromList (hash <$> Src.aliasparams alias)
+        unboundVars    = [ n | TV n _ <- S.toList (ftv typingType), not (S.member n declaredParams) ]
+    unless (null unboundVars) $
+      throwError $ CompilationError UnboundUnknownTypeVariable (Context astPath area)
+
     when (isRecordType typingType) $ do
       pushRecordToDerive (getTRecordFieldNames typingType)
     let env' = addADT env name (TAlias astPath name params typingType)
