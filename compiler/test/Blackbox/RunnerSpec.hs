@@ -212,6 +212,7 @@ spec :: Spec
 spec = do
   let cases =
         [ "compiler/test/Blackbox/test-cases/hello-world"
+        , "compiler/test/Blackbox/test-cases/list-spread-no-mutation"
         , "compiler/test/Blackbox/test-cases/basic-type-error"
         , "compiler/test/Blackbox/test-cases/parse-madlib-dot-json"
         , "compiler/test/Blackbox/test-cases/fibonacci"
