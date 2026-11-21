@@ -5,6 +5,7 @@ import type { Maybe } from "Maybe"
 import Dictionary from "Dictionary"
 import { Left, Right } from "Either"
 import Float from "Float"
+import Char from "Char"
 import { always } from "Function"
 import {} from "Integer"
 import {
@@ -19,7 +20,7 @@ import {
 import List from "List"
 import { Just, Nothing } from "Maybe"
 import Parse from "Parse"
-import { char, choice, digit, many, notChar, runParser, sepBy, some, spaces, symbol, token } from "Parse"
+import { char, choice, digit, many, notChar, runParser, satisfy, sepBy, some, spaces, symbol, token } from "Parse"
 import String from "String"
 
 
@@ -27,11 +28,64 @@ import String from "String"
 // Parser
 // ------
 
+isHexDigit :: Char -> Boolean
+isHexDigit = (c) => (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+
+
+hexValue :: Char -> Short
+hexValue = (c) => {
+  code = Char.toShort(c)
+  return if (c >= '0' && c <= '9') {
+    code - 48_s
+  } else if (c >= 'a' && c <= 'f') {
+    code - 87_s
+  } else {
+    code - 55_s
+  }
+}
+
+
+// Parses the XXXX of a \uXXXX escape and returns its code unit.
+hex4 :: Parse.Parser Short
+hex4 = do {
+  a <- satisfy(isHexDigit)
+  b <- satisfy(isHexDigit)
+  c <- satisfy(isHexDigit)
+  d <- satisfy(isHexDigit)
+
+  return of(hexValue(a) * 4096_s + hexValue(b) * 256_s + hexValue(c) * 16_s + hexValue(d))
+}
+
+
+// \uXXXX, including UTF-16 surrogate pairs (\uD83D\uDE00 => U+1F600).
+unicodeEscape :: Parse.Parser Char
+unicodeEscape = do {
+  _ <- Parse.string("\\u")
+  high <- hex4
+
+  return if (high >= 55296_s && high <= 56319_s) {
+    do {
+      _ <- Parse.string("\\u")
+      low <- hex4
+      return of(Char.fromShort((high - 55296_s) * 1024_s + (low - 56320_s) + 65536_s))
+    }
+  } else {
+    of(Char.fromShort(high))
+  }
+}
+
+
 stringCharacter :: Parse.Parser Char
 stringCharacter = choice([
   map(always('"'), Parse.string("\\\"")),
+  map(always('\\'), Parse.string("\\\\")),
+  map(always('/'), Parse.string("\\/")),
+  map(always(Char.fromShort(8_s)), Parse.string("\\b")),
+  map(always(Char.fromShort(12_s)), Parse.string("\\f")),
   map(always('\n'), Parse.string("\\n")),
+  map(always('\r'), Parse.string("\\r")),
   map(always('\t'), Parse.string("\\t")),
+  unicodeEscape,
   notChar('"'),
 ])
 

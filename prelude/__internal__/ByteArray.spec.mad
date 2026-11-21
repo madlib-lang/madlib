@@ -1,5 +1,5 @@
 import ByteArray from "ByteArray"
-import { Just } from "Maybe"
+import { Just, Nothing } from "Maybe"
 import { assertEquals, test } from "Test"
 
 
@@ -63,6 +63,28 @@ test(
       ByteArray.at(1),
     )([1, 2, 3]),
     Just(2),
+  ),
+)
+
+test(
+  "at - first index",
+  () => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.at(0),
+    )([1, 2, 3]),
+    Just(1),
+  ),
+)
+
+test(
+  "at - out of bounds",
+  () => assertEquals(
+    pipe(
+      ByteArray.fromList,
+      ByteArray.at(3),
+    )([1, 2, 3]),
+    Nothing,
   ),
 )
 

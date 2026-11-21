@@ -317,14 +317,14 @@ export dropWhile = (predicate, s) => pipe(
  * @since 0.18.7
  */
 take :: Integer -> String -> String
-export take = (n, s) => slice(0, n, s)
+export take = (n, s) => n <= 0 ? "" : slice(0, n, s)
 
 /**
  * Take characters from the end of the string
  * @since 0.18.7
  */
 takeLast :: Integer -> String -> String
-export takeLast = (n, s) => slice(-n, 0, s)
+export takeLast = (n, s) => n <= 0 ? "" : slice(-n, 0, s)
 
 /**
  * Take characters which match a predicate function

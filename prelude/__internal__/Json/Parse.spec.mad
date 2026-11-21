@@ -7,6 +7,12 @@ import { integer, list, parse, string, float } from "./Parse"
 
 test("parse - success", () => assertEquals(parse(string, `"Json string"`), Right("Json string")))
 test("parse - error", () => assertEquals(parse(string, `3`), Left("Error parsing string")))
+test("parse - escaped backslash", () => assertEquals(parse(string, `"a\\\\b"`), Right("a\\b")))
+test("parse - escaped backslash before closing quote", () => assertEquals(parse(string, `"a\\\\"`), Right("a\\")))
+test("parse - escaped slash", () => assertEquals(parse(string, `"a\\/b"`), Right("a/b")))
+test("parse - carriage return", () => assertEquals(parse(string, `"a\\rb"`), Right("a\rb")))
+test("parse - unicode escape", () => assertEquals(parse(string, `"caf\\u00e9"`), Right("café")))
+test("parse - unicode surrogate pair", () => assertEquals(parse(string, `"\\ud83d\\ude00"`), Right("😀")))
 
 test(
   "list  - success",

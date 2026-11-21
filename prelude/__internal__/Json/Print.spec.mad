@@ -17,10 +17,21 @@ import {
   JsonArray,
 } from "Json/Value"
 import String from "String"
+import Char from "Char"
 
 q = String.singleton('"')
 bs = String.singleton('\\')
 
+
+// escaping (RFC 8259 §7)
+test("printJson - escapes backslash", () => assertEquals(printJson(80, string(`a${bs}b`)), `${q}a${bs}${bs}b${q}`))
+test("printJson - escapes quote", () => assertEquals(printJson(80, string(`a${q}b`)), `${q}a${bs}${q}b${q}`))
+test("printJson - escapes newline and tab", () => assertEquals(printJson(80, string("a\n\tb")), `${q}a${bs}n${bs}tb${q}`))
+test("printJson - escapes control characters", () => assertEquals(printJson(80, string(String.singleton(Char.fromShort(1_s)))), `${q}${bs}u0001${q}`))
+test("printJson - escapes object keys", () => assertEquals(
+  printJson(80, object([#[`k${q}ey`, integer(1)]])),
+  `{${q}k${bs}${q}ey${q}: 1}`,
+))
 
 // Construction helpers
 test("string", () => assertEquals(string("hello"), JsonString("hello")))

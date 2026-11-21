@@ -34,31 +34,42 @@ instance Comparable a => Comparable (Set a) {
 }
 
 
-instance Functor Set {
-  map = (f, s) => where(s) {
-    SetRBEmpty =>
-      SetRBEmpty
+/**
+ * Applies a function to every element of the set and returns a new set with
+ * the results. The resulting set is rebuilt from scratch, so it stays sorted,
+ * keeps its search-tree invariant and collapses duplicates produced by `f`.
+ *
+ * Note: Set deliberately does not implement Functor any more. A Functor `map`
+ * cannot re-sort the tree because it has no Comparable constraint on `b`;
+ * mapping in place (the previous behaviour) left the tree unsorted, so
+ * `includes` and `toList` returned wrong results for any non-monotonic
+ * function. The function is called `mapSet` because a top-level `map` would
+ * shadow the Functor method.
+ *
+ * @since 0.28.0
+ * @example
+ * mapSet((x) => x % 3, fromList([1, 2, 3, 4, 5, 6])) // Set([0, 1, 2])
+ */
+mapSet :: Comparable b => (a -> b) -> Set a -> Set b
+export mapSet = (f, s) => pipe(
+  toList,
+  map(f),
+  fromList,
+)(s)
 
-    SetRBNode(c, v, left, right) =>
-      SetRBNode(c, f(v), map(f, left), map(f, right))
-  }
-}
 
-
-mapM :: Monad m => (a -> m b) -> Set a -> m (Set b)
-export mapM = (f, s) => where(s) {
-  SetRBEmpty =>
-    pure(SetRBEmpty)
-
-  SetRBNode(c, v, left, right) =>
-    do {
-      _v <- f(v)
-      _left <- mapM(f, left)
-      _right <- mapM(f, right)
-
-      return of(SetRBNode(c, _v, _left, _right))
-    }
-}
+/**
+ * Monadic version of mapSet. Like `mapSet`, the resulting set is rebuilt so the
+ * search-tree invariant is preserved.
+ *
+ * @since 0.28.0
+ */
+mapM :: (Monad m, Comparable b) => (a -> m b) -> Set a -> m (Set b)
+export mapM = (f, s) => pipe(
+  toList,
+  List.mapM(f),
+  chain(pipe(fromList, of)),
+)(s)
 
 
 insert :: Comparable a => a -> Set a -> Set a
