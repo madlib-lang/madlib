@@ -55,7 +55,12 @@ buildPackage path name version = do
 
 makeMadlibDotJson :: String -> String -> String
 makeMadlibDotJson name version = unlines
-  ["{", "  \"name\": \"" <> name <> "\",", "  \"version\": \"" <> version <> "\",", "  \"main\": \"src/Main.mad\"", "}"]
+  [ "{"
+  , "  \"name\": \"" <> name <> "\","
+  , "  \"version\": \"" <> version <> "\","
+  , "  \"main\": \"src/Main.mad\""
+  , "  \"importAliases\": { \".\": \"src\" }"
+  , "}"]
 
 mainDotMadContent :: String
 mainDotMadContent = unlines
